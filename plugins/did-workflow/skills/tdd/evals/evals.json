@@ -1,0 +1,80 @@
+{
+  "skill_name": "tdd",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "password-reset-tdd",
+      "prompt": "Add a password reset feature to this auth service using TDD",
+      "expected_output": "Claude plans the interface and behaviors first, writes one failing test (tracer bullet), implements minimal code to pass it, then continues one test at a time. Does NOT write all tests upfront before implementing.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "plans-before-coding",
+          "description": "Claude confirms interface design and which behaviors to test before writing any test or implementation code"
+        },
+        {
+          "name": "tracer-bullet-first",
+          "description": "The first test written is a single focused test for one behavior — not a batch of tests"
+        },
+        {
+          "name": "no-horizontal-slicing",
+          "description": "Claude does NOT write all tests upfront before any implementation (anti-pattern avoided)"
+        },
+        {
+          "name": "vertical-cycles",
+          "description": "Each test is followed by its implementation before the next test is written"
+        },
+        {
+          "name": "uses-public-interface",
+          "description": "Tests verify behavior through the public API, not internal state or direct DB queries"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "write-tests-as-we-go",
+      "prompt": "Write tests as we build this new cart checkout flow",
+      "expected_output": "Skill triggers on loose phrasing. Claude adopts TDD approach — confirms behaviors to test, proposes a tracer bullet, proceeds incrementally.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "tdd-approach-adopted",
+          "description": "Claude adopts a structured TDD approach even though the user didn't say 'TDD' or 'red-green-refactor'"
+        },
+        {
+          "name": "confirms-behaviors",
+          "description": "Claude asks about or explicitly proposes which behaviors to test before starting any code"
+        },
+        {
+          "name": "incremental-cycles",
+          "description": "Work proceeds one test → one implementation at a time rather than all at once"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "red-green-refactor-focused",
+      "prompt": "I want to do red-green-refactor on this payments module — start with the charge() method",
+      "expected_output": "Claude focuses on the charge() method, writes one failing test, implements minimal code to pass, then checks for refactor candidates. Does not over-plan or expand scope.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "stays-scoped-to-charge",
+          "description": "Claude stays focused on charge() and does not expand scope to other methods unprompted"
+        },
+        {
+          "name": "single-tracer-bullet",
+          "description": "Starts with one test for one behavior of charge() rather than multiple tests at once"
+        },
+        {
+          "name": "refactor-step-present",
+          "description": "After reaching GREEN, Claude explicitly checks for refactor candidates"
+        },
+        {
+          "name": "minimal-green-code",
+          "description": "Implementation at the GREEN step is minimal — no speculative or anticipatory code added"
+        }
+      ]
+    }
+  ]
+}

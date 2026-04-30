@@ -1,0 +1,27 @@
+{
+  "name": "did-workflow",
+  "version": "1.3.0",
+  "description": "DID-wide autonomous coding workflow: hooks, agents, skills, and stack-aware verifiers.",
+  "author": { "name": "Platform Team" },
+  "agents": [
+    "./agents/reviewer.md",
+    "./agents/feature-builder.md",
+    "./agents/prd-story-writer.md",
+    "./agents/learning-capturer.md"
+  ],
+  "skills": [
+    "./skills/verifier",
+    "./skills/prd",
+    "./skills/prd-refine",
+    "./skills/build",
+    "./skills/doc-architect",
+    "./skills/tdd",
+    "./skills/grill-me",
+    "./skills/e2e",
+    "./skills/e2e-create",
+    "./skills/ship",
+    "./skills/product-discovery",
+    "./skills/poc",
+    "./skills/learn"
+  ]
+}

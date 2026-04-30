@@ -1,0 +1,59 @@
+{
+  "skill_name": "product-discovery",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I think we should do something with notifications. Our users seem frustrated but I'm not sure what specifically. Let's figure this out.",
+      "expected_output": "Coaching session that starts with outcome framing (Step 2) before jumping to solutions. Should surface 3-5 opportunities with evidence assessment, select one, brainstorm multiple solutions, and produce a discovery brief with an OST diagram.",
+      "files": [],
+      "expectations": [
+        "Outcome coaching: the session begins by helping the user frame a measurable, time-bound business outcome before exploring opportunities",
+        "No premature solutioning: the session does not jump to solutions before identifying and selecting an opportunity",
+        "Opportunities distinguished from solutions: at least one moment where the skill explicitly helps separate a user need from a proposed solution",
+        "Multiple opportunities surfaced: at least 3 distinct opportunities are identified",
+        "Evidence assessment: each opportunity has its evidence strength noted (strong, moderate, or weak)",
+        "Single opportunity selected: the session explicitly selects one opportunity with rationale",
+        "Multiple solutions brainstormed: at least 2 solution candidates are generated for the selected opportunity",
+        "OST diagram: a Mermaid flowchart TD diagram is produced showing the full tree",
+        "Discovery brief produced: a complete brief is written to docs/discovery/ with no placeholders",
+        "Non-technical language: no APIs, databases, schemas, endpoints, or code-level terms"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our customer churn rate is 8% monthly and exit surveys say 'too hard to use'. We think the onboarding flow is the issue but we're not sure. Help me discover what's really going on.",
+      "expected_output": "Session that validates the outcome framing (churn reduction), then challenges the assumption that onboarding is the issue by exploring multiple opportunities. Should run grill-me on opportunities, not accept the user's initial hypothesis uncritically.",
+      "files": [],
+      "expectations": [
+        "Outcome framing: the session confirms or refines the churn reduction outcome with a measurable target",
+        "Challenges the assumption: does not accept 'onboarding is the issue' at face value — explores other potential opportunities",
+        "Multiple opportunities surfaced: at least 3 opportunities are identified beyond just onboarding",
+        "Evidence assessment: each opportunity has its evidence strength noted",
+        "Grill-me invocation: the session pressure-tests the opportunities through interrogation",
+        "Single opportunity selected: one opportunity is chosen with explicit rationale",
+        "Experiment suggested: a lightweight experiment is proposed to test the riskiest assumption",
+        "OST diagram: a Mermaid flowchart is produced",
+        "Discovery brief produced: a complete brief is written with no placeholders",
+        "Non-technical language: no technical jargon throughout"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "We need to increase trial-to-paid conversion from 12% to 20% by Q3. I want to figure out what's blocking conversions and what we should build.",
+      "expected_output": "Session that skips outcome coaching (outcome is already clear), validates the outcome, then goes directly to opportunity discovery. Should produce solutions with riskiest assumptions identified and a lightweight experiment recommendation.",
+      "files": [],
+      "expectations": [
+        "Outcome validation: confirms the trial-to-paid target is well-formed without over-coaching",
+        "Skips to opportunity discovery: does not spend excessive time on outcome framing since it's already clear",
+        "Multiple opportunities surfaced: at least 3 opportunities related to conversion blockers",
+        "Evidence assessment: each opportunity has evidence strength noted",
+        "Single opportunity selected: one opportunity chosen with rationale",
+        "Multiple solutions brainstormed: at least 2 solution candidates for the selected opportunity",
+        "Riskiest assumptions identified: each solution has its riskiest assumption called out",
+        "Experiment suggested: a lightweight experiment is proposed with success criteria",
+        "OST diagram: a Mermaid flowchart is produced with selected path highlighted",
+        "Discovery brief produced: complete brief written to docs/discovery/ with PRD handoff recommendation"
+      ]
+    }
+  ]
+}

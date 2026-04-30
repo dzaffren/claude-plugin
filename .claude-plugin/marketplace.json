@@ -1,0 +1,23 @@
+{
+  "name": "did-claude-plugins",
+  "owner": {
+    "name": "Chris Ng",
+    "email": "ng.zhe@bnm.gov.my"
+  },
+  "plugins": [
+    {
+      "name": "did-workflow",
+      "source": {
+        "source": "git-subdir",
+        "url": "git@gitlab.com:ssambar/did/did-claude-plugin.git",
+        "path": "plugins/did-workflow",
+        "ref": "main"
+      },
+      "description": "Spec-driven feature delivery pipeline: BDD spec generation, parallel build execution, and stack-aware verification for end-to-end development workflow.",
+      "version": "1.3.0",
+      "author": {
+        "name": "Chris Ng"
+      }
+    }
+  ]
+}

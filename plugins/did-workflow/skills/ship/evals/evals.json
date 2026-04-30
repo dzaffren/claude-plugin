@@ -1,0 +1,57 @@
+{
+  "skill_name": "ship",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "ship PROJ-123 add user notifications",
+      "expected_output": "Claude detects it is on main with uncommitted changes, creates a feature branch with the ticket ID (feature/PROJ-123-add-user-notifications), analyzes the diff, drafts a conventional commit message with Refs: PROJ-123 footer, stages specific files, updates CHANGELOG.md, commits, pushes with -u flag, creates an MR via glab targeting main, and reports the MR URL.",
+      "expectations": [
+        "Detects current branch is main (protected) and uncommitted changes exist",
+        "Creates a branch with format feature/PROJ-123-add-user-notifications",
+        "Does NOT commit directly to main",
+        "Reads branch-conventions.md and commit-conventions.md references",
+        "Analyzes git diff to understand changes before committing",
+        "Drafts a conventional commit: type(scope): imperative description",
+        "Includes Refs: PROJ-123 footer in the commit message",
+        "Stages specific files (not git add -A)",
+        "Checks for CHANGELOG.md and updates it before committing",
+        "Pushes with -u flag for new branch",
+        "Creates MR via glab with summary, ticket, changes, how to test, checklist",
+        "Does not mention Claude or AI in commit message or MR",
+        "Reports which steps ran and the MR URL"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/ship",
+      "expected_output": "Claude detects it is on an existing feature branch (feature/add-notifications) with uncommitted changes across 3 files. Skips branch creation, analyzes the diff, auto-detects commit type and scope, drafts a conventional commit, stages files, commits, pushes, creates MR via glab targeting main, and reports the MR URL.",
+      "expectations": [
+        "Detects current branch is a feature branch (not protected)",
+        "Skips branch creation step entirely",
+        "Reads commit-conventions.md reference",
+        "Analyzes git diff to auto-detect commit type and scope",
+        "Drafts a conventional commit with correct type and scope",
+        "Stages specific files (not git add -A)",
+        "Checks for CHANGELOG.md and handles accordingly",
+        "Pushes to origin (with -u if no upstream exists)",
+        "Creates MR via glab targeting main",
+        "Reports which steps ran (commit, push, MR) and skipped (branch)"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "open an MR for this branch",
+      "expected_output": "Claude detects it is on fix/null-check-profile with no uncommitted changes, branch already pushed to origin. Skips branch creation, commit, and push steps. Reads mr-template.md, generates MR title from commit history, creates MR via glab targeting main, and reports the MR URL.",
+      "expectations": [
+        "Detects no uncommitted changes and branch is already pushed",
+        "Skips branch creation, commit, and push steps",
+        "Reads mr-template.md reference",
+        "Generates MR title from commit history (single commit uses subject, multiple synthesizes)",
+        "Determines target branch (main) from ancestry",
+        "Creates MR via glab with filled template (summary, changes, how to test, checklist)",
+        "Does not mention Claude or AI in MR title or body",
+        "Reports that only MR step ran and provides the MR URL"
+      ]
+    }
+  ]
+}
