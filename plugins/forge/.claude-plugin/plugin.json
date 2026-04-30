@@ -1,0 +1,29 @@
+{
+  "name": "forge",
+  "version": "0.1.0-alpha",
+  "description": "GitHub-first, spec-driven, design-conscious, security-aware Claude Code workflow with multi-choice prompts and atomic commits.",
+  "author": {
+    "name": "Dzafran"
+  },
+  "agents": [
+    "./agents/reviewer.md",
+    "./agents/feature-builder.md",
+    "./agents/prd-story-writer.md",
+    "./agents/learning-capturer.md"
+  ],
+  "skills": [
+    "./skills/verifier",
+    "./skills/prd",
+    "./skills/prd-refine",
+    "./skills/build",
+    "./skills/doc-architect",
+    "./skills/tdd",
+    "./skills/grill-me",
+    "./skills/e2e",
+    "./skills/e2e-create",
+    "./skills/ship",
+    "./skills/product-discovery",
+    "./skills/poc",
+    "./skills/learn"
+  ]
+}

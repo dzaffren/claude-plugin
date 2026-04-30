@@ -1,0 +1,11 @@
+{
+  "name": "spec-with-gaps-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

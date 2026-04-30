@@ -1,0 +1,50 @@
+{
+  "skill_name": "grill-me",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We want to let customers export their monthly invoices as PDF from the billing page. Right now they have to email support to get them. About 30% of our support tickets are invoice requests. We have ~5,000 active customers on paid plans. Grill me on this before I write the PRD.",
+      "expected_output": "Product-focused interview: questions about user needs, business rules, scope, success metrics. No technical questions about APIs, databases, or code.",
+      "files": [],
+      "expectations": [
+        "No technical jargon: the interview does not mention API, database, schema, endpoint, SQL, HTTP, cache, or code-level implementation terms",
+        "Branches listed upfront: the interview starts by listing numbered decision branches before asking any questions",
+        "One question at a time: each question is posed individually, not batched as a list of multiple questions",
+        "Recommended answers: each question includes a recommended answer with reasoning",
+        "Decisions log: a running summary of decisions made appears at least once during the interview",
+        "Wrap-up summary: the interview ends with a structured summary of all resolved decisions and open items",
+        "Product-focused questions: questions address user needs, business rules, scope boundaries, or success metrics"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I'm planning to add a Redis caching layer in front of our PostgreSQL-backed REST API. The API serves product catalog data — about 50k products, updated a few times a day by an internal CMS. Read traffic is ~500 rps, write traffic is negligible. I want to cache at the API response level. Grill me on this plan.",
+      "expected_output": "Technical design interview: questions about cache invalidation, TTL strategy, failure modes, consistency, operability. Structured branch walkthrough.",
+      "files": [],
+      "expectations": [
+        "Branches listed upfront: the interview starts by listing numbered decision branches before asking any questions",
+        "One question at a time: each question is posed individually, not batched as a list of multiple questions",
+        "Recommended answers: each question includes a recommended answer with reasoning",
+        "Decisions log: a running summary of decisions made appears at least once during the interview",
+        "Wrap-up summary: the interview ends with a structured summary of all resolved decisions and open items",
+        "Covers cache invalidation: at least one question specifically addresses cache invalidation or TTL strategy",
+        "Covers failure modes: at least one question addresses what happens when Redis is unavailable or degrades"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need to split our monolithic `users` table into two tables: `accounts` (org-level data) and `profiles` (individual user data). The table has ~2M rows, the app is a Rails API serving about 100 rps. I'm planning to do a phased migration: add the new tables, dual-write for a week, backfill, then cut over. What am I missing?",
+      "expected_output": "Technical interview covering migration safety, dual-write consistency, rollback plan, data integrity verification, and cutover strategy.",
+      "files": [],
+      "expectations": [
+        "Branches listed upfront: the interview starts by listing numbered decision branches before asking any questions",
+        "One question at a time: each question is posed individually, not batched as a list of multiple questions",
+        "Recommended answers: each question includes a recommended answer with reasoning",
+        "Decisions log: a running summary of decisions made appears at least once during the interview",
+        "Wrap-up summary: the interview ends with a structured summary of all resolved decisions and open items",
+        "Covers rollback: at least one question addresses rollback strategy or what happens if the migration needs to be reversed",
+        "Covers data integrity: at least one question addresses verifying data consistency during or after migration"
+      ]
+    }
+  ]
+}

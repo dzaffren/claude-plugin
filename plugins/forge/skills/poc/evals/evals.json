@@ -1,0 +1,23 @@
+{
+  "skill_name": "poc",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just finished the PRD for our new expense-approval feature (it's in docs/specs/expense-approval/spec.md). Can you build a clickthrough prototype so I can walk the finance team through the screens before we start dev?",
+      "expected_output": "A set of self-contained HTML files in docs/poc/expense-approval/ with linked screens (dashboard, submission form, approval view) using Tailwind CDN. Navigation between screens works via anchor tags. No JS interactivity needed — just a clickthrough.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We're building an internal support-ticket tool. I need a prototype where agents can see a list of open tickets, click into one to read the thread, type a reply, and the reply shows up in the thread. Use realistic data — not placeholder stuff. Full walkthrough level please.",
+      "expected_output": "Self-contained HTML files in docs/poc/support-ticket/ with a ticket list, detail/thread view, and reply form. Submitting a reply mutates a JS array and re-renders the thread. Mock data includes realistic agent names, ticket subjects, timestamps, and status badges. Tailwind CDN, no external dependencies.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/poc inventory-dashboard — we need an interactive prototype with a product table that can be filtered by category and sorted by stock level. Include a modal to add a new product. This is for the warehouse ops team to review before we spec it out.",
+      "expected_output": "Self-contained HTML in docs/poc/inventory-dashboard/ with a product table (5+ rows of realistic data), category filter dropdown, sortable stock column, and an 'Add product' modal toggled via JS. Interactive tier — forms and toggles work but no persistent state mutation. Tailwind CDN, responsive layout.",
+      "files": []
+    }
+  ]
+}
