@@ -56,7 +56,7 @@ shared SQLite fixture. Local machines have 8+ cores so the issue doesn't
 reproduce.
 
 **How to apply:** When editing `vitest.config.ts` or adding new packages
-to the workspace, confirm `VITEST_POOL=1` is set in `.gitlab-ci.yml`.
+to the workspace, confirm `VITEST_POOL=1` is set in `.github/workflows/*.yml`.
 Any CI failure with a 10-minute timeout on the test stage is probably
 this — check pool config first.
 

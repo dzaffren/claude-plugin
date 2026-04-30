@@ -47,7 +47,7 @@ Determine the entry point:
 | On a non-protected branch, pushed, no PR exists                  | Step 5 (PR)                             |
 | On a non-protected branch, pushed, PR already exists             | Report existing PR URL and **STOP**     |
 
-To check for an existing PR: `gh pr list --source-branch=$(git branch --show-current) --state=opened`
+To check for an existing PR: `gh pr list --head "$(git branch --show-current)" --state open`
 
 **Protected branches**: `main`, `master`, `develop`. NEVER commit directly to these.
 
@@ -138,7 +138,7 @@ Use `gh pr create` to create the pull request.
 ```bash
 gh pr create \
   --title "title here" \
-  --description "$(cat <<'EOF'
+  --body "$(cat <<'EOF'
 ## Summary
 
 - bullet 1
@@ -166,9 +166,8 @@ TICKET-123 or N/A
 - [ ] Branch is up to date with target
 EOF
 )" \
-  --target-branch main \
-  --source-branch "$(git branch --show-current)" \
-  --no-editor
+  --base main \
+  --head "$(git branch --show-current)"
 ```
 
 6. If `gh` is not authenticated, tell the user to run `gh auth login` and stop.
@@ -209,8 +208,7 @@ If the user says `/ship --learn-from-comments` (or equivalent — "pull
 lessons from the PR review", "what should I remember from the PR
 comments"), and the PR created in Step 5 has review comments:
 
-1. Fetch comments: `gh api projects/:id/merge_requests/:iid/notes` for the
-   current PR.
+1. Fetch comments: `gh pr view <PR-number> --json comments,reviews` (or `gh api repos/{owner}/{repo}/pulls/{pull_number}/comments` for per-file review comments) for the current PR.
 2. Filter to comments containing a learn-marker: `#learn`, or the phrases
    "next time", "going forward", "for the future", "always", "never" (case
    insensitive). This is a coarse filter — the user will approve each
