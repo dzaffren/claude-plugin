@@ -10,7 +10,7 @@ description: >
   learning", "from now on...", "always do X in this repo", "don't do Y
   here", and an explicit `/learn` command. Also invoked programmatically by
   the `learning-capturer` agent after `/build` or `/ship` completes and by
-  the `/ship` skill when it parses merge-request comments. Stores the
+  the `/ship` skill when it parses pull-request comments. Stores the
   learning in the target repo at `docs/learnings/` so it travels with
   the code. Separate from Claude's personal auto-memory: this skill is for
   team/repo facts, not user preferences.
