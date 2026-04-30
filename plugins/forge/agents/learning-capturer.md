@@ -35,7 +35,7 @@ accumulated judgment travels with the code — but only if someone actively
 captures it at the moment of discovery.
 
 That moment is now, at the end of the session. You see everything: the
-spec, the diff, the verifier output, the MR discussion, the user's inline
+spec, the diff, the verifier output, the PR discussion, the user's inline
 corrections. After this session ends, those signals are gone.
 
 ## Inputs you are given
@@ -51,7 +51,7 @@ The caller (the `build` or `ship` skill) hands you:
 - **User corrections** — any in-session messages where the user pushed
   back, corrected an approach, said "no, do X instead", or approved an
   unusual choice. These are gold.
-- **MR discussion** (if `/ship` picked up comments) — review comments with
+- **PR discussion** (if `/ship` picked up comments) — review comments with
   learn-markers (`#learn`, "next time", "going forward", "always", "never",
   "for the future") already pre-filtered by the caller.
 - **Existing learnings index** at `docs/learnings/INDEX.md`, if present —
@@ -103,7 +103,7 @@ See the `learn` skill's `references/types.md` for worked examples.
 ### Step 1 — Gather session signals
 
 Read the diff, the verifier output, the user's correction turns, and any
-pre-filtered MR comments. Don't rescan the whole codebase — the caller
+pre-filtered PR comments. Don't rescan the whole codebase — the caller
 already handed you the relevant slice.
 
 Also read `docs/learnings/INDEX.md` (if the file exists). You need it for
@@ -118,7 +118,7 @@ mind:
 - **type** — convention / blocker / pattern / skill-quality.
 - **why** — the reason.
 - **source** — which session signal this came from (diff line, verifier
-  message, user quote, MR comment).
+  message, user quote, PR comment).
 - **confidence signal** — did the source use absolute language? Did the
   user confirm "yes, make this a rule"?
 

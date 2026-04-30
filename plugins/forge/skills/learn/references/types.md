@@ -15,14 +15,14 @@ name: no-inline-styles
 description: Components use CSS modules, not inline styles
 type: convention
 captured: 2026-04-28
-source: /ship — MR !234 review comment
+source: /ship — PR #234 review comment
 ---
 
 Do not use inline `style={{ ... }}` props on React components.
 
 **Why:** Design tokens live in `src/styles/tokens.css` and inline styles
 bypass them, producing inconsistent spacing and colors. Reviewer caught
-this on MR !234.
+this on PR #234.
 
 **How to apply:** When writing any React component, create a sibling
 `<Name>.module.css` and import class names. Check `src/styles/utilities.css`
@@ -125,7 +125,7 @@ clearly needed.
 
 **Why:** prd-refine's generic Implementation Plan template biases toward
 "endpoint + frontend + tests" and doesn't include Rails-specific stages.
-Our CI requires the migration and the code in the same MR, so missing it
+Our CI requires the migration and the code in the same PR, so missing it
 forces a rewrite.
 
 **How to apply:** When running `/prd-refine` against this repo, verify the

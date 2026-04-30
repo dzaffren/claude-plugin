@@ -1,19 +1,19 @@
 ---
 name: ship
 description: >
-  Ships changes from working directory to a GitLab merge request in one command.
-  Orchestrates: branch creation, commit, push, and MR. Detects current git state
+  Ships changes from working directory to a GitHub pull request in one command.
+  Orchestrates: branch creation, commit, push, and PR. Detects current git state
   and starts from the right step. Use this skill when the user says "ship it",
-  "ship this", "open an MR", "create a merge request", "push and create MR",
+  "ship this", "open a PR", "create a pull request", "push and create PR",
   "commit and push", "get this into review", or runs /ship. Also triggers when
-  the user has finished manual coding and wants to get changes into a merge
+  the user has finished manual coding and wants to get changes into a pull
   request without a full /build pipeline. Accepts optional arguments for ticket
   ID or description.
 ---
 
 # Ship
 
-Ship changes from working directory to a GitLab merge request. Detects where you are in the git workflow and picks up from the right step.
+Ship changes from working directory to a GitHub pull request. Detects where you are in the git workflow and picks up from the right step.
 
 **Arguments:** `$ARGUMENTS` — optional ticket ID (e.g., `PROJ-123`), description, or both.
 
@@ -44,10 +44,10 @@ Determine the entry point:
 | On `main`/`master`/`develop` with no changes                     | **STOP** — nothing to ship              |
 | On a non-protected branch with uncommitted changes               | Step 3 (Commit)                         |
 | On a non-protected branch, all committed, unpushed commits exist | Step 4 (Push)                           |
-| On a non-protected branch, pushed, no MR exists                  | Step 5 (MR)                             |
-| On a non-protected branch, pushed, MR already exists             | Report existing MR URL and **STOP**     |
+| On a non-protected branch, pushed, no PR exists                  | Step 5 (PR)                             |
+| On a non-protected branch, pushed, PR already exists             | Report existing PR URL and **STOP**     |
 
-To check for an existing MR: `glab mr list --source-branch=$(git branch --show-current) --state=opened`
+To check for an existing PR: `gh pr list --source-branch=$(git branch --show-current) --state=opened`
 
 **Protected branches**: `main`, `master`, `develop`. NEVER commit directly to these.
 
@@ -118,25 +118,25 @@ Proceed to Step 5.
 
 ---
 
-## Step 5 — MR Creation
+## Step 5 — PR Creation
 
-Read `${CLAUDE_SKILL_DIR}/references/mr-template.md`.
+Read `${CLAUDE_SKILL_DIR}/references/pr-template.md`.
 
-Use `glab mr create` to create the merge request.
+Use `gh pr create` to create the pull request.
 
 1. **Target branch**: determine the branch this was created from. Check if `main` is an ancestor (`git merge-base --is-ancestor main HEAD`). If not, try `develop`. If neither, ask the user.
 2. **Title**: if there is a single commit, use its subject line. If multiple commits, synthesize a descriptive summary title. Max 72 characters.
-3. **Body**: fill in the MR template:
+3. **Body**: fill in the PR template:
    - **Summary**: 1-3 bullet points — what changed and why
    - **Ticket**: link to ticket if ID is known, otherwise `N/A`
    - **Changes**: logical change groups or key commits
    - **How to Test**: inferred from the nature of the changes
    - **Checklist**: standard review checklist
 4. **Draft**: create as draft if the user said "draft".
-5. Create the MR:
+5. Create the PR:
 
 ```bash
-glab mr create \
+gh pr create \
   --title "title here" \
   --description "$(cat <<'EOF'
 ## Summary
@@ -171,9 +171,9 @@ EOF
   --no-editor
 ```
 
-6. If `glab` is not authenticated, tell the user to run `glab auth login` and stop.
+6. If `gh` is not authenticated, tell the user to run `gh auth login` and stop.
 
-**Do not** mention Claude, Claude Code, or any AI tool in the MR title, body, or commit messages.
+**Do not** mention Claude, Claude Code, or any AI tool in the PR title, body, or commit messages.
 
 ---
 
@@ -181,8 +181,8 @@ EOF
 
 Tell the user:
 
-- Which steps were executed (branch → commit → push → MR)
-- The MR URL (from glab output)
+- Which steps were executed (branch → commit → push → PR)
+- The PR URL (from gh output)
 - Any steps that were skipped and why
 
 ---
@@ -203,14 +203,14 @@ user for approval; approved candidates are handed to the `learn` skill.
 If no trigger, skip. This step is opt-in when ship is run manually — capture
 shouldn't fire on every casual push.
 
-### 7b — Learn from MR comments
+### 7b — Learn from PR comments
 
 If the user says `/ship --learn-from-comments` (or equivalent — "pull
-lessons from the MR review", "what should I remember from the MR
-comments"), and the MR created in Step 5 has review comments:
+lessons from the PR review", "what should I remember from the PR
+comments"), and the PR created in Step 5 has review comments:
 
-1. Fetch comments: `glab api projects/:id/merge_requests/:iid/notes` for the
-   current MR.
+1. Fetch comments: `gh api projects/:id/merge_requests/:iid/notes` for the
+   current PR.
 2. Filter to comments containing a learn-marker: `#learn`, or the phrases
    "next time", "going forward", "for the future", "always", "never" (case
    insensitive). This is a coarse filter — the user will approve each
@@ -219,5 +219,5 @@ comments"), and the MR created in Step 5 has review comments:
    `learning-capturer` for the normal approve / hand-off-to-`learn` flow.
 
 Do not capture silently and do not auto-filter to zero — if nothing matches
-the markers, report that so the user knows to check the MR manually if they
+the markers, report that so the user knows to check the PR manually if they
 expected lessons.

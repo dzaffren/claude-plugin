@@ -12,7 +12,7 @@
       "id": 2,
       "name": "dedupe-on-capture",
       "prompt": "Hey, for next time remember we use Vitest not Jest in this repo — reviewer flagged a PR that still had Jest imports.",
-      "expected_output": "Reads docs/learnings/INDEX.md, finds existing convention-use-vitest.md, runs update mode (not capture). Merges the new source (MR review comment) into the existing file. Does NOT create a duplicate convention-vitest-* file. Report says UPDATED, not CAPTURED.",
+      "expected_output": "Reads docs/learnings/INDEX.md, finds existing convention-use-vitest.md, runs update mode (not capture). Merges the new source (PR review comment) into the existing file. Does NOT create a duplicate convention-vitest-* file. Report says UPDATED, not CAPTURED.",
       "fixture_path": "fixtures/existing-learning"
     },
     {
@@ -40,7 +40,7 @@
       "id": 6,
       "name": "skill-quality-capture",
       "prompt": "prd-refine keeps missing migration sub-tasks when we add new models. Happened again on APP-201 — reviewer had to send it back. We should always include a migration sub-task when the plan touches a model file.",
-      "expected_output": "Captures as type: skill-quality (skill-prd-refine-missing-migrations.md or similar). Frontmatter includes skill: prd-refine. Body names the recurring failure mode, the Why (CI requires migration and code in same MR), and the How to apply (verify the Implementation Plan includes a migration sub-task with db/migrate/*.rb paths when a model changes). The user said 'always' so CLAUDE.md gets updated under ## Learnings. Report confirms the skill name was recorded.",
+      "expected_output": "Captures as type: skill-quality (skill-prd-refine-missing-migrations.md or similar). Frontmatter includes skill: prd-refine. Body names the recurring failure mode, the Why (CI requires migration and code in same PR), and the How to apply (verify the Implementation Plan includes a migration sub-task with db/migrate/*.rb paths when a model changes). The user said 'always' so CLAUDE.md gets updated under ## Learnings. Report confirms the skill name was recorded.",
       "fixture_path": "fixtures/greenfield"
     }
   ]

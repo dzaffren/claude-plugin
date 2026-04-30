@@ -14,9 +14,9 @@ dedicated database migration sub-task in the Implementation Plan.
 where the reviewer sent the spec back because no migration sub-task was
 listed despite new models being added. In this repo models live under
 Prisma (`prisma/schema.prisma`), and any new model change requires a
-paired migration under `prisma/migrations/` shipped in the same MR. When
+paired migration under `prisma/migrations/` shipped in the same PR. When
 `prd-refine` produces a plan without that sub-task, `/build` proceeds
-without scaffolding the migration and the MR fails review.
+without scaffolding the migration and the PR fails review.
 
 **How to apply:** When running `/prd-refine` against this repo, inspect
 the Implementation Plan before approving. If any sub-task changes a model

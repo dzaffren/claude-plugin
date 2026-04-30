@@ -18,8 +18,8 @@ The skill detected a near-duplicate against the existing `convention-use-vitest.
 ## What was merged
 
 - **source** expanded from a single string into a list, preserving the original Q1 migration capture and appending the new entry: `/learn — 2026-04-28 reviewer flagged a PR that still had Jest imports`.
-- **Why** extended with a sentence noting reviewers actively catch stray Jest imports in MR review (observed 2026-04-28), explaining why the rule still actively matters.
-- **How to apply** extended with a concrete pre-MR check: grep for `from "jest"` / `from '@jest/globals'` in changed test files before opening an MR.
+- **Why** extended with a sentence noting reviewers actively catch stray Jest imports in PR review (observed 2026-04-28), explaining why the rule still actively matters.
+- **How to apply** extended with a concrete pre-PR check: grep for `from "jest"` / `from '@jest/globals'` in changed test files before opening an PR.
 
 The rule itself (first line) was left unchanged — the new observation reinforces the existing rule rather than refining it.
 

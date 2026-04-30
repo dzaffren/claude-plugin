@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "ship PROJ-123 add user notifications",
-      "expected_output": "Claude detects it is on main with uncommitted changes, creates a feature branch with the ticket ID (feature/PROJ-123-add-user-notifications), analyzes the diff, drafts a conventional commit message with Refs: PROJ-123 footer, stages specific files, updates CHANGELOG.md, commits, pushes with -u flag, creates an MR via glab targeting main, and reports the MR URL.",
+      "expected_output": "Claude detects it is on main with uncommitted changes, creates a feature branch with the ticket ID (feature/PROJ-123-add-user-notifications), analyzes the diff, drafts a conventional commit message with Refs: PROJ-123 footer, stages specific files, updates CHANGELOG.md, commits, pushes with -u flag, creates a PR via gh targeting main, and reports the PR URL.",
       "expectations": [
         "Detects current branch is main (protected) and uncommitted changes exist",
         "Creates a branch with format feature/PROJ-123-add-user-notifications",
@@ -16,15 +16,15 @@
         "Stages specific files (not git add -A)",
         "Checks for CHANGELOG.md and updates it before committing",
         "Pushes with -u flag for new branch",
-        "Creates MR via glab with summary, ticket, changes, how to test, checklist",
-        "Does not mention Claude or AI in commit message or MR",
-        "Reports which steps ran and the MR URL"
+        "Creates PR via gh with summary, ticket, changes, how to test, checklist",
+        "Does not mention Claude or AI in commit message or PR",
+        "Reports which steps ran and the PR URL"
       ]
     },
     {
       "id": 2,
       "prompt": "/ship",
-      "expected_output": "Claude detects it is on an existing feature branch (feature/add-notifications) with uncommitted changes across 3 files. Skips branch creation, analyzes the diff, auto-detects commit type and scope, drafts a conventional commit, stages files, commits, pushes, creates MR via glab targeting main, and reports the MR URL.",
+      "expected_output": "Claude detects it is on an existing feature branch (feature/add-notifications) with uncommitted changes across 3 files. Skips branch creation, analyzes the diff, auto-detects commit type and scope, drafts a conventional commit, stages files, commits, pushes, creates PR via gh targeting main, and reports the PR URL.",
       "expectations": [
         "Detects current branch is a feature branch (not protected)",
         "Skips branch creation step entirely",
@@ -34,23 +34,23 @@
         "Stages specific files (not git add -A)",
         "Checks for CHANGELOG.md and handles accordingly",
         "Pushes to origin (with -u if no upstream exists)",
-        "Creates MR via glab targeting main",
-        "Reports which steps ran (commit, push, MR) and skipped (branch)"
+        "Creates PR via gh targeting main",
+        "Reports which steps ran (commit, push, PR) and skipped (branch)"
       ]
     },
     {
       "id": 3,
-      "prompt": "open an MR for this branch",
-      "expected_output": "Claude detects it is on fix/null-check-profile with no uncommitted changes, branch already pushed to origin. Skips branch creation, commit, and push steps. Reads mr-template.md, generates MR title from commit history, creates MR via glab targeting main, and reports the MR URL.",
+      "prompt": "open a PR for this branch",
+      "expected_output": "Claude detects it is on fix/null-check-profile with no uncommitted changes, branch already pushed to origin. Skips branch creation, commit, and push steps. Reads pr-template.md, generates PR title from commit history, creates PR via gh targeting main, and reports the PR URL.",
       "expectations": [
         "Detects no uncommitted changes and branch is already pushed",
         "Skips branch creation, commit, and push steps",
-        "Reads mr-template.md reference",
-        "Generates MR title from commit history (single commit uses subject, multiple synthesizes)",
+        "Reads pr-template.md reference",
+        "Generates PR title from commit history (single commit uses subject, multiple synthesizes)",
         "Determines target branch (main) from ancestry",
-        "Creates MR via glab with filled template (summary, changes, how to test, checklist)",
-        "Does not mention Claude or AI in MR title or body",
-        "Reports that only MR step ran and provides the MR URL"
+        "Creates PR via gh with filled template (summary, changes, how to test, checklist)",
+        "Does not mention Claude or AI in PR title or body",
+        "Reports that only PR step ran and provides the PR URL"
       ]
     }
   ]

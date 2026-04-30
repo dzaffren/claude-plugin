@@ -111,7 +111,7 @@ always prefer Vitest"). Either way, extract:
 - The **why** — the reason behind it. If the user didn't give one, ask. A
   learning without a why is brittle: future runs can't judge edge cases.
 - The **source** — was this from a review comment, a live correction, a
-  blocker during a build, an MR comment? Record it.
+  blocker during a build, an PR comment? Record it.
 - The **confidence signal** — did the user use absolute language ("always",
   "never", "from now on")? That matters for whether it ends up in
   `CLAUDE.md`.
@@ -151,7 +151,7 @@ name: <slug>
 description: <one-line description, used for the index entry>
 type: <convention|blocker|pattern|skill-quality>
 captured: <YYYY-MM-DD>
-source: <how this was captured — /learn, /ship MR comment, /build session, etc.>
+source: <how this was captured — /learn, /ship PR comment, /build session, etc.>
 ---
 
 <The rule or fact, stated plainly.>

@@ -1,13 +1,13 @@
-# Merge Request Template
+# Pull Request Template
 
-Use this template when creating a GitLab merge request. Fill in each section based on the branch's commits and changes. Remove sections that don't apply.
+Use this template when creating a GitHub pull request. Fill in each section based on the branch's commits and changes. Remove sections that don't apply.
 
 ---
 
 ```markdown
 ## Summary
 
-- [1-3 bullet points: what this MR does and why]
+- [1-3 bullet points: what this PR does and why]
 
 ## Ticket
 
@@ -40,5 +40,5 @@ Use this template when creating a GitLab merge request. Fill in each section bas
 - **Changes**: Group logically. "Added auth middleware + updated route handlers" is better than listing 12 files.
 - **How to Test**: Write for someone unfamiliar with the change. Include commands to run, pages to visit, or API calls to make.
 - **Checklist**: Check items that are done. Leave unchecked items as reminders for the author.
-- **Do not** mention Claude, Claude Code, AI, or any AI tool in the MR title or body.
-- **Draft MRs**: Create as draft when the user explicitly says "draft" or when work is incomplete.
+- **Do not** mention Claude, Claude Code, AI, or any AI tool in the PR title or body.
+- **Draft PRs**: Create as draft when the user explicitly says "draft" or when work is incomplete.

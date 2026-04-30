@@ -152,11 +152,11 @@ After Phase 3.5 completes:
 
 ## Phase 5 — Ship
 
-Invoke the `ship` skill to handle commit, push, and MR creation:
+Invoke the `ship` skill to handle commit, push, and PR creation:
 
 - Pass `{ticket}` as the argument if set (e.g. `PROJ-123`), otherwise no argument
-- Ship detects the current git state and picks up from the right step — it will push the branch and create the MR following project conventions
-- If any acceptance criteria were unmet in Phase 4, tell ship to create the MR as a draft
+- Ship detects the current git state and picks up from the right step — it will push the branch and create the PR following project conventions
+- If any acceptance criteria were unmet in Phase 4, tell ship to create the PR as a draft
 
 ---
 
