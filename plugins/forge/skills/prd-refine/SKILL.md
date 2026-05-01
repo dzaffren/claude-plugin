@@ -137,6 +137,19 @@ format — `template-story.md`, `template-technical.md`, or `template-simple.md`
 
 - **Functional Requirements** — validation rules, atomicity, idempotency
 - **Permissions & Security** — scope, authorization, input validation
+- **System Design** (required for larger features; skip for bug fixes / simple changes):
+  - Components and their responsibilities (one short paragraph per component)
+  - Interfaces — HTTP endpoints, events, DB schemas, shared contracts
+  - Data flow diagram (mermaid `flowchart` or `sequenceDiagram`)
+  - Tradeoffs considered — list 2+ alternatives with the chosen decision and why.
+    If a genuine tradeoff was made, write an ADR to `docs/adr/NNN-<slug>.md`
+    (next free number) and link it from this section.
+- **Threat Model Checklist** (required; skip only for docs/chore-shaped specs):
+  - **Data classification** — does this handle PII, secrets, or public data?
+  - **Attack surface** — new endpoints, deserializers, file uploads, redirects?
+  - **Authn / authz changes** — new roles, new middleware, new public routes?
+  - **Dependency additions** — list new packages and their trust posture
+  - Flag any item that warrants attention; otherwise write `N/A — <reason>`.
 - **API Design** — endpoints, request/response with concrete examples, error table
 - **Data Model & Migrations** — if applicable; delete if no DB changes
 - **Architecture Notes** — new dependencies, integration points, exemplar files
@@ -225,5 +238,8 @@ Before presenting the spec, verify every item below. Fix any failures.
 - [ ] If enriching a `/prd` output: all original business content preserved unchanged
 - [ ] If enriching a `/prd` output: technical sections added after `---` separator
 - [ ] If enriching a `/prd` output: Test Scenarios complement (not duplicate) existing Acceptance Criteria
+- [ ] System Design section present for larger features (components, interfaces, data flow, tradeoffs)
+- [ ] Threat Model Checklist present (data classification, attack surface, authn/authz, dependencies); `N/A` allowed with reason
+- [ ] ADR written and linked if a real tradeoff was made
 
 Then STOP. Tell the user the path(s) of the spec file(s) written and ask for approval before any code is written.

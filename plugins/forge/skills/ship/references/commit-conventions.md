@@ -50,6 +50,7 @@ Optional. Use when the subject line alone doesn't explain the change. Wrap at 72
 
 - **Ticket reference** (when known): `Refs: PROJ-123`
 - **Breaking changes**: `BREAKING CHANGE: description of what breaks`
+- **No `Co-Authored-By:` trailer.** Forge commits are authored by the human running `/ship`. The `conventional-commit.sh` validator rejects any message that contains a `Co-Authored-By:` line.
 
 ## Examples
 
