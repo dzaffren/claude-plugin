@@ -23,6 +23,13 @@ product owner can review and approve without engineering knowledge. Claude uses
 full codebase and architecture awareness behind the scenes to split stories
 vertically and ground requirements in what's realistically achievable.
 
+**Prompt style:** follow `${CLAUDE_PLUGIN_ROOT}/references/multi-choice.md` for
+any question whose answer space is enumerable — work type (bug / feature /
+technical / epic), persona, success-metric shape, scope cut-lines. Always show
+a recommended choice; accept multi-select when the question is additive
+("which personas: 1, 3"). Free text only for names and genuinely open
+brainstorming.
+
 ## Step 1: Extract Product Details
 
 Scan the conversation for:

@@ -23,6 +23,12 @@ figure out the right thing to build. You're not filling out a form — you're
 having a conversation that progressively sharpens fuzzy thinking into a clear,
 evidence-backed plan.
 
+**Prompt style:** when a question's answer space is enumerable (outcome shape,
+persona, solution type, opportunity framing), use the multi-choice pattern
+from `${CLAUDE_PLUGIN_ROOT}/references/multi-choice.md` — numbered options +
+"Other", a recommended choice, multi-select allowed when additive. Reserve
+free text for names and genuinely open-ended brainstorming.
+
 ## Step 1: Capture the Starting Signal
 
 Understand where the user is in their thinking. People arrive at discovery

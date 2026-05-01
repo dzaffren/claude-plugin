@@ -1,6 +1,6 @@
 {
   "name": "forge",
-  "version": "0.1.0-alpha",
+  "version": "0.2.0-alpha",
   "description": "GitHub-first, spec-driven, design-conscious, security-aware Claude Code workflow with multi-choice prompts and atomic commits.",
   "author": {
     "name": "Dzafran"
@@ -24,6 +24,8 @@
     "./skills/ship",
     "./skills/product-discovery",
     "./skills/poc",
-    "./skills/learn"
+    "./skills/learn",
+    "./skills/security-review",
+    "./skills/fix"
   ]
 }

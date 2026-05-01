@@ -24,6 +24,28 @@ Parse arguments:
 
 ---
 
+## Step 0 — Security Review (gate)
+
+Before anything else, invoke the `security-review` skill against the uncommitted diff (working tree + index). Hand off the current branch and the target branch (detected in Step 5; default `main`).
+
+Interpret the result:
+
+- **PASS** — silent, continue to Step 1.
+- **WARN** — surface findings and ask the user multi-choice:
+  ```
+  security-review returned <N> WARN-level finding(s). Choose:
+    1. Fix findings now — abort /ship, return to coding
+    2. Accept findings and proceed — findings will be appended to the PR body
+    3. Walk me through each finding
+  Recommended: 1
+  ```
+  On `1` or `3`, stop. On `2`, stash the findings summary for Step 5 (PR body).
+- **FAIL** — stop with the findings printed. Do not commit, do not push, do not open a PR.
+
+If `security-review` is unavailable (skill not installed), log a one-line notice and continue — do not block. This keeps `/ship` usable outside forge installs.
+
+---
+
 ## Step 1 — State Detection
 
 Run these commands to determine the current position:
@@ -74,24 +96,57 @@ Proceed to Step 3.
 
 ---
 
-## Step 3 — Commit
+## Step 3 — Commit (atomic, conventional, semver-aware)
 
 Read `${CLAUDE_SKILL_DIR}/references/commit-conventions.md`.
 
-1. Run `git status --porcelain` to see all changes.
-2. Run `git diff` (unstaged) and `git diff --cached` (staged) to understand what changed.
-3. Analyze the changes:
-   - **Type**: auto-detect from the nature of the diff (`feat`, `fix`, `refactor`, `test`, `chore`, `docs`, `style`, `perf`, `ci`, `build`, `revert`).
-   - **Scope**: auto-detect from the primary module or directory touched.
-   - **Subject**: draft in imperative mood, lowercase, no period, max 72 chars.
-4. If the changes span multiple logical concerns (e.g., a feature and its tests, or changes across distinct modules), create **multiple commits** rather than one monolithic commit. Each commit must be a self-contained, passing state.
-5. Add a `Refs: TICKET-123` footer when a ticket ID is known.
-6. Stage specific files. **NEVER** stage `.env`, credentials, secrets, or large binaries. Prefer naming files explicitly over `git add -A`.
-7. **Changelog guard**: check if `CHANGELOG.md` is tracked in the repo (`git ls-files CHANGELOG.md`). If it is:
-   - Update the `[Unreleased]` section with a summary of the change under the appropriate heading (`Added`, `Changed`, `Fixed`, etc.)
-   - Stage `CHANGELOG.md` alongside the other changes
-   - This must happen **before** the commit — the changelog-guard hook will block the commit otherwise.
-8. Commit using a HEREDOC for the message:
+### 3a — Propose atomic groupings
+
+Run `bash ${CLAUDE_SKILL_DIR}/scripts/propose-commits.sh` to seed a grouping
+plan from the diff. Refine the output into a concrete commit list (the script
+is a heuristic — you are expected to override its scopes/types where the diff
+tells a clearer story). Then present the plan to the user multi-choice:
+
+```
+I plan <N> commit(s):
+  1. feat(auth): add oauth2 login flow
+  2. test(auth): cover oauth2 callback edge cases
+  3. docs: update auth README
+Choose:
+  1. Accept plan
+  2. Regroup (I'll re-draft)
+  3. Edit — walk me through the groupings
+Recommended: 1
+```
+
+### 3b — Validate each message
+
+For every commit, pipe the drafted message through:
+
+```bash
+printf '%s' "$MSG" | bash ${CLAUDE_SKILL_DIR}/scripts/conventional-commit.sh -
+```
+
+If the validator fails, fix the message and re-validate. Do not commit until it
+passes. The validator enforces the subject rules from
+`references/commit-conventions.md` **and** rejects any `Co-Authored-By:` trailer
+— forge commits must not include one.
+
+### 3c — Update CHANGELOG (if present)
+
+If `CHANGELOG.md` is tracked (`git ls-files CHANGELOG.md`), run
+`bash ${CLAUDE_SKILL_DIR}/scripts/update-changelog.sh <type> <subject>` for
+each non-skipped commit **before** you stage its files. The script places the
+entry under the appropriate Keep-a-Changelog heading inside `[Unreleased]`;
+`test`/`chore`/`ci`/`build`/`style`/`revert` types are no-ops. Stage
+`CHANGELOG.md` together with the commit's other files so the changelog-guard
+hook accepts the commit.
+
+### 3d — Stage and commit
+
+Stage specific files per group. **NEVER** stage `.env`, credentials, secrets,
+or large binaries. Prefer naming files explicitly over `git add -A`. Commit via
+HEREDOC:
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -103,6 +158,30 @@ Refs: TICKET-123
 EOF
 )"
 ```
+
+Add a `Refs: TICKET-123` footer when a ticket ID is known. **Never** add a
+`Co-Authored-By:` trailer — the validator blocks it.
+
+### 3e — Auto semver bump
+
+After the last commit, derive the bump and apply it:
+
+```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/bump-semver.sh origin/<base>..HEAD --apply
+```
+
+(Use `main` or the detected base branch in place of `<base>`.) The script
+prints `<level> <old> <new> <manifest>`. If `<level>` is `none` or `<manifest>`
+is `none`, skip. Otherwise stage the bumped manifest and create a single
+release commit:
+
+```bash
+git commit -m "chore(release): bump to <new>"
+```
+
+Bump rules (highest wins): `BREAKING CHANGE` / `!` → major; `feat` → minor;
+`fix` / `refactor` / `perf` → patch; `docs` / `test` / `chore` / `ci` / `style`
+/ `build` / `revert` → no bump.
 
 Proceed to Step 4.
 
@@ -131,6 +210,7 @@ Use `gh pr create` to create the pull request.
    - **Ticket**: link to ticket if ID is known, otherwise `N/A`
    - **Changes**: logical change groups or key commits
    - **How to Test**: inferred from the nature of the changes
+   - **Security Review**: only if `security-review` returned WARN and the user accepted — append the findings summary (one bullet per finding with category + file path) under a `## Security Review — accepted warnings` section
    - **Checklist**: standard review checklist
 4. **Draft**: create as draft if the user said "draft".
 5. Create the PR:
