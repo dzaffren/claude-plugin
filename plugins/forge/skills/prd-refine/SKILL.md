@@ -21,6 +21,34 @@ enough that a developer (or subagent) can execute it without asking follow-up
 questions. When enriching, the existing business content stays unchanged and
 technical sections are appended.
 
+## Step 0: Surface prior learnings
+
+Before asking the user anything, read `docs/learnings/INDEX.md` in the target
+repo. If the file does not exist, skip silently.
+
+Filter entries relevant to the spec/feature at hand:
+
+- `description` or `name` contains keywords from the spec title / area
+- Entry type ∈ {`convention`, `pattern`, `win`} — these shape technical approach
+- Entry type = `blocker` — warns off dead ends in implementation
+- Entry type = `skill-quality` with `Skill: prd-refine` — apply these corrections
+  to this run
+
+If ≥1 relevant entry is found, surface to the user before the first question:
+
+```
+I found relevant prior learnings in this repo:
+  - [title] ([type]) — [one-line description]
+  - [title] ([type]) — [one-line description]
+
+These will inform the technical sections. Anything to correct before we start?
+```
+
+Accept a bare "looks good" as confirmation. If the user flags something, read
+the full learning file(s) before moving on.
+
+If no entries match or the index is missing, continue silently.
+
 ## Step 1: Extract Feature Details
 
 ### Spec Resolution (from /prd output)
