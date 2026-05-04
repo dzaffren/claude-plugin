@@ -2,6 +2,7 @@
 name: readme-single-source-of-truth
 description: README.md is evergreen with one machine-readable `**Current version:**` line; no version-specific prose; CHANGELOG owns release history
 type: pattern
+scope: project-specific
 captured: 2026-05-04
 source: /learn — explicit capture after observed v0.3/v0.4 README drift
 ---
