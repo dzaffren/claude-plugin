@@ -30,6 +30,33 @@ a recommended choice; accept multi-select when the question is additive
 ("which personas: 1, 3"). Free text only for names and genuinely open
 brainstorming.
 
+## Step 0: Surface prior learnings
+
+Before asking the user anything, read `docs/learnings/INDEX.md` in the target
+repo. If the file does not exist, skip silently.
+
+Filter entries relevant to the user's request:
+
+- `description` or `name` contains keywords from the feature name / problem
+  statement
+- Entry type ∈ {`convention`, `pattern`, `win`} — these shape approach
+- Entry type = `blocker` — warns off dead ends
+
+If ≥1 relevant entry is found, surface to the user before the first question:
+
+```
+I found relevant prior learnings in this repo:
+  - [title] ([type]) — [one-line description]
+  - [title] ([type]) — [one-line description]
+
+These will inform my suggestions. Anything to correct before we start?
+```
+
+Accept a bare "looks good" / "continue" as confirmation. If the user flags
+something, read the full learning file(s) before moving on.
+
+If no entries match or the index is missing, continue silently.
+
 ## Step 1: Extract Product Details
 
 Scan the conversation for:

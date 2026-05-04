@@ -13,258 +13,310 @@ description: >
 
 # Product Discovery
 
-Guide the user through structured product discovery using the Opportunity
-Solution Tree (OST) framework. The goal is to go from a fuzzy idea to a
-validated opportunity with a clear outcome — before anyone writes requirements
-or code.
+Help the user go from a fuzzy idea to a clear, evidence-backed plan — without
+feeling interrogated.
 
-Think of this as a coaching session. You and the user are collaborating to
-figure out the right thing to build. You're not filling out a form — you're
-having a conversation that progressively sharpens fuzzy thinking into a clear,
-evidence-backed plan.
+Under the hood this is the Opportunity Solution Tree (outcome → opportunities
+→ solutions → experiments). You think in that model. You do not speak in that
+model. Users hear plain English, one short question at a time, with multiple
+choice wherever possible.
 
-**Prompt style:** when a question's answer space is enumerable (outcome shape,
-persona, solution type, opportunity framing), use the multi-choice pattern
-from `${CLAUDE_PLUGIN_ROOT}/references/multi-choice.md` — numbered options +
-"Other", a recommended choice, multi-select allowed when additive. Reserve
-free text for names and genuinely open-ended brainstorming.
+Read `${CLAUDE_SKILL_DIR}/references/ost-guide.md` once for framework
+grounding — for your own reference only. Never quote it to the user.
 
-## Step 1: Capture the Starting Signal
+**Prompt style:** every user-facing question follows
+`${CLAUDE_PLUGIN_ROOT}/references/multi-choice.md` when the answer space is
+enumerable. Reserve free text for names and genuinely open brainstorming.
 
-Understand where the user is in their thinking. People arrive at discovery
-from different starting points:
+**Forbidden phrases in user-facing text:** "Opportunity Solution Tree", "OST",
+"well-formed outcome", "root of the tree", "second level", "third level",
+"riskiest assumption". Use plain alternatives: "goal", "user problems we
+could solve", "ideas", "the thing that has to be true for this to work".
 
-- **Vague idea** — "I think we should do something about notifications."
-  The user has a hunch but hasn't articulated the problem or outcome.
-  → Start at Step 2 (frame the outcome).
+## Step 1: Where are you starting from?
 
-- **Specific problem** — "Our churn is 8% and exit surveys say 'too hard to use'."
-  The user has identified a problem but may be jumping to a solution or hasn't
-  framed the desired outcome.
-  → Confirm the outcome framing, then go to Step 3.
+One quick multi-choice to pick the entry point.
 
-- **Clear outcome** — "Increase trial-to-paid from 12% to 20% by Q3."
-  The user knows the metric they want to move.
-  → Validate the outcome is well-formed, then go to Step 3.
+```
+Question: What do you have so far?
 
-Ask just enough to figure out which entry point applies. Don't interrogate yet —
-that comes later.
+Options:
+  1. A rough idea — I know roughly what I'd like to do but nothing is
+     sharp yet
+  2. A known problem — users are hitting something specific and I want
+     to fix it
+  3. A clear goal — I know the metric I want to move
+  4. Other — I'll type it
 
-## Step 2: Frame the Desired Outcome (OST Root)
+Recommended: 1
+```
 
-Read `${CLAUDE_SKILL_DIR}/references/ost-guide.md` for framework grounding.
+Route:
 
-The outcome is the root of the Opportunity Solution Tree. Everything else flows
-from it. A well-formed outcome is:
+- **Rough idea** → Step 2 (figure out the goal first).
+- **Known problem** → skip to Step 3, but confirm the goal in one line.
+- **Clear goal** → skip straight to Step 3.
 
-- **Measurable** — tied to a specific metric (conversion rate, support tickets,
-  time-to-value, retention)
-- **Time-bound** — has a target timeframe
-- **Within the team's influence** — the team can realistically affect it
-- **Tied to business value** — stakeholders care about it
+Don't interrogate yet. Pick the fastest path and move.
 
-Coach the user toward a well-formed outcome. Useful questions:
+## Step 2: What's the goal?
 
-- "What business metric would move if this worked?"
-- "Who would notice if we shipped this successfully?"
-- "If we did nothing for 6 months, what gets worse?"
+Ask one question, picked for the entry point. Default to the first one
+below. Only ask a follow-up if the answer is thin.
 
-If the user arrived with a clear outcome, confirm it meets the criteria and
-move on. Don't over-coach when they already know where they're going.
+```
+Question: If this works, what changes in the business?
 
-## Step 3: Discover Opportunities (OST Second Level)
+Options:
+  1. A specific metric moves (conversion, churn, retention, NPS, etc.)
+  2. A user behaviour shifts (more of X, less of Y)
+  3. A cost or risk drops (support load, compliance, incident rate)
+  4. Other — I'll describe it
 
-Opportunities are unmet user needs, pain points, or desires — not solutions.
-This is the most common mistake in product thinking: confusing what users need
-with what we plan to build. "Needs a better dashboard" is a solution. "Can't
-find the data they need to make decisions" is an opportunity.
+Recommended: 1
+```
 
-Guide the user to identify 3–5 opportunities that, if addressed, would move
-the needle on the outcome. For each opportunity, push for evidence:
+If the user picks 1, ask for the metric as free text. Keep it to one line.
 
-- What have users actually said or done that tells you this is real?
-- Is there data that supports this (support tickets, analytics, user research)?
-- How many users are affected, and how painful is it?
+If the answer is fuzzy, try one follow-up in plain words: _"Who would notice
+if this shipped — and what would they notice?"_ Don't stack three coaching
+questions at once.
 
-Present opportunities as a numbered list, noting evidence strength for each:
+## Step 3: What user problems could we solve?
 
-- **Strong** — direct user quotes, behavioral data, or quantitative evidence
-- **Moderate** — indirect signals, team observations, or limited data points
-- **Weak** — gut feeling, analogies, or assumptions without direct evidence
+Help the user list 2–4 user problems (not solutions) that could move the
+goal.
 
-Weak evidence is fine — that's what experiments are for. But be honest about
-the strength so the team knows what needs validation.
+Distinguish problem from solution by example, not by lecture:
 
-Cap at 5 opportunities to keep the session productive. If the user surfaces
-more, help them cluster related ones.
+- Problem → "Users can't find the data they need to make decisions."
+- Solution → "Build a better dashboard."
 
-## Step 4: Opportunity Interrogation via grill-me
+Ask:
 
-Now pressure-test the identified opportunities. Run the `grill-me` skill with
-these constraints:
+```
+Question: What do users hit that gets in the way of this goal?
+Free text. List the top ones — we'll sort them in a minute.
+```
 
-**Restrict all questions to opportunity validation** — the audience is a
-product owner or PM, not an engineer.
+If the user lists more than 5, cluster related ones together. Cap the list
+at 5.
 
-Ask about:
+For each problem, record a short evidence tag:
 
-- Evidence quality — are the opportunities based on real user data or assumptions?
-- Opportunity sizing — how many users, how often, how painful?
-- Outcome linkage — if we solve this opportunity, does the outcome actually move?
-- User segment specificity — who exactly has this problem? Everyone, or a niche?
-- Opportunity vs. solution confusion — is this really a need, or a disguised solution?
-- Interdependencies — does solving one opportunity depend on or unlock another?
+- **strong** — direct user quotes, support tickets, or analytics
+- **medium** — team observations or indirect signals
+- **hunch** — gut feel, no data yet
 
-Do NOT ask about:
+You can ask this inline with multi-choice as you go through each problem,
+one at a time:
 
-- Technical feasibility, architecture, or implementation
-- Specific features or solution designs (that comes in Step 6)
-- Code, APIs, databases, or system design
+```
+Question: For "<problem>", what's the evidence like?
 
-## Step 5: Prioritize and Select
+Options:
+  1. Strong — users have said it or data shows it
+  2. Medium — we've seen signals
+  3. Hunch — it feels right but nothing hard yet
+  4. Other
 
-Help the user pick **one opportunity** to pursue first. This is a Teresa Torres
-principle: focus beats breadth. You can always come back for the others.
+Recommended: 2
+```
 
-Evaluate each opportunity against:
+Hunches are fine — that's what experiments are for. The point is to record
+honestly.
 
-- **Size** — how many users are affected, how painful is the problem
-- **Evidence strength** — how confident are we this is real
-- **Outcome alignment** — how directly does this connect to the desired outcome
-- **Feasibility** — does the team have the ability to address this (without
-  getting into technical specifics)
+## Step 4: Quick pressure-test
 
-Make the selection explicit: "Based on what we've discussed, Opportunity #X
-looks like the strongest candidate because..." Record the rationale.
+Don't invoke `/grill-me`. That's a separate, heavier skill the user can run
+explicitly if they want a deep stress-test. Here, a light inline check is
+enough.
 
-Acknowledge what's being deferred — not discarded. The other opportunities
-remain on the tree for future cycles.
+For each problem on the list, ask at most two short questions, picked from:
 
-## Step 6: Solutions and Assumptions (OST Third/Fourth Levels)
+```
+Question: Roughly how many users run into "<problem>"?
 
-For the selected opportunity, brainstorm 2–4 possible solutions. The key
-discipline here is generating multiple options before converging — combat the
-"first idea is the only idea" trap.
+Options:
+  1. Most users
+  2. A specific segment (power users, new users, enterprise, etc.)
+  3. A handful — edge case
+  4. Not sure
 
-For each solution candidate:
+Recommended: 2
+```
 
-1. **Describe it concretely** — what would the user experience?
-2. **Identify the riskiest assumption** — the thing that must be true for this
-   solution to work. "Users will actually use self-serve export" is an
-   assumption. "Users prefer PDF over CSV" is an assumption.
-3. **Rate confidence** — how sure are we this assumption holds?
+```
+Question: If we fix "<problem>", does the goal move?
 
-For the leading solution (or the one the user is most excited about), suggest
-a **lightweight experiment** to test the riskiest assumption before committing
-to a full build:
+Options:
+  1. Yes, directly
+  2. Probably — indirect link
+  3. Unclear — we'd be guessing
+  4. Other
 
-- **Prototype test** — build a rough version and put it in front of 10–20 users
-- **Concierge test** — manually deliver the solution to a few users
-- **Wizard of Oz** — fake the automation, do it by hand behind the scenes
-- **Data analysis** — check if existing data already answers the question
-- **User interviews** — talk to 5–8 users specifically about this assumption
+Recommended: 1
+```
 
-The experiment should be something the team can run in days, not weeks.
+Skip this step entirely for problems with strong evidence and an obvious
+link to the goal. Save questions for the ones that actually need them.
 
-## Step 7: Build the Opportunity Solution Tree Diagram
+If a problem turns out to be a solution in disguise ("better dashboard"),
+reframe it with the user: _"That sounds like an idea — what's the user
+problem it would solve?"_ Then put the idea aside for Step 6.
 
-Generate a Mermaid `flowchart TD` visualizing the full OST from the session:
+## Step 5: Pick one to go after first
 
-- Outcome at the top
-- Opportunities branching down from the outcome
-- Solutions branching from the selected opportunity
-- Experiment at the leaf of the leading solution
+Present the problems as a numbered list with a recommended pick. One
+question, one answer.
 
-Use styling to communicate status:
+```
+Question: Which problem should we tackle first?
 
-- **Selected opportunity** — blue highlight (`fill:#e1f5fe,stroke:#0288d1`)
-- **Selected solution** — green highlight (`fill:#e8f5e9,stroke:#388e3c`)
-- **Experiment** — orange highlight (`fill:#fff3e0,stroke:#f57c00`)
-- **Deferred branches** — grey (`fill:#f5f5f5,stroke:#bdbdbd,color:#9e9e9e`)
-- **Needs validation** (for pause/resume) — dashed border
+Options:
+  1. <problem A> — strong evidence, directly moves the goal
+  2. <problem B> — medium evidence, big segment
+  3. <problem C> — hunch, but high ceiling if true
+  4. Other — I'll describe a different framing
 
-Include the diagram in the discovery brief.
+Recommended: <#> — <one line on why>
+```
 
-## Step 8: Write Discovery Brief and Hand Off
+Record the pick and the reason. Note the others are deferred, not dropped —
+they stay on the list for future cycles.
 
-Read `${CLAUDE_SKILL_DIR}/references/template-brief.md` for the artifact format.
+## Step 6: Ideas and the leap of faith
 
-Write the discovery brief to `docs/discovery/{name}/brief.md` at the repo root,
-creating directories as needed. Use a kebab-case name derived from the outcome
-or opportunity (e.g., `docs/discovery/trial-conversion/brief.md`).
+For the selected problem, brainstorm 2–4 ideas. Force multiple options
+before converging — first ideas are rarely the best.
 
-Set the frontmatter:
+For each idea, capture:
 
-- `status: complete` if all questions are resolved
-- `status: in-progress` if action items remain
+1. **What the user would see or do** — one sentence.
+2. **The leap of faith** — the one thing that has to be true for this to
+   work. ("Users will actually use self-serve export" is a leap of faith.
+   "Users prefer PDF over CSV" is a leap of faith.)
+3. **Confidence** — ✅ high / ⚠️ medium / ❓ low.
 
-Validate before presenting:
+For the leading idea, suggest a small, cheap experiment to test the leap of
+faith before committing to a full build. Pick one:
+
+- **Rough prototype** — ship a crude version to 10–20 users
+- **Do it manually** — deliver the outcome by hand to a few users first
+- **Fake the automation** — look automated to the user, hand-run behind the scenes
+- **Check the data** — see if existing analytics already answer the question
+- **Talk to users** — 5–8 conversations focused on the one assumption
+
+Present the experiment as one line: _"Quickest way to test that users
+actually want self-serve export: ship a rough version to 15 users this
+sprint."_
+
+## Step 7: Generate the diagram (silent)
+
+Generate the Opportunity Solution Tree diagram and include it in the brief.
+Do **not** narrate this step to the user. Do not ask about styling. It's an
+artifact; just write it.
+
+Mermaid `flowchart TD`:
+
+- Goal at the top
+- Problems branching from the goal
+- Ideas branching from the selected problem
+- Experiment at the leaf of the leading idea
+
+Styling:
+
+- Selected problem — blue (`fill:#e1f5fe,stroke:#0288d1`)
+- Selected idea — green (`fill:#e8f5e9,stroke:#388e3c`)
+- Experiment — orange (`fill:#fff3e0,stroke:#f57c00`)
+- Deferred branches — grey (`fill:#f5f5f5,stroke:#bdbdbd,color:#9e9e9e`)
+- Needs validation (pause/resume) — dashed border
+
+## Step 8: Write the brief and hand off
+
+Read `${CLAUDE_SKILL_DIR}/references/template-brief.md` for the artifact
+format.
+
+Write to `docs/discovery/{name}/brief.md`. Use a short kebab-case name
+(e.g. `trial-conversion`). Create directories as needed.
+
+Frontmatter:
+
+- `status: complete` — all questions resolved
+- `status: in-progress` — some action items are open
+
+Before presenting:
 
 - No `[TBD]`, `[placeholder]`, or `TODO` markers
-- Decision log captures all key decisions with rationale
-- OST diagram matches the decisions made
-- Recommendation is a clear next step
+- Decision log captures every key call with one-line rationale
+- Diagram matches the decisions
+- Recommendation is a single clear next step
 
 **If complete**, tell the user:
 
-1. The path of the discovery brief
-2. Recommend: "Run `/prd` to turn this into product requirements — it will
-   pick up context from this brief automatically"
-3. Remind: "After building, run `/discover update {name}` to update the tree
-   with what you learned"
+1. Path of the brief
+2. "Run `/prd` to turn this into requirements — it'll pick up context
+   from the brief automatically."
+3. "After building, run `/discover update {name}` to update this with what
+   you learned."
 
 **If in-progress**, tell the user:
 
-1. The path of the saved brief
+1. Path of the brief
 2. What action items are open and who needs to be consulted
-3. Recommend: "When you have the answers, run `/discover continue {name}`
-   to pick up where we left off"
+3. "When you have the answers, run `/discover continue {name}` to resume."
 
 ## Pause / Resume
 
-Discovery often spans multiple sessions. The user may need to interview
+Discovery often spans multiple sessions. Users may need to interview
 customers, check analytics, or consult stakeholders between questions.
 
 **When the user can't answer a question:**
 
 Don't push. Instead:
 
-1. Log it as an **action item**: what needs to be learned, who to consult,
-   and which step it blocks
+1. Log it as an action item: what needs to be learned, who to consult,
+   which step it blocks
 2. Continue with other questions that aren't blocked
-3. When you've exhausted unblocked questions, write the brief in its current
-   state with `status: in-progress`
+3. When you've exhausted unblocked questions, write the brief in its
+   current state with `status: in-progress`
 
 **Resuming (`/discover continue {name}`):**
 
-1. Read the existing brief at `docs/discovery/{name}/brief.md`
-2. Summarize: what's been decided, what action items were open, where in the
-   process you left off
+1. Read the existing brief
+2. Summarize in 2–3 lines: what's decided, what's open, where we left off
 3. Ask which action items the user now has answers for
-4. Resume from the appropriate step — don't re-do settled decisions
+4. Pick up from the right step — don't re-do settled decisions
 
 **Updating after build/ship (`/discover update {name}`):**
 
 1. Read the existing brief
-2. Ask what was learned: Did the experiment validate the assumption? Did new
-   opportunities emerge? Did the outcome metric move?
-3. Update the OST diagram: mark validated/invalidated nodes, add new branches
-4. Update the Solution Candidates table with PRD links and outcomes
-5. If new opportunities emerged, the tree grows — pick the next branch
+2. Ask what was learned: did the experiment validate the leap of faith?
+   Did new user problems surface? Did the goal metric move?
+3. Update the diagram: mark validated/invalidated nodes, add new branches
+4. Update the ideas table with PRD links and outcomes
+5. If new problems emerged, the tree grows — pick the next branch
 
-## Ground Rules
+## Ground rules
 
-- **One question at a time.** Build on answers. Don't present a checklist.
-- **Non-technical language throughout.** No code, architecture, APIs, or
-  databases. Discovery is about users and outcomes.
-- **Generative, not just interrogative.** Help the user think — offer ideas,
-  suggest alternatives, play "what if." This is brainstorming, not a deposition.
-- **Respect impatience.** If the user says "I already know the problem, let's
-  go," offer a fast-track that still captures the outcome and key assumptions.
-  Note what was skipped so they can revisit if needed.
-- **Evidence is a spectrum.** Accept "I believe X based on Y" as valid. Note
-  assumption strength (strong/moderate/weak) rather than demanding hard data.
-  Weak evidence is what experiments are for.
-- **Stay in your lane.** Discovery produces strategic rationale, not requirements.
-  Don't write user stories, acceptance criteria, or scope definitions — that's
-  the PRD's job.
+- **One short question at a time.** Never stack multiple questions. Never
+  present a checklist. Build on the previous answer.
+- **Plain language. No framework terms in questions.** You think in the
+  Opportunity Solution Tree; you speak in "goal", "user problems", "ideas",
+  "leaps of faith". If the user asks what framework you're using, then you
+  can name it — not before.
+- **Multi-choice by default.** Only use free text for names and open
+  brainstorming.
+- **Non-technical throughout.** No code, architecture, APIs, or databases.
+  Discovery is about users and goals.
+- **Help the user think — don't just interview.** Offer ideas, suggest
+  alternatives, play "what if". This is a working session, not a deposition.
+- **Respect impatience.** If the user says "I already know this, let's go",
+  offer a fast-track that captures the goal + selected problem + leading
+  idea in three questions, and note the rest as skipped for later revisit.
+- **Evidence is a spectrum.** Accept "I believe X because Y" as valid. Use
+  strong/medium/hunch tags; don't demand hard data. Weak evidence is what
+  experiments are for.
+- **Stay in your lane.** Discovery produces strategic rationale, not
+  requirements. No user stories, no acceptance criteria, no scope
+  definitions — that's the PRD's job.

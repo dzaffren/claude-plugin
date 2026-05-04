@@ -19,16 +19,17 @@ description: >
 # Learn
 
 Capture a lesson about the target repo so future workflow runs improve. Each
-invocation does ONE of four things:
+invocation does ONE of five things:
 
 1. **capture** — record a new learning (default)
 2. **update** — an existing learning needs refinement
 3. **audit** — list all learnings with timestamps, no writes
 4. **remove** — delete a learning and strip any rule it added to CLAUDE.md
+5. **retro** — produce a "going right / going wrong" digest (read-only by default)
 
-Pick the mode from context. If the user types `/learn audit` or `/learn
-remove <slug>`, do that. Otherwise assume capture and run the dedupe check
-described below.
+Pick the mode from context. If the user types `/learn audit`, `/learn retro`,
+or `/learn remove <slug>`, do that. Otherwise assume capture and run the dedupe
+check described below.
 
 ## Why this skill exists
 
@@ -56,6 +57,7 @@ In the target repo (the repo being worked on, not this plugin):
         ├── convention-<slug>.md        # team conventions from review
         ├── blocker-<slug>.md           # failure modes + what was tried
         ├── pattern-<slug>.md           # project-specific patterns
+        ├── win-<slug>.md               # approaches that worked — repeat them
         └── skill-<slug>.md             # skill-quality corrections
 ```
 
@@ -89,12 +91,13 @@ pino, not winston") go in repo learnings.
 
 ## Learning types
 
-| Type          | File prefix   | When to use                                                                                                         |
-| ------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| convention    | `convention-` | Team decisions about how code should look. "We use CSS modules." "All API errors return a `code` field."            |
-| blocker       | `blocker-`    | A dead-end and what was tried, so future runs don't retread it. "Vitest workspace config requires `VITEST_POOL=1`." |
-| pattern       | `pattern-`    | Project-specific patterns worth reusing. "Auth tests use the `seedUserWithRole` fixture."                           |
-| skill-quality | `skill-`      | A skill produced wrong output and the user corrected it. "prd-refine keeps forgetting to include migrations."       |
+| Type          | File prefix   | When to use                                                                                                                                                             |
+| ------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| convention    | `convention-` | Team decisions about how code should look. "We use CSS modules." "All API errors return a `code` field."                                                                |
+| blocker       | `blocker-`    | A dead-end and what was tried, so future runs don't retread it. "Vitest workspace config requires `VITEST_POOL=1`."                                                     |
+| pattern       | `pattern-`    | Project-specific patterns worth reusing. "Auth tests use the `seedUserWithRole` fixture."                                                                               |
+| win           | `win-`        | An approach that worked well and should be repeated. The positive counterpart to `blocker`. "Using `msw` for network-layer mocks kept auth tests under 200 lines each." |
+| skill-quality | `skill-`      | A skill produced wrong output and the user corrected it. "prd-refine keeps forgetting to include migrations."                                                           |
 
 See [references/types.md](references/types.md) for worked examples of each.
 
@@ -149,7 +152,7 @@ structure:
 ---
 name: <slug>
 description: <one-line description, used for the index entry>
-type: <convention|blocker|pattern|skill-quality>
+type: <convention|blocker|pattern|win|skill-quality>
 captured: <YYYY-MM-DD>
 source: <how this was captured — /learn, /ship PR comment, /build session, etc.>
 ---
@@ -165,12 +168,18 @@ scope — "in React components", "in backend handlers", "only for new
 endpoints" — so the rule is actionable, not abstract.>
 ```
 
-For `blocker` and `skill-quality` types, add a third line:
+For `blocker`, `win`, and `skill-quality` types, add a third line:
 
 - **blocker**: `**What was tried:** <summary of dead-ends>` so the next run
   skips the known-bad paths.
+- **win**: `**What worked:** <the concrete approach that succeeded>` so the
+  next run can replay it.
 - **skill-quality**: `**Skill:** <skill-name>` so the fix can eventually be
   folded back into the skill itself.
+
+Capture triggers for `win`: user language like "that worked well", "we should
+always do this", "keep doing X", "good approach", or a post-build/ship signal
+from `learning-capturer` showing a first-pass success without blockers.
 
 ### Step 4 — Update the index
 
@@ -249,6 +258,57 @@ audit learnings):
 4. Do NOT write anything. This mode is read-only.
 
 If the index is missing or empty, say so and stop.
+
+## Retro mode
+
+When invoked as `/learn retro [--days N]` (default `--days 14`) or when the
+user asks for a "what's going right / going wrong" digest, an "activity
+digest", a "retro", or a "recent learnings summary":
+
+1. Read `docs/learnings/INDEX.md`. If missing or empty, say so and stop.
+2. For each entry, stat the file to get its `captured:` date.
+3. Filter to entries captured in the last `N` days.
+4. Group by sentiment:
+   - **Going right** — `win` entries + `pattern` entries that have a rule in
+     `CLAUDE.md` (high-confidence).
+   - **Going wrong** — `blocker` entries + `skill-quality` entries.
+   - **Still being decided** — `convention` entries and uncommitted `pattern`
+     entries (neutral).
+5. Cross-reference with recent ships to tie learnings to merged work:
+   ```bash
+   git log --since="<N> days ago" --pretty='%h %s' origin/main 2>/dev/null
+   ```
+   If remote is unavailable, fall back to local `main`.
+6. Emit a markdown digest to the conversation:
+
+   ```markdown
+   # Learn retro — last <N> days
+
+   ## Going right (<count>)
+
+   - **<title>** (<type>, captured <date>) — <description>. From <source>.
+
+   ## Going wrong (<count>)
+
+   - **<title>** (<type>, captured <date>) — <description>. From <source>.
+
+   ## Still being decided (<count>)
+
+   - **<title>** (<type>, captured <date>) — <description>. From <source>.
+
+   ## Ships in window
+
+   - <sha> <subject>
+   - <sha> <subject>
+   ```
+
+7. If the user asks to save the digest, write it to
+   `docs/learnings/retro-<YYYY-MM-DD>.md` with a one-line frontmatter
+   `{generated: <date>, window_days: <N>}`. Do NOT add it to `INDEX.md`; it is
+   a generated report, not a learning.
+
+This mode is read-only by default. Never update `CLAUDE.md`, never mutate
+existing learning files.
 
 ## Remove mode
 

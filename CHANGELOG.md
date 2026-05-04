@@ -4,6 +4,25 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `code-reviewer` agent (`plugins/forge/agents/code-reviewer.md`) — reviews a pending diff for dead code, obvious bugs, style drift, missing tests, and readability wins; returns JSON findings with `auto` patches or `manual` flags. Separate from the scope-only `reviewer` agent used inside `/build`.
+- `/forge:ship` **Step 0.5 — Code Review** gate — runs `code-reviewer` against the uncommitted diff, auto-applies safe patches, surfaces manual/`fail` findings via multi-choice, falls back cleanly when the agent is absent.
+- `/forge:ship` **Step 8 — Sync learnings into CHANGELOG** — runs after Step 7 (capture) and appends a `### Learnings` subsection to `[Unreleased]` for learnings captured this session, linking each entry to its `docs/learnings/` file. Follow-on commit is pushed to the existing PR.
+- `/forge:learn` **`win` learning type** — positive counterpart to `blocker`; captures approaches that worked with a `**What worked:**` replay note. Example in `references/types.md`.
+- `/forge:learn retro [--days N]` mode — read-only "going right / going wrong / still being decided" digest that cross-references learnings with recent ships.
+- Prior-learnings surfacing at entry of `/forge:prd`, `/forge:prd-refine`, and `/forge:build` — each reads `docs/learnings/INDEX.md` and surfaces relevant `convention`/`pattern`/`win`/`blocker` entries before asking the first question, closing the feedback loop from past runs.
+
+### Changed
+
+- `/forge:product-discovery` — user-facing questions rewritten for friendliness: plain language, multi-choice by default, one short question at a time, no framework jargon ("OST", "well-formed outcome", "riskiest assumption") in prompts. All 8 steps preserved. The embedded `/grill-me` delegation in Step 4 is replaced with a short inline pressure-test; `/grill-me` remains available as an opt-in.
+
+### Learnings
+
+- **skill-step-numbering-vs-data-deps** (blocker) — Workflow skills with numbered steps must have producer steps run before consumers. See `docs/learnings/blocker-skill-step-numbering-vs-data-deps.md`.
+- **git-checkout-destroys-uncommitted-work** (blocker) — Never use `git checkout -- <files>` to revert an auto-applied patch on a dirty working tree; use `git apply -R` instead. See `docs/learnings/blocker-git-checkout-destroys-uncommitted-work.md`.
+- **code-reviewer-gate-before-commit** (win) — The /ship Step 0.5 code-review gate caught two fail-severity bugs on day one. See `docs/learnings/win-code-reviewer-gate-before-commit.md`.
+
 ## [0.2.0-alpha] - 2026-05-01
 
 ### Added

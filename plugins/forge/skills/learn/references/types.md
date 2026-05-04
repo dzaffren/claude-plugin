@@ -102,6 +102,43 @@ a UUID so parallel test runs don't collide.
 Good pattern captures name the **specific fixture, helper, or module** to
 use — not a vague "do it the right way."
 
+## Win — "this approach worked, repeat it"
+
+The positive counterpart to a blocker. Something was tried, it worked well,
+and the team should lean on it the next time a similar situation comes up.
+
+```markdown
+---
+name: msw-for-auth-tests
+description: Using msw for network mocks kept auth tests under 200 lines
+type: win
+captured: 2026-05-01
+source: /build — auth feature feature-builder run
+---
+
+Auth tests that mock network calls with `msw` (Mock Service Worker) stay
+small, readable, and stable across refactors.
+
+**Why:** The previous approach wrapped `fetch` with hand-rolled jest mocks,
+which broke every time a caller added a header or changed an endpoint. `msw`
+intercepts at the network layer so the test code doesn't know or care about
+fetch wrappers.
+
+**How to apply:** For any test under `src/auth/**/__tests__/` that needs to
+mock an outbound API call, reach for `msw` handlers in `test/msw/handlers/`
+before writing a new jest mock. The handler file organization mirrors
+`src/api/`.
+
+**What worked:** Installing `msw@2` + creating a shared `test/msw/server.ts`
+that starts in `beforeAll` and resets between tests. One-time setup,
+per-test handlers as needed. Kept each auth test under 200 lines and
+survived the fetch-wrapper refactor in May without any test edits.
+```
+
+Good win captures are **specific** (named library/pattern, named path) and
+include **What worked** so the replay is straightforward — "we did X, and
+the concrete moves were A, B, C."
+
 ## Skill-quality — "a workflow skill got it wrong"
 
 When Claude ran a forge skill (`/prd`, `/build`, `/ship`, etc.) and

@@ -22,6 +22,38 @@ Resolve it in this order:
 
 ---
 
+## Phase 0 — Surface prior learnings
+
+Before any context loading, read `docs/learnings/INDEX.md` in the target
+repo. If the file does not exist, skip silently.
+
+Filter entries relevant to the spec being built:
+
+- `description` or `name` contains keywords from the spec name / area
+- Entry type ∈ {`convention`, `pattern`, `win`} — these shape implementation choices
+- Entry type = `blocker` — warns off dead ends encountered before
+- Entry type = `skill-quality` with `Skill: build` — apply these corrections
+  to this run
+
+If ≥1 relevant entry is found, surface to the user before proceeding:
+
+```
+I found relevant prior learnings in this repo:
+  - [title] ([type]) — [one-line description]
+  - [title] ([type]) — [one-line description]
+
+These will inform implementation decisions. Anything to correct before we start?
+```
+
+Accept a bare confirmation. If the user flags something, read the full
+learning file(s). Feature-builder subagents already read `CLAUDE.md` + any
+referenced learnings per their own process — surfacing here avoids repeating
+the questions at sub-task level.
+
+If no entries match or the index is missing, continue silently.
+
+---
+
 ## Phase 1 — Context Loading
 
 1. Read `CLAUDE.md` at the repo root. If it has a `## Learnings` section, those rules apply to everything you do this run — follow them the way you'd follow CLAUDE.md's other conventions. If a rule points at a specific file in `docs/learnings/`, read that file when the work you're about to do touches the area the rule covers (e.g. a `convention-` file on CSS modules matters if this spec touches React components).
