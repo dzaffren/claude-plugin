@@ -4,6 +4,13 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Learnings
+
+- **spec-driven-build-clean-merge** (win) — Rigorous `/prd` → `/prd-refine` → `/build` pipeline produced 4 clean-merging sub-tasks with all acceptance criteria passing on first try. See `docs/learnings/win-spec-driven-build-clean-merge.md`.
+- **feature-builder-cannot-commit** (blocker) — Worktree-isolated `feature-builder` agents are denied `git add` / `git commit` by default; parent session must commit on their behalf. See `docs/learnings/blocker-feature-builder-cannot-commit.md`.
+- **skills-load-at-session-start** (blocker) — Claude Code caches skill contents at session start; mid-session edits to a skill do not hot-reload. See `docs/learnings/blocker-skills-load-at-session-start.md`.
+- **ship-metadata-version-can-regress** (skill-quality) — In a multi-plugin marketplace, `metadata.version` can silently regress when the highest-versioned plugin is not in the ship's diff. Deferred in PR #6; fix before a second plugin ships. See `docs/learnings/skill-ship-metadata-version-can-regress.md`.
+
 ## [0.4.0] - 2026-05-04
 
 ### Added
