@@ -12,6 +12,7 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 - **ship-metadata-version-can-regress** (skill-quality) — In a multi-plugin marketplace, `metadata.version` can silently regress when the highest-versioned plugin is not in the ship's diff. Deferred in PR #6; fix before a second plugin ships. See `docs/learnings/skill-ship-metadata-version-can-regress.md`.
 
 ### Changed
+- mark metadata.version regression and README single-source-of-truth as resolved in learnings
 - restructure README to evergreen single-source-of-truth form
 
 ### Added

@@ -1,10 +1,22 @@
 ---
 name: ship-metadata-version-can-regress
-description: In a multi-plugin marketplace, /forge:ship Step 3e can regress `metadata.version` when the highest-versioned plugin is not in the diff's scope
+description: In a multi-plugin marketplace, /forge:ship Step 3e could regress `metadata.version` when the highest-versioned plugin was not in the diff's scope — fixed
 type: skill-quality
 captured: 2026-05-04
-source: /ship — PR #6 code-reviewer finding (deferred)
+resolved: 2026-05-04
+source: /ship — PR #6 code-reviewer finding (deferred); fix bundled into README single-source-of-truth ship
 skill: ship
+---
+
+**Status:** Fixed. `bump-semver.sh` now computes `metadata.version` as the
+max across ALL `plugins[].version` entries (in-scope and out-of-scope)
+using `sort -V`. Regression guard: Scenario 6 in
+`plugins/forge/skills/ship/scripts/__verify__/bump-semver-scenarios.sh`
+seeds `alpha=2.5.0`, `forge=1.0.0`, feat-commits only to `forge`, and
+asserts `metadata.version` stays at `2.5.0` after apply.
+
+The historical context below is preserved for traceability.
+
 ---
 
 The new Claude-plugin branch of `bump-semver.sh` (shipped in PR #6)
