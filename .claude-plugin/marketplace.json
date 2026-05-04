@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Mjolnir marketplace — forge and future Claude Code tooling by Dzafran",
-    "version": "0.2.0-alpha"
+    "version": "0.3.0-alpha"
   },
   "plugins": [
     {
       "name": "forge",
       "source": "./plugins/forge",
       "description": "GitHub-first, spec-driven, design-conscious, security-aware Claude Code workflow with multi-choice prompts and atomic commits.",
-      "version": "0.2.0-alpha",
+      "version": "0.3.0-alpha",
       "author": {
         "name": "Dzafran"
       }
