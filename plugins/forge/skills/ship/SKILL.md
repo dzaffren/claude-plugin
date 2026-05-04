@@ -249,7 +249,12 @@ printf '%s' "chore(release): bump to <new>" \
 git commit -m "chore(release): bump to <new>"
 ```
 
-Example subject: `chore(release): bump to 0.4.0-alpha`.
+Example subject: `chore(release): bump to 0.4.0`.
+
+Note: pre-release suffixes (e.g. `-alpha`) are stripped by the numeric bump —
+a repo at `0.3.0-alpha` with a `feat` commit bumps to `0.4.0`, not
+`0.4.0-alpha`. Pre-release orchestration is deliberately out of scope; bump
+to a fresh version and re-tag as pre-release manually if needed.
 
 Bump rules (highest wins): `BREAKING CHANGE` / `!` → major; `feat` → minor;
 `fix` / `refactor` / `perf` → patch; `docs` / `test` / `chore` / `ci` / `style`
