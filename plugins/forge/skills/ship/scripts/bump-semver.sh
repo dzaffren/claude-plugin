@@ -196,6 +196,22 @@ if [ "$APPLY" -eq 1 ] && [ "$LEVEL" != "none" ] && [ "$MANIFEST" != "none" ]; th
     *.gemspec)
       sed -i.bak -E "s/(version\s*=\s*[\"'])[^\"']+([\"'])/\1${NEW}\2/" "$MANIFEST" && rm -f "${MANIFEST}.bak"
       ;;
+    claude-plugin:*)
+      if [ ! -f ".claude-plugin/marketplace.json" ]; then
+        echo "error: .claude-plugin/marketplace.json missing at apply time" >&2
+        exit 1
+      fi
+      for slug in "${IN_SCOPE_PLUGINS[@]}"; do
+        manifest="plugins/${slug}/.claude-plugin/plugin.json"
+        tmp=$(mktemp)
+        jq --arg v "$NEW" '.version = $v' "$manifest" > "$tmp" && mv "$tmp" "$manifest"
+      done
+      SLUGS_JSON=$(printf '%s\n' "${IN_SCOPE_PLUGINS[@]}" | jq -R . | jq -s .)
+      tmp=$(mktemp)
+      jq --arg v "$NEW" --argjson slugs "$SLUGS_JSON" \
+        '.metadata.version = $v | .plugins |= map(if (.name as $n | $slugs | index($n)) then .version = $v else . end)' \
+        .claude-plugin/marketplace.json > "$tmp" && mv "$tmp" .claude-plugin/marketplace.json
+      ;;
   esac
 fi
 
