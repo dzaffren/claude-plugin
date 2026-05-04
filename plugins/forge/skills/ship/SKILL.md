@@ -46,6 +46,38 @@ If `security-review` is unavailable (skill not installed), log a one-line notice
 
 ---
 
+## Step 0.5 — Code Review (gate)
+
+Invoke the `code-reviewer` agent against the uncommitted diff (working tree + index). The agent returns a JSON array of findings with `severity` (`info|warn|fail`), `category`, `description`, and `fix` (`{type: auto, patch}` or `{type: manual}`).
+
+Interpret the result:
+
+- **No findings** (`[]`) — silent, continue to Step 1.
+- **Only `auto`-fixable findings** — save each finding's patch to a temp file, apply with `git apply <patch>`, re-run the `verifier` skill on the changed files. If verify passes, continue to Step 1 with a one-line summary for the commit notes in Step 3: `Auto-fixed <N> review finding(s): <one-line categories>`. If verify fails after patching, reverse **only the applied patches** with `git apply -R <patch>` for each (in reverse order) — do **NOT** use `git checkout -- <files>`, which would discard the user's pre-existing uncommitted work along with the patch. Stop with the error.
+- **`manual` findings present (no `fail`)** — surface to the user multi-choice:
+  ```
+  code-reviewer returned <A> auto-fix(es) and <M> manual finding(s). Choose:
+    1. Show me each finding (walk through one at a time)
+    2. Apply auto-fixes and include manual findings in the PR body
+    3. Abort /ship, return to coding
+  Recommended: 2
+  ```
+  On `1`, walk through findings one at a time, asking per-finding whether to apply / skip / edit. On `2`, apply auto patches, stash manual findings for Step 5 (PR body). On `3`, stop.
+- **Any `fail` severity** — surface findings and ask multi-choice:
+  ```
+  code-reviewer returned <F> fail-level finding(s). Choose:
+    1. Show me each fail (walk through one at a time)
+    2. Abort /ship, return to coding
+  Recommended: 1
+  ```
+  Do not auto-continue on `fail`. On `2`, stop.
+
+If auto patches are applied, they are folded into the commit plan in Step 3a: either merged into the originating group (if the fix lives inside one group's files) or added as a separate `refactor: address code-review findings` commit at the end of the plan.
+
+If the `code-reviewer` agent is unavailable, log a one-line notice and continue — matches the `security-review` fallback.
+
+---
+
 ## Step 1 — State Detection
 
 Run these commands to determine the current position:
@@ -279,6 +311,11 @@ explicitly asks to capture learnings (`/ship --learn` or a message like
 corrections as signals. The agent proposes candidates; surface them to the
 user for approval; approved candidates are handed to the `learn` skill.
 
+For each approved candidate, the `learn` skill responds with
+`CAPTURED: <type>-<slug>` (or `UPDATED: <type>-<slug>` for dedupe merges).
+Record each `<type>-<slug>` into an in-memory list for this ship session —
+Step 8 consumes this list to update the changelog.
+
 If no trigger, skip. This step is opt-in when ship is run manually — capture
 shouldn't fire on every casual push.
 
@@ -295,7 +332,55 @@ comments"), and the PR created in Step 5 has review comments:
    candidate.
 3. For each matched comment, build a candidate and pass the set to
    `learning-capturer` for the normal approve / hand-off-to-`learn` flow.
+4. Record the `<type>-<slug>` values from each `CAPTURED:` / `UPDATED:`
+   response into the same session list used in 7a — Step 8 consumes it.
 
 Do not capture silently and do not auto-filter to zero — if nothing matches
 the markers, report that so the user knows to check the PR manually if they
 expected lessons.
+
+---
+
+## Step 8 — Sync learnings into CHANGELOG
+
+Runs only if Step 7 captured ≥1 learning this session. If Step 7 was skipped
+or captured nothing, skip this step entirely. Also skip if `CHANGELOG.md` is
+not tracked in the repo.
+
+Use the session list of `<type>-<slug>` values that Step 7a/7b recorded from
+the `learn` skill's `CAPTURED:` / `UPDATED:` responses. That list is the
+source of truth; do not re-scan `docs/learnings/` to guess which entries are
+"new".
+
+For each captured slug, read its file (`docs/learnings/<type>-<slug>.md`) for
+the `name`, `type`, and `description` frontmatter fields. Append a
+`### Learnings` subsection to the `[Unreleased]` block of `CHANGELOG.md`,
+one bullet per learning:
+
+```markdown
+### Learnings
+
+- **[name]** ([type]) — [description]. See `docs/learnings/[type]-[slug].md`.
+```
+
+Insert under the existing `## [Unreleased]` heading, after any existing
+subsections (`### Added`, `### Changed`, etc.) but before the next version
+heading. Append directly — `update-changelog.sh` does not currently have a
+learnings mode, so do not invoke it for this step.
+
+Commit and push the changelog update:
+
+```bash
+git add CHANGELOG.md
+git commit -m "docs: sync learnings to changelog"
+git push
+```
+
+The changelog-guard hook accepts a standalone CHANGELOG commit. Because this
+commit lands after Step 5 opened the PR, the push updates the existing PR.
+
+After the push completes, emit a one-line follow-up to the user:
+
+```
+Updated CHANGELOG.md with <N> captured learning(s). PR has been updated.
+```
