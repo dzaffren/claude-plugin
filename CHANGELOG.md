@@ -4,6 +4,11 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Learnings
+
+- **ship-bump-semver-misses-plugin-manifests** (skill-quality) — `/forge:ship` Step 3e does not recognize `plugin.json` / `marketplace.json`, so feature ships leave versions stale. See `docs/learnings/skill-ship-bump-semver-misses-plugin-manifests.md`.
+- **ship-no-changelog-release-rotation** (skill-quality) — `/forge:ship` has no step that rotates `[Unreleased]` into a dated version heading; releases need a manual `update-changelog.sh --release` follow-up. See `docs/learnings/skill-ship-no-changelog-release-rotation.md`.
+
 ## [0.3.0-alpha] - 2026-05-04
 
 ### Added
