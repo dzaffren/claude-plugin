@@ -4,6 +4,8 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+## [0.3.0-alpha] - 2026-05-04
+
 ### Added
 
 - `code-reviewer` agent (`plugins/forge/agents/code-reviewer.md`) — reviews a pending diff for dead code, obvious bugs, style drift, missing tests, and readability wins; returns JSON findings with `auto` patches or `manual` flags. Separate from the scope-only `reviewer` agent used inside `/build`.
