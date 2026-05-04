@@ -194,7 +194,7 @@ EOF
 Add a `Refs: TICKET-123` footer when a ticket ID is known. **Never** add a
 `Co-Authored-By:` trailer — the validator blocks it.
 
-### 3e — Auto semver bump
+### 3e — Auto semver bump + changelog release
 
 After the last commit, derive the bump and apply it:
 
@@ -203,13 +203,58 @@ bash ${CLAUDE_SKILL_DIR}/scripts/bump-semver.sh origin/<base>..HEAD --apply
 ```
 
 (Use `main` or the detected base branch in place of `<base>`.) The script
-prints `<level> <old> <new> <manifest>`. If `<level>` is `none` or `<manifest>`
-is `none`, skip. Otherwise stage the bumped manifest and create a single
-release commit:
+prints `<level> <old> <new> <manifest-summary>` on stdout. Parse those four
+fields.
+
+**Skip rule.** If `<level>` is `none` or `<manifest-summary>` is `none`, skip
+Step 3e entirely and proceed to Step 4 — this covers docs-only ships and
+repos with no detectable manifest.
+
+**Manifest-summary shapes.** Otherwise `<manifest-summary>` takes one of two
+shapes that determine what to stage:
+
+- **Single file path** (e.g. `package.json`, `Cargo.toml`, `pyproject.toml`) —
+  the script wrote exactly that one manifest. Stage it directly.
+- **`claude-plugin:N`** where `N` is the count of in-scope plugins — the
+  script already wrote every in-scope `plugins/<slug>/.claude-plugin/plugin.json`
+  file **and** `.claude-plugin/marketplace.json`. Do **not** treat
+  `claude-plugin:N` as a literal file path. Stage all written files via the
+  glob plus the marketplace manifest.
+
+Then rotate the changelog into a dated release heading:
 
 ```bash
+bash ${CLAUDE_SKILL_DIR}/scripts/update-changelog.sh --release <new>
+```
+
+This turns `[Unreleased]` into `[<new>] - <date>` and opens a fresh empty
+`[Unreleased]`. Tolerate these non-fatal stderr notices and continue with
+just the manifest bump:
+
+- `no CHANGELOG.md in cwd; skipping`
+- `no [Unreleased] section found; nothing to release`
+
+Stage the manifest(s) and changelog together, then create a single release
+commit. Validate the subject through `conventional-commit.sh` — it must be
+exactly `chore(release): bump to <new>` with no `Co-Authored-By:` trailer:
+
+```bash
+# Standard single-file manifest:
+git add <manifest-summary> CHANGELOG.md
+# Or, for claude-plugin:N:
+git add plugins/*/.claude-plugin/plugin.json .claude-plugin/marketplace.json CHANGELOG.md
+
+printf '%s' "chore(release): bump to <new>" \
+  | bash ${CLAUDE_SKILL_DIR}/scripts/conventional-commit.sh -
 git commit -m "chore(release): bump to <new>"
 ```
+
+Example subject: `chore(release): bump to 0.4.0`.
+
+Note: pre-release suffixes (e.g. `-alpha`) are stripped by the numeric bump —
+a repo at `0.3.0-alpha` with a `feat` commit bumps to `0.4.0`, not
+`0.4.0-alpha`. Pre-release orchestration is deliberately out of scope; bump
+to a fresh version and re-tag as pre-release manually if needed.
 
 Bump rules (highest wins): `BREAKING CHANGE` / `!` → major; `feat` → minor;
 `fix` / `refactor` / `perf` → patch; `docs` / `test` / `chore` / `ci` / `style`
