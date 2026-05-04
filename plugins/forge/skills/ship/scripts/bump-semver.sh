@@ -123,6 +123,32 @@ if [ "$MANIFEST" = "none" ]; then
   fi
 fi
 
+# Claude-plugin marketplace layout: no top-level manifest, but one or more
+# plugins/<slug>/.claude-plugin/plugin.json files carry the version. Only
+# plugins touched by the current range are in scope; a bump to the marketplace
+# file alone does not pull any plugin in.
+IN_SCOPE_PLUGINS=()
+if [ "$MANIFEST" = "none" ] && [ -f ".claude-plugin/marketplace.json" ]; then
+  CHANGED_FILES=$(git diff --name-only "$RANGE" 2>/dev/null || true)
+  SLUGS=$(echo "$CHANGED_FILES" | grep -oE '^plugins/[^/]+/' | sed -E 's|^plugins/([^/]+)/|\1|' | sort -u)
+  VERSIONS=""
+  for slug in $SLUGS; do
+    manifest="plugins/${slug}/.claude-plugin/plugin.json"
+    if [ -f "$manifest" ] && [ -r "$manifest" ]; then
+      V=$(jq -r '.version // empty' "$manifest" 2>/dev/null || true)
+      if [ -n "$V" ]; then
+        IN_SCOPE_PLUGINS+=("$slug")
+        VERSIONS="${VERSIONS}${V}
+"
+      fi
+    fi
+  done
+  if [ "${#IN_SCOPE_PLUGINS[@]}" -gt 0 ]; then
+    OLD=$(printf '%s' "$VERSIONS" | sort -V | tail -n1)
+    MANIFEST="claude-plugin:${#IN_SCOPE_PLUGINS[@]}"
+  fi
+fi
+
 # Compute new version
 compute_new() {
   local level=$1 old=$2
