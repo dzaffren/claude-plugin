@@ -83,6 +83,15 @@ init_repo "$S1"
 }
 EOF
   printf '{"name":"forge","version":"0.3.0-alpha"}\n' > plugins/forge/.claude-plugin/plugin.json
+  # Seed a README with a machine-readable version line so we can assert it
+  # gets rewritten on --apply.
+  cat > README.md <<'EOF'
+# demo
+
+**Current version:** 0.3.0-alpha
+
+Evergreen prose.
+EOF
   git add .
   git commit -q -m "feat(forge): initial plugin layout"
 )
@@ -106,7 +115,13 @@ else
     fail "scenario 1 single-plugin happy path" \
       "marketplace plugins[0].version expected '0.4.0', got '$S1_PLUGINS0_V'"
   else
-    pass "scenario 1 single-plugin happy path"
+    S1_README_LINE=$(grep -E '^\*\*Current version:\*\*' "$S1/README.md" | head -n1)
+    if [ "$S1_README_LINE" != "**Current version:** 0.4.0" ]; then
+      fail "scenario 1 single-plugin happy path" \
+        "README.md Current version line expected '**Current version:** 0.4.0', got '$S1_README_LINE'"
+    else
+      pass "scenario 1 single-plugin happy path"
+    fi
   fi
 fi
 
@@ -148,14 +163,18 @@ else
 fi
 
 ############################################################
-# Scenario 3 — Multi-plugin repo, only one plugin changed.
+# Scenario 3 — Multi-plugin repo where both plugins share a version,
+# only one plugin changed.
 #
-# forge at 1.0.0, alpha at 2.5.0. Diff only touches plugins/forge/.
-# After apply:
+# forge at 1.0.0, alpha at 1.0.0, metadata.version at 1.0.0.
+# Diff only touches plugins/forge/. After apply:
 #   - forge bumped to 1.1.0
-#   - alpha byte-identical (unchanged)
-#   - marketplace forge entry bumped, alpha entry unchanged
-#   - marketplace metadata.version bumped to 1.1.0 (highest released)
+#   - alpha byte-identical (unchanged, at 1.0.0)
+#   - marketplace forge entry bumped to 1.1.0, alpha entry unchanged
+#   - marketplace metadata.version bumped to 1.1.0 (new highest across all)
+#
+# Scenario 6 covers the complementary case where alpha is at a higher
+# version than forge and metadata.version must NOT regress.
 ############################################################
 S3=$WORKDIR/s3
 init_repo "$S3"
@@ -168,12 +187,12 @@ init_repo "$S3"
   "metadata": { "version": "1.0.0" },
   "plugins": [
     { "name": "forge", "version": "1.0.0" },
-    { "name": "alpha", "version": "2.5.0" }
+    { "name": "alpha", "version": "1.0.0" }
   ]
 }
 EOF
   printf '{"name":"forge","version":"1.0.0"}\n' > plugins/forge/.claude-plugin/plugin.json
-  printf '{"name":"alpha","version":"2.5.0"}\n' > plugins/alpha/.claude-plugin/plugin.json
+  printf '{"name":"alpha","version":"1.0.0"}\n' > plugins/alpha/.claude-plugin/plugin.json
   git add .
   git commit -q -m "chore: seed two plugins"
   echo "forge edit" > plugins/forge/src.txt
@@ -201,9 +220,9 @@ elif [ "$S3_ALPHA_BEFORE" != "$S3_ALPHA_AFTER" ]; then
 elif [ "$S3_MARKET_FORGE_V" != "1.1.0" ]; then
   fail "scenario 3 multi-plugin one changed" \
     "marketplace forge entry expected '1.1.0', got '$S3_MARKET_FORGE_V'"
-elif [ "$S3_MARKET_ALPHA_V" != "2.5.0" ]; then
+elif [ "$S3_MARKET_ALPHA_V" != "1.0.0" ]; then
   fail "scenario 3 multi-plugin one changed" \
-    "marketplace alpha entry expected unchanged '2.5.0', got '$S3_MARKET_ALPHA_V'"
+    "marketplace alpha entry expected unchanged '1.0.0', got '$S3_MARKET_ALPHA_V'"
 elif [ "$S3_MARKET_META_V" != "1.1.0" ]; then
   fail "scenario 3 multi-plugin one changed" \
     "marketplace metadata.version expected '1.1.0', got '$S3_MARKET_META_V'"
@@ -225,7 +244,14 @@ init_repo "$S4"
 (
   cd "$S4"
   printf '{"name":"demo","version":"1.4.2"}\n' > package.json
-  git add package.json
+  # Seed README with version line to confirm the rewrite also fires on the
+  # standard-manifest --apply path (not just the claude-plugin:* branch).
+  cat > README.md <<'EOF'
+# demo
+
+**Current version:** 1.4.2
+EOF
+  git add package.json README.md
   git commit -q -m "feat: ship demo"
 )
 S4_STDOUT=$(cd "$S4" && bash "$BUMP" HEAD~1..HEAD --apply 2>/dev/null || true)
@@ -239,7 +265,13 @@ elif [ "$S4_PKG_V" != "1.5.0" ]; then
   fail "scenario 4 package.json backwards-compat" \
     "package.json .version expected '1.5.0', got '$S4_PKG_V'"
 else
-  pass "scenario 4 package.json backwards-compat"
+  S4_README_LINE=$(grep -E '^\*\*Current version:\*\*' "$S4/README.md" | head -n1)
+  if [ "$S4_README_LINE" != "**Current version:** 1.5.0" ]; then
+    fail "scenario 4 package.json backwards-compat" \
+      "README.md Current version line expected '**Current version:** 1.5.0', got '$S4_README_LINE'"
+  else
+    pass "scenario 4 package.json backwards-compat"
+  fi
 fi
 
 ############################################################
@@ -287,7 +319,136 @@ else
   fi
 fi
 
-PASS_COUNT=$((5 - FAIL_COUNT))
+############################################################
+# Scenario 6 — Multi-plugin: metadata.version must NOT regress.
+#
+# Marketplace tracks metadata.version=2.5.0 because alpha is at 2.5.0,
+# higher than forge at 1.0.0. A feat commit is scoped only to forge.
+# After apply:
+#   - forge bumped to 1.1.0
+#   - alpha byte-identical at 2.5.0
+#   - marketplace plugins[forge] = 1.1.0, plugins[alpha] = 2.5.0 (unchanged)
+#   - marketplace metadata.version STAYS at 2.5.0 (NOT regressed to 1.1.0)
+#
+# Regression guard for the deferred PR #6 code-reviewer finding.
+############################################################
+S6=$WORKDIR/s6
+init_repo "$S6"
+(
+  cd "$S6"
+  mkdir -p .claude-plugin plugins/forge/.claude-plugin plugins/alpha/.claude-plugin
+  cat > .claude-plugin/marketplace.json <<'EOF'
+{
+  "name": "mp",
+  "metadata": { "version": "2.5.0" },
+  "plugins": [
+    { "name": "forge", "version": "1.0.0" },
+    { "name": "alpha", "version": "2.5.0" }
+  ]
+}
+EOF
+  printf '{"name":"forge","version":"1.0.0"}\n' > plugins/forge/.claude-plugin/plugin.json
+  printf '{"name":"alpha","version":"2.5.0"}\n' > plugins/alpha/.claude-plugin/plugin.json
+  git add .
+  git commit -q -m "chore: seed two plugins at differing versions"
+  echo "forge edit" > plugins/forge/src.txt
+  git add plugins/forge/src.txt
+  git commit -q -m "feat(forge): tweak"
+)
+S6_ALPHA_BEFORE=$(cd "$S6" && sha1sum plugins/alpha/.claude-plugin/plugin.json | awk '{print $1}')
+S6_STDOUT=$(cd "$S6" && bash "$BUMP" HEAD~1..HEAD --apply 2>/dev/null || true)
+S6_ALPHA_AFTER=$(cd "$S6" && sha1sum plugins/alpha/.claude-plugin/plugin.json | awk '{print $1}')
+S6_EXPECTED_STDOUT="minor 1.0.0 1.1.0 claude-plugin:1"
+S6_FORGE_V=$(cd "$S6" && jq -er '.version' plugins/forge/.claude-plugin/plugin.json 2>/dev/null || echo READFAIL)
+S6_MARKET_FORGE_V=$(cd "$S6" && jq -er '.plugins[] | select(.name=="forge") | .version' .claude-plugin/marketplace.json 2>/dev/null || echo READFAIL)
+S6_MARKET_ALPHA_V=$(cd "$S6" && jq -er '.plugins[] | select(.name=="alpha") | .version' .claude-plugin/marketplace.json 2>/dev/null || echo READFAIL)
+S6_MARKET_META_V=$(cd "$S6" && jq -er '.metadata.version' .claude-plugin/marketplace.json 2>/dev/null || echo READFAIL)
+
+if [ "$S6_STDOUT" != "$S6_EXPECTED_STDOUT" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "stdout mismatch: expected '$S6_EXPECTED_STDOUT', got '$S6_STDOUT'"
+elif [ "$S6_FORGE_V" != "1.1.0" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "forge plugin.json .version expected '1.1.0', got '$S6_FORGE_V'"
+elif [ "$S6_ALPHA_BEFORE" != "$S6_ALPHA_AFTER" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "alpha plugin.json was modified (expected byte-identical)"
+elif [ "$S6_MARKET_FORGE_V" != "1.1.0" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "marketplace forge entry expected '1.1.0', got '$S6_MARKET_FORGE_V'"
+elif [ "$S6_MARKET_ALPHA_V" != "2.5.0" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "marketplace alpha entry expected unchanged '2.5.0', got '$S6_MARKET_ALPHA_V'"
+elif [ "$S6_MARKET_META_V" != "2.5.0" ]; then
+  fail "scenario 6 metadata.version regression guard" \
+    "marketplace metadata.version REGRESSED: expected '2.5.0' (still — highest of out-of-scope alpha), got '$S6_MARKET_META_V'"
+else
+  pass "scenario 6 metadata.version regression guard"
+fi
+
+############################################################
+# Scenario 7 — Multi-plugin: SemVer pre-release ordering.
+#
+# alpha (out of scope) sits at 2.0.0-beta — pre-release. forge at 1.0.0
+# gets a feat bump. `sort -V` alone would rank "2.0.0-beta" higher than
+# any clean release, which contradicts SemVer 2.0.0 (pre-release < release).
+#
+# Expected behavior: metadata.version = highest CLEAN release across
+# plugins[], which is 1.1.0 (the newly bumped forge). The pre-release
+# alpha is treated as "in flight" and does NOT drive metadata.version.
+# alpha's own plugin.json stays byte-identical.
+############################################################
+S7=$WORKDIR/s7
+init_repo "$S7"
+(
+  cd "$S7"
+  mkdir -p .claude-plugin plugins/forge/.claude-plugin plugins/alpha/.claude-plugin
+  cat > .claude-plugin/marketplace.json <<'EOF'
+{
+  "name": "mp",
+  "metadata": { "version": "1.0.0" },
+  "plugins": [
+    { "name": "forge", "version": "1.0.0" },
+    { "name": "alpha", "version": "2.0.0-beta" }
+  ]
+}
+EOF
+  printf '{"name":"forge","version":"1.0.0"}\n' > plugins/forge/.claude-plugin/plugin.json
+  printf '{"name":"alpha","version":"2.0.0-beta"}\n' > plugins/alpha/.claude-plugin/plugin.json
+  git add .
+  git commit -q -m "chore: seed two plugins, alpha on a pre-release"
+  echo "forge edit" > plugins/forge/src.txt
+  git add plugins/forge/src.txt
+  git commit -q -m "feat(forge): tweak"
+)
+S7_ALPHA_BEFORE=$(cd "$S7" && sha1sum plugins/alpha/.claude-plugin/plugin.json | awk '{print $1}')
+S7_STDOUT=$(cd "$S7" && bash "$BUMP" HEAD~1..HEAD --apply 2>/dev/null || true)
+S7_ALPHA_AFTER=$(cd "$S7" && sha1sum plugins/alpha/.claude-plugin/plugin.json | awk '{print $1}')
+S7_EXPECTED_STDOUT="minor 1.0.0 1.1.0 claude-plugin:1"
+S7_FORGE_V=$(cd "$S7" && jq -er '.version' plugins/forge/.claude-plugin/plugin.json 2>/dev/null || echo READFAIL)
+S7_MARKET_ALPHA_V=$(cd "$S7" && jq -er '.plugins[] | select(.name=="alpha") | .version' .claude-plugin/marketplace.json 2>/dev/null || echo READFAIL)
+S7_MARKET_META_V=$(cd "$S7" && jq -er '.metadata.version' .claude-plugin/marketplace.json 2>/dev/null || echo READFAIL)
+
+if [ "$S7_STDOUT" != "$S7_EXPECTED_STDOUT" ]; then
+  fail "scenario 7 pre-release sibling" \
+    "stdout mismatch: expected '$S7_EXPECTED_STDOUT', got '$S7_STDOUT'"
+elif [ "$S7_FORGE_V" != "1.1.0" ]; then
+  fail "scenario 7 pre-release sibling" \
+    "forge plugin.json .version expected '1.1.0', got '$S7_FORGE_V'"
+elif [ "$S7_ALPHA_BEFORE" != "$S7_ALPHA_AFTER" ]; then
+  fail "scenario 7 pre-release sibling" \
+    "alpha plugin.json was modified (expected byte-identical)"
+elif [ "$S7_MARKET_ALPHA_V" != "2.0.0-beta" ]; then
+  fail "scenario 7 pre-release sibling" \
+    "marketplace alpha entry expected unchanged '2.0.0-beta', got '$S7_MARKET_ALPHA_V'"
+elif [ "$S7_MARKET_META_V" != "1.1.0" ]; then
+  fail "scenario 7 pre-release sibling" \
+    "metadata.version must track highest CLEAN release (1.1.0), not pre-release '2.0.0-beta'; got '$S7_MARKET_META_V'"
+else
+  pass "scenario 7 pre-release sibling"
+fi
+
+PASS_COUNT=$((7 - FAIL_COUNT))
 echo
-echo "$PASS_COUNT/5 scenarios passed"
+echo "$PASS_COUNT/7 scenarios passed"
 [ "$FAIL_COUNT" -eq 0 ]

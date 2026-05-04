@@ -134,7 +134,7 @@ report "T2.4b forge plugin.json bumped"             "1.1.0" "$T2_FORGE_V"
 report "T2.4c alpha plugin.json UNCHANGED"          "2.5.0" "$T2_ALPHA_V"
 report "T2.4d marketplace forge entry bumped"       "1.1.0" "$T2_MARKET_FORGE_V"
 report "T2.4e marketplace alpha entry UNCHANGED"    "2.5.0" "$T2_MARKET_ALPHA_V"
-report "T2.4f marketplace metadata.version bumped"  "1.1.0" "$T2_MARKET_META_V"
+report "T2.4f marketplace metadata.version is max across plugins" "2.5.0" "$T2_MARKET_META_V"
 
 ############################################################
 # T2.5 — Idempotency: running --apply a second time when the

@@ -34,19 +34,29 @@ Expected exit code: `0` (all 13 assertions pass).
 ### `bump-semver-scenarios.sh`
 
 End-to-end harness that maps directly to the spec's Acceptance Criteria.
-Five scenarios in one script:
+Seven scenarios in one script:
 
-1. Single-plugin happy path (plugin + marketplace at `0.3.0-alpha` + a `feat`).
+1. Single-plugin happy path (plugin + marketplace at `0.3.0-alpha` + a `feat`;
+   also asserts the README `**Current version:**` line is rewritten).
 2. Docs-only range (no writes, `none 0.0.0 0.0.0 none`).
-3. Multi-plugin repo where only one plugin is in the diff (other plugin is
-   byte-identical after apply, marketplace tracks the released plugin).
-4. Standard `package.json` repo — backwards compatibility with non-plugin repos.
+3. Multi-plugin repo (both plugins at `1.0.0`) where only one plugin is in
+   the diff; untouched plugin stays byte-identical.
+4. Standard `package.json` repo — backwards compatibility with non-plugin
+   repos; also asserts README rewrite on the standard-manifest branch.
 5. Claude-plugin repo with no `CHANGELOG.md` — full `bump-semver.sh` →
    `update-changelog.sh --release` chain. The changelog script must print
    `no CHANGELOG.md in cwd; skipping` on stderr and exit 0.
+6. Multi-plugin regression guard: `metadata.version=2.5.0` from out-of-scope
+   `alpha`, feat commit scoped to `forge` (at `1.0.0`). After apply,
+   `metadata.version` must STAY at `2.5.0`, not regress to `1.1.0`.
+7. Multi-plugin SemVer pre-release ordering guard: out-of-scope `alpha` at
+   `2.0.0-beta`, in-scope `forge` at `1.0.0` bumped to `1.1.0`. Under plain
+   `sort -V`, `2.0.0-beta` sorts higher than any clean release — the
+   opposite of SemVer 2.0.0. The fix prefers clean releases, so
+   `metadata.version` must land at `1.1.0` (not `2.0.0-beta`).
 
 Run: `bash plugins/forge/skills/ship/scripts/__verify__/bump-semver-scenarios.sh`
-Expected exit code: `0`. Prints a `N/5 scenarios passed` summary on stdout.
+Expected exit code: `0`. Prints a `N/7 scenarios passed` summary on stdout.
 
 ## Known limitation: pre-release tag stripping
 

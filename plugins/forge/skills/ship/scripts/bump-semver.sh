@@ -174,6 +174,13 @@ compute_new() {
 NEW=$(compute_new "$LEVEL" "$OLD")
 
 if [ "$APPLY" -eq 1 ] && [ "$LEVEL" != "none" ] && [ "$MANIFEST" != "none" ]; then
+  # Rewrite README.md's machine-readable version line if present. Pattern:
+  # "**Current version:** <x.y.z[-tag]>". Graceful skip if README.md is
+  # missing or the line is absent.
+  if [ -f "README.md" ] && grep -qE '^\*\*Current version:\*\*[[:space:]]+[0-9A-Za-z.+-]+' README.md; then
+    sed -i.bak -E "s/^(\*\*Current version:\*\*)[[:space:]]+[0-9A-Za-z.+-]+/\1 ${NEW}/" README.md && rm -f README.md.bak
+  fi
+
   case "$MANIFEST" in
     package.json)
       tmp=$(mktemp)
@@ -209,7 +216,24 @@ if [ "$APPLY" -eq 1 ] && [ "$LEVEL" != "none" ] && [ "$MANIFEST" != "none" ]; th
       SLUGS_JSON=$(printf '%s\n' "${IN_SCOPE_PLUGINS[@]}" | jq -R . | jq -s .)
       tmp=$(mktemp)
       jq --arg v "$NEW" --argjson slugs "$SLUGS_JSON" \
-        '.metadata.version = $v | .plugins |= map(if (.name as $n | $slugs | index($n)) then .version = $v else . end)' \
+        '.plugins |= map(if (.name as $n | $slugs | index($n)) then .version = $v else . end)' \
+        .claude-plugin/marketplace.json > "$tmp" && mv "$tmp" .claude-plugin/marketplace.json
+      # metadata.version = max across ALL plugins[].version (in-scope AND
+      # out-of-scope), so a bump to a low-versioned plugin cannot regress
+      # metadata.version when another plugin already sits at a higher
+      # version.
+      #
+      # SemVer ordering hazard: `sort -V` places pre-release tags AFTER
+      # their matching release (so `1.0.0-beta` sorts higher than `1.0.0`)
+      # — the opposite of SemVer 2.0.0. Prefer the highest clean release;
+      # only fall back to pre-release sort when every entry is pre-release.
+      ALL_VS=$(jq -r '.plugins[].version' .claude-plugin/marketplace.json)
+      META_NEW=$(printf '%s\n' "$ALL_VS" | grep -vE -- '-' | sort -V | tail -n1)
+      if [ -z "$META_NEW" ]; then
+        META_NEW=$(printf '%s\n' "$ALL_VS" | sort -V | tail -n1)
+      fi
+      tmp=$(mktemp)
+      jq --arg v "$META_NEW" '.metadata.version = $v' \
         .claude-plugin/marketplace.json > "$tmp" && mv "$tmp" .claude-plugin/marketplace.json
       ;;
   esac

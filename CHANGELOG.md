@@ -14,6 +14,9 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 ### Changed
 - restructure README to evergreen single-source-of-truth form
 
+### Added
+- bump-semver now rewrites README version line and derives marketplace metadata.version as max across plugins with SemVer pre-release awareness
+
 ## [0.4.0] - 2026-05-04
 
 ### Added
