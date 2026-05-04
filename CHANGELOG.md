@@ -4,6 +4,19 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-04
+
+### Added
+
+- `/forge:ship` Step 3e now handles Claude-plugin manifests — `bump-semver.sh` detects `plugins/*/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`, bumps only the plugin(s) whose source files changed in the diff, and writes all three version fields (plugin.json `.version`, marketplace `metadata.version`, marketplace `plugins[].version`) atomically.
+- `/forge:ship` Step 3e now rotates `CHANGELOG.md` — after a non-zero bump, invokes `update-changelog.sh --release <new>` to turn `[Unreleased]` into a dated version heading. The manifest bump(s) and changelog rotation are folded into a single `chore(release): bump to <new>` commit, removing the need for a manual release PR.
+- `plugins/forge/skills/ship/scripts/__verify__/` — hand-rolled verification harness for `bump-semver.sh` covering the new Claude-plugin detection branch, the apply branch, and 5 end-to-end acceptance scenarios. See `__verify__/README.md` for how to run.
+
+### Changed
+
+- `bump-semver.sh` stdout contract extended with a `claude-plugin:N` manifest-summary token when the Claude-plugin detection branch fires. Single-file manifests (`package.json`, `Cargo.toml`, etc.) keep their existing output shape.
+- `/forge:ship` Step 3e prose rewritten to describe the new two-branch flow and the non-fatal stderr notices from `update-changelog.sh --release` (missing CHANGELOG, missing `[Unreleased]`).
+
 ### Learnings
 
 - **ship-bump-semver-misses-plugin-manifests** (skill-quality) — `/forge:ship` Step 3e does not recognize `plugin.json` / `marketplace.json`, so feature ships leave versions stale. See `docs/learnings/skill-ship-bump-semver-misses-plugin-manifests.md`.
