@@ -4,6 +4,8 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-04
+
 ### Learnings
 
 - **spec-driven-build-clean-merge** (win) — Rigorous `/prd` → `/prd-refine` → `/build` pipeline produced 4 clean-merging sub-tasks with all acceptance criteria passing on first try. See `docs/learnings/win-spec-driven-build-clean-merge.md`.
