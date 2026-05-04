@@ -13,3 +13,4 @@ file in this directory. The active ruleset is synced into the repo's
 - [Feature-builder cannot commit](blocker-feature-builder-cannot-commit.md) — worktree-isolated agents are denied `git add`/`commit`; parent session must commit on their behalf
 - [Skills load at session start](blocker-skills-load-at-session-start.md) — mid-session edits to a skill don't hot-reload; new content takes effect next session
 - [/ship metadata.version can regress](skill-ship-metadata-version-can-regress.md) — multi-plugin marketplace edge case deferred in PR #6; fix before a second plugin ships
+- [README single source of truth](pattern-readme-single-source-of-truth.md) — README carries one `**Current version:**` line; no version-specific prose; CHANGELOG owns release history (deferred plan recorded)
