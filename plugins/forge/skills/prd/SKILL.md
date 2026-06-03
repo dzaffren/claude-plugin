@@ -112,6 +112,13 @@ on these requirements. Codebase awareness allows sharper, more grounded question
 (e.g. "this feature touches both registration and notifications — should we split
 those into separate stories?").
 
+Ground the interrogation in `${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md`:
+challenge product decisions through the four lenses — the real user job, outcome vs.
+output, the riskiest assumption, and priority/impact — in plain language (name the
+concern, never the framework), calibrated (push the shaky, stay quiet on the sound),
+with one-step override and never blocking the same point twice. These lenses are
+product-level, so they reinforce the rule below.
+
 **Restrict all questions to product and business concerns** — the audience is a
 product owner, not an engineer.
 
@@ -279,6 +286,14 @@ If the user declines Jira integration, skip this step entirely.
 
 Then STOP. Tell the user:
 
-1. The path(s) of the spec file(s) written
-2. Any Jira issues created (keys and URLs) — skip if Step 8 was skipped
-3. Ask for approval before handing off to engineering
+1. A concise inline digest of what was written, per
+   `${CLAUDE_PLUGIN_ROOT}/references/artifact-digest.md`. For a single spec,
+   summarise: the user story, scope in, scope out, headline acceptance criteria,
+   and success metric, then end with one line offering the file path. For a
+   multi-story epic, present a SET digest instead: name each story and what it
+   delivers plus the shared context (success metrics, how the stories connect),
+   and offer to open any one file — do NOT inline every file's full contents.
+   The digest enriches the path hand-off below; it never replaces writing the files.
+2. The path(s) of the spec file(s) written
+3. Any Jira issues created (keys and URLs) — skip if Step 8 was skipped
+4. Ask for approval before handing off to engineering

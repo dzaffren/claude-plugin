@@ -143,6 +143,55 @@
           "description": "Neither the overview nor any story spec contains technical jargon, file paths, or API details"
         }
       ]
+    },
+    {
+      "id": 4,
+      "eval_name": "priority-challenge-and-epic-set-digest",
+      "prompt": "Let's build a custom report builder before fixing the slow login that hits most users daily. Probably 3 stories for the report builder. Tracking as REP-200.",
+      "expected_output": "Claude raises a plain-language priority challenge — the report builder is being built ahead of the slow-login fix that affects most users daily — offering a one-step override. If the user keeps the order, the point is not re-raised. Claude then classifies the report builder as a multi-story epic and hands the spec set off as a SET digest naming each story plus shared context and a single offer to open any one file, without inlining every file's contents.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "raises-priority-challenge",
+          "description": "Challenges building the report builder ahead of the slow-login fix, explicitly citing that the login issue is higher-impact (hits most users daily)"
+        },
+        {
+          "name": "plain-language-no-framework",
+          "description": "The challenge is phrased in plain language and never names a framework or lens (no 'priority/impact', 'RICE', or lens terminology)"
+        },
+        {
+          "name": "one-step-override",
+          "description": "The challenge is resolvable in a single turn — keep the order or reprioritize — with no demand for a justifying reason"
+        },
+        {
+          "name": "never-raised-twice",
+          "description": "If the user keeps the current order, the priority point is not re-raised later in the run"
+        },
+        {
+          "name": "classifies-as-epic",
+          "description": "Classifies the report builder as a multi-story epic, not a single feature"
+        },
+        {
+          "name": "set-digest-names-each-story",
+          "description": "After writing, presents a SET digest that names each story and what it delivers"
+        },
+        {
+          "name": "set-digest-shared-context",
+          "description": "The set digest includes shared context (success metric and how the stories connect)"
+        },
+        {
+          "name": "set-digest-single-open-offer",
+          "description": "The set digest ends with one line offering to open any one file, not a separate offer per file"
+        },
+        {
+          "name": "no-file-flooding",
+          "description": "The digest does not inline the full contents of every story file — it summarizes the set"
+        },
+        {
+          "name": "files-always-written",
+          "description": "The epic overview and each story spec are still written to docs/specs/ — the digest is an addition, not a substitute"
+        }
+      ]
     }
   ]
 }

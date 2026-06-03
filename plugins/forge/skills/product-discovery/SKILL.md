@@ -132,6 +132,15 @@ Don't invoke `/grill-me`. That's a separate, heavier skill the user can run
 explicitly if they want a deep stress-test. Here, a light inline check is
 enough.
 
+Ground each check in the lenses from
+`${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md`, phrased in plain
+language: is the real user job understood, would fixing this actually move the
+goal (outcome vs. output), and is this the highest-impact problem to tackle
+first (priority/impact). Calibrate — press on the shaky, stay quiet on the
+sound. Each challenge is one-step (accept and reshape, or overrule and keep)
+and is never raised twice; honour the one-step-override and never-block-twice
+rules in that reference.
+
 For each problem on the list, ask at most two short questions, picked from:
 
 ```
@@ -162,8 +171,9 @@ Skip this step entirely for problems with strong evidence and an obvious
 link to the goal. Save questions for the ones that actually need them.
 
 If a problem turns out to be a solution in disguise ("better dashboard"),
-reframe it with the user: _"That sounds like an idea — what's the user
-problem it would solve?"_ Then put the idea aside for Step 6.
+that's the real-user-job lens firing: a solution stated as if it were the
+problem. Reframe it with the user: _"That sounds like an idea — what's the
+user problem underneath it?"_ Then put the idea aside for Step 6.
 
 ## Step 5: Pick one to go after first
 
@@ -189,6 +199,13 @@ they stay on the list for future cycles.
 
 For the selected problem, brainstorm 2–4 ideas. Force multiple options
 before converging — first ideas are rarely the best.
+
+The "leap of faith" below is the riskiest-assumption lens from
+`${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md` in plain language:
+the one thing that has to be true for the idea to pay off, and the cheapest
+way to check it before building. If an idea leans on an untested bet, name
+that concern plainly — one-step, accept or overrule, and never twice per the
+override and never-block-twice rules in that reference.
 
 For each idea, capture:
 
@@ -252,7 +269,14 @@ Before presenting:
 - Diagram matches the decisions
 - Recommendation is a single clear next step
 
-**If complete**, tell the user:
+The brief file is always written. After it's on disk, present a concise
+inline digest per `${CLAUDE_PLUGIN_ROOT}/references/artifact-digest.md` so the
+user can review without opening anything. For a discovery brief that means, in
+plain language: the desired outcome, the selected user problem, the chosen
+idea, the one thing that has to be true for it to work, and the recommended
+experiment — ending with exactly one line offering the brief's path to open.
+
+**If complete**, after the digest tell the user:
 
 1. Path of the brief
 2. "Run `/prd` to turn this into requirements — it'll pick up context
@@ -260,7 +284,7 @@ Before presenting:
 3. "After building, run `/discover update {name}` to update this with what
    you learned."
 
-**If in-progress**, tell the user:
+**If in-progress**, after the digest tell the user:
 
 1. Path of the brief
 2. What action items are open and who needs to be consulted

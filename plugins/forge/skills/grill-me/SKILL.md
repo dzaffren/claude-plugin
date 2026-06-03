@@ -69,6 +69,10 @@ Weak questions are vague or easily hand-waved:
 - "Have you thought about scalability?"
 - "What about edge cases?"
 
+**Ground product challenges in a lens.** When you challenge a PRODUCT decision (user needs, scope, business rules, success criteria), the challenge must trace to at least one lens in `${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md` — the real user job, outcome vs. output, the riskiest assumption, or priority/impact. Phrase the concern in plain language; never name the framework or the lens. This applies to product decisions only: technical design questions keep their senior-engineer framing above, so an engineer in a design review is not grilled with product lenses.
+
+Follow that same reference for how hard to push: see `${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md` for the calibrate, one-step-override, and never-block-twice rules. In short — push on genuinely shaky decisions and stay quiet on sound ones, make every challenge resolvable in one turn (accept or overrule, no demand for justification), and once a point is resolved never re-raise it for the rest of the run.
+
 If a question can be answered by exploring the codebase (checking existing patterns, reading related code, verifying assumptions), do that yourself instead of asking the user. Report what you found and ask the sharper follow-up that the code didn't answer.
 
 ## Step 3 — Track decisions

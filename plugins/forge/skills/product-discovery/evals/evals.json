@@ -54,6 +54,21 @@
         "OST diagram: a Mermaid flowchart is produced with selected path highlighted",
         "Discovery brief produced: complete brief written to docs/discovery/ with PRD handoff recommendation"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "I want to ship a CSV export button this month. That's the goal.",
+      "expected_output": "Session that recognizes the stated goal is an output (a thing to ship), not a measurable change for the user, and challenges it in plain language. If the user overrules, the challenge is not raised again; the session proceeds through discovery and ends with an inline digest of the brief plus a one-line offer to open the file.",
+      "files": [],
+      "expectations": [
+        "Output-vs-outcome challenge: forge points out the CSV export button is a thing to ship, not a change for the user, and asks what would actually improve",
+        "Plain language only: the challenge names the concern in plain words and never names a framework or lens (no 'outcome vs output', 'JTBD', 'North Star', 'riskiest assumption')",
+        "One-step override: the challenge is resolvable in a single turn — reframe as an outcome or keep as-is — and forge does not demand a justifying reason",
+        "Never raised twice: if the user overrules and keeps the output goal, forge does not re-raise the same output-vs-outcome point later in the run",
+        "Inline digest at close: the final brief is presented as a concise inline digest covering desired outcome, selected opportunity, chosen solution, riskiest assumption, and recommended experiment",
+        "One-line open offer: the digest ends with exactly one line offering the file path to open, with nothing after it",
+        "File always written: the discovery brief is still written to docs/discovery/ — the digest is an addition, not a substitute"
+      ]
     }
   ]
 }

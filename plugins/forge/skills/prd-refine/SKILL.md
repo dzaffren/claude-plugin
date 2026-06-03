@@ -90,6 +90,14 @@ as open questions.
 Skip this step if a PRD was loaded (interrogation already happened during PRD
 creation) or for bug fixes and small changes (< 1 day).
 
+When this gate runs (the standalone path, where no PRD was loaded) and a
+**product-level** decision surfaces, challenge it through the four lenses in
+`${CLAUDE_PLUGIN_ROOT}/references/pushback-frameworks.md` — real user job, outcome
+vs. output, riskiest assumption, priority/impact — in plain language, calibrated,
+with one-step override, never blocking the same point twice. Technical and design
+questions stay technical (that is what `grill-me` covers); the lenses apply only
+to product-level calls.
+
 ## Step 2: Prerequisites Gate
 
 Before proceeding, confirm you have enough context:
@@ -270,4 +278,12 @@ Before presenting the spec, verify every item below. Fix any failures.
 - [ ] Threat Model Checklist present (data classification, attack surface, authn/authz, dependencies); `N/A` allowed with reason
 - [ ] ADR written and linked if a real tradeoff was made
 
-Then STOP. Tell the user the path(s) of the spec file(s) written and ask for approval before any code is written.
+Then STOP. After the spec file(s) are written, present a concise inline digest
+per `${CLAUDE_PLUGIN_ROOT}/references/artifact-digest.md`: for a refined spec, name
+which technical sections were added (e.g. system design, implementation plan
+sub-tasks, test scenarios) and any decisions/tradeoffs, then close with exactly
+one line offering the file path to open. If this run enriched an epic's multiple
+story files, use the SET digest form — name each story file and what it delivers,
+offer to open any one, and do not inline them all. The digest enriches this
+handoff; it does not replace writing the file. Tell the user the path(s) of the
+spec file(s) written and ask for approval before any code is written.

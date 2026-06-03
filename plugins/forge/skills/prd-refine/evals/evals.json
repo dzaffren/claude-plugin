@@ -131,6 +131,43 @@
           "description": "Overview is updated only if shared architecture notes or cross-story dependencies are needed"
         }
       ]
+    },
+    {
+      "id": 4,
+      "eval_name": "no-rechallenge-and-refined-digest",
+      "prompt": "prd-refine csv-export — earlier this session we already decided to keep the CSV export button as-is even after you flagged it, so let's just refine it. The plan assumes most users will actually use the export, which we haven't tested.",
+      "expected_output": "Claude refines the spec without re-challenging the already-resolved CSV-export-as-output decision (never block twice across stages). It may surface the untested assumption — that most users will actually use the export — once in plain language. It appends technical sections, preserves business content, and presents the refined spec as an inline digest of which technical sections were added plus tradeoffs, ending with a one-line offer to open the file.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "no-rechallenge-resolved-point",
+          "description": "Does not re-challenge the CSV-export-as-output decision that was already resolved earlier in the session (never block twice across discovery/prd/prd-refine)"
+        },
+        {
+          "name": "surfaces-untested-assumption-once",
+          "description": "May surface the untested riskiest assumption (most users will actually use the export) at most once, in plain language, suggesting a cheap way to check it"
+        },
+        {
+          "name": "plain-language-no-framework",
+          "description": "Any assumption surfaced is phrased in plain language and never names a framework or lens (no 'riskiest assumption' or lens terminology)"
+        },
+        {
+          "name": "preserves-business-content",
+          "description": "All existing business content is preserved unchanged when technical sections are appended"
+        },
+        {
+          "name": "refined-digest-sections-added",
+          "description": "Presents an inline digest naming which technical sections were added (e.g. implementation plan, test scenarios) and any decisions or tradeoffs"
+        },
+        {
+          "name": "refined-digest-one-line-offer",
+          "description": "The digest ends with exactly one line offering the file path to open, with nothing after it"
+        },
+        {
+          "name": "file-always-written",
+          "description": "The refined spec is still written to disk — the digest is an addition, not a substitute"
+        }
+      ]
     }
   ]
 }
