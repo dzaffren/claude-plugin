@@ -306,14 +306,14 @@ All hooks receive a JSON object on stdin. Key fields:
 
 ## Variables Reference
 
-| Variable                | Available in          | Resolves to                                  |
-| ----------------------- | --------------------- | -------------------------------------------- |
-| `${CLAUDE_PLUGIN_ROOT}` | hooks.json, .mcp.json | Plugin's installed cache directory           |
-| `${CLAUDE_PLUGIN_DATA}` | hooks.json, .mcp.json | Persistent data directory (survives updates) |
-| `${CLAUDE_SKILL_DIR}`   | SKILL.md content      | Directory containing the SKILL.md file       |
-| `${CLAUDE_SESSION_ID}`  | SKILL.md content      | Current session ID                           |
-| `$ARGUMENTS`            | SKILL.md, commands    | Text after skill/command name                |
-| `$ARGUMENTS[N]` / `$N`  | SKILL.md              | Nth positional argument                      |
+| Variable                | Available in                                                             | Resolves to                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `${CLAUDE_PLUGIN_ROOT}` | SKILL.md content, agent content, hooks.json, .mcp.json, monitor commands | Plugin's installed cache directory (substituted inline in skill/agent content too, per official plugins-reference) |
+| `${CLAUDE_PLUGIN_DATA}` | hooks.json, .mcp.json                                                    | Persistent data directory (survives updates)                                                                       |
+| `${CLAUDE_SKILL_DIR}`   | SKILL.md content                                                         | Directory containing the SKILL.md file                                                                             |
+| `${CLAUDE_SESSION_ID}`  | SKILL.md content                                                         | Current session ID                                                                                                 |
+| `$ARGUMENTS`            | SKILL.md, commands                                                       | Text after skill/command name                                                                                      |
+| `$ARGUMENTS[N]` / `$N`  | SKILL.md                                                                 | Nth positional argument                                                                                            |
 
 ---
 

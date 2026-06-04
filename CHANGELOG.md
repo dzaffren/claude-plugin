@@ -10,6 +10,10 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 - Inline artifact digests — new shared reference `plugins/forge/references/artifact-digest.md` defines a digest-then-detail contract so each thinking skill summarises what it wrote inline (with a one-line open offer) instead of requiring the user to open files; multi-file epics are digested as a set. Applied to the hand-off steps of `product-discovery`, `prd`, and `prd-refine`.
 - Eval cases covering the new pushback and digest behaviours in `product-discovery`, `prd`, and `prd-refine`.
 
+### Fixed
+
+- `docs/claude-plugin-conventions.md` Variables Reference incorrectly listed `${CLAUDE_PLUGIN_ROOT}` as available only in `hooks.json`/`.mcp.json`. Per the official plugins-reference, it is substituted inline in skill and agent content too — corrected the table.
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings
