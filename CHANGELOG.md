@@ -14,6 +14,11 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 - `docs/claude-plugin-conventions.md` Variables Reference incorrectly listed `${CLAUDE_PLUGIN_ROOT}` as available only in `hooks.json`/`.mcp.json`. Per the official plugins-reference, it is substituted inline in skill and agent content too — corrected the table.
 
+### Learnings
+
+- **plugin-root-shared-references** (convention) — cite plugin-level shared refs from SKILL.md with `${CLAUDE_PLUGIN_ROOT}`, skill-local refs with `${CLAUDE_SKILL_DIR}`. See `docs/learnings/convention-plugin-root-shared-references.md`.
+- **decompose-epics-by-file** (pattern) — in `/build`, partition sub-tasks by disjoint file (not by story) when an epic's stories share files. See `docs/learnings/pattern-decompose-epics-by-file.md`.
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings

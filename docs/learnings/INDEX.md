@@ -23,3 +23,5 @@ file in this directory. The active ruleset is synced into the repo's
 - [/ship metadata.version can regress](skill-ship-metadata-version-can-regress.md) — multi-plugin marketplace edge case deferred in PR #6; fix before a second plugin ships
 - [README single source of truth](pattern-readme-single-source-of-truth.md) — README carries one `**Current version:**` line; no version-specific prose; CHANGELOG owns release history (deferred plan recorded) — `scope: project-specific`
 - [/learn conflates plugin and project scope](skill-learn-conflates-plugin-and-project-scope.md) — `/forge:learn` mixes plugin-general and project-specific facts in one directory; migration plan recorded — `scope: plugin-general`
+- [Plugin-root shared references](convention-plugin-root-shared-references.md) — cite plugin-level shared refs from SKILL.md with `${CLAUDE_PLUGIN_ROOT}`, skill-local refs with `${CLAUDE_SKILL_DIR}` — `scope: project-specific`
+- [Decompose epics by file](pattern-decompose-epics-by-file.md) — in `/build`, partition sub-tasks by disjoint file (not by story) when an epic's stories share files — `scope: plugin-general`
