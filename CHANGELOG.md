@@ -4,6 +4,12 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- Framework-grounded calibrated pushback across the thinking skills — new shared reference `plugins/forge/references/pushback-frameworks.md` defines four product lenses (real user job, outcome vs. output, riskiest assumption, priority/impact) with calibration, one-step override, and never-block-twice rules; wired into `grill-me`, `product-discovery`, `prd`, and `prd-refine`. Challenges are phrased in plain language (never naming the framework).
+- Inline artifact digests — new shared reference `plugins/forge/references/artifact-digest.md` defines a digest-then-detail contract so each thinking skill summarises what it wrote inline (with a one-line open offer) instead of requiring the user to open files; multi-file epics are digested as a set. Applied to the hand-off steps of `product-discovery`, `prd`, and `prd-refine`.
+- Eval cases covering the new pushback and digest behaviours in `product-discovery`, `prd`, and `prd-refine`.
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings
@@ -14,10 +20,12 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 - **ship-metadata-version-can-regress** (skill-quality) — In a multi-plugin marketplace, `metadata.version` can silently regress when the highest-versioned plugin is not in the ship's diff. Deferred in PR #6; fix before a second plugin ships. See `docs/learnings/skill-ship-metadata-version-can-regress.md`.
 
 ### Changed
+
 - mark metadata.version regression and README single-source-of-truth as resolved in learnings
 - restructure README to evergreen single-source-of-truth form
 
 ### Added
+
 - bump-semver now rewrites README version line and derives marketplace metadata.version as max across plugins with SemVer pre-release awareness
 
 ## [0.4.0] - 2026-05-04
