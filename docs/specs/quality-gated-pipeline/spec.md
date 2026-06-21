@@ -231,7 +231,7 @@ The loop's gate set reuses five existing forge gates **unchanged**:
 | Requirements met  | spec acceptance criteria | any unmet criterion          | —                             |
 | End-to-end        | `e2e`                    | FAIL (ERROR → stop, infra)   | NO_E2E (skip)                 |
 | Security          | `security-review`        | FAIL                         | WARN → checkpoint             |
-| Code quality      | `code-reviewer` agent    | `fail` finding               | `warn`/`manual` → checkpoint  |
+| Code quality      | `code-reviewer` agent    | `fail` finding               | `warn`-severity → checkpoint  |
 
 - **Done** = `verifier` PASS ∧ all criteria met ∧ `e2e` PASS|NO_E2E ∧
   `security-review` PASS|WARN ∧ `code-reviewer` no-`fail`.
