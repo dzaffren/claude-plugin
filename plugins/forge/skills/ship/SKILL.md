@@ -17,10 +17,11 @@ Ship changes from working directory to a GitHub pull request. Detects where you 
 
 **Plain language & trust:** apply `${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every choice, summary, and recommendation you show the user (the commit-plan and review-gate prompts, and the final report / PR summary) — plain wording, a stated reason behind each recommendation, and technical detail only when the user asks.
 
-**Arguments:** `$ARGUMENTS` — optional ticket ID (e.g., `PROJ-123`), description, or both.
+**Arguments:** `$ARGUMENTS` — optional ticket ID (e.g., `PROJ-123`), description, the `--gates-cleared` token, or any combination.
 
 Parse arguments:
 
+- **`--gates-cleared` token** — if present, strip it out first, then treat this run as "gates-cleared mode" (see Step 0). It signals that the caller (`/forge:build` Phase 5) already ran the security-review and code-reviewer gates before its pre-commit checkpoint, so this ship must skip Step 0 and Step 0.5. Strip the token before extracting the ticket/description.
 - Extract ticket ID: matches pattern `[A-Z]+-\d+` (e.g., `PROJ-123`, `DASH-456`)
 - Remaining text after ticket extraction is the description
 
@@ -28,7 +29,9 @@ Parse arguments:
 
 ## Step 0 — Security Review (gate)
 
-Before anything else, invoke the `security-review` skill against the uncommitted diff (working tree + index). Hand off the current branch and the target branch (detected in Step 5; default `main`).
+**Gates-cleared mode:** if `--gates-cleared` was passed (see Arguments), skip this step **and** Step 0.5 entirely and go straight to Step 1 — `/forge:build`'s loop already ran both gates before its pre-commit checkpoint (ADR-002). Only the build loop should pass this token; a normal `/ship` never does, so the standalone path below is unchanged.
+
+Otherwise, run the gate as normal. Before anything else, invoke the `security-review` skill against the uncommitted diff (working tree + index). Hand off the current branch and the target branch (detected in Step 5; default `main`).
 
 Interpret the result:
 
@@ -49,6 +52,8 @@ If `security-review` is unavailable (skill not installed), log a one-line notice
 ---
 
 ## Step 0.5 — Code Review (gate)
+
+**Gates-cleared mode:** skip this step too if `--gates-cleared` was passed (see Step 0) — the build loop already ran code review before its checkpoint.
 
 Invoke the `code-reviewer` agent against the uncommitted diff (working tree + index). The agent returns a JSON array of findings with `severity` (`info|warn|fail`), `category`, `description`, and `fix` (`{type: auto, patch}` or `{type: manual}`).
 

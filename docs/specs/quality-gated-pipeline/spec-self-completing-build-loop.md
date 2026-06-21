@@ -356,7 +356,7 @@ Examples:
   | Requirements met  | spec acceptance criteria           | any unmet acceptance criterion   | —                                    |
   | End-to-end        | `e2e`                              | `FAIL`; `ERROR` → **stop loop**  | `NO_E2E` → skip                      |
   | Security          | `security-review`                  | `FAIL`                           | `WARN` → surface at checkpoint       |
-  | Code quality      | `code-reviewer` agent              | any `fail` finding               | `warn` / `manual` → surface at checkpoint |
+  | Code quality      | `code-reviewer` agent              | any `fail` finding               | `warn` → checkpoint; `info` → ignore |
 
 - **The "Done" condition (exact).** The loop may declare the work done **only**
   when all of the following hold simultaneously: `verifier` returns `PASS` **and**
@@ -366,9 +366,9 @@ Examples:
   if any acceptance criterion is unmet (epic SR3).
 
 - **Non-blocking signals never block "done".** A `security-review` `WARN`,
-  `code-reviewer` `warn`/`manual` findings, and `e2e` `NO_E2E` do **not** prevent
+  `code-reviewer` `warn`-severity findings, and `e2e` `NO_E2E` do **not** prevent
   the loop from reaching "done". `WARN`-level security findings and
-  `warn`/`manual` code-review findings are carried forward and surfaced at the
+  `warn`-severity code-review findings are carried forward and surfaced at the
   Phase 4.5 checkpoint as judgment calls.
 
 - **Bounded to ≤ 3 rounds.** The loop runs at most three fix rounds. Each round:
@@ -399,7 +399,7 @@ Examples:
   checkpoint presents, in plain language: (1) a summary of what was built; (2)
   which of the five gates passed; and (3) the **judgment calls**, which are
   exactly — the `security-review` `WARN` findings, the `code-reviewer`
-  `warn`/`manual` findings, and any deliberate simplifications the build made to
+  `warn`-severity findings, and any deliberate simplifications the build made to
   keep the work right-sized (epic SR7). Hard failures are already fixed by this
   point, so the checkpoint is about judgment calls, not unresolved breakage. When
   the loop stops *without* reaching "done" (cap reached, no progress, or `e2e`
@@ -445,7 +445,7 @@ Examples:
   worktree feature-builder workers, which cannot commit — repo learning
   `blocker-feature-builder-cannot-commit`). It renders the plain-language summary,
   the passed gates, and the judgment calls (security `WARN`, code-review
-  `warn`/`manual`, deliberate simplifications), then waits for explicit approval.
+  `warn`-severity, deliberate simplifications), then waits for explicit approval.
   On approval it proceeds to Phase 5; on reject/redirect/no-reply it saves nothing
   and returns control to the user.
 
@@ -586,7 +586,7 @@ breaks `ship`'s standalone manual-ship path, a security regression.
   "Done" condition; the ≤ 3 round cap; the "no progress = round did not shrink the
   blocking-failure set" rule; the `e2e` ERROR stop rule; and the Phase 4.5
   checkpoint format (plain summary + passed gates + judgment calls =
-  security `WARN` + code-review `warn`/`manual` + deliberate simplifications).
+  security `WARN` + code-review `warn`-severity + deliberate simplifications).
 - INDEPENDENT
 
 **Task 2: Rewrite `build` Phase 4 into the bounded gate-loop + add Phase 4.5
@@ -696,7 +696,7 @@ call at the checkpoint (Priya, bulk-invite)**
 - Action: run `/forge:build _scratch/bulk-invite` in a fresh session.
 - Expected: the `WARN` does **not** block "done"; the loop reaches the Phase 4.5
   checkpoint; the checkpoint **surfaces the WARN as a judgment call** (alongside
-  any `code-reviewer` `warn`/`manual` findings and deliberate simplifications);
+  any `code-reviewer` `warn`-severity findings and deliberate simplifications);
   **nothing is saved** until Priya decides.
 
 **Test 5: Rejecting at the checkpoint saves nothing (Reza, discount-code)**

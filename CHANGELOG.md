@@ -8,6 +8,9 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 - /ship Step 3e now checks bump-semver's exit code and surfaces a failed bump (e.g. missing jq) via multi-choice instead of silently skipping the release
 - bump-semver.sh fails loudly when jq is missing and a version bump is required, instead of silently reporting manifest=none (which let /ship skip the bump)
 
+### Added
+- self-completing build loop — /build Phase 4 now loops build/check/fix across all five gates (verifier, acceptance criteria, e2e, security-review, code-reviewer) until done or a 3-round cap, with a Phase 4.5 pre-commit checkpoint; /ship gains a --gates-cleared mode so the loop owns the gates (ADR-002)
+
 ## [0.6.0] - 2026-06-21
 
 ### Added

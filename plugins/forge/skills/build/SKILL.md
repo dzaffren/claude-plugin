@@ -168,33 +168,93 @@ After all `feature-builder` subagents have completed:
 
 ---
 
-## Phase 4 — Verification
+## Phase 4 — The quality-gated loop
 
-After Phase 3.5 completes:
+After Phase 3.5 completes, run the self-completing loop instead of a single pass.
+The full rules — the five gates, the exact "done" condition, the ≤3-round cap, the
+no-progress rule, and the `e2e` ERROR stop — live in one place: read
+`${CLAUDE_SKILL_DIR}/references/loop-contract.md` and follow it exactly.
 
-1. Run the `verifier` skill.
-2. Check every acceptance criterion from the spec.
-3. If any criterion is unmet: spawn one targeted fix agent for that criterion (max 1 retry per criterion).
-4. Invoke the `e2e` skill to run the full E2E suite.
-   - `NO_E2E` → skip, continue to Phase 5.
-   - `PASS` → continue to Phase 5.
-   - `FAIL` → spawn one targeted fix agent per failing test (max 1 retry each), then re-run the `e2e` skill.
-   - `ERROR` → write `BLOCKED.md` and stop (do not attempt to fix infra/config issues).
-5. Cross-check the spec's E2E Tests table (in the Verification section): confirm every mapped scenario has a corresponding test file that was created and passed. Report any gaps.
-6. If any criterion or E2E test is still failing after retries: write `BLOCKED.md` at the repo root listing:
-   - Which criteria or E2E tests failed
-   - What was attempted
-   - What blocked progress
+Each round:
+
+1. **Run all five gates** over the merged work:
+   - `verifier` skill — `PASS` / `FAIL`.
+   - **Acceptance criteria** — check every criterion from the spec.
+   - `e2e` skill — `PASS` / `FAIL` / `ERROR` / `NO_E2E`.
+   - `security-review` skill — `PASS` / `WARN` / `FAIL`.
+   - `code-reviewer` agent — `info` / `warn` / `fail` findings.
+
+   `security-review` and `code-reviewer` are run **here**, not in ship (see Phase 5
+   and ADR-002). If either is unavailable, log a one-line notice and continue —
+   the same fallback ship uses.
+2. **If `e2e` returned `ERROR`** → stop, write `BLOCKED.md`, surface the
+   infrastructure blocker, and save nothing. Do not try to fix it.
+3. **Compute the blocking-failure set**: every `verifier` FAIL, every unmet
+   acceptance criterion, every `e2e` FAIL, every `security-review` FAIL, and every
+   `code-reviewer` `fail`-severity finding (a `fail` is blocking whatever its
+   `fix.type`). Non-blocking — carried to Phase 4.5 as judgment calls — are
+   `security-review` `WARN` and `code-reviewer` `warn`-severity findings;
+   `code-reviewer` `info` findings are ignored. (`fix.type` `auto`/`manual` never
+   decides blocking — see `loop-contract.md`.)
+4. **If the set is empty → done.** Proceed to Phase 4.5.
+5. **Otherwise**, if the round budget (≤ 3 rounds) is not spent **and** this round
+   shrank the blocking-failure set versus the previous one (made progress): spawn
+   fix work scoped to exactly the blocking failures — one targeted fix agent per
+   blocker — then start the next round. Walk `code-reviewer` `fail` findings one at
+   a time; never bulk-accept them (`win-code-reviewer-gate-before-commit`).
+6. **If the cap is reached or the round made no progress** (the set did not shrink)
+   → stop, write `BLOCKED.md` listing what is still blocking and what was tried, and
+   **save nothing**. (Round 1 has no previous round, so the no-progress test does
+   not apply to it — when round 1's blocking set is non-empty and budget remains,
+   always proceed to fix work via step 5.)
+
+When checking acceptance criteria in step 1, also cross-check the spec's E2E Tests
+table (Verification section): a mapped scenario whose test file is missing or
+failing counts as an **unmet acceptance criterion** — it joins the blocking-failure
+set, not merely a report.
+
+The loop never commits, pushes, or saves anything — that is gated by Phase 4.5.
+
+---
+
+## Phase 4.5 — Pre-commit checkpoint
+
+Owned by the **main `build` session**, not the worktree feature-builder workers
+(they cannot commit — `blocker-feature-builder-cannot-commit`). Reached only when
+the loop declared the work **done**.
+
+Following `${CLAUDE_SKILL_DIR}/references/loop-contract.md` and the plain-language
+standard (`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md`), present, in plain
+language:
+
+1. **What was built** — a short summary.
+2. **Which gates passed** — the five gates and their result.
+3. **Judgment calls** — every `security-review` `WARN`, every `code-reviewer`
+   `warn`-severity finding, and anything deliberately kept simple to stay
+   right-sized, each with its reason. (Hard failures are already fixed by now.)
+
+Then present the approval multi-choice **exactly as specified in
+`loop-contract.md`** — the three options *Approve* / *Show me each judgment call* /
+*Reject*, recommending Approve. On **approve**, proceed to Phase 5. On **show me
+each**, walk the judgment calls one at a time, then re-ask. On **reject / redirect /
+no reply**, save nothing and return control to the user — do **not** invoke ship.
 
 ---
 
 ## Phase 5 — Ship
 
+Reached only after Phase 4.5 approval. The loop already ran and cleared all five
+gates — **including `security-review` and `code-reviewer`** — so tell ship to skip
+its own gate steps rather than re-running them (ADR-002).
+
 Invoke the `ship` skill to handle commit, push, and PR creation:
 
-- Pass `{ticket}` as the argument if set (e.g. `PROJ-123`), otherwise no argument
-- Ship detects the current git state and picks up from the right step — it will push the branch and create the PR following project conventions
-- If any acceptance criteria were unmet in Phase 4, tell ship to create the PR as a draft
+- Pass `{ticket}` if set **plus** the `--gates-cleared` token — e.g.
+  `ship PROJ-123 --gates-cleared`, or just `ship --gates-cleared` when there is no
+  ticket. The token tells ship the loop already ran Step 0 (security-review) and
+  Step 0.5 (code-reviewer), so ship skips them and starts at state detection.
+- Ship detects the current git state and picks up from the right step — it will
+  commit, push the branch, and create the PR following project conventions.
 
 ---
 

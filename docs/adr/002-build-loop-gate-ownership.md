@@ -47,7 +47,7 @@ _Proposed._ **The build loop owns the unified gate set as its exit condition;
 - "Done" = `verifier` PASS **and** every acceptance criterion met **and** `e2e`
   PASS or NO_E2E **and** `security-review` PASS-or-WARN **and** `code-reviewer`
   has no `fail` findings. WARN-level security findings and `code-reviewer`
-  `warn`/`manual` findings do **not** block "done" — they are surfaced at the
+  `warn`-severity findings do **not** block "done" — they are surfaced at the
   checkpoint as judgment calls.
 - A new **Phase 4.5 pre-commit checkpoint** (owned by the main `build` session,
   not the worktree workers) presents a plain-language summary plus judgment
@@ -97,7 +97,7 @@ their security and code-review gates — a safety regression.
 - The checkpoint is owned by the main `build` session — consistent with
   `blocker-feature-builder-cannot-commit` (worktree workers cannot commit).
 - `win-code-reviewer-gate-before-commit` is preserved: `code-reviewer` `fail`
-  findings block "done" and are walked individually; `warn`/`manual` findings
+  findings block "done" and are walked individually; `warn`-severity findings
   surface at the checkpoint rather than being bulk-accepted.
 - `e2e` ERROR (infrastructure problem) stops the loop and surfaces a blocker — it
   is never "fixed" by the loop, matching `e2e`'s own constraint.
