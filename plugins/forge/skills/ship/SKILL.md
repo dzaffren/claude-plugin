@@ -15,6 +15,8 @@ description: >
 
 Ship changes from working directory to a GitHub pull request. Detects where you are in the git workflow and picks up from the right step.
 
+**Plain language & trust:** apply `${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every choice, summary, and recommendation you show the user (the commit-plan and review-gate prompts, and the final report / PR summary) — plain wording, a stated reason behind each recommendation, and technical detail only when the user asks.
+
 **Arguments:** `$ARGUMENTS` — optional ticket ID (e.g., `PROJ-123`), description, or both.
 
 Parse arguments:

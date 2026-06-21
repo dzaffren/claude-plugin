@@ -14,6 +14,12 @@ description: >
 Go from "I see a bug" to "PR open" without PRD ceremony, while enforcing
 reproduce-first discipline.
 
+**Plain language & trust:** apply
+`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every question, summary,
+and recommendation you show the user (the multi-choice prompts and the
+root-cause hypothesis) — plain wording, a stated reason behind each
+recommendation, and technical detail only when the user asks.
+
 ## Step 1 — Capture the bug (multi-choice)
 
 Ask the user:

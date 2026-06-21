@@ -4,6 +4,9 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- plain-language & trust standard across the pipeline — plain wording, a stated reason behind every recommendation, and technical detail on demand
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings
