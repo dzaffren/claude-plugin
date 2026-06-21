@@ -28,6 +28,11 @@ grounding — for your own reference only. Never quote it to the user.
 `${CLAUDE_PLUGIN_ROOT}/references/multi-choice.md` when the answer space is
 enumerable. Reserve free text for names and genuinely open brainstorming.
 
+**Plain language & trust:** apply
+`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every question,
+recommendation, and summary you show the user — plain wording, a stated reason
+behind each recommendation, and technical detail only when the user asks.
+
 **Forbidden phrases in user-facing text:** "Opportunity Solution Tree", "OST",
 "well-formed outcome", "root of the tree", "second level", "third level",
 "riskiest assumption". Use plain alternatives: "goal", "user problems we

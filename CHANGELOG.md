@@ -7,6 +7,16 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 ### Fixed
 - bump-semver.sh fails loudly when jq is missing and a version bump is required, instead of silently reporting manifest=none (which let /ship skip the bump)
 
+## [0.6.0] - 2026-06-21
+
+### Added
+- plain-language & trust standard across the pipeline: plain wording, a stated reason behind every recommendation, and technical detail on demand
+
+### Learnings
+
+- **ship-bump-semver-silent-noop-without-jq** (skill-quality) — bump-semver.sh degrades silently to manifest=none when jq is absent, and /ship Step 3e mistakes that for a docs-only ship, leaving feature versions stale. See `docs/learnings/skill-ship-bump-semver-silent-noop-without-jq.md`.
+- **skill-edits-self-referential-build** (blocker) — editing forge's own skills has no automated tests, and the active plugin loads from the install cache (not the worktree), so a fresh session won't exercise repo edits without a dev-install. See `docs/learnings/blocker-skill-edits-self-referential-build.md`.
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings

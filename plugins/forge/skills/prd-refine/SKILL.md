@@ -21,6 +21,11 @@ enough that a developer (or subagent) can execute it without asking follow-up
 questions. When enriching, the existing business content stays unchanged and
 technical sections are appended.
 
+**Plain language & trust:** apply
+`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every question,
+recommendation, and summary you show the user — plain wording, a stated reason
+behind each recommendation, and technical detail only when the user asks.
+
 ## Step 0: Surface prior learnings
 
 Before asking the user anything, read `docs/learnings/INDEX.md` in the target

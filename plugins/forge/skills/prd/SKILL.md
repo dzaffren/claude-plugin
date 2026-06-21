@@ -30,6 +30,12 @@ a recommended choice; accept multi-select when the question is additive
 ("which personas: 1, 3"). Free text only for names and genuinely open
 brainstorming.
 
+**Plain language & trust:** apply
+`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every question,
+recommendation, and summary you show the user — plain wording, a stated reason
+behind each recommendation, and technical detail only when the user asks. (The
+PRD output stays non-technical regardless.)
+
 ## Step 0: Surface prior learnings
 
 Before asking the user anything, read `docs/learnings/INDEX.md` in the target
