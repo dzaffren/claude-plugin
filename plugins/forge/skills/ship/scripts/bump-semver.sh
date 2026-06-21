@@ -73,6 +73,21 @@ if [ "$LEVEL" != "major" ]; then
   done <<< "$LOG"
 fi
 
+# A required bump reads/writes the version manifest via jq (package.json and the
+# Claude-plugin marketplace layout). Every jq call below is guarded by
+# `2>/dev/null || true`, so a missing jq is swallowed and the script would
+# otherwise report `manifest=none` — which /ship Step 3e mistakes for a
+# docs-only ship, silently skipping the bump and leaving versions stale. Fail
+# loudly instead. Only fires when a bump is actually required AND a jq-dependent
+# manifest is present; docs-only ranges (LEVEL=none) and manifest-less repos are
+# unaffected, as are hosts that have jq.
+if [ "$LEVEL" != "none" ] && ! command -v jq >/dev/null 2>&1; then
+  if [ -f "package.json" ] || [ -f ".claude-plugin/marketplace.json" ]; then
+    echo "error: a version bump is required (level=$LEVEL) but 'jq' is not on PATH; cannot read or write the JSON version manifest (package.json or .claude-plugin/marketplace.json). Install jq and re-run." >&2
+    exit 3
+  fi
+fi
+
 # Locate manifest + read current version
 MANIFEST=none
 OLD=0.0.0

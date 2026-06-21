@@ -4,6 +4,9 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+- bump-semver.sh fails loudly when jq is missing and a version bump is required, instead of silently reporting manifest=none (which let /ship skip the bump)
+
 ## [0.5.0] - 2026-05-04
 
 ### Learnings
