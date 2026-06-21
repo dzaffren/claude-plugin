@@ -5,6 +5,7 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 ## [Unreleased]
 
 ### Fixed
+- /ship Step 3e now checks bump-semver's exit code and surfaces a failed bump (e.g. missing jq) via multi-choice instead of silently skipping the release
 - bump-semver.sh fails loudly when jq is missing and a version bump is required, instead of silently reporting manifest=none (which let /ship skip the bump)
 
 ## [0.6.0] - 2026-06-21

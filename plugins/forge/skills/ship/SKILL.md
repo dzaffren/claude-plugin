@@ -202,11 +202,35 @@ After the last commit, derive the bump and apply it:
 
 ```bash
 bash ${CLAUDE_SKILL_DIR}/scripts/bump-semver.sh origin/<base>..HEAD --apply
+status=$?
 ```
 
 (Use `main` or the detected base branch in place of `<base>`.) The script
-prints `<level> <old> <new> <manifest-summary>` on stdout. Parse those four
-fields.
+prints `<level> <old> <new> <manifest-summary>` on stdout, and exits non-zero
+when a bump is required but cannot be applied.
+
+**Exit-code gate (check this first).** `bump-semver.sh` exits non-zero when a
+version bump is required but it cannot read or write the JSON manifests — most
+commonly because `jq` is not installed (the script reads and writes
+`plugin.json` / `marketplace.json` through `jq`). If `status` is non-zero, do
+**NOT** parse stdout and do **NOT** treat this as a docs-only ship — that would
+silently leave versions stale. Surface the script's stderr and ask the user
+multi-choice:
+
+```
+bump-semver could not apply the version bump:
+  <stderr from bump-semver.sh>
+Choose:
+  1. Stop — fix the tooling (e.g. install jq) and re-run /ship
+  2. Proceed without a version bump — push and open the PR; the version and
+     CHANGELOG stay unbumped, to be cut on a later ship
+Recommended: 1
+```
+
+On `1`, stop the ship. On `2`, skip the rest of Step 3e (no release commit) and
+proceed to Step 4; note in the Step 6 report that the release bump was skipped
+and why. Only when `status` is `0` do you parse the four stdout fields and apply
+the skip rule below.
 
 **Skip rule.** If `<level>` is `none` or `<manifest-summary>` is `none`, skip
 Step 3e entirely and proceed to Step 4 — this covers docs-only ships and
