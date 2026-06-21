@@ -9,6 +9,7 @@ All notable changes to the forge plugin are documented here. Format follows [Kee
 - bump-semver.sh fails loudly when jq is missing and a version bump is required, instead of silently reporting manifest=none (which let /ship skip the bump)
 
 ### Added
+- self-grilling planning stages — discovery, prd, and prd-refine now stress-test their own draft (assembled brief / drafted requirements / drafted technical sections), surfacing only genuine decisions in plain language with a 'here's what I assumed' summary, instead of the user running a separate /grill-me
 - self-completing build loop — /build Phase 4 now loops build/check/fix across all five gates (verifier, acceptance criteria, e2e, security-review, code-reviewer) until done or a 3-round cap, with a Phase 4.5 pre-commit checkpoint; /ship gains a --gates-cleared mode so the loop owns the gates (ADR-002)
 
 ## [0.6.0] - 2026-06-21

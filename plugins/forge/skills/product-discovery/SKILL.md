@@ -135,7 +135,8 @@ honestly.
 
 Don't invoke `/grill-me`. That's a separate, heavier skill the user can run
 explicitly if they want a deep stress-test. Here, a light inline check is
-enough.
+enough. (The assembled brief gets a fuller automatic self-grill at Step 8 — this
+is just a light per-problem pass.)
 
 For each problem on the list, ask at most two short questions, picked from:
 
@@ -238,6 +239,17 @@ Styling:
 - Needs validation (pause/resume) — dashed border
 
 ## Step 8: Write the brief and hand off
+
+**Self-grill the brief first.** Now that the brief is assembled (goal, the
+problem list and pick, the ideas, the leap of faith, the experiment), stress-test
+your own draft before writing it, following
+`${CLAUDE_PLUGIN_ROOT}/references/self-grill.md`: critique the draft for gaps,
+contradictions, and unstated assumptions; resolve the minor ones into a
+plain-language "here's what I assumed" summary for the user to confirm or correct;
+and surface only any genuine product decision still open, one at a time. Fold the
+answers and corrections in, record the confirmed assumptions in the brief's
+decision log, then write the brief. (This is the embedded self-grill on your own draft — still don't invoke
+the standalone `/grill-me`.)
 
 Read `${CLAUDE_SKILL_DIR}/references/template-brief.md` for the artifact
 format.

@@ -5,7 +5,7 @@
       "id": 1,
       "eval_name": "single-feature-user-facing",
       "prompt": "We need to let users export their dashboard data as CSV. The export button should be on the dashboard page, and it should include all visible widgets. Product is tracking this as DASH-456.",
-      "expected_output": "Claude extracts feature details (name, ticket DASH-456, single feature scope, user-facing nature), runs prerequisites gate, loads codebase context, runs grill-me interrogation on product questions only, selects template-feature.md, writes a non-technical PRD to docs/specs/DASH-456-dashboard-csv-export/spec.md with user story, Gherkin acceptance criteria, concrete examples, and recommends /prd-refine next.",
+      "expected_output": "Claude extracts feature details (name, ticket DASH-456, single feature scope, user-facing nature), runs prerequisites gate, loads codebase context, self-grills the drafted requirements (surfacing only genuine product decisions, recording minor gaps as assumptions; no standalone /grill-me), selects template-feature.md, writes a non-technical PRD to docs/specs/DASH-456-dashboard-csv-export/spec.md with user story, Gherkin acceptance criteria, concrete examples, and recommends /prd-refine next.",
       "files": [],
       "assertions": [
         {
@@ -17,8 +17,8 @@
           "description": "Classifies as a single user-facing feature (not bug, not epic, not technical)"
         },
         {
-          "name": "runs-grill-me",
-          "description": "Invokes grill-me interrogation with product/business questions only — no technical questions"
+          "name": "self-grills-requirements",
+          "description": "Composes a draft of the requirements and self-grills it — surfaces only genuine product/business decisions (no technical questions), records minor gaps as assumptions, and does NOT invoke the standalone /grill-me"
         },
         {
           "name": "selects-feature-template",
@@ -99,7 +99,7 @@
       "id": 3,
       "eval_name": "multi-story-epic",
       "prompt": "We want to add a full notification system — email notifications, in-app notifications, and notification preferences. This is a big one, probably 3-4 stories. Tracking as NOTIFY-100.",
-      "expected_output": "Claude classifies as a multi-story epic, loads context, runs grill-me on story decomposition and cross-story business rules, writes epic overview to docs/specs/NOTIFY-100-notification-system/spec.md using template-epic.md, then spawns prd-story-writer agents in parallel (one per story) using template-feature.md. After agents complete, verifies consistency across stories and updates the Story Index.",
+      "expected_output": "Claude classifies as a multi-story epic, loads context, self-grills the drafted epic on story decomposition and cross-story business rules (surfacing only genuine decisions; no standalone /grill-me), writes epic overview to docs/specs/NOTIFY-100-notification-system/spec.md using template-epic.md, then spawns prd-story-writer agents in parallel (one per story) using template-feature.md. After agents complete, verifies consistency across stories and updates the Story Index.",
       "files": [],
       "assertions": [
         {

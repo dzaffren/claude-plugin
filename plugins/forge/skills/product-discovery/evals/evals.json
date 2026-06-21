@@ -22,14 +22,14 @@
     {
       "id": 2,
       "prompt": "Our customer churn rate is 8% monthly and exit surveys say 'too hard to use'. We think the onboarding flow is the issue but we're not sure. Help me discover what's really going on.",
-      "expected_output": "Session that validates the outcome framing (churn reduction), then challenges the assumption that onboarding is the issue by exploring multiple opportunities. Should run grill-me on opportunities, not accept the user's initial hypothesis uncritically.",
+      "expected_output": "Session that validates the outcome framing (churn reduction), then challenges the assumption that onboarding is the issue by exploring multiple opportunities. Should self-grill its own assembled draft brief (not invoke the standalone /grill-me), and not accept the user's initial hypothesis uncritically.",
       "files": [],
       "expectations": [
         "Outcome framing: the session confirms or refines the churn reduction outcome with a measurable target",
         "Challenges the assumption: does not accept 'onboarding is the issue' at face value — explores other potential opportunities",
         "Multiple opportunities surfaced: at least 3 opportunities are identified beyond just onboarding",
         "Evidence assessment: each opportunity has its evidence strength noted",
-        "Grill-me invocation: the session pressure-tests the opportunities through interrogation",
+        "Self-grill: the stage stress-tests its own assembled draft brief for gaps, contradictions, and unstated assumptions, surfacing only genuine decisions (does not invoke the standalone /grill-me)",
         "Single opportunity selected: one opportunity is chosen with explicit rationale",
         "Experiment suggested: a lightweight experiment is proposed to test the riskiest assumption",
         "OST diagram: a Mermaid flowchart is produced",

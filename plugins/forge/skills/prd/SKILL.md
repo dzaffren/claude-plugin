@@ -113,10 +113,17 @@ grounds the PRD in validated product thinking.
 
 ## Step 4: Product Interrogation Gate
 
-Now that the codebase and architecture have been loaded, run the `grill-me` skill
-on these requirements. Codebase awareness allows sharper, more grounded questions
-(e.g. "this feature touches both registration and notifications — should we split
-those into separate stories?").
+Now that the codebase and architecture have been loaded, **compose a draft of the
+requirements** from the conversation and loaded context (the user stories,
+business rules, scope, and success criteria you intend to write), then
+**self-grill that draft** following
+`${CLAUDE_PLUGIN_ROOT}/references/self-grill.md`: critique it for gaps,
+contradictions, and unstated assumptions; resolve the minor ones into an
+assumptions summary you'll fold into the PRD; and surface only the genuine
+product decisions, one at a time. Codebase awareness allows sharper, more
+grounded questions (e.g. "this feature touches both registration and
+notifications — should we split those into separate stories?"). This replaces the
+old manual `grill-me` pass — don't invoke the standalone `/grill-me`.
 
 **Restrict all questions to product and business concerns** — the audience is a
 product owner, not an engineer.
