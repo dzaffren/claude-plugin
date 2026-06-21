@@ -87,13 +87,16 @@ If no PRD is found or no argument is provided, scan the conversation for:
 
 ## Step 1.5: Design Interrogation Gate
 
-If the scope is **larger feature** or key design decisions are unresolved, run
-the `grill-me` skill on the feature before proceeding. This surfaces edge cases
-and resolves design branches so the spec captures them rather than leaving them
-as open questions.
+The self-grill for this stage runs on the **drafted technical sections**, which
+don't exist until Step 5 — so it happens at the end of Step 5, not here (the draft
+must exist before you can critique it; see
+`${CLAUDE_PLUGIN_ROOT}/references/self-grill.md`). Do not run the standalone
+`/grill-me`.
 
-Skip this step if a PRD was loaded (interrogation already happened during PRD
-creation) or for bug fixes and small changes (< 1 day).
+There's nothing to interrogate this early when a PRD was loaded (product
+interrogation already happened during PRD creation) or for bug fixes and small
+changes (< 1 day); the Step 5 self-grill runs on the drafted technical sections
+for every refinement — a confident draft simply surfaces nothing.
 
 ## Step 2: Prerequisites Gate
 
@@ -249,6 +252,16 @@ Additional spec content (add where relevant):
 - API Contract: exact request/response shapes
 - Build order: which repo first
 - Stability gate: what must be stable before the next repo starts
+
+### Self-grill the technical draft
+
+Before validating and presenting, stress-test the technical sections you just
+drafted, following
+`${CLAUDE_PLUGIN_ROOT}/references/self-grill.md`: critique them for gaps,
+contradictions, and unstated assumptions; resolve the minor ones and record them
+in an assumptions note; and surface only the genuine technical trade-offs the user
+must weigh in on, one at a time, in plain language. Fold the answers and
+corrections in, then continue to validation.
 
 ## Step 6: Validate
 
