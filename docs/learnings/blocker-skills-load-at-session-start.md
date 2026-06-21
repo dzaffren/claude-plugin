@@ -48,6 +48,14 @@ code-reviewer manually to honor the new contract.
 4. **Never assume a post-edit skill invocation in the same session
    tests the updated skill.** It tests the pre-edit one.
 
+**Beyond session timing — the install cache:** the running forge skills load
+not just at session start but from the *install cache*
+(`.claude/plugins/cache/mjolnir/forge/<version>/`), not the repo working tree.
+So even a brand-new session loads the cached release, not your repo edits —
+behavioral testing of an edited skill requires dev-installing the branch over
+the cache (or releasing, then updating), not merely a fresh session. See
+[[skill-edits-self-referential-build]].
+
 **What was tried:** Completed PR #3 (new Step 0.5 + Step 8) → cut PR #4
 (release) → captured learnings (PR #5) → all in one session. When PR
 #5 merged and we started the ship-release-automation build, `/forge:ship`
