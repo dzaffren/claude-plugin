@@ -13,6 +13,12 @@ description: >
 
 Execute an approved feature spec end-to-end across five phases.
 
+**Plain language & trust:** apply
+`${CLAUDE_PLUGIN_ROOT}/references/plain-language.md` to every summary and
+recommendation you show the user (notably the verification summary and any
+`BLOCKED.md` you surface) — plain wording, a stated reason behind each
+recommendation, and technical detail only when the user asks.
+
 **Spec argument:** `$ARGUMENTS` — a spec name or path.
 Resolve it in this order:
 
