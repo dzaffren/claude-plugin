@@ -2,7 +2,7 @@
 
 Installed from the **mjolnir** marketplace. Forge delivers a spec-driven, test-disciplined coding workflow with system-design consciousness and security awareness baked in.
 
-**Current version:** 0.6.0
+**Current version:** 0.7.0
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.
 
