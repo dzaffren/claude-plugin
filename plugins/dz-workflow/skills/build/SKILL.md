@@ -27,23 +27,27 @@ criteria are the definition of done.
      the failing test, implement the smallest change that passes, rerun the
      test command, green before moving on.
    - Multiple chunks → spawn one `feature-builder` agent per chunk, **all in
-     parallel in one message**. Each agent's prompt contains: the spec path,
-     its scenarios, the exact files it owns (verify the plan's ownership is
-     disjoint first — overlapping chunks must be merged or serialized, never
-     dispatched in parallel), the test command, and the repo's lessons from
-     `docs/learnings/INDEX.md`. Agents don't commit; you do.
+     parallel in one message**. Each runs in its own isolated git worktree
+     and commits there, scenario by scenario. Each agent's prompt contains:
+     the spec path, its scenarios, the files it owns (verify the plan's
+     ownership is disjoint first — overlap means merge conflicts later;
+     merge or serialize overlapping chunks instead), the test command, and
+     the repo's lessons from `docs/learnings/INDEX.md`.
    - A chunk that depends on another chunk's output runs after it, not
      beside it.
    In both modes: match each file's existing style; no drive-by refactors —
    if something else is broken, note it in one line and leave it.
 
-4. **Integrate.** When all chunks report back: read each report, then run
-   the full test suite yourself — chunk-green is not integration-green.
-   Fix seams (a helper written twice, mismatched conventions at an
-   interface) yourself; a blocked or failed chunk gets fixed inline or
-   re-dispatched with the corrected prompt. Then run any e2e suite the repo
-   has, and if the repo has a way to run the app, exercise the main flow
-   from the spec once for real.
+4. **Integrate.** When all chunks report back: read each report, then merge
+   each chunk's branch into the feature branch in dependency order
+   (`git merge <chunk-branch>`; ownership being disjoint, conflicts should
+   be rare — resolve any yourself). Run the full test suite on the merged
+   result — chunk-green is not integration-green. Fix seams (a helper
+   written twice, mismatched conventions at an interface) yourself; a
+   blocked or failed chunk gets fixed inline or re-dispatched with the
+   corrected prompt. Delete merged chunk branches. Then run any e2e suite
+   the repo has, and if the repo has a way to run the app, exercise the
+   main flow from the spec once for real.
 
    While the full suite runs, spawn `quality-reviewer` and
    `security-reviewer` agents in parallel on the branch diff for a first
