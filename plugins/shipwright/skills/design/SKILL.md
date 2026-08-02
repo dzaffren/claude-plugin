@@ -19,7 +19,10 @@ specs with no frontend.
 
 1. **Read the spec.** List the screens and components its scenarios imply.
    Confirm the list with the user before designing — components are the
-   review unit and later the build-chunk unit, so the split matters.
+   review unit and later the build-chunk unit, so the split matters. Never
+   assume anything the spec doesn't state (audience, tone, platform,
+   brand constraints) — ask via AskUserQuestion before deriving tokens
+   from it.
 
 2. **Load the craft** — a chain; apply whichever are installed, in order:
    1. `frontend-design` (Anthropic official) — principles: derive tokens

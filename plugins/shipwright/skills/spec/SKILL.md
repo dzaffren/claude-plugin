@@ -16,6 +16,12 @@ engineering time is spent. Use codebase knowledge to keep it realistic, but
 keep implementation detail out of the output — no file paths, endpoints,
 tables, or code identifiers.
 
+**Never assume.** Every requirement in the spec must come from the user or the
+codebase, not from a guess. When something is unknown — scope, audience, an
+edge-case rule, what "done" means — ask via AskUserQuestion before writing it
+down. A spec with a wrong assumption baked in is worse than a session with one
+more question.
+
 ## Steps
 
 1. **Gather the basics.** Feature name (kebab-case), scope (bug / small

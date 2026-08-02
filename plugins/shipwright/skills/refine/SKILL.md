@@ -32,8 +32,10 @@ Problem section and go straight to the technical plan.
 
 3. **Interrogate, technically this time.** Pressure-test the design before
    writing it down: failure modes, migration/rollback, concurrency, authz
-   boundaries, what breaks downstream. Ask the user only what the code can't
-   answer.
+   boundaries, what breaks downstream. The code answers what it can; for
+   everything else — trade-offs, priorities, acceptable risk, anything the
+   files can't prove — never assume: ask via AskUserQuestion and wait for the
+   answer before it goes in the plan.
 
 4. **Append a `## Technical plan` section** to the same spec file:
    - **Approach** — two or three sentences, then a Mermaid diagram of the

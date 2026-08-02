@@ -66,6 +66,11 @@ blocks) and say resuming is `/discover continue {name}`.
 
 ## Ground rules
 
+- **Never assume.** Anything you don't know — the user's context, the market,
+  what the users feel, why a metric matters — comes from asking, not guessing.
+  Use AskUserQuestion for each decision point; prefer it over free-text when
+  the choice has clear options. If you catch yourself writing "presumably" or
+  "likely", stop and ask instead.
 - If the user says "I already know the problem, let's go" — fast-track:
   capture the outcome and riskiest assumption, note what was skipped.
 - If a question can't be answered now, log it as an open question with who to

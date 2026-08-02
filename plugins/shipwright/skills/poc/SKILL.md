@@ -18,7 +18,8 @@ experiment, not a first draft — the deliverable is the answer, never the code.
 1. **Name the question.** One sentence, falsifiable: "Can the export finish
    under 5s for 100k rows?", "Does the vendor API support partial updates?"
    Pull it from the discovery brief's experiment if one exists; otherwise
-   agree it with the user first. No question, no spike.
+   agree it with the user first — never invent the question or its stakes
+   yourself (use AskUserQuestion). No question, no spike.
 
 2. **Set the kill criteria.** Before writing code: what result means yes,
    what means no, and a time box. When the box runs out, the answer is
