@@ -20,7 +20,9 @@ Problem section and go straight to the technical plan.
 
 1. **Read the spec** in `docs/specs/` (ask which if ambiguous) and confirm it
    is approved. Read the acceptance criteria carefully — the plan must cover
-   every scenario.
+   every scenario. If the spec has a `## Design` section, the approved
+   component list is the default **Chunks** split; if the spec has UI scope
+   but no Design section, suggest `/design` first.
 
 2. **Read the code first.** Trace the real path the change touches, with file
    and line references. Find the helpers, patterns, and tests that already
