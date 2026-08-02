@@ -93,7 +93,7 @@ prompts when not:
 
 | Stage       | Defers to                                          | Install from |
 | ----------- | -------------------------------------------------- | ------------ |
-| `/design`   | `frontend-design`                                  | official marketplace |
+| `/design`   | `frontend-design` → `design-taste-frontend` (taste-skill) → built-in fallback; shadcn skill on shadcn projects; jezweb `design-review`/`design-loop` for preview audits | official marketplace; `Leonxlnx/taste-skill`; `shadcn/ui`; `jezweb/claude-skills` |
 | `/security` | `static-analysis`, `differential-review`           | `trailofbits/skills` |
 | `/build`, `/quality` | `systematic-debugging`; `webapp-testing` for UI e2e | `obra/superpowers`; `anthropics/skills` |
 | `/ship`     | `verification-before-completion`                   | `obra/superpowers` |

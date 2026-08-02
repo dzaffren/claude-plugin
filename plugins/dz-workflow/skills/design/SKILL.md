@@ -21,13 +21,20 @@ specs with no frontend.
    Confirm the list with the user before designing — components are the
    review unit and later the build-chunk unit, so the split matters.
 
-2. **Load the craft.** If the `frontend-design` skill (Anthropic's official
-   plugin) is installed, invoke it and follow it — it is the authority on
-   visual quality. If not, read
-   `${CLAUDE_SKILL_DIR}/references/anti-slop.md` and apply it. Either way,
-   before writing any component: write down the design tokens (type scale,
-   colors, spacing, radius) derived from this product's actual context —
-   never from habit.
+2. **Load the craft** — a chain; apply whichever are installed, in order:
+   1. `frontend-design` (Anthropic official) — principles: derive tokens
+      from product context, avoid the default AI looks.
+   2. `design-taste-frontend` (taste-skill) — mechanical layer: hard bans,
+      variance/motion/density dials, pre-flight checklist. Its
+      landing-page-specific rules (hero/CTA/marquee) don't apply to
+      component previews — skip those, keep the bans and the checklist.
+   3. Neither installed → read
+      `${CLAUDE_SKILL_DIR}/references/anti-slop.md` and apply it.
+   If the project uses shadcn/ui (`components.json` present) and the shadcn
+   skill is installed, follow it for component and theming conventions.
+   Either way, before writing any component: write down the design tokens
+   (type scale, colors, spacing, radius) derived from this product's actual
+   context — never from habit.
 
 3. **Build the previews** under `docs/design/{name}/`:
    - One self-contained HTML file per component or screen
@@ -63,3 +70,13 @@ specs with no frontend.
 Design review is loops, not a gate passed once. When the user wants changes,
 edit the component files, re-sync only what changed (DesignSync is
 incremental — never wholesale replace), and stop again.
+
+If the `design-review` / `design-loop` skills (jezweb) are installed, run
+their rendered-output audit (layout, type, contrast, hierarchy, states,
+responsive) on the previews before each user review — catch what the
+generation pass can't see about its own output.
+
+Capture taste as lessons (learn skill): when the user's feedback states a
+preference that will recur ("too corporate", "denser tables here", "never
+cards for lists"), record it in `docs/learnings/` so the next design starts
+from their taste, not the model's.
