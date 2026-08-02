@@ -48,6 +48,22 @@ language, no technical talk — discovery is about users and outcomes.
    tell the user: the brief path, that `/spec` will pick it up automatically,
    and end with the `file://` link on its own line.
 
+## Resuming (`/discover continue {name}`)
+
+Discovery spans sessions — users get interviewed, analytics get checked.
+When resuming (explicitly, or when a brief for this topic already exists in
+`docs/discovery/`):
+
+1. Read the existing brief. Summarize in a few lines: what's decided, what
+   questions are open, which step it stopped at.
+2. Ask which open questions now have answers. Fill them in.
+3. Continue from the first unresolved step. Never re-litigate settled
+   decisions — they're in the brief for a reason.
+
+When a session ends with questions still open, write the brief anyway with
+an **Open questions** section (what's unknown, who can answer, what it
+blocks) and say resuming is `/discover continue {name}`.
+
 ## Ground rules
 
 - If the user says "I already know the problem, let's go" — fast-track:

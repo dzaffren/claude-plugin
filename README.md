@@ -31,6 +31,11 @@ flowchart LR
 | `spec-html` | Shared renderer: any doc .md → sibling self-contained .html         |
 | `/learn`    | Lesson store — but capture is automatic, see below                  |
 | `/status`   | Table of every spec: version, stage, next command; refreshes index  |
+| `/poc`      | Throwaway spike answering one risky assumption; code dies, answer stays |
+| `/walkthrough` | Explains existing code: traced path with file:line refs, diagram, .md+.html |
+
+`/discover continue {name}` and `/spec continue {name}` resume a session
+without re-litigating settled decisions.
 
 ## Spec lifecycle and versioning
 
@@ -48,6 +53,9 @@ every spec with version and status.
   token, and password patterns and blocks the commit on a hit.
 - **auto-format** — after every file edit, runs the repo's own formatter
   (prettier / ruff / black) if — and only if — the repo has it configured.
+- **verify-gates** — before a turn ends, mechanically checks the doc gates:
+  every doc has an up-to-date HTML view, spec statuses are valid, and no
+  versioned spec lives outside `archive/`. Fails the stop until fixed.
 
 ## Automatic learning
 

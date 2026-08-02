@@ -26,6 +26,16 @@
         ]
       }
     ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/scripts/verify-gates.sh"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

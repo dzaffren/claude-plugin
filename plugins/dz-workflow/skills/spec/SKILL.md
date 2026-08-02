@@ -62,3 +62,10 @@ tables, or code identifiers.
    user the spec path, ask them to review the visual plan, and say the next
    step is `/refine` once they approve. Do NOT start technical design or code.
    End with the `file://` link on its own line.
+
+## Resuming (`/spec continue {name}`)
+
+When a Draft spec for the topic already exists, don't start over: read it,
+summarize what's settled and what's open in a few lines, ask which open
+questions now have answers, and edit the existing file. Settled sections
+stay settled unless the user reopens them.
