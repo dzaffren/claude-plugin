@@ -1,6 +1,8 @@
 # {Feature name}
 
-**Ticket:** {ID or TBD} · **Type:** {Feature | Bug | Enhancement | Technical} · **Status:** Draft
+**Ticket:** {ID or TBD} · **Type:** {Feature | Bug | Enhancement | Technical} · **Version:** v1 · **Status:** Draft
+
+**Supersedes:** archive/{name}-v{N}.md _(delete line on a first version)_
 
 {Two-sentence summary: what this is and why now.}
 

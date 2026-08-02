@@ -35,7 +35,15 @@ tables, or code identifiers.
    success metrics, rollout risks. No architecture or implementation
    questions — those belong to /refine.
 
-4. **Write the spec** to `docs/specs/{name}.md` following
+4. **Version, don't jumble.** If `docs/specs/{name}.md` already exists:
+   - Status `Shipped` → this is a new iteration. Move the old file to
+     `docs/specs/archive/{name}-v{N}.md` (git mv, delete its stale `.html`),
+     then write the new spec as `Version: v{N+1}` with a
+     `**Supersedes:** archive/{name}-v{N}.md` line.
+   - Any other status → the work is still in flight. Update the existing
+     file; never fork a second spec for the same feature.
+
+5. **Write the spec** to `docs/specs/{name}.md` following
    `${CLAUDE_SKILL_DIR}/references/spec-template.md`. Rules:
    - User-facing features get a user story ("As a…, I want…, so that…").
      Bugs and technical tasks don't.
@@ -49,7 +57,8 @@ tables, or code identifiers.
      plus one `spec-{story}.md` per story, each independently valuable.
      Never wrap a single spec in a directory.
 
-5. **Render and stop.** Generate the HTML view (spec-html skill). Tell the
+6. **Render and stop.** Generate the HTML view (spec-html skill) and refresh
+   the index (`md2html.py --index docs/specs`). Tell the
    user the spec path, ask them to review the visual plan, and say the next
    step is `/refine` once they approve. Do NOT start technical design or code.
    End with the `file://` link on its own line.

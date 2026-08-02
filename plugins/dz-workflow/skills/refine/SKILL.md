@@ -47,7 +47,9 @@ Problem section and go straight to the technical plan.
    - Simplest thing that works. No new abstraction, config, or layer the
      acceptance criteria don't demand.
 
-5. **Render and stop.** Regenerate the HTML view (spec-html skill). Tell the
+5. **Render and stop.** Set the spec's Status to `Refined`, regenerate the
+   HTML view (spec-html skill), and refresh the index
+   (`md2html.py --index docs/specs`). Tell the
    user what the plan's riskiest choice is in one line, say `/build` is next
    once they approve, and end with the `file://` link on its own line. Do NOT
    start coding.
