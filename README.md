@@ -30,6 +30,7 @@ flowchart LR
 | `/ship`     | Verifies all gates, tidies branch, prepares (never pushes) the PR   |
 | `spec-html` | Shared renderer: any doc .md → sibling self-contained .html         |
 | `/learn`    | Lesson store — but capture is automatic, see below                  |
+| agents      | feature-builder (parallel chunk builds), quality-reviewer, security-reviewer |
 | `/status`   | Table of every spec: version, stage, next command; refreshes index  |
 | `/poc`      | Throwaway spike answering one risky assumption; code dies, answer stays |
 | `/walkthrough` | Explains existing code: traced path with file:line refs, diagram, .md+.html |

@@ -17,18 +17,12 @@ spec's acceptance criteria and technical plan are the yardstick.
 1. **Get the diff.** `git diff main...HEAD` (or the repo's default branch).
    Read the spec so you know what the code claims to do.
 
-2. **Review with a fresh eye.** Launch a subagent (general-purpose) with the
-   diff and the spec, instructed to find problems, not to praise. Check for:
-   - **Correctness** — does each acceptance scenario actually hold? Edge
-     cases in the criteria that the code or tests miss?
-   - **Reuse** — duplicated logic where an existing helper should be used;
-     new abstractions the plan didn't call for.
-   - **Simplicity** — dead code, needless config, layers that exist "for
-     later", error handling for cases nobody specified.
-   - **Consistency** — naming, idiom, and comment density matching each
-     touched file; no drive-by reformatting.
-   - **Tests** — do they assert behavior (not implementation)? Would they
-     fail if the feature broke?
+2. **Review with a fresh eye.** Spawn the `quality-reviewer` agent with the
+   diff range and the spec path — it's read-only and knows what to check
+   (correctness against scenarios, tests, reuse, simplicity, consistency,
+   cross-chunk seams). For a large diff, spawn one per area of the plan's
+   Chunks section, in parallel. If /build already ran a first-pass review,
+   pass those findings in so it verifies rather than rediscovers.
 
 3. **Verify each finding** before acting on it — read the actual code, don't
    trust the reviewer's summary. Drop anything that doesn't hold up.

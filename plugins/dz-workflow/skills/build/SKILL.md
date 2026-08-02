@@ -22,20 +22,33 @@ criteria are the definition of done.
    (`feat/{name}`, `fix/{name}` — match the repo's existing convention from
    `git log`/branch names).
 
-3. **Work scenario by scenario.** For each acceptance scenario, in order:
-   - Write or extend the test that proves it (at the level the test plan
-     says — unit, integration, or e2e).
-   - Implement the smallest change that makes it pass, following the plan's
-     file-by-file changes and reusing the helpers it names.
-   - Run the project's real test command (from the technical plan). Green
-     before moving on.
-   Match each file's existing style, naming, and comment density. No drive-by
-   refactors or fixes outside the plan — if something else is broken, note it
-   in one line and leave it.
+3. **Disperse or build inline.** Read the plan's **Chunks** section:
+   - `Single chunk` (or ≤2 scenarios) → build inline: per scenario, write
+     the failing test, implement the smallest change that passes, rerun the
+     test command, green before moving on.
+   - Multiple chunks → spawn one `feature-builder` agent per chunk, **all in
+     parallel in one message**. Each agent's prompt contains: the spec path,
+     its scenarios, the exact files it owns (verify the plan's ownership is
+     disjoint first — overlapping chunks must be merged or serialized, never
+     dispatched in parallel), the test command, and the repo's lessons from
+     `docs/learnings/INDEX.md`. Agents don't commit; you do.
+   - A chunk that depends on another chunk's output runs after it, not
+     beside it.
+   In both modes: match each file's existing style; no drive-by refactors —
+   if something else is broken, note it in one line and leave it.
 
-4. **e2e last.** When all scenarios pass in isolation, run the full test
-   suite plus any e2e suite the repo has. If the repo has a way to run the
-   app, run it and exercise the main flow from the spec once for real.
+4. **Integrate.** When all chunks report back: read each report, then run
+   the full test suite yourself — chunk-green is not integration-green.
+   Fix seams (a helper written twice, mismatched conventions at an
+   interface) yourself; a blocked or failed chunk gets fixed inline or
+   re-dispatched with the corrected prompt. Then run any e2e suite the repo
+   has, and if the repo has a way to run the app, exercise the main flow
+   from the spec once for real.
+
+   While the full suite runs, spawn `quality-reviewer` and
+   `security-reviewer` agents in parallel on the branch diff for a first
+   pass — their findings seed /quality and /security rather than replacing
+   those stages.
 
 5. **Commit as you go** in logical chunks, message style matched to
    `git log`. Check `git status` before each commit for files that shouldn't

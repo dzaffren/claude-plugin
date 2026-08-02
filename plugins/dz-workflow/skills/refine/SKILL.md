@@ -43,6 +43,11 @@ Problem section and go straight to the technical plan.
      and their rollback.
    - **Test plan** — which unit/integration/e2e tests prove each acceptance
      scenario, and the exact commands to run them.
+   - **Chunks** — how /build splits the work for parallel agents: each
+     chunk lists its acceptance scenarios and the files it owns. Files must
+     be disjoint between chunks — ownership is what makes parallel building
+     safe. Split along the module boundaries found in step 2. Small change
+     that doesn't split → write `Single chunk`.
    - **Risks** — real ones only, each with its mitigation. No filler.
    - Simplest thing that works. No new abstraction, config, or layer the
      acceptance criteria don't demand.

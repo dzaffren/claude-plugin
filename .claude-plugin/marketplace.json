@@ -9,7 +9,7 @@
       "name": "dz-workflow",
       "source": "./plugins/dz-workflow",
       "description": "Personal end-to-end delivery workflow: discover, spec, refine, build, quality, security, ship — with every spec rendered as a visual HTML plan for review.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "author": { "name": "Dzafran Bustaman" }
     }
   ]
