@@ -15,7 +15,11 @@ asked.
 
 ## Steps
 
-1. **Get the diff** (`git diff main...HEAD`) and the list of changed files.
+1. **Size the review.** `git diff --stat main...HEAD` and the changed file
+   list. Small diff (≤5 files and ≤300 changed lines) → one
+   `security-reviewer`, one `finding-verifier` per finding. Larger → full
+   shape: reviewer plus a three-lens verifier panel per finding. Breadth
+   scales with the diff; the verification bar never does.
 
 2. **Use real tooling when installed.** If the Trail of Bits skills are
    available (`static-analysis`, `differential-review` — from
@@ -51,9 +55,14 @@ asked.
    - **Crypto & transport** — home-rolled crypto, http where https existed,
      weakened TLS or cookie flags.
 
-6. **Verify each finding** by reading the code and tracing the input path
-   for real. Rate what survives: Critical / High / Medium / Low, each with
-   the file:line and a one-line attack scenario.
+6. **Verify adversarially.** For each candidate finding (from the tools,
+   the reviewer agent, or your own pass), spawn `finding-verifier` agents —
+   count and lenses from step 1 (panel lenses: reachability, impact,
+   defenses; all findings' verifiers in parallel). Pass ONLY the bare claim
+   (`file:line · category · one-line attack scenario`) and the diff range,
+   never the finder's reasoning. Survives on TRUE_POSITIVE from the single
+   verifier, or 2-of-3 on the panel. Rate survivors Critical / High /
+   Medium / Low.
 
 7. **Capture lessons automatically** (learn skill). A recurring unsafe
    pattern or a repo-specific security convention becomes a lesson in

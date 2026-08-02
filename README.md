@@ -31,7 +31,7 @@ flowchart LR
 | `/ship`     | Verifies all gates, tidies branch, prepares (never pushes) the PR   |
 | `spec-html` | Shared renderer: any doc .md → sibling self-contained .html         |
 | `/learn`    | Lesson store — but capture is automatic, see below                  |
-| agents      | feature-builder (parallel chunk builds), quality-reviewer, security-reviewer |
+| agents      | feature-builder (parallel chunk builds), quality-reviewer, security-reviewer, finding-verifier |
 | `/status`   | Table of every spec: version, stage, next command; refreshes index  |
 | `/poc`      | Throwaway spike answering one risky assumption; code dies, answer stays |
 | `/walkthrough` | Explains existing code: traced path with file:line refs, diagram, .md+.html |
@@ -75,6 +75,16 @@ Lessons are picked up without being asked:
 
 Docs land in `docs/discovery/` and `docs/specs/` of whatever repo you run the
 workflow in.
+
+## Verified reviews, sized to the diff
+
+No raw finding reaches you or gets fixed. Every `/quality` and `/security`
+finding is re-judged by `finding-verifier` agents that see only the bare
+claim (never the finder's reasoning) and default to false-positive. Small
+diffs (≤5 files, ≤300 lines) get one reviewer and one verifier per finding;
+larger diffs get reviewers per chunk and a three-lens panel (reachability /
+impact / defenses) with 2-of-3 majority. Breadth scales with the diff — the
+verification bar never does.
 
 ## Companion skills (optional, auto-detected)
 

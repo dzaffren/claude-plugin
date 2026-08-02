@@ -14,18 +14,26 @@ spec's acceptance criteria and technical plan are the yardstick.
 
 ## Steps
 
-1. **Get the diff.** `git diff main...HEAD` (or the repo's default branch).
+1. **Size the review.** `git diff --stat main...HEAD` (or the repo's
+   default branch). Small diff (≤5 files and ≤300 changed lines) → one
+   `quality-reviewer`, one verifier per finding. Larger → one reviewer per
+   area of the plan's Chunks section in parallel, three verifiers per
+   finding. Breadth scales with the diff; the verification bar never does.
    Read the spec so you know what the code claims to do.
 
-2. **Review with a fresh eye.** Spawn the `quality-reviewer` agent with the
-   diff range and the spec path — it's read-only and knows what to check
-   (correctness against scenarios, tests, reuse, simplicity, consistency,
-   cross-chunk seams). For a large diff, spawn one per area of the plan's
-   Chunks section, in parallel. If /build already ran a first-pass review,
-   pass those findings in so it verifies rather than rediscovers.
+2. **Review with a fresh eye.** Spawn the `quality-reviewer` agent(s) with
+   the diff range and the spec path — read-only, and instructed to report
+   correctness gaps only, not style. If /build already ran a first-pass
+   review, pass those findings in so it verifies rather than rediscovers.
 
-3. **Verify each finding** before acting on it — read the actual code, don't
-   trust the reviewer's summary. Drop anything that doesn't hold up.
+3. **Verify adversarially.** For each finding, spawn `finding-verifier`
+   agents (count from step 1; on the three-verifier shape give each a
+   different lens: reachability, impact, defenses — all in parallel across
+   all findings). Pass each verifier ONLY the bare claim
+   (`file:line · category · one-line scenario`) and the diff range — never
+   the reviewer's reasoning; a verifier that reads the argument agrees with
+   it. A finding survives on TRUE_POSITIVE from the single verifier, or
+   2-of-3 on the panel. Drop the rest silently.
 
 4. **Fix what's safe.** When a confirmed finding has a non-obvious cause,
    invoke `systematic-debugging` (obra/superpowers) if installed rather
@@ -39,5 +47,6 @@ spec's acceptance criteria and technical plan are the yardstick.
    have reused — becomes a lesson in `docs/learnings/`, written without
    asking. Skip one-off slips.
 
-6. **Report.** Findings fixed, findings flagged, lessons captured, test
-   results — actual output, not "should pass". Next step: `/security`.
+6. **Report.** Findings fixed, findings flagged, how many the verifiers
+   killed, lessons captured, test results — actual output, not "should
+   pass". Next step: `/security`.

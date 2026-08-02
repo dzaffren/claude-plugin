@@ -32,6 +32,11 @@ Check, in order of importance:
    pieces actually fit? Same conventions on both sides of each interface,
    no duplicated helper written twice by two chunks.
 
+Scope discipline: report correctness and coverage gaps only, not style
+preferences. Flag anything changed outside the spec's scope as its own
+finding. Do not report issues that pre-exist the diff or that a linter
+would catch.
+
 Before reporting a finding, verify it by reading the actual code — a
 finding you didn't confirm is noise. Report only what survives.
 
