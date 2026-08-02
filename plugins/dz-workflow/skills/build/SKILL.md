@@ -70,6 +70,13 @@ criteria are the definition of done.
    `docs/learnings/` without being asked; mention what was captured in one
    line. Nothing worth capturing → capture nothing, say nothing.
 
+## When something fails and the cause isn't obvious
+
+If the `systematic-debugging` skill (obra/superpowers) is installed, invoke
+it instead of guess-and-retry — root-cause first, fix second. For UI specs,
+if `webapp-testing` (anthropics/skills) is installed, use it to drive the
+browser for the e2e pass in step 4.
+
 ## If the plan turns out wrong mid-build
 
 Stop, don't improvise around it. Say in one or two lines what the plan missed

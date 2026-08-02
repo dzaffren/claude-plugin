@@ -17,19 +17,25 @@ asked.
 
 1. **Get the diff** (`git diff main...HEAD`) and the list of changed files.
 
-2. **Spawn the `security-reviewer` agent** with the diff range — it's
+2. **Use real tooling when installed.** If the Trail of Bits skills are
+   available (`static-analysis`, `differential-review` — from
+   `trailofbits/skills`), run them on the diff first and treat their output
+   as candidate findings for step 5's verification. Absent → prompt-only
+   review as below.
+
+3. **Spawn the `security-reviewer` agent** with the diff range — it's
    read-only and covers the classes below, verifying each candidate by
    tracing the input path. Steps 3–4 describe what it checks and how you
    validate its report; do the secrets history check yourself as well, it's
    too important to delegate blindly.
 
-3. **Scan for secrets first.** In the diff AND the branch's commit history
+4. **Scan for secrets first.** In the diff AND the branch's commit history
    (`git log -p main...HEAD`): keys, tokens, passwords, connection strings,
    real customer or production data. A secret in an earlier commit is still
    leaked even if a later commit removes it — flag it for history rewrite
    before any push.
 
-4. **Review the changes** against the classes that actually apply to this
+5. **Review the changes** against the classes that actually apply to this
    diff (skip the rest):
    - **Injection** — SQL/command/path/template built from user input without
      parameterization or escaping.
@@ -45,14 +51,14 @@ asked.
    - **Crypto & transport** — home-rolled crypto, http where https existed,
      weakened TLS or cookie flags.
 
-5. **Verify each finding** by reading the code and tracing the input path
+6. **Verify each finding** by reading the code and tracing the input path
    for real. Rate what survives: Critical / High / Medium / Low, each with
    the file:line and a one-line attack scenario.
 
-6. **Capture lessons automatically** (learn skill). A recurring unsafe
+7. **Capture lessons automatically** (learn skill). A recurring unsafe
    pattern or a repo-specific security convention becomes a lesson in
    `docs/learnings/`, written without asking.
 
-7. **Report and wait.** Findings with severity, or a clean bill stating what
+8. **Report and wait.** Findings with severity, or a clean bill stating what
    was checked. Fix only with the user's go-ahead — security fixes can change
    behavior. Next step once clear: `/ship`.

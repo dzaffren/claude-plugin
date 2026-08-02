@@ -14,7 +14,9 @@ opening the PR/MR stay the user's move.
 
 ## Steps
 
-1. **Check the gates.** Confirm, by looking not by memory:
+1. **Check the gates.** If `verification-before-completion`
+   (obra/superpowers) is installed, invoke it here — its anti-"it works"
+   discipline applies to this whole step. Confirm, by looking not by memory:
    - Spec status is `Built` and every acceptance scenario has a passing test
      (rerun the full test command now; show the output).
    - /quality ran; flagged items are fixed or explicitly accepted by the user.

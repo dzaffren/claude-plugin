@@ -27,7 +27,9 @@ spec's acceptance criteria and technical plan are the yardstick.
 3. **Verify each finding** before acting on it — read the actual code, don't
    trust the reviewer's summary. Drop anything that doesn't hold up.
 
-4. **Fix what's safe.** Apply confirmed fixes that don't change design
+4. **Fix what's safe.** When a confirmed finding has a non-obvious cause,
+   invoke `systematic-debugging` (obra/superpowers) if installed rather
+   than patching symptoms. Apply confirmed fixes that don't change design
    decisions; rerun the project's test command after. Commit as its own
    chunk. Anything that would reopen a design choice goes to the user as a
    one-line flag instead.

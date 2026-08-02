@@ -76,6 +76,18 @@ Lessons are picked up without being asked:
 Docs land in `docs/discovery/` and `docs/specs/` of whatever repo you run the
 workflow in.
 
+## Companion skills (optional, auto-detected)
+
+The workflow defers to these when installed, and falls back to its own
+prompts when not:
+
+| Stage       | Defers to                                          | Install from |
+| ----------- | -------------------------------------------------- | ------------ |
+| `/design`   | `frontend-design`                                  | official marketplace |
+| `/security` | `static-analysis`, `differential-review`           | `trailofbits/skills` |
+| `/build`, `/quality` | `systematic-debugging`; `webapp-testing` for UI e2e | `obra/superpowers`; `anthropics/skills` |
+| `/ship`     | `verification-before-completion`                   | `obra/superpowers` |
+
 ## Install
 
 ```
