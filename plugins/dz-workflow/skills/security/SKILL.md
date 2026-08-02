@@ -43,6 +43,10 @@ asked.
    for real. Rate what survives: Critical / High / Medium / Low, each with
    the file:line and a one-line attack scenario.
 
-5. **Report and wait.** Findings with severity, or a clean bill stating what
+5. **Capture lessons automatically** (learn skill). A recurring unsafe
+   pattern or a repo-specific security convention becomes a lesson in
+   `docs/learnings/`, written without asking.
+
+6. **Report and wait.** Findings with severity, or a clean bill stating what
    was checked. Fix only with the user's go-ahead — security fixes can change
    behavior. Next step once clear: `/ship`.

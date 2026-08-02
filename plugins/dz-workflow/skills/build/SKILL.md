@@ -47,6 +47,12 @@ criteria are the definition of done.
    the test results, that `/quality` then `/security` are next. End with the
    spec's `file://` link.
 
+7. **Capture lessons automatically** (learn skill). Before finishing, scan
+   the session for corrections the user made, blockers that cost real time,
+   and conventions discovered in the code. Write each as a lesson in
+   `docs/learnings/` without being asked; mention what was captured in one
+   line. Nothing worth capturing → capture nothing, say nothing.
+
 ## If the plan turns out wrong mid-build
 
 Stop, don't improvise around it. Say in one or two lines what the plan missed

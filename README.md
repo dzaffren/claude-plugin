@@ -29,6 +29,21 @@ flowchart LR
 | `/security` | Security review of the diff: secrets, injection, authz, deps        |
 | `/ship`     | Verifies all gates, tidies branch, prepares (never pushes) the PR   |
 | `spec-html` | Shared renderer: any doc .md → sibling self-contained .html         |
+| `/learn`    | Lesson store — but capture is automatic, see below                  |
+
+## Automatic learning
+
+Lessons are picked up without being asked:
+
+- **Capture** — build, quality, security, and ship each end by silently
+  recording lessons (your corrections, blockers, recurring review findings)
+  to the target repo's `docs/learnings/`. Mid-session corrections
+  ("from now on…", "never do X here") are captured the moment they happen.
+- **Recall** — a SessionStart hook prints `docs/learnings/INDEX.md` into
+  context at the start of every session in that repo, so past lessons are
+  applied automatically.
+
+`/learn audit` lists lessons; `/learn remove <slug>` deletes one.
 
 Docs land in `docs/discovery/` and `docs/specs/` of whatever repo you run the
 workflow in.

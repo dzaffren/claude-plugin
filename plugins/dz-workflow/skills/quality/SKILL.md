@@ -38,5 +38,10 @@ spec's acceptance criteria and technical plan are the yardstick.
    chunk. Anything that would reopen a design choice goes to the user as a
    one-line flag instead.
 
-5. **Report.** Findings fixed, findings flagged, test results — actual
-   output, not "should pass". Next step: `/security`.
+5. **Capture lessons automatically** (learn skill). Any finding that will
+   recur — a convention the code kept violating, a pattern the diff should
+   have reused — becomes a lesson in `docs/learnings/`, written without
+   asking. Skip one-off slips.
+
+6. **Report.** Findings fixed, findings flagged, lessons captured, test
+   results — actual output, not "should pass". Next step: `/security`.

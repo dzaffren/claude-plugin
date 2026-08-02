@@ -35,7 +35,12 @@ opening the PR/MR stay the user's move.
    reviewer should look at first. Save it in the final commit message body or
    paste it in the reply — whichever the repo's flow uses.
 
-5. **Stop before the push.** Report: gates passed, branch name, commit list
+5. **Capture lessons automatically** (learn skill). Last chance before the
+   session's signals are gone: user corrections across the whole run,
+   blockers, review themes. Write them to `docs/learnings/` without asking
+   and include them in the final commit.
+
+6. **Stop before the push.** Report: gates passed, branch name, commit list
    (`git log --oneline main..HEAD`), the handover text, and the spec's
    `file://` link. Ask before pushing or opening the PR/MR — never do either
   unprompted.
