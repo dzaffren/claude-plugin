@@ -5,7 +5,7 @@ description: >
   self-contained HTML visualization (sidebar TOC, scroll-spy, rendered Mermaid
   diagrams, light/dark). Use whenever any such .md document is created or
   edited, or when the user says "regenerate the HTML", "show me the spec",
-  "visualize the plan", or "HTML view". The other dz-workflow skills call
+  "visualize the plan", or "HTML view". The other shipwright skills call
   this after writing their documents.
 ---
 

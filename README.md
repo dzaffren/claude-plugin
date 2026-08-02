@@ -1,8 +1,8 @@
 # dzafran-claude-plugins
 
-Personal Claude Code plugin marketplace. One plugin: **dz-workflow**.
+Personal Claude Code plugin marketplace. One plugin: **shipwright**.
 
-## dz-workflow
+## shipwright
 
 An end-to-end delivery workflow. Each stage is a skill you can invoke as a
 slash command; each documentation stage produces Markdown (source of truth)
@@ -102,5 +102,5 @@ prompts when not:
 
 ```
 /plugin marketplace add <this repo path or git URL>
-/plugin install dz-workflow@dzafran-claude-plugins
+/plugin install shipwright@dzafran-claude-plugins
 ```

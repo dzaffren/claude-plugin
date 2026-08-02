@@ -1,6 +1,6 @@
 {
-  "name": "dz-workflow",
-  "version": "0.8.0",
+  "name": "shipwright",
+  "version": "0.9.0",
   "description": "Personal end-to-end delivery workflow: /discover -> /spec -> /refine -> /build -> /quality -> /security -> /ship. Specs and briefs are Markdown plus a self-contained HTML visualization for human review at every gate.",
   "author": {
     "name": "Dzafran Bustaman",

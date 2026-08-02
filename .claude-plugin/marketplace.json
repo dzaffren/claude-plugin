@@ -6,10 +6,10 @@
   },
   "plugins": [
     {
-      "name": "dz-workflow",
-      "source": "./plugins/dz-workflow",
+      "name": "shipwright",
+      "source": "./plugins/shipwright",
       "description": "Personal end-to-end delivery workflow: discover, spec, refine, build, quality, security, ship — with every spec rendered as a visual HTML plan for review.",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "author": { "name": "Dzafran Bustaman" }
     }
   ]

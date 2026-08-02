@@ -1,7 +1,7 @@
 ---
 name: status
 description: >
-  Shows where every piece of work sits in the dz-workflow pipeline and what
+  Shows where every piece of work sits in the shipwright pipeline and what
   the next command is. Use when the user asks "where are we", "what's next",
   "pipeline status", "which specs are in flight", or types /status. Also
   regenerates the specs index page.
