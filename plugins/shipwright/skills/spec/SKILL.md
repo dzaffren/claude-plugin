@@ -56,7 +56,11 @@ more question.
    - Acceptance criteria in Given/When/Then, covering happy paths, errors,
      and edge cases. Concrete examples with realistic names, dates, values.
    - A Mermaid diagram of the user journey or main flow — this is the
-     visualization the user reviews, so make it carry the story.
+     visualization the user reviews, so make it carry the story. Add a
+     `stateDiagram-v2` of the thing's lifecycle when the feature has distinct
+     states the user moves it through (draft → submitted → paid); delete it
+     when there are none. Keep every diagram under ~10 boxes — two at
+     different zoom levels beat one dense one.
    - No placeholders, no `[TBD]` except ticket IDs, no empty sections —
      delete what doesn't apply.
    - For a genuine multi-story epic: `docs/specs/{name}/spec.md` overview

@@ -29,6 +29,19 @@ flowchart LR
 
 {One or two sentences reading the diagram out loud.}
 
+## States
+
+_(delete the section if the feature has no distinct states)_
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Submitted: user submits
+    Submitted --> Paid: payment clears
+```
+
+{One sentence on what moves the thing between states.}
+
 ## Acceptance criteria
 
 ```gherkin

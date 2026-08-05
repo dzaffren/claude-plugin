@@ -39,12 +39,17 @@ Problem section and go straight to the technical plan.
 
 4. **Append a `## Technical plan` section** to the same spec file:
    - **Approach** — two or three sentences, then a Mermaid diagram of the
-     components touched, arrows labeled with what moves between them.
+     components touched, arrows labeled with what moves between them. Add a
+     `sequenceDiagram` of the main runtime path (request → services → data →
+     response) when the change has a non-trivial flow. Keep each under ~10
+     boxes — two diagrams at different zoom levels beat one dense one.
    - **Changes** — per file or module: what changes and why, referencing
      existing code as `path/file.py:42`. Name the existing helpers being
      reused.
    - **Data / interface changes** — schemas, endpoints, contracts, migrations
-     and their rollback.
+     and their rollback. Include a Mermaid `erDiagram` of the entities touched
+     and their relationships whenever the data model changes; skip it for
+     pure interface changes with no schema.
    - **Test plan** — which unit/integration/e2e tests prove each acceptance
      scenario, and the exact commands to run them.
    - **Chunks** — how /build splits the work for parallel agents: each
