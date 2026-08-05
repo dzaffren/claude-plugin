@@ -35,6 +35,7 @@ flowchart LR
 | `/status`   | Table of every spec: version, stage, next command; refreshes index  |
 | `/poc`      | Throwaway spike answering one risky assumption; code dies, answer stays |
 | `/walkthrough` | Explains existing code: traced path with file:line refs, diagram, .md+.html |
+| `/debug`    | Reproduces, finds the root cause, then fixes if small and safe or routes to `/refine`; reactive, standalone |
 
 `/discover continue {name}` and `/spec continue {name}` resume a session
 without re-litigating settled decisions.
@@ -96,6 +97,7 @@ prompts when not:
 | `/design`   | `frontend-design` → `design-taste-frontend` (taste-skill) → built-in fallback; shadcn skill on shadcn projects; jezweb `design-review`/`design-loop` for preview audits | official marketplace; `Leonxlnx/taste-skill`; `shadcn/ui`; `jezweb/claude-skills` |
 | `/security` | `static-analysis`, `differential-review`           | `trailofbits/skills` |
 | `/build`, `/quality` | `systematic-debugging`; `webapp-testing` for UI e2e | `obra/superpowers`; `anthropics/skills` |
+| `/debug`    | `systematic-debugging`, `test-driven-development`, `verification-before-completion` | `obra/superpowers` |
 | `/ship`     | `verification-before-completion`                   | `obra/superpowers` |
 
 ## Install
