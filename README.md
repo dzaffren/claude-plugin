@@ -19,6 +19,26 @@ flowchart LR
     X -- no criticals --> P[/ship/]
 ```
 
+The line above is the forward assembly line — each stage gated, moving one
+piece of work from idea to shipped. The rest are **reactive** skills you invoke
+whenever the situation calls for it; they hand their result *into* the pipeline
+rather than being a step on it:
+
+```mermaid
+flowchart TB
+    subgraph line["forward pipeline"]
+        direction LR
+        S[/spec/] --> R[/refine/] --> B[/build/] --> Q[/quality/]
+    end
+    W[/walkthrough/] -. understanding for .-> R
+    P[/poc/] -. proven answer to .-> R
+    DBG[/debug/] -. routes design-level fix to .-> R
+    DBG -. or fixes, then .-> Q
+```
+
+`/status` and `/learn` cut across every stage — checking where work sits and
+capturing lessons — so they aren't tied to any point in the line.
+
 | Command     | What it does                                                        |
 | ----------- | ------------------------------------------------------------------- |
 | `/discover` | Product discovery session → discovery brief                         |
