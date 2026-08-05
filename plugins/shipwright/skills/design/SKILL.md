@@ -64,9 +64,9 @@ specs with no frontend.
    are self-contained). Either way this is a review gate: STOP for approval.
 
 6. **Record and hand off.** Add a `## Design` section to the spec: the
-   component list, the tokens, and where the previews live; regenerate the
-   spec's HTML. The approved component list is the natural **Chunks** split
-   for /refine — say so in the handoff. End with the review link(s).
+   component list, the tokens, and where the previews live. The approved
+   component list is the natural **Chunks** split for /refine — say so in the
+   handoff. End with the review link(s).
 
 ## Iteration
 

@@ -30,8 +30,7 @@ opening the PR/MR stay the user's move.
 
 3. **Sync the docs.** If behavior, commands, or config changed: update
    README/CHANGELOG/CLAUDE.md as the repo's convention dictates. Update the
-   spec's Status to `Shipped`, regenerate its HTML (spec-html skill), and
-   refresh the index (`md2html.py --index docs/specs`).
+   spec's Status to `Shipped`.
 
 4. **Write the handover.** A short merge-request description: what changed
    and why (link the spec), how it was tested (real results), anything the
@@ -44,6 +43,5 @@ opening the PR/MR stay the user's move.
    and include them in the final commit.
 
 6. **Stop before the push.** Report: gates passed, branch name, commit list
-   (`git log --oneline main..HEAD`), the handover text, and the spec's
-   `file://` link. Ask before pushing or opening the PR/MR — never do either
-  unprompted.
+   (`git log --oneline main..HEAD`), the handover text, and the spec path.
+   Ask before pushing or opening the PR/MR — never do either unprompted.

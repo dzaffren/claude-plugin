@@ -3,8 +3,7 @@ name: status
 description: >
   Shows where every piece of work sits in the shipwright pipeline and what
   the next command is. Use when the user asks "where are we", "what's next",
-  "pipeline status", "which specs are in flight", or types /status. Also
-  regenerates the specs index page.
+  "pipeline status", "which specs are in flight", or types /status.
 ---
 
 # Status
@@ -31,13 +30,6 @@ essays.
    Cross-check `Built` against reality: if the branch for it doesn't exist
    or tests were never run, say so instead of trusting the label.
 
-3. **Refresh the index page:**
-
-   ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/skills/spec-html/scripts/md2html.py --index docs/specs
-   ```
-
-4. **Report.** Print the table (spec · version · status · next), one line
+3. **Report.** Print the table (spec · version · status · next) and one line
    for anything stale or contradictory (e.g. two specs for the same feature
-   outside archive/), and end with the `file://` link to
-   `docs/specs/index.html` on its own line.
+   outside archive/). The table is the index — no file is written.

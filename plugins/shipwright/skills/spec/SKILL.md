@@ -5,8 +5,7 @@ description: >
   code. Use when the user wants to define requirements, describe a feature,
   write up a bug, or says "spec this", "write the requirements", "PRD this".
   Reads the codebase for grounding but the output is non-technical. Produces
-  docs/specs/{name}.md plus an HTML visualization, then stops for the user's
-  approval before /refine.
+  docs/specs/{name}.md, then stops for the user's approval before /refine.
 ---
 
 # Spec
@@ -43,8 +42,8 @@ more question.
 
 4. **Version, don't jumble.** If `docs/specs/{name}.md` already exists:
    - Status `Shipped` → this is a new iteration. Move the old file to
-     `docs/specs/archive/{name}-v{N}.md` (git mv, delete its stale `.html`),
-     then write the new spec as `Version: v{N+1}` with a
+     `docs/specs/archive/{name}-v{N}.md` (git mv), then write the new spec
+     as `Version: v{N+1}` with a
      `**Supersedes:** archive/{name}-v{N}.md` line.
    - Any other status → the work is still in flight. Update the existing
      file; never fork a second spec for the same feature.
@@ -55,8 +54,8 @@ more question.
      Bugs and technical tasks don't.
    - Acceptance criteria in Given/When/Then, covering happy paths, errors,
      and edge cases. Concrete examples with realistic names, dates, values.
-   - A Mermaid diagram of the user journey or main flow — this is the
-     visualization the user reviews, so make it carry the story. Add a
+   - A Mermaid diagram of the user journey or main flow — the diagrams are
+     what the user reads the spec through, so make them carry the story. Add a
      `stateDiagram-v2` of the thing's lifecycle when the feature has distinct
      states the user moves it through (draft → submitted → paid); delete it
      when there are none. Keep every diagram under ~10 boxes — two at
@@ -67,11 +66,9 @@ more question.
      plus one `spec-{story}.md` per story, each independently valuable.
      Never wrap a single spec in a directory.
 
-6. **Render and stop.** Generate the HTML view (spec-html skill) and refresh
-   the index (`md2html.py --index docs/specs`). Tell the
-   user the spec path, ask them to review the visual plan, and say the next
-   step is `/refine` once they approve. Do NOT start technical design or code.
-   End with the `file://` link on its own line.
+6. **Stop for approval.** Tell the user the spec path, ask them to review it,
+   and say the next step is `/refine` once they approve. Do NOT start
+   technical design or code.
 
 ## Resuming (`/spec continue {name}`)
 

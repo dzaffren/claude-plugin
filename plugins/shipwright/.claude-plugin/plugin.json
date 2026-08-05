@@ -1,7 +1,7 @@
 {
   "name": "shipwright",
-  "version": "0.10.0",
-  "description": "Personal end-to-end delivery workflow: /discover -> /spec -> /refine -> /build -> /quality -> /security -> /ship. Specs and briefs are Markdown plus a self-contained HTML visualization for human review at every gate.",
+  "version": "0.11.0",
+  "description": "Personal end-to-end delivery workflow: /discover -> /spec -> /refine -> /build -> /quality -> /security -> /ship. Specs and briefs are Markdown with Mermaid diagrams, reviewed by a human at every gate.",
   "author": {
     "name": "Dzafran Bustaman",
     "email": "ahmaddzafranmohamadbustaman@gmail.com"

@@ -36,7 +36,7 @@ experiment, not a first draft — the deliverable is the answer, never the code.
 4. **Record the answer, kill the code.** Write the result into the
    discovery brief (or spec, if one exists): question, what was tried, the
    answer with the actual evidence (numbers, output, error messages), and
-   what it changes about the design. Regenerate the doc's HTML. Then delete
+   what it changes about the design. Then delete
    the branch (`git branch -D poc/{name}`) — or, if the user wants to keep it
    (a desirability mockup to demo to stakeholders, or just for reference), say
    plainly that nothing on it is merge-quality and it is not the real design —

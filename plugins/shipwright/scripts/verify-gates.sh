@@ -12,20 +12,6 @@ active=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 problems=""
 
-for docs in "$dir/docs/specs" "$dir/docs/discovery" "$dir/docs/walkthroughs"; do
-  [ -d "$docs" ] || continue
-  while IFS= read -r md; do
-    html="${md%.md}.html"
-    if [ ! -f "$html" ]; then
-      problems="$problems
-- $md has no HTML view. Run: python3 \${CLAUDE_PLUGIN_ROOT}/skills/spec-html/scripts/md2html.py $md"
-    elif [ "$md" -nt "$html" ]; then
-      problems="$problems
-- $md is newer than its HTML view. Regenerate it."
-    fi
-  done < <(find "$docs" -name '*.md' ! -name 'INDEX.md' 2>/dev/null)
-done
-
 specs="$dir/docs/specs"
 if [ -d "$specs" ]; then
   while IFS= read -r md; do
