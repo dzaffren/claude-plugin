@@ -42,7 +42,7 @@ capturing lessons — so they aren't tied to any point in the line.
 | ----------- | ------------------------------------------------------------------- |
 | `/discover` | Product discovery session → discovery brief                         |
 | `/spec`     | Requirements doc with diagrams, stops for your approval             |
-| `/design`   | UI specs only: rendered HTML component previews, synced to Claude Design for visual review; defers to official frontend-design skill when installed |
+| `/design`   | UI specs only: rendered HTML component previews, reusing the Claude Design project's existing design system when there is one; defers to official frontend-design skill when installed |
 | `/refine`   | Technical plan appended to the spec, stops for your approval        |
 | `/build`    | Implements scenario by scenario with tests, on a branch             |
 | `/quality`  | Fresh-eyes code review of the diff, safe fixes applied              |
