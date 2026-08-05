@@ -19,7 +19,10 @@ experiment, not a first draft — the deliverable is the answer, never the code.
    under 5s for 100k rows?", "Does the vendor API support partial updates?"
    Pull it from the discovery brief's experiment if one exists; otherwise
    agree it with the user first — never invent the question or its stakes
-   yourself (use AskUserQuestion). No question, no spike.
+   yourself (use AskUserQuestion). The question can test **feasibility**
+   ("can this work?") or **desirability** ("will users want or grasp this?");
+   a desirability spike is usually a rough clickable mockup, and that mockup
+   is the artifact you put in front of stakeholders. No question, no spike.
 
 2. **Set the kill criteria.** Before writing code: what result means yes,
    what means no, and a time box. When the box runs out, the answer is
@@ -34,8 +37,10 @@ experiment, not a first draft — the deliverable is the answer, never the code.
    discovery brief (or spec, if one exists): question, what was tried, the
    answer with the actual evidence (numbers, output, error messages), and
    what it changes about the design. Regenerate the doc's HTML. Then delete
-   the branch (`git branch -D poc/{name}`) — or, if the user wants to keep
-   it for reference, say plainly that nothing on it is merge-quality.
+   the branch (`git branch -D poc/{name}`) — or, if the user wants to keep it
+   (a desirability mockup to demo to stakeholders, or just for reference), say
+   plainly that nothing on it is merge-quality and it is not the real design —
+   `/design` builds that on an approved spec.
 
 5. **Capture the lesson** (learn skill) if the spike surfaced something a
    future run would otherwise rediscover the hard way.
