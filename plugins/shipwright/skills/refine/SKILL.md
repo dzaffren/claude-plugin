@@ -5,7 +5,7 @@ description: >
   interfaces, test strategy, risks. Use after /spec is approved, when the user
   says "refine the spec", "technical requirements", "how do we build this",
   or for small technical tasks that need no product spec at all. Updates the
-  spec .md and its HTML visualization, then stops for approval before /build.
+  spec .md, then stops for approval before /build.
 ---
 
 # Refine
@@ -61,9 +61,6 @@ Problem section and go straight to the technical plan.
    - Simplest thing that works. No new abstraction, config, or layer the
      acceptance criteria don't demand.
 
-5. **Render and stop.** Set the spec's Status to `Refined`, regenerate the
-   HTML view (spec-html skill), and refresh the index
-   (`md2html.py --index docs/specs`). Tell the
-   user what the plan's riskiest choice is in one line, say `/build` is next
-   once they approve, and end with the `file://` link on its own line. Do NOT
-   start coding.
+5. **Stop for approval.** Set the spec's Status to `Refined`. Tell the user
+   the spec path and what the plan's riskiest choice is in one line, and say
+   `/build` is next once they approve. Do NOT start coding.

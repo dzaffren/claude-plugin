@@ -8,8 +8,8 @@
     {
       "name": "shipwright",
       "source": "./plugins/shipwright",
-      "description": "Personal end-to-end delivery workflow: discover, spec, refine, build, quality, security, ship — with every spec rendered as a visual HTML plan for review.",
-      "version": "0.10.0",
+      "description": "Personal end-to-end delivery workflow: discover, spec, refine, build, quality, security, ship — every spec a Markdown plan with diagrams, reviewed at each gate.",
+      "version": "0.11.0",
       "author": { "name": "Dzafran Bustaman" }
     }
   ]

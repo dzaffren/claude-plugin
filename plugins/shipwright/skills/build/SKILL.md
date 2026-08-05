@@ -59,10 +59,9 @@ criteria are the definition of done.
    be tracked. Never push.
 
 6. **Report honestly.** If a test fails, show the actual output — don't
-   claim done. When everything is green, update the spec's Status to `Built`,
-   regenerate its HTML (spec-html skill), and tell the user: what was built,
-   the test results, that `/quality` then `/security` are next. End with the
-   spec's `file://` link.
+   claim done. When everything is green, update the spec's Status to `Built`
+   and tell the user: what was built, the test results, and that `/quality`
+   then `/security` are next.
 
 7. **Capture lessons automatically** (learn skill). Before finishing, scan
    the session for corrections the user made, blockers that cost real time,

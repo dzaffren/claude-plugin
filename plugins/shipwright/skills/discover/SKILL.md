@@ -4,7 +4,7 @@ description: >
   Product discovery before any requirements are written. Use when the user has
   a vague idea, wants to figure out what to build, or says "let's discover",
   "I have an idea", "what should we build", "brainstorm this". Produces a
-  discovery brief (Markdown + HTML visualization) that feeds /spec.
+  discovery brief in Markdown that feeds /spec.
 ---
 
 # Discover
@@ -44,9 +44,8 @@ language, no technical talk — discovery is about users and outcomes.
    opportunities with evidence, the pick and rationale, solution candidates,
    experiment, the tree diagram, open questions. Shortest complete version.
 
-8. **Render and hand off.** Generate the HTML view (spec-html skill), then
-   tell the user: the brief path, that `/spec` will pick it up automatically,
-   and end with the `file://` link on its own line.
+8. **Hand off.** Tell the user the brief path and that `/spec` will pick it
+   up automatically.
 
 ## Resuming (`/discover continue {name}`)
 

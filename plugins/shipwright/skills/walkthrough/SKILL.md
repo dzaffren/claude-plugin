@@ -2,7 +2,7 @@
 name: walkthrough
 description: >
   Explains existing code as a document: one real path traced with file:line
-  references, a Mermaid diagram, saved as Markdown plus the HTML view. Use
+  references, a Mermaid diagram, saved as Markdown. Use
   when the user says "walk me through", "how does X work", "explain this
   code/feature/flow", "document how this works". Independent of the
   workflow pipeline.
@@ -33,8 +33,7 @@ abstract description of the design.
      ordering, surprising defaults, that one flag everything depends on).
    - Shortest complete version. No taxonomy sections.
 
-3. **Render.** Generate the HTML view (spec-html skill) and end with the
-   `file://` link on its own line.
+3. **Hand off.** Tell the user the doc path in one line.
 
 If the walkthrough reveals the doc would go stale fast (code under heavy
 change), say so in one line rather than silently documenting a moving target.
