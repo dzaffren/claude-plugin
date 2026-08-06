@@ -36,8 +36,8 @@ spec's acceptance criteria and technical plan are the yardstick.
    2-of-3 on the panel. Drop the rest silently.
 
 4. **Fix what's safe.** When a confirmed finding has a non-obvious cause,
-   invoke `systematic-debugging` (obra/superpowers) if installed rather
-   than patching symptoms. Apply confirmed fixes that don't change design
+   prove the cause before patching — `/debug` steps 1–2 — rather than fixing
+   the symptom. Apply confirmed fixes that don't change design
    decisions; rerun the project's test command after. Commit as its own
    chunk. Anything that would reopen a design choice goes to the user as a
    one-line flag instead.

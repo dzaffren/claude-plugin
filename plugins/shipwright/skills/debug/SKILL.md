@@ -5,8 +5,7 @@ description: >
   is small and safe, or routes it to /refine when it's design-level. Use when a
   test fails, behaviour is wrong, or the user says "debug this", "why is X
   happening", "find the bug", "this is broken", "what's the root cause".
-  Reactive and standalone — not a forward pipeline stage. Defers to
-  systematic-debugging and test-driven-development when installed.
+  Reactive and standalone — not a forward pipeline stage.
 ---
 
 # Debug
@@ -19,20 +18,18 @@ wrong, wherever the work sits in the pipeline.
 ## Steps
 
 1. **Reproduce it first.** Pin down the exact input, state, and command that
-   makes it fail, then turn that into a **failing test** (defer to
-   `test-driven-development` (obra/superpowers) when installed): red now, green
-   when fixed, and it stays as the regression guard. Can't reproduce it → say
-   so and gather what's missing (logs, steps, environment); never "fix" a bug
-   you can't trigger.
+   makes it fail, then turn that into a **failing test**: red now, green when
+   fixed, and it stays as the regression guard. The test goes in before the
+   fix, always — a fix with no red test in front of it is a guess. Can't
+   reproduce it → say so and gather what's missing (logs, steps, environment);
+   never "fix" a bug you can't trigger.
 
-2. **Isolate the root cause.** Defer to `systematic-debugging`
-   (obra/superpowers) when installed — it drives the hunt. Not installed, hold
-   its discipline yourself: read the real error and stack, form ONE hypothesis
-   at a time, and binary-search the failure (bisect commits, halve the input,
-   disable halves of the code) until you can point at the line that is wrong
-   and say why. Confirm with evidence — a log line, a breakpoint, a passing
-   sub-case — not a plausible story. The symptom is where it shows; the cause
-   is usually elsewhere.
+2. **Isolate the root cause.** Read the real error and stack, form ONE
+   hypothesis at a time, and binary-search the failure (bisect commits, halve
+   the input, disable halves of the code) until you can point at the line that
+   is wrong and say why. Confirm with evidence — a log line, a breakpoint, a
+   passing sub-case — not a plausible story. The symptom is where it shows;
+   the cause is usually elsewhere.
 
 3. **Size the fix.** With the cause proven, decide:
    - **Small and safe** — a local change that reopens no design decision. Fix
@@ -42,9 +39,8 @@ wrong, wherever the work sits in the pipeline.
 
 4. **Fix small and safe.** Make the change, keep the step-1 test (now green),
    and rerun the project's real test command — the whole suite, not just the
-   one test. Report the ACTUAL output, never "should pass"
-   (`verification-before-completion` when installed). Commit the fix and its
-   regression test as their own chunk.
+   one test. Paste the ACTUAL output; never claim "should pass" or "it works"
+   from memory. Commit the fix and its regression test as their own chunk.
 
 5. **Route design-level.** Write the root cause into the relevant spec — or a
    fresh `docs/specs/{name}.md` with just a Problem section if none exists:

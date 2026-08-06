@@ -104,18 +104,27 @@ larger diffs get reviewers per chunk and a three-lens panel (reachability /
 impact / defenses) with 2-of-3 majority. Breadth scales with the diff — the
 verification bar never does.
 
-## Companion skills (optional, auto-detected)
+## Routing
 
-The workflow defers to these when installed, and falls back to its own
-prompts when not:
+A SessionStart hook claims the development workflow for shipwright and maps
+plain requests ("build it", "why is this broken", "review this") onto stages.
+Without it, another installed workflow plugin that announces itself at session
+start wins the routing before a shipwright stage ever starts.
 
-| Stage       | Defers to                                          | Install from |
+## Self-contained stages
+
+Every stage carries its own procedure for brainstorming, planning, testing,
+debugging, and verification. Nothing is delegated to a general-purpose
+workflow plugin — remove any of them and shipwright behaves identically.
+
+The exception is domain tooling a stage can't do itself, which it uses when
+installed and works around when not:
+
+| Stage       | Uses when installed                                | Install from |
 | ----------- | -------------------------------------------------- | ------------ |
 | `/design`   | `frontend-design` → `design-taste-frontend` (taste-skill) → built-in fallback; shadcn skill on shadcn projects; jezweb `design-review`/`design-loop` for preview audits | official marketplace; `Leonxlnx/taste-skill`; `shadcn/ui`; `jezweb/claude-skills` |
 | `/security` | `static-analysis`, `differential-review`           | `trailofbits/skills` |
-| `/build`, `/quality` | `systematic-debugging`; `webapp-testing` for UI e2e | `obra/superpowers`; `anthropics/skills` |
-| `/debug`    | `systematic-debugging`, `test-driven-development`, `verification-before-completion` | `obra/superpowers` |
-| `/ship`     | `verification-before-completion`                   | `obra/superpowers` |
+| `/build`    | `webapp-testing` for UI e2e                        | `anthropics/skills` |
 
 ## Install
 
