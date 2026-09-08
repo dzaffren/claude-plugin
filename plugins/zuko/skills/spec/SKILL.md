@@ -117,9 +117,18 @@ the project type — see the table in `slicing.md`:
    Either way, show every state the acceptance criteria mention: default,
    hover, focus, empty, loading, error.
 
-7. **Run the drift check** (`scripts/check-design-drift.sh`) before showing
-   anything. It fails → fix and re-render. The user only ever sees previews
-   that already conform.
+7. **Run the drift check before showing anything**, passing the paths this
+   run actually wrote:
+
+   ```
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-design-drift.sh" <paths>
+   ```
+
+   The paths matter. Called with no argument it only looks at `docs/design`,
+   so on the dev-server path — where the components went into `src/` or
+   `app/` — it would scan nothing. It exits 1 rather than passing silently
+   when that happens, but the fix is to pass the paths. It fails → fix and
+   re-render. The user only ever sees previews that already conform.
 
 8. **Run the two checks from `craft.md`** — the generic-model test and the
    named-reference test. Failing either means revise, not ship.

@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
 # Gate: UI written into the repo must use the design system, not invent values.
 # Usage: check-design-drift.sh <file-or-dir> [<file-or-dir> ...]
-# Exit 1 with a report on any violation. Advisory when no token file is found.
+# Pass the paths this run actually wrote. It judges what was just written, not
+# the whole repo -- pre-existing violations elsewhere are not this slice's.
+# Exit 1 on any violation, and exit 1 if it ended up scanning nothing: a gate
+# that scanned no files must never read as a pass.
 set -uo pipefail
 
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 targets=("$@")
-[ ${#targets[@]} -eq 0 ] && targets=("$dir/docs/design")
+if [ ${#targets[@]} -eq 0 ]; then
+  # No paths given. Fall back to the local preview directory, which only
+  # covers the L2 path -- components written into the repo itself (L3) live
+  # in src/, app/, components/ and would be missed entirely.
+  targets=("$dir/docs/design")
+  echo "check-design-drift.sh: no paths given, defaulting to docs/design." >&2
+  echo "  If this run wrote components into the repo instead, pass those paths." >&2
+fi
 
 # Find the token definitions the project actually uses.
 token_files=$(find "$dir" \
@@ -21,11 +31,40 @@ if [ -n "$token_files" ]; then
   done | sort -u)
 fi
 
+missing=""
+for t in "${targets[@]}"; do
+  [ -e "$t" ] || missing="$missing $t"
+done
+
 scan=$(printf '%s\n' "${targets[@]}" | while read -r t; do
   [ -e "$t" ] || continue
-  find "$t" -type f \( -name '*.html' -o -name '*.css' -o -name '*.tsx' -o -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) 2>/dev/null
+  if [ -f "$t" ]; then
+    case "$t" in
+      *.html|*.css|*.scss|*.tsx|*.jsx|*.ts|*.js|*.vue|*.svelte) echo "$t" ;;
+    esac
+  else
+    find "$t" -type f \
+      -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/.next/*' \
+      \( -name '*.html' -o -name '*.css' -o -name '*.scss' -o -name '*.tsx' -o -name '*.jsx' -o -name '*.vue' -o -name '*.svelte' \) 2>/dev/null
+  fi
 done)
-[ -z "$scan" ] && exit 0
+
+file_count=$(printf '%s\n' "$scan" | grep -c . || true)
+
+if [ "$file_count" -eq 0 ]; then
+  {
+    echo "Design drift check scanned NOTHING -- this is a failure, not a pass."
+    [ -n "$missing" ] && echo "  These paths do not exist:$missing"
+    echo "  Pass the paths this run actually wrote, for example:"
+    echo "    check-design-drift.sh src/components/ShareModal.tsx src/app/share/page.tsx"
+    echo "    check-design-drift.sh docs/design/{slice}/"
+  } >&2
+  exit 1
+fi
+
+if [ -n "$missing" ]; then
+  echo "check-design-drift.sh: these paths do not exist and were skipped:$missing" >&2
+fi
 
 problems=""
 
@@ -99,15 +138,15 @@ $hits"
 fi
 
 if [ -n "$problems" ]; then
-  echo "Design drift check FAILED.$problems"
+  echo "Design drift check FAILED over $file_count file(s).$problems"
   echo ""
   echo "Fix these and re-render before showing the user. Anything the design system genuinely lacks is a proposal to the system, not a one-off here."
   exit 1
 fi
 
 if [ -z "$known_tokens" ]; then
-  echo "Design drift check passed (advisory: no design system token file found, so token names were not verified)."
+  echo "Design drift check passed over $file_count file(s) (advisory: no design system token file found, so token names were not verified)."
 else
-  echo "Design drift check passed."
+  echo "Design drift check passed over $file_count file(s) against $(printf '%s\n' "$known_tokens" | grep -c .) known tokens."
 fi
 exit 0

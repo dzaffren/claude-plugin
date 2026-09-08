@@ -123,8 +123,10 @@ that exists.
 3. Pick the motion tier.
 4. Build the preview — real components behind a preview route if the repo runs,
    otherwise one self-contained HTML file with every state and real motion.
-5. Run `${CLAUDE_PLUGIN_ROOT}/scripts/check-design-drift.sh`, then the two
-   checks from `craft.md`.
+5. Run the drift check on the paths you just wrote —
+   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-design-drift.sh" <paths>` — then
+   the two checks from `craft.md`. With no paths it only looks at
+   `docs/design` and will miss components written into the repo itself.
 6. Show it and stop.
 
 ## Iteration

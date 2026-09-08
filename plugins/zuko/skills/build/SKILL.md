@@ -6,7 +6,7 @@ description: >
   ends with the slice's end-to-end test green. Use when the user says "build
   it", "implement this", "write the code", or names an approved spec.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git checkout *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(git stash *) Bash(git merge *) Bash(git worktree *) Bash(git fetch *) Bash(npm test *) Bash(npm run *) Bash(npx *) Bash(pnpm *) Bash(yarn *) Bash(pytest *) Bash(python -m *) Bash(uv run *) Bash(go test *) Bash(cargo test *) Bash(make *) Bash(bash *)
+allowed-tools: Write Edit Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git checkout *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(git stash *) Bash(git merge *) Bash(git worktree *) Bash(git fetch *) Bash(npm test *) Bash(npm run *) Bash(npx *) Bash(pnpm *) Bash(yarn *) Bash(pytest *) Bash(python -m *) Bash(uv run *) Bash(go test *) Bash(cargo test *) Bash(make *) Bash(bash *)
 ---
 
 # Build
