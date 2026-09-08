@@ -1,7 +1,7 @@
 {
   "name": "zuko",
   "displayName": "zuko",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Idea to shipped, one vertical slice at a time: shape, spec, build, review, ship. Every plan carries diagrams, every spec is independently testable and shippable, and nothing unresolved reaches the build.",
   "author": {
     "name": "Dzafran Bustaman",
