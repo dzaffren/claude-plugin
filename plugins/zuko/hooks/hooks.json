@@ -1,0 +1,63 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-dangerous.sh",
+            "statusMessage": "Checking for destructive commands..."
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/secret-scan.sh",
+            "statusMessage": "Scanning staged diff for secrets..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/auto-format.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/verify-gates.sh",
+            "statusMessage": "Checking spec gates..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/check-open-items.sh",
+            "statusMessage": "Checking open items..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/route-to-zuko.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/load-learnings.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
