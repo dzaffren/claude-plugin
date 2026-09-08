@@ -17,7 +17,13 @@ spec_status() {
 }
 
 # --- direct mode: one spec, called by /build ------------------------------
-if [ $# -ge 1 ] && [ -f "$1" ]; then
+# An argument means direct mode, always. A bad path is an error, never a
+# silent fall-through to hook mode -- that would pass a spec it never read.
+if [ $# -ge 1 ]; then
+  if [ ! -f "$1" ]; then
+    echo "check-open-items.sh: no such spec: $1" >&2
+    exit 1
+  fi
   rows=$(open_rows "$1")
   if [ -n "$rows" ]; then
     echo "Open items in $1 — /build cannot start until each is Resolved or Accepted risk:"

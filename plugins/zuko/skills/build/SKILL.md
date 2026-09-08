@@ -6,7 +6,7 @@ description: >
   ends with the slice's end-to-end test green. Use when the user says "build
   it", "implement this", "write the code", or names an approved spec.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git checkout *) Bash(git add *) Bash(npm test *) Bash(npm run *) Bash(pnpm *) Bash(yarn *) Bash(pytest *) Bash(go test *) Bash(cargo test *) Bash(make *)
+allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git checkout *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(git stash *) Bash(git merge *) Bash(git worktree *) Bash(git fetch *) Bash(npm test *) Bash(npm run *) Bash(npx *) Bash(pnpm *) Bash(yarn *) Bash(pytest *) Bash(python -m *) Bash(uv run *) Bash(go test *) Bash(cargo test *) Bash(make *) Bash(bash *)
 ---
 
 # Build
@@ -19,8 +19,16 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
 
 ## Gate — before anything
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/check-open-items.sh`. Any row still `Open`
-and the build does not start.
+Run the gate **with the spec's path as its argument**:
+
+```
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-open-items.sh" docs/specs/{slice}.md
+```
+
+The path is not optional. Called with no argument the script runs in Stop-hook
+mode, which only inspects specs already marked `Built` or `Shipped` — it would
+sail straight past the `Refined` spec you are about to build. Exit 1 means the
+build does not start.
 
 Print the open rows, then work through them with the user one at a time. Each
 becomes:

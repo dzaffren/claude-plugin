@@ -5,7 +5,7 @@ description: >
   and after merge checks the signal the spec said would prove it works. Use
   when the user says "ship it", "open the PR", "are we done", "is this ready".
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git add *) Bash(git commit *) Bash(git push *)
+allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git branch *) Bash(git add *) Bash(git commit *) Bash(git push *) Bash(git fetch *) Bash(git merge *) Bash(git rebase *) Bash(git rev-parse *) Bash(gh pr *) Bash(gh run *) Bash(bash *)
 ---
 
 # Ship
@@ -61,9 +61,16 @@ by hand, the flag name and rollback, and a link to the spec's visual page.
 **Ask before pushing.** Then push with `git push -u origin {branch}`. Retry
 network failures up to four times with 2s / 4s / 8s / 16s backoff.
 
+Open the PR with whichever is available: the GitHub MCP tools
+(`mcp__github__create_pull_request`), or `gh pr create`. Neither available →
+say so and hand the user the compare URL that `git push` printed. Never claim
+a PR exists that you did not create.
+
 ## Watch CI
 
-Subscribe to the PR and watch it to green.
+Subscribe to the PR and watch it to green, using the GitHub MCP tools or
+`gh pr checks`. Neither available → say that CI cannot be watched from here
+and tell the user what to check.
 
 - Red → diagnose and push a fix. Reproduce the failure first, prove the fix
   locally, then push once. Never skip, disable, or quarantine a test to get
