@@ -1,0 +1,12 @@
+{
+  "name": "zuko",
+  "displayName": "zuko",
+  "version": "2.0.0",
+  "description": "Idea to shipped, one vertical slice at a time: shape, spec, build, review, ship. Every plan carries diagrams, every spec is independently testable and shippable, and nothing unresolved reaches the build.",
+  "author": {
+    "name": "Dzafran Bustaman",
+    "email": "ahmaddzafranmohamadbustaman@gmail.com"
+  },
+  "repository": "https://github.com/dzaffren/claude-plugin",
+  "keywords": ["workflow", "spec", "vertical-slice", "design-system", "code-review", "security"]
+}
