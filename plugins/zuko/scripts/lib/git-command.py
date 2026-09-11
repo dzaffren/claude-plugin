@@ -17,9 +17,16 @@ import sys
 # so it never opens a body — the leading `<` stops \w+ from matching.
 HEREDOC = re.compile(r'<<-?[ \t]*(["\']?)(\w+)\1')
 
-# Where a command word can start. `(` and ` for subshells, `\n` because a
-# newline ends a command as surely as `;` does.
-SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "`", "\n"}
+# What ends one command. shlex glues a run of punctuation into a single token,
+# so `&&\n` and a blank line both arrive as one token — test the characters,
+# not the token.
+SEPARATOR_CHARS = set(";&|()`<>\n")
+
+# git's own options, which sit before the subcommand. These take a value.
+GLOBAL_OPTIONS_WITH_VALUE = {
+    "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
+    "--super-prefix",
+}
 
 
 def strip_heredocs(command):
@@ -45,25 +52,43 @@ def tokenise(command):
     return list(lex)
 
 
+def is_separator(token):
+    return bool(token) and all(ch in SEPARATOR_CHARS for ch in token)
+
+
+def strip_global_options(args):
+    """Drop git's own options so the subcommand is first: -C x commit -> commit."""
+    rest = list(args)
+    while rest and rest[0].startswith("-"):
+        option = rest.pop(0)
+        if option in GLOBAL_OPTIONS_WITH_VALUE and rest:
+            rest.pop(0)
+    return rest
+
+
 def invocations(tokens):
-    """The argument list of every `git` standing at a command position."""
+    """The arguments of every bare `git` token.
+
+    Bare is the whole test. Quoting collapses "how to git commit" into one
+    token, and heredoc bodies are gone by now, so prose can never produce a
+    `git` token on its own. Everything else is treated as a real invocation —
+    `sudo git`, `VAR=x git`, `do git` inside a loop — because a guard that
+    tries to list the wrappers it knows about will always miss one.
+    """
     found = []
-    at_command = True
     args = None
     for token in tokens:
-        if token in SEPARATORS:
+        if is_separator(token):
             if args is not None:
-                found.append(args)
+                found.append(strip_global_options(args))
                 args = None
-            at_command = True
             continue
         if args is not None:
             args.append(token)
-        elif at_command and token == "git":
+        elif token == "git":
             args = []
-        at_command = False
     if args is not None:
-        found.append(args)
+        found.append(strip_global_options(args))
     return found
 
 

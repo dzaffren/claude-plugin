@@ -26,3 +26,9 @@ One line per lesson. Loaded into every session in this repo.
 - A guard whose verdict depends on the current branch or staged diff must be
   tested against a scratch repo in that state, not the session's.
   ([detail](test-the-guard-where-it-fires.md))
+- Swapping a broad matcher for a precise one turns false blocks into false
+  allows — diff old against new on the same inputs before shipping.
+  ([detail](tightening-a-matcher-trades-blocks-for-allows.md))
+- A finding-verifier has no Bash — when a finding turns on real library
+  behaviour, run it yourself instead of trusting the vote.
+  ([detail](verifiers-cannot-run-code.md))

@@ -14,7 +14,7 @@ deny() { echo "$1" >&2; exit 2; }
 git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>/dev/null)
 if [ $? -eq 0 ]; then
   subject="$git_args"
-  push_re='^push( .*)? (--force|--force-with-lease|-f)([[:space:]]|$)'
+  push_re='^push( .*)? (--force[^[:space:]]*|-f)([[:space:]]|$)'
   commit_re='^commit([[:space:]]|$)'
 else
   subject="$cmd"
