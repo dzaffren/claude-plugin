@@ -94,7 +94,7 @@ so write the system to disk and hand it over.
 — *is* the design system. Write nothing extra; point `/design-sync` at that
 package. Highest fidelity: the sync reads React components directly.
 
-**Otherwise** write it to `docs/design/system/`, structured the way Claude
+**Otherwise** write it to `docs/design/design-system/`, structured the way Claude
 Design's own projects are structured:
 
 - `tokens/` as CSS — colours, spacing, typography, fonts — plus a root
@@ -108,7 +108,7 @@ Design's own projects are structured:
 Then give the user the three lines to type:
 
 ```
-cd docs/design/system
+cd docs/design/design-system
 claude
 /design-sync
 ```
