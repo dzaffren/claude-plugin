@@ -90,9 +90,10 @@ the project type — see the table in `slicing.md`:
 
 2. **The design system must exist.** Look for it: a Claude Design project via
    DesignSync `list_projects`, then `components.json`, a tokens or theme file,
-   `tailwind.config`. Found nothing → **stop and send the user to
-   `/design system`.** No system, no screens. This gate is what keeps every
-   component standardised.
+   `tailwind.config`. `list_projects` answering that it needs authorization is
+   not "found nothing" — ask the user to run `/design-login` and look again.
+   Found nothing → **stop and send the user to `/design system`.** No system,
+   no screens. This gate is what keeps every component standardised.
 
 3. **Compose only.** Assemble screens from the system's existing primitives
    and tokens. Needs something the system lacks → stop and offer the two
@@ -133,9 +134,10 @@ the project type — see the table in `slicing.md`:
 8. **Run the two checks from `craft.md`** — the generic-model test and the
    named-reference test. Failing either means revise, not ship.
 
-9. Offer a Claude Design canvas via `/design-sync` when the layout is
-   unsettled and the user would rather drag than describe. Motion does not
-   play on a canvas — say so.
+9. Offer a Claude Design canvas when the layout is unsettled and the user
+   would rather drag than describe. A canvas is published, not synced —
+   `/design-sync` pushes a design system and does not make one. Motion does
+   not play on a canvas — say so.
 
 ### For every project type
 
