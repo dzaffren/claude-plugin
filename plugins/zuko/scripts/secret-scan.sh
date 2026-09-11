@@ -3,7 +3,18 @@
 set -uo pipefail
 
 cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || exit 0
-printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])git commit' || exit 0
+
+# Same matcher as block-dangerous.sh: the git invocations actually being run,
+# falling back to the raw text when the command cannot be parsed.
+git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>/dev/null)
+if [ $? -eq 0 ]; then
+  subject="$git_args"
+  commit_re='^commit([[:space:]]|$)'
+else
+  subject="$cmd"
+  commit_re='(^|[;&|[:space:]])git commit'
+fi
+printf '%s\n' "$subject" | grep -qE "$commit_re" || exit 0
 
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 added=$(git -C "$dir" diff --cached 2>/dev/null | grep '^+' | grep -v '^+++' || true)

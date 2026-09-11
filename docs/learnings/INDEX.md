@@ -23,3 +23,6 @@ One line per lesson. Loaded into every session in this repo.
 - When parallel chunks would share a file, re-cut them by file — disjoint
   ownership is what keeps the merges clean.
   ([detail](chunk-by-file-not-by-story.md))
+- A guard whose verdict depends on the current branch or staged diff must be
+  tested against a scratch repo in that state, not the session's.
+  ([detail](test-the-guard-where-it-fires.md))
