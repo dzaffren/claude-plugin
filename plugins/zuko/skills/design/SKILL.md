@@ -86,16 +86,17 @@ Publish to the canvas. The user hand-tunes and saves. **Stop for approval.**
 
 ## Push
 
-This stage does not publish. Claude Design's own instruction is that the user
-types `/design-sync` themselves and that asking Claude to run it won't work,
-so write the system to disk and hand it over.
+This step does not publish the design system — the canvas in pauses B and C
+is a different thing. Claude Design's own instruction is that the user types
+`/design-sync` themselves and that asking Claude to run it won't work, so
+write the system to disk and hand it over.
 
 **A component library already in code** — React components plus a tokens file
 — *is* the design system. Write nothing extra; point `/design-sync` at that
 package. Highest fidelity: the sync reads React components directly.
 
-**Otherwise** write it to `docs/design/design-system/`, structured the way Claude
-Design's own projects are structured:
+**Otherwise** write it to `docs/design/design-system/`, structured the way
+Claude Design's own projects are structured:
 
 - `tokens/` as CSS — colours, spacing, typography, fonts — plus a root
   `styles.css`.
@@ -113,8 +114,8 @@ claude
 /design-sync
 ```
 
-Say plainly that this run wrote the system to disk but did not publish it, and
-that it stays local until they run that.
+Say plainly whether this run established the system or extended an existing
+one, that it is on disk, and that it stays local until they run those lines.
 
 Reading an existing project is different — DesignSync's read methods are yours
 to call: `list_projects`, `get_project` to confirm
