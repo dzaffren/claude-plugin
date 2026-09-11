@@ -61,7 +61,7 @@ pause 2 is skipped, per `slicing.md`.
 flowchart LR
     C["Bash tool call"] -- "tool_input.command" --> P{{"git-command.py"}}
     P -- "strip heredoc bodies" --> T["shlex tokenise"]
-    T -- "tokens at command position" --> L["one line per git invocation<br/>e.g. 'commit -m x'"]
+    T -- "bare git tokens" --> L["one line per git invocation<br/>e.g. 'commit -m x'"]
     L --> BD["block-dangerous.sh"]
     L --> SS["secret-scan.sh"]
     P -- "parse error" --> FB["fall back to the old substring match"]
@@ -143,11 +143,11 @@ sequenceDiagram
 
 | File | What changes | Why |
 | ---- | ------------ | --- |
-| `scripts/lib/git-command.py` | New. Reads a shell command on stdin, prints one line per `git` invocation found at a command position — the arguments after `git`, unquoted, space-joined. Exit 0 with output, exit 0 with no output when there are none, exit 3 on a parse error. | Scenarios 1–4 |
-| `scripts/block-dangerous.sh:10` | Force-push check reads the helper's lines, matches `^push( .*)? (--force\|--force-with-lease\|-f)\b` | Scenario 3 |
-| `scripts/block-dangerous.sh:18` | Commit check matches a helper line `^commit\b` instead of grepping `$cmd` | Scenarios 1, 2 |
-| `scripts/block-dangerous.sh` | New `git_invocations()` wrapper: calls the helper, and on exit 3 returns the raw command so the existing `grep -qE` path runs unchanged | Scenario 4 |
-| `scripts/secret-scan.sh:6` | Same wrapper, same `^commit\b` match | Third copy of the bug |
+| `scripts/lib/git-command.py` | New. Reads a shell command on stdin, prints one line per bare `git` token — the arguments after it, unquoted, space-joined, with git's own options stripped so the subcommand is first. Exit 0 with output, exit 0 with no output when there are none, exit 3 on a parse error. | Scenarios 1–4 |
+| `scripts/block-dangerous.sh:10` | Force-push check reads the helper's lines, matches `^push( .*)? (--force[^[:space:]]*\|-f)([[:space:]]\|$)` | Scenario 3 |
+| `scripts/block-dangerous.sh:18` | Commit check matches a helper line `^commit([[:space:]]\|$)` instead of grepping `$cmd` | Scenarios 1, 2 |
+| `scripts/block-dangerous.sh` | Calls the helper, then picks the subject and the pattern pair together: the helper's lines with the anchored patterns, or on exit 3 the raw command with the old substring patterns unchanged | Scenario 4 |
+| `scripts/secret-scan.sh:6` | Same wrapper, same `^commit([[:space:]]\|$)` match | Third copy of the bug |
 
 **Reusing:** the `python3 -c 'import json,sys; ...'` stdin-parsing idiom already
 in `block-dangerous.sh:5`, `secret-scan.sh:5`, `check-open-items.sh:41` and
@@ -160,9 +160,17 @@ in `block-dangerous.sh:5`, `secret-scan.sh:5`, `check-open-items.sh:41` and
    body is raw text that `shlex` would happily read as command words.
 2. Tokenise with `shlex.shlex(punctuation_chars=True)`, which keeps `;`, `&&`,
    `||` and `|` as their own tokens and collapses each quoted string into one.
-3. Walk the tokens. A token is at command position if it is first, or follows
-   `;`, `&&`, `||`, `|`, `(`, or `` ` ``. Where that token is `git`, emit the
-   following tokens up to the next separator.
+3. Walk the tokens. Where a token is exactly `git`, emit the following tokens
+   up to the next separator, with git's own options (`-C x`, `-c k=v`,
+   `--git-dir x`) dropped so the subcommand comes first. A separator is any
+   token made only of `;&|()`<>` and newline — `shlex` returns a run of
+   punctuation as one token, so `&&\n` arrives whole.
+
+   Bare is the whole test, and the reason it holds: quoting collapses
+   `'how to git commit'` into one multi-word token, and heredoc bodies are
+   already gone, so prose cannot produce a `git` token on its own. Tracking
+   command position instead would miss `sudo git`, `VAR=x git` and `do git`
+   — see O3.
 
 ### Earn-it
 
