@@ -102,7 +102,8 @@ saying out loud.
 - Spec Status → `Shipped`.
 - Capture lessons to `docs/learnings/` silently.
 - **Graduation:** a component from this slice that is now used in two or more
-  slices, or that the user promotes, moves into the design system via
-  `/design-sync`. Ask first. One-off components stay local — a curated library
-  full of single-use components is not a library.
+  slices, or that the user promotes, moves into the design system. Ask first,
+  then hand over the `/design-sync` run — the user types it. One-off
+  components stay local — a curated library full of single-use components is
+  not a library.
 - Print the next slice from the shape doc, and the command to start it.
