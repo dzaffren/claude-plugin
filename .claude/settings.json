@@ -9,5 +9,18 @@
   },
   "enabledPlugins": {
     "zuko@dzafran-claude-plugins": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/bootstrap-zuko.sh",
+            "statusMessage": "Installing zuko if this container lacks it..."
+          }
+        ]
+      }
+    ]
   }
 }
