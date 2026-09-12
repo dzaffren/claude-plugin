@@ -12,6 +12,12 @@
           {
             "type": "command",
             "if": "Bash(git commit *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
+            "statusMessage": "Checking the commit message for attribution..."
+          },
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/secret-scan.sh",
             "statusMessage": "Scanning staged diff for secrets..."
           }

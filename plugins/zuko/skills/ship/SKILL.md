@@ -13,7 +13,8 @@ allowed-tools: Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git bran
 Get the slice from a green branch to merged and confirmed working. Nothing
 here is guessed — every gate is checked, not assumed.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
+`${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
 
 ## Current state
 
@@ -45,7 +46,10 @@ proceed on a "probably fine".
 ## Tidy the branch
 
 - Squash noise commits. Keep commits that tell a real story.
-- Commit messages: what changed and why, no model identifiers, no emojis.
+- Commit messages: subject `{type}({scope}): {subject}`, body saying what
+  changed and why. Nothing from the ban list in `references/git-naming.md` —
+  no `Co-Authored-By` naming Claude, no `Claude-Session` line, no session URL,
+  no `Generated with Claude Code`, no emojis.
 - Rebase or merge the base branch per the repo's own convention.
 
 ## The PR
@@ -57,6 +61,10 @@ section asking for credentials, tokens, env vars, or internal hostnames.
 
 No template → body covers: what ships, the acceptance scenarios, how to verify
 by hand, the flag name and rollback, and a link to the spec's visual page.
+
+The PR title is the squash commit's subject, unchanged. The ban list applies to
+the PR body exactly as it does to a commit message: no `Generated with Claude
+Code`, no session URL, no model named anywhere.
 
 **Ask before pushing.** Then push with `git push -u origin {branch}`. Retry
 network failures up to four times with 2s / 4s / 8s / 16s backoff.
