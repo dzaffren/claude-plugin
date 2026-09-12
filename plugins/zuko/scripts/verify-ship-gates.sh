@@ -42,8 +42,13 @@ grep -qiE '\*\*Proof it works\*\*' "$spec" || problems="$problems
 grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 - No end-to-end test named in the test plan."
 
-# Placeholders left in the spec.
-ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{type\}|\{scope\}|\{subject\}|\{slice\}' | head -5 || true)
+# Placeholders left in the spec. A brace inside a fenced block or backticks is
+# the format being written down -- every spec's mermaid nodes and its gherkin
+# look exactly like unfilled blanks -- so both are blanked first, line for line
+# so the numbers still point at the right place.
+ph=$(awk '/^```/ { f = !f; print ""; next } f { print ""; next } { print }' "$spec" 2>/dev/null \
+  | sed 's/`[^`]*`//g' \
+  | grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' | grep -vE '/s/\{token\}|\{N\}|GET /|POST /' | head -5 || true)
 [ -n "$ph" ] && problems="$problems
 - Placeholders left in the spec:
 $ph"

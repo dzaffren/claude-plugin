@@ -143,4 +143,34 @@ gate "$repo"
 expect_exit 1 "$gate_status" "an unresolvable base fails the gate"
 expect_match 'A gate that scanned nothing is not a pass' "$gate_out" "no base is the same failure as no commits"
 
+# 11. Placeholders. A brace inside a diagram, a gherkin block or backticks is
+# the convention being written down; a bare one in prose is an unfilled blank.
+repo=$(new_repo feat/ship-naming)
+cat >>"$repo/docs/specs/fixture.md" <<'DOCUMENTED'
+
+```mermaid
+flowchart LR
+    A["/build"] --> H{{block-attribution.sh}}
+```
+
+```gherkin
+Scenario: naming
+  Then the subject matches "{type}({scope}): {subject}"
+```
+
+The branch is `{type}/{slice}`, and a spike is `spike/{question}`.
+DOCUMENTED
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): document the format"
+gate "$repo"
+expect_exit 0 "$gate_status" "documented placeholders do not read as unfilled blanks"
+
+repo=$(new_repo feat/ship-naming)
+printf '\nThe branch is {slice} and the owner is {owner}.\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave a blank behind"
+gate "$repo"
+expect_exit 1 "$gate_status" "a bare placeholder in prose still fails the gate"
+expect_match 'Placeholders left in the spec' "$gate_out" "the gate names the placeholder rule"
+
 rm -rf "$work"
