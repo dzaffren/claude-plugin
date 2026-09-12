@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "dzafran-claude-plugins": {
+      "source": {
+        "source": "directory",
+        "path": "./"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "zuko@dzafran-claude-plugins": true
+  }
+}
