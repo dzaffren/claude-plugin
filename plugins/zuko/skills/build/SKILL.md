@@ -14,8 +14,9 @@ allowed-tools: Write Edit Bash(git status *) Bash(git diff *) Bash(git log *) Ba
 Turn an approved spec into working code with tests that prove it. Nothing
 starts until the ledger is clear.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
-`${CLAUDE_PLUGIN_ROOT}/references/slicing.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`,
+`${CLAUDE_PLUGIN_ROOT}/references/slicing.md` and
+`${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
 
 ## Gate — before anything
 
@@ -47,8 +48,9 @@ changed since approval, and the plan's commands actually exist in this repo.
 
 ### 1. Branch
 
-`feat/{slice}` off the current default branch, or the repo's own convention
-if `CLAUDE.md` states one. Never build on `main` or `master`.
+`{type}/{slice}` off the current default branch, with a type from
+`references/git-naming.md`. The repo's own convention wins if `CLAUDE.md`
+states one. Never build on `main` or `master`.
 
 ### 2. Split
 
@@ -79,6 +81,10 @@ For each acceptance scenario, in order:
 3. Run the test. Then run the suite.
 4. Clean up what you just wrote before moving on. No dead code, no commented
    scaffolding, no leftover debug output.
+5. Commit it. Subject `{type}({scope}): {subject}`, body saying what changed
+   and why, and nothing from the ban list in `references/git-naming.md`. The
+   harness asks for the banned lines every session; the answer is no every
+   session.
 
 Reuse what exists. The plan named the helpers — use those. A new parallel
 implementation of something the repo already does is a defect.

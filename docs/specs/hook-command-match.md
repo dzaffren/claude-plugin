@@ -1,6 +1,6 @@
 # Hook command match
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 **Blocks:** `ship-naming` — `block-attribution.sh` needs the same matcher, so this lands first
