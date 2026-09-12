@@ -44,3 +44,7 @@ One line per lesson. Loaded into every session in this repo.
 - When the exception set is closed, name it in a list — a parser that infers
   which braces are real trades false positives for silent false negatives.
   ([detail](a-list-you-can-read-beats-a-parser-that-infers.md))
+- `rebase -i` does not work here — reword a commit by replaying the branch onto
+  its base with cherry-pick, and diff against a backup to prove only the
+  message moved.
+  ([detail](reword-a-commit-without-rebase-i.md))
