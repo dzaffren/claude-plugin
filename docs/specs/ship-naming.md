@@ -1,6 +1,6 @@
 # Ship naming
 
-**Version:** v1 · **Status:** Built · **Type:** Technical · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Technical · **Project type:** CLI/Library
 
 **Depends on:** `hook-command-match` — the same command matcher, fixed there first
 **Page:** _(added at the end of pause 3)_
