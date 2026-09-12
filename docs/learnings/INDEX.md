@@ -38,3 +38,9 @@ One line per lesson. Loaded into every session in this repo.
 - A guard misbehaving like an older version of itself is the installed plugin
   cache, not the repo — diff the two before debugging the source.
   ([detail](installed-plugin-lags-the-repo.md))
+- Write a guard's pattern from the artifact it must catch, pasted verbatim —
+  not from the spec's prose description of it.
+  ([detail](match-the-artifact-not-its-description.md))
+- When the exception set is closed, name it in a list — a parser that infers
+  which braces are real trades false positives for silent false negatives.
+  ([detail](a-list-you-can-read-beats-a-parser-that-infers.md))
