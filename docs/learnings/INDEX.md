@@ -32,3 +32,9 @@ One line per lesson. Loaded into every session in this repo.
 - A finding-verifier has no Bash — when a finding turns on real library
   behaviour, run it yourself instead of trusting the vote.
   ([detail](verifiers-cannot-run-code.md))
+- The test harness is the first chunk, never the last — a fixture written
+  after the code it covers never failed for the right reason.
+  ([detail](harness-before-the-chunks-it-proves.md))
+- A guard misbehaving like an older version of itself is the installed plugin
+  cache, not the repo — diff the two before debugging the source.
+  ([detail](installed-plugin-lags-the-repo.md))
