@@ -47,9 +47,7 @@ proceed on a "probably fine".
 
 - Squash noise commits. Keep commits that tell a real story.
 - Commit messages: subject `{type}({scope}): {subject}`, body saying what
-  changed and why. Nothing from the ban list in `references/git-naming.md` —
-  no `Co-Authored-By` naming Claude, no `Claude-Session` line, no session URL,
-  no `Generated with Claude Code`, no emojis.
+  changed and why, and nothing from the ban list in `references/git-naming.md`.
 - Rebase or merge the base branch per the repo's own convention.
 
 ## The PR
@@ -62,9 +60,9 @@ section asking for credentials, tokens, env vars, or internal hostnames.
 No template → body covers: what ships, the acceptance scenarios, how to verify
 by hand, the flag name and rollback, and a link to the spec's visual page.
 
-The PR title is the squash commit's subject, unchanged. The ban list applies to
-the PR body exactly as it does to a commit message: no `Generated with Claude
-Code`, no session URL, no model named anywhere.
+The PR title is the squash commit's subject, unchanged. The ban list in
+`references/git-naming.md` applies to the PR body exactly as it does to a
+commit message.
 
 **Ask before pushing.** Then push with `git push -u origin {branch}`. Retry
 network failures up to four times with 2s / 4s / 8s / 16s backoff.

@@ -30,17 +30,20 @@ expect_no_match() {    # expect_no_match <regex> <text> <description>
 }
 
 name="${1:-}"
+files=()
 if [ -n "$name" ]; then
-  files="$here/test-$name.sh"
-  if [ ! -f "$files" ]; then
+  if [ ! -f "$here/test-$name.sh" ]; then
     echo "run.sh: no test file at tests/test-$name.sh. A name that matches nothing is an error, not a pass." >&2
     exit 1
   fi
+  files=("$here/test-$name.sh")
 else
-  files=$(ls "$here"/test-*.sh 2>/dev/null || true)
+  for candidate in "$here"/test-*.sh; do
+    [ -f "$candidate" ] && files+=("$candidate")
+  done
 fi
 
-if [ -z "$files" ]; then
+if [ "${#files[@]}" -eq 0 ]; then
   echo "run.sh: no tests ran. A run that scanned nothing is not a pass." >&2
   exit 1
 fi
@@ -51,13 +54,13 @@ trap 'rm -rf "$work"' EXIT
 total_pass=0
 total_fail=0
 
-for file in $files; do
+for file in "${files[@]}"; do
   base=$(basename "$file" .sh)
   base=${base#test-}
   results_file="$work/$base.results"
   : >"$results_file"
 
-  ( . "$file" ) || true
+  ( . "$file" ) || record FAIL "$base" "the test file exited non-zero partway through"
 
   if [ ! -s "$results_file" ]; then
     record FAIL "$base" "the test file recorded nothing"
@@ -82,5 +85,4 @@ done
 
 printf '%-19s%3s passed, %s failed\n' "" "$total_pass" "$total_fail"
 [ "$total_fail" -eq 0 ] || exit 1
-[ $((total_pass + total_fail)) -gt 0 ] || exit 1
 exit 0

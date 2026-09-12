@@ -23,6 +23,10 @@ spec = importlib.util.spec_from_file_location("git_command", path)
 git_command = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(git_command)
 
+# No commit message is anywhere near this long, and an unbounded read is how a
+# guard turns into a hang.
+MAX_MESSAGE_BYTES = 1 << 20
+
 try:
     tokens = git_command.tokenise(
         git_command.strip_heredocs(os.environ["ZUKO_COMMAND"]))
@@ -34,11 +38,11 @@ def emit(kind, value):
     if kind == "text":
         print(value)
         return
-    if value == "-":
-        return                      # the message is on stdin, out of reach
+    if not os.path.isfile(value):
+        return                      # stdin, a fifo, a device: never readable
     try:
         with open(value, encoding="utf-8", errors="replace") as handle:
-            print(handle.read())
+            print(handle.read(MAX_MESSAGE_BYTES))
     except OSError:
         return                      # unreadable is a miss, not a crash
 
@@ -84,7 +88,7 @@ esac
 
 [ -z "$subject" ] && exit 0
 
-banned='co-authored-by:.*(claude|noreply@anthropic\.com)|claude-session:|https://claude\.ai/code/session_|generated with claude code'
+banned='co-authored-by:.*(claude|noreply@anthropic\.com)|claude-session:|https://claude\.(ai/code|com/claude-code)|generated with \[?claude code'
 offending=$(printf '%s\n' "$subject" | grep -iE "$banned" || true)
 [ -z "$offending" ] && exit 0
 

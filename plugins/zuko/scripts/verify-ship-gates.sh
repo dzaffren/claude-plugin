@@ -42,13 +42,13 @@ grep -qiE '\*\*Proof it works\*\*' "$spec" || problems="$problems
 grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 - No end-to-end test named in the test plan."
 
-# Placeholders left in the spec. A brace inside a fenced block or backticks is
-# the format being written down -- every spec's mermaid nodes and its gherkin
-# look exactly like unfilled blanks -- so both are blanked first, line for line
-# so the numbers still point at the right place.
-ph=$(awk '/^```/ { f = !f; print ""; next } f { print ""; next } { print }' "$spec" 2>/dev/null \
-  | sed 's/`[^`]*`//g' \
-  | grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' | grep -vE '/s/\{token\}|\{N\}|GET /|POST /' | head -5 || true)
+# Placeholders left in the spec. The exclusion list names the tokens this
+# workflow writes down on purpose -- the convention's own {type}/{slice}, and
+# mermaid's {{node}} syntax -- because a documented format and an unfilled
+# blank are the same text, and only the list can tell them apart.
+ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null \
+  | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}' \
+  | head -5 || true)
 [ -n "$ph" ] && problems="$problems
 - Placeholders left in the spec:
 $ph"
@@ -72,15 +72,14 @@ fi
 # Naming, over every commit ahead of the base. An empty range and a base that
 # will not resolve are the same failure: a gate that scanned nothing is not a
 # pass, so neither is allowed to look like one.
-base_ref=$(git -C "$dir" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
-if [ -z "$base_ref" ]; then
-  for candidate in main master; do
-    if git -C "$dir" rev-parse --verify --quiet "$candidate" >/dev/null 2>&1; then
-      base_ref="$candidate"
-      break
-    fi
-  done
-fi
+base_ref=""
+for candidate in "$(git -C "$dir" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)" main master; do
+  [ -n "$candidate" ] || continue
+  if git -C "$dir" rev-parse --verify --quiet "$candidate" >/dev/null 2>&1; then
+    base_ref="$candidate"
+    break
+  fi
+done
 
 base=""
 [ -n "$base_ref" ] && base=$(git -C "$dir" merge-base HEAD "$base_ref" 2>/dev/null || true)

@@ -141,7 +141,17 @@ repo=$(new_repo feat/ship-naming --no-base)
 add_commit "$repo" "feat(ship): standardise git naming"
 gate "$repo"
 expect_exit 1 "$gate_status" "an unresolvable base fails the gate"
-expect_match 'A gate that scanned nothing is not a pass' "$gate_out" "no base is the same failure as no commits"
+expect_match 'No base branch to compare against' "$gate_out" "no base is the same failure as no commits"
+
+# 10b. origin/HEAD can point at a ref that is no longer there. main still is.
+repo=$(new_repo feat/ship-naming)
+add_commit "$repo" "Bad subject with no type"
+stale_sha=$(sha_of "$repo")
+git -C "$repo" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/develop
+gate "$repo"
+expect_exit 1 "$gate_status" "a dangling origin/HEAD does not stop the scan"
+expect_match "Naming: checked 1 commits on feat/ship-naming ahead of main\." "$gate_out" "the scan falls back to main and says so"
+expect_match "$stale_sha  subject is not" "$gate_out" "the offending commit is still caught"
 
 # 11. Placeholders. A brace inside a diagram, a gherkin block or backticks is
 # the convention being written down; a bare one in prose is an unfilled blank.
@@ -166,11 +176,18 @@ gate "$repo"
 expect_exit 0 "$gate_status" "documented placeholders do not read as unfilled blanks"
 
 repo=$(new_repo feat/ship-naming)
-printf '\nThe branch is {slice} and the owner is {owner}.\n' >>"$repo/docs/specs/fixture.md"
+printf '\nThe owner is {owner}.\n' >>"$repo/docs/specs/fixture.md"
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "docs(spec): leave a blank behind"
 gate "$repo"
 expect_exit 1 "$gate_status" "a bare placeholder in prose still fails the gate"
 expect_match 'Placeholders left in the spec' "$gate_out" "the gate names the placeholder rule"
+
+repo=$(new_repo feat/ship-naming)
+printf '\n```gherkin\n  Then it retries TODO times\n```\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave a TODO in a fence"
+gate "$repo"
+expect_exit 1 "$gate_status" "a TODO inside a fenced block still fails the gate"
 
 rm -rf "$work"

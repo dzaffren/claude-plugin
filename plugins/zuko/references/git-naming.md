@@ -21,7 +21,8 @@ skill, or the two copies drift apart.
 
 - `Co-Authored-By:` naming Claude or `noreply@anthropic.com`
 - `Claude-Session:` and any `https://claude.ai/code/session_…` link
-- `Generated with Claude Code`
+- `Generated with Claude Code`, including the markdown footer form
+  `Generated with [Claude Code](https://claude.com/claude-code)`
 - emojis, per `voice.md`
 
 The harness re-injects an attribution instruction every session, so this will

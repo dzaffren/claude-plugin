@@ -26,6 +26,11 @@ SEPARATOR_CHARS = set(";&|()`\n")
 # `>`, `>>`, `<`, `>&`. A bare `&` is a separator and is tested first.
 REDIRECTION_CHARS = set("<>&")
 
+# A backslash at end of line. The shell joins the two lines before it ever sees
+# a command, so this is not a separator. Left in, a wrapped invocation parses as
+# a bare subcommand and every flag after the break is lost.
+CONTINUATION = re.compile(r"\\\n")
+
 # git's own options, which sit before the subcommand. These take a value.
 GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
@@ -88,6 +93,7 @@ def strip_heredocs(command):
 
 
 def tokenise(command):
+    command = CONTINUATION.sub(" ", command)
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"

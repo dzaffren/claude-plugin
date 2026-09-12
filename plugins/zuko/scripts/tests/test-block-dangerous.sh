@@ -35,6 +35,10 @@ expect_exit 0 "$hook_status" "a force push inside a quoted string is text, not a
 run_hook "git commit -m 'oops"
 expect_exit 2 "$hook_status" "a command that will not parse fails closed"
 
+run_hook "git push \\
+  --force origin main"
+expect_exit 2 "$hook_status" "a force push wrapped over two lines is still a force push"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"

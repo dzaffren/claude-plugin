@@ -48,9 +48,9 @@ changed since approval, and the plan's commands actually exist in this repo.
 
 ### 1. Branch
 
-`{type}/{slice}` off the current default branch — `feat` `fix` `chore` `docs`
-`refactor` `test`, per `references/git-naming.md`. The repo's own convention
-wins if `CLAUDE.md` states one. Never build on `main` or `master`.
+`{type}/{slice}` off the current default branch, with a type from
+`references/git-naming.md`. The repo's own convention wins if `CLAUDE.md`
+states one. Never build on `main` or `master`.
 
 ### 2. Split
 
@@ -82,9 +82,9 @@ For each acceptance scenario, in order:
 4. Clean up what you just wrote before moving on. No dead code, no commented
    scaffolding, no leftover debug output.
 5. Commit it. Subject `{type}({scope}): {subject}`, body saying what changed
-   and why, and nothing from the ban list in `references/git-naming.md` — no
-   `Co-Authored-By` naming Claude, no session URL, no emojis. The harness asks
-   for those every session; the answer is no every session.
+   and why, and nothing from the ban list in `references/git-naming.md`. The
+   harness asks for the banned lines every session; the answer is no every
+   session.
 
 Reuse what exists. The plan named the helpers — use those. A new parallel
 implementation of something the repo already does is a defect.
