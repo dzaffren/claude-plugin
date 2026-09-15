@@ -278,7 +278,7 @@ sequenceDiagram
 | `plugins/zuko/references/glossary.md` | New. The word list, one plain line each, and the rule that it grows when a report needs a word it lacks | Scenario 3 |
 | `plugins/zuko/skills/review/SKILL.md:104-125` | The `## Report and fix` section is rewritten: load `report.md` and `glossary.md`, print to the contract, one fix-or-skip question per finding, then fix what was picked, re-run the suite and the e2e, and say what is true now | Scenarios 1, 2, 4 |
 | `plugins/zuko/skills/review/SKILL.md:17` | Add the two references to the existing `Read ${CLAUDE_PLUGIN_ROOT}/references/voice.md` line | Same loading path as voice.md, which the stage already reads |
-| `plugins/zuko/scripts/check-report.sh` | New. Reads a report, checks the structural parts, exits 0/1/2 | Scenario 5 |
+| `plugins/zuko/scripts/check-report.sh` | New. Reads a report, checks the structural parts, exits 0/1/2. Glossary matching skips the header line and any token holding `/`, `.` or `:`, so a branch name like `feat/csv-export` and a `file:line` reference are not read as undefined words — the spike's grader failed exactly this way | Scenario 5 |
 | `plugins/zuko/scripts/tests/test-check-report.sh` | New. Unit cases plus the whole-slice walk: the real example out of `report.md` passes, then one mutation per required part fails with its own message | Every scenario except 4 |
 | `plugins/zuko/.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | 2.1.0 to 2.2.0 | Both carry the version; `ab2403a` bumped both for the last feature |
 | `README.md` | One line in the Voice section: reports follow one contract, and a script reads them | The README states what the plugin does, and this changes it |
@@ -337,7 +337,7 @@ README line.
 
 | Risk | Mitigation |
 | ---- | ---------- |
-| The contract is a prompt rule and may not survive a busy session (O1) | Slice 4 makes the checker a Stop hook. Until then it is a script you or Claude can run on any report that reads badly |
+| The contract is a prompt rule and may not survive a busy session (O1) | The spike proved it is followable cold, 3 of 3, so the text is not the risk — drift over a long session is. Slice 4 makes the checker a Stop hook. Until then it is a script you or Claude can run on any report that reads badly |
 | A severity-word ban that greps for `critical` and `high` blocks honest prose about a critical path | The rule is two literal patterns — a `Severity:` line, and a finding title starting with `Critical:`, `High:`, `Medium:` or `Low:` — not the words themselves (`docs/learnings/tightening-a-matcher-trades-blocks-for-allows.md`) |
 | The glossary repeats the same four words in every report and starts to grate (O3) | Only words the report actually used are printed. If it still grates, slice 4 adds a define-once-per-session rule |
 | A review with 15 findings is unreadable whatever shape it has | The report says so and offers them in batches. Not built here — if it happens twice, it earns a slice |
@@ -347,7 +347,7 @@ README line.
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
-| O1 | A written contract alone may not change what gets printed — `voice.md` rule 10 already says define jargon, and it does not happen | unproven | shape | poc | Open | Spike agreed 2026-09-15. `/poc` writes the contract, runs one review in a fresh session, and reports whether the report that comes out conforms |
+| O1 | A written contract alone may not change what gets printed — `voice.md` rule 10 already says define jargon, and it does not happen | unproven | shape | poc | Resolved | Spike, 2026-09-15: three agents given only the contract and two findings each wrote a conforming report, 3 of 3, structure identical and no severity labels. The text is followable from a cold read. Whether it survives a long session is still untested — that is what slice 4's gate is for |
 | O2 | The Claude Code output style in use ("learning") injects its own explanation format, including insight blocks. Unknown whether it fights the contract or carries it | question | shape | user | Resolved | The contract governs the report block only. `learning-output-style@claude-plugins-official` is on in this repo's `.claude/settings.json`; what it wraps around the report belongs to `docs/specs/learning-mode/`, whose slice 2 switches it off |
 | O3 | Terms defined once per session cannot be tracked across subagents, so every report may have to repeat its glossary | flag | shape | user | Resolved | Repeat it in every report. Only the words that report used are printed, so it stays short — a repeated line costs one line, a missing one costs a question |
 | O4 | Which words actually lose you — the seed glossary needs your list, not a guess | question | shape | user | Resolved | Any technical word, not a fixed list. `references/glossary.md` ships the words a review reaches for and grows when a report needs one it lacks |
