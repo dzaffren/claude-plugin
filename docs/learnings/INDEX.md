@@ -48,3 +48,9 @@ One line per lesson. Loaded into every session in this repo.
   its base with cherry-pick, and diff against a backup to prove only the
   message moved.
   ([detail](reword-a-commit-without-rebase-i.md))
+- Hand a prompt rule cold to fresh agents to learn whether it is followable —
+  drift over a long session is a different question, and only a gate settles it.
+  ([detail](hand-the-rule-cold-to-fresh-agents.md))
+- A skill that tells you to run a script needs that script in its allowed-tools,
+  edited in the same pass.
+  ([detail](an-instruction-to-run-a-script-needs-allowed-tools.md))
