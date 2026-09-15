@@ -35,8 +35,9 @@ problems = []
 
 LABELS = ["What breaks", "Costs you", "Where", "Fix"]
 LABEL_LINE = re.compile(r'^\s*(%s)\s' % "|".join(LABELS))
-DECISION = re.compile(r'→.*skip')
-SEVERITY = re.compile(r'^\s*(?:\d+\.\s*)?(Critical|High|Medium|Low|Severity):')
+DECISION = re.compile(r'→.*skip')          # the shape, for spotting a stray finding
+DECISION_LINE = re.compile(r'^\s*→ Fix it, or skip it\?\s*$', re.M)
+SEVERITY = re.compile(r'(?:^|\s)(Critical|High|Medium|Low|Severity):\s')
 
 
 def fail(index, message):       # index is 0-based; reports are 1-based
@@ -90,29 +91,42 @@ head_at = 0
 if not re.match(r'^[A-Za-z][A-Za-z ]*: .+ [—-] .+$', lines[0]):
     fail(head_at, 'the first line is not a header — "{Stage}: {what was looked at} — {size}"')
 
-starts = [i for i, l in enumerate(lines) if re.match(r'^\d+\. ', l)]
-ends = starts[1:] + [len(lines)]
-inside = {i for n, start in enumerate(starts) for i in range(start, ends[n])}
-
 gloss_at = next((i for i, l in enumerate(lines) if l.strip() == "Glossary"), None)
 next_at = next((i for i, l in reversed(list(enumerate(lines))) if l.strip()), None)
+
+# A finding ends where the next one, the Glossary, or the next step begins —
+# never at the end of the file, or the last finding swallows all three and its
+# sentences are counted from someone else's text.
+tail = gloss_at if gloss_at is not None else (next_at if next_at is not None else len(lines))
+starts = [i for i, l in enumerate(lines) if re.match(r'^\d+\. ', l)]
+ends = [max(start + 1, min(after, tail))
+        for start, after in zip(starts, starts[1:] + [tail])]
+inside = {i for n, start in enumerate(starts) for i in range(start, ends[n])}
+
+numbers = [re.match(r'^(\d+)\. ', lines[i]).group(1) for i in starts]
+if numbers and numbers != [str(n) for n in range(1, len(numbers) + 1)]:
+    fail(starts[0], "findings are numbered 1., 2., 3. — these are not consecutive")
 
 # A finding nobody numbered is still a finding, and every check below hangs off
 # the numbering. Left unsaid, a report could skip the numbers and skip the rules.
 for i, line in enumerate(lines):
     if i not in inside and (LABEL_LINE.match(line) or DECISION.search(line)):
         fail(i, "a finding that is not numbered — findings are numbered 1., 2., 3.")
-    if SEVERITY.match(line):
+    if SEVERITY.search(line):
         fail(i, "a severity label — say what it costs someone instead")
 
 # Verdict and count line.
 stop = starts[0] if starts else (gloss_at if gloss_at is not None else next_at)
 opening = [(i, l) for i, l in filled if head_at < i < stop]
-counts = [(i, l) for i, l in opening if re.search(r'\braised\b', l)]
+counts = [(i, l) for i, l in opening
+          if re.search(r'\braised\b', l) and re.search(r'\b(?:held|hold) up\b', l)]
 if not counts:
     fail(head_at, "no count line — say how many were raised and how many held up")
-if not [l for i, l in opening if (i, l) not in counts]:
+verdict = [l for i, l in opening if (i, l) not in counts]
+if not verdict:
     fail(head_at, "no verdict between the header and what follows")
+elif sentences(" ".join(verdict)) > 2:
+    fail(head_at, "the verdict runs to more than two sentences")
 
 # Findings.
 for n, start in enumerate(starts, 1):
@@ -133,15 +147,16 @@ for n, start in enumerate(starts, 1):
     else:
         if not re.search(r'^\s*Where\s+\S+:\d+', text, re.M):
             fail(start, 'finding %d has a "Where" line with no file:line' % n)
-        edges = sorted(at.values()) + [len(text)]
+        asked = DECISION_LINE.search(text)
+        edges = sorted(at.values()) + [asked.start() if asked else len(text)]
         for label in LABELS:
             piece = text[at[label]:edges[sorted(at.values()).index(at[label]) + 1]]
             if sentences(piece) > 2:
                 fail(start, 'finding %d runs to more than two sentences on "%s"'
                             % (n, label))
 
-    if not DECISION.search(text):
-        fail(start, "finding %d has no fix-or-skip question" % n)
+    if not DECISION_LINE.search(text):
+        fail(start, "finding %d has no fix-or-skip question on a line of its own" % n)
 
 # Glossary coverage.
 body_lines = [(i, l) for i, l in filled
@@ -170,11 +185,10 @@ boundary = None
 if starts:
     decisions = [i for i in range(starts[-1], len(lines)) if DECISION.search(lines[i])]
     boundary = decisions[-1] if decisions else None
-if gloss_at is not None:
-    boundary = gloss_end
 if boundary is not None:
     for i, line in filled:
-        if i > boundary and i != next_at:
+        if (i > boundary and i != next_at
+                and not (gloss_at is not None and gloss_at <= i <= gloss_end)):
             fail(i, "a closing summary — the verdict already said it")
 
 # Next step.

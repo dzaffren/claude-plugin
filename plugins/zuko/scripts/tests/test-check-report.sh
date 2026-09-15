@@ -197,4 +197,49 @@ run "$box/inline-word.txt"
 expect_exit 1 "$status" "the same word as prose is still caught"
 expect_match 'token' "$out" "the prose failure names the word"
 
+
+# --- What the pull request's review found ------------------------------------
+
+minimal | sed 's/^The reviewers raised 2 possible problems and 1 did not hold up on a second look./The reviewers raised 2 possible problems./' >"$box/half-count.txt"
+run "$box/half-count.txt"
+expect_exit 1 "$status" "a count line missing the held-up half fails"
+expect_match 'count line' "$out" "the half-count failure names the count line"
+
+minimal | sed 's/^One real problem. It hands back rows the caller should not see./One real problem. It hands back rows. It should not. It really should not./' >"$box/long-verdict.txt"
+run "$box/long-verdict.txt"
+expect_exit 1 "$status" "a verdict running to four sentences fails"
+expect_match 'verdict' "$out" "the long-verdict failure names the verdict"
+
+minimal | sed 's/^   → Fix it, or skip it?/   → skip/' >"$box/half-decision.txt"
+run "$box/half-decision.txt"
+expect_exit 1 "$status" "a decision that is not the question fails"
+expect_match 'fix-or-skip' "$out" "the half-decision failure says so"
+
+minimal | sed 's|^Next: answer each finding above, then /ship.|In short: one problem, worth fixing.\n\nGlossary\n  token           a secret string that stands in for permission to do something\n\nNext: answer each finding above, then /ship.|' >"$box/summary-before-glossary.txt"
+run "$box/summary-before-glossary.txt"
+expect_exit 1 "$status" "a summary between the last finding and the Glossary fails"
+expect_match 'summary' "$out" "that failure names the summary, not something else"
+
+minimal | sed 's/^1\. The importer trusts the caller/3. The importer trusts the caller/' >"$box/misnumbered.txt"
+run "$box/misnumbered.txt"
+expect_exit 1 "$status" "findings numbered out of sequence fail"
+expect_match 'consecutive' "$out" "the numbering failure says what it wanted"
+
+minimal | sed "s/^   Costs you    One customer can read another customer's rows./   Costs you    High: one customer can read another customer's rows./" >"$box/inline-severity.txt"
+run "$box/inline-severity.txt"
+expect_exit 1 "$status" "a severity label inside a label line fails"
+expect_match 'severity' "$out" "the inline severity failure says so"
+
+# The last finding's Fix must not swallow the decision, the Glossary and the
+# next step when its sentences are counted.
+minimal | sed 's|^Next: answer each finding above, then /ship.|Glossary\n  token           a secret string that stands in for permission to do something.\n\nNext: answer each finding above, then ship it.|' >"$box/tail-sentences.txt"
+run "$box/tail-sentences.txt"
+expect_exit 0 "$status" "a glossary and next step ending in full stops are not the last finding's sentences"
+
+# A label may use its two sentences without the decision question counting as a
+# third.
+minimal | sed 's/^   Fix          Check the signed-in account before reading./   Fix          Check the signed-in account before reading. The helper for it already exists./' >"$box/two-sentence-fix.txt"
+run "$box/two-sentence-fix.txt"
+expect_exit 0 "$status" "a two-sentence Fix plus the question is two sentences, not three"
+
 rm -rf "$box"

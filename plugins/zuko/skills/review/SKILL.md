@@ -6,7 +6,7 @@ description: >
   verifier before it reaches the user. Use after /build, or when the user says
   "review this", "check the code", "is this secure", "any bugs".
 disable-model-invocation: true
-allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stash list) Bash(bash *)
+allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stash list) Bash(bash *check-report.sh*)
 ---
 
 # Review
