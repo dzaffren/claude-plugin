@@ -6,7 +6,7 @@ description: >
   verifier before it reaches the user. Use after /build, or when the user says
   "review this", "check the code", "is this secure", "any bugs".
 disable-model-invocation: true
-allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stash list)
+allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stash list) Bash(bash *check-report.sh*)
 ---
 
 # Review
@@ -14,7 +14,9 @@ allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stas
 One pass over the diff covering correctness, security, and quality. Nothing
 reaches the user unverified.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`,
+`${CLAUDE_PLUGIN_ROOT}/references/report.md` and
+`${CLAUDE_PLUGIN_ROOT}/references/glossary.md`.
 
 ## Size the effort
 
@@ -103,21 +105,34 @@ reachability / impact / defenses lenses, 2-of-3 to keep.
 
 ## Report and fix
 
-Report only what survived. For each:
+The report follows `references/report.md` exactly — header, verdict, count line,
+then one block per finding with `What breaks`, `Costs you`, `Where`, `Fix`, and
+its own `→ Fix it, or skip it?`. Worst first, by what it costs someone, never by
+a severity word.
 
-- what is wrong, in one sentence
-- the concrete failing case: these inputs produce this wrong result
-- `file:line`
-- the fix
+Every technical word in the report gets its line in the Glossary at the bottom,
+from `references/glossary.md`. A word that file does not have yet gets its line
+written into the file in the same run.
 
-Order by severity. Say how many raw findings there were and how many survived
-— that number is how the user knows the filter is working.
+Nothing survived → the clean shape in `references/report.md`. A clean review is
+a real outcome, not a failure to look hard enough.
 
-Nothing survived → say so plainly. A clean review is a real outcome, not a
-failure to look hard enough.
+Check the report before printing it, by handing the draft to the checker on
+standard input — no file, no Write tool:
 
-Ask before fixing. Then fix, re-run the full suite and the e2e test, and
-confirm green.
+```
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-report.sh" <<'REPORT'
+{the draft, exactly as it will be printed}
+REPORT
+```
+
+Exit 1 names the part that is missing and the line it is on. Fix the report, do
+not argue with the check. Exit 2 means it was handed nothing — an empty draft or
+a path that is not there.
+
+Then take the answers one finding at a time: fix what the user picked, leave
+what they skipped, re-run the full suite and the e2e test, and say in plain
+words what is true now, what is still open, and the next command.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.

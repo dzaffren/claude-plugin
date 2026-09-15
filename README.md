@@ -140,6 +140,11 @@ One shared reference every stage loads. No consultant vocabulary, no emojis,
 no summary of a three-line thing, no compliment before an answer. Say the
 thing first, say the number, and say "I don't know" when that is the truth.
 
+Reports have a shape of their own in `references/report.md`: a header, a verdict
+in plain words, one block per finding saying what breaks and what it costs you,
+its own fix-or-skip question on each, and a glossary line for every technical
+word used. `check-report.sh` reads a draft against that shape before you see it.
+
 ## Learning
 
 Lessons are captured without being asked — your corrections, blockers,
