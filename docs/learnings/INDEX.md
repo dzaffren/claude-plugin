@@ -54,3 +54,6 @@ One line per lesson. Loaded into every session in this repo.
 - A skill that tells you to run a script needs that script in its allowed-tools,
   edited in the same pass.
   ([detail](an-instruction-to-run-a-script-needs-allowed-tools.md))
+- A mutation test whose replace matches nothing passes for the wrong reason —
+  assert the mutation changed the text, and prove the assertion can go red.
+  ([detail](a-mutation-that-matches-nothing-passes.md))

@@ -117,10 +117,13 @@ written into the file in the same run.
 Nothing survived → the clean shape in `references/report.md`. A clean review is
 a real outcome, not a failure to look hard enough.
 
-Check the report before printing it. Write the draft to a scratch file, then:
+Check the report before printing it, by handing the draft to the checker on
+standard input — no file, no Write tool:
 
 ```
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-report.sh" <the draft's path>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-report.sh" <<'REPORT'
+{the draft, exactly as it will be printed}
+REPORT
 ```
 
 Exit 1 names the part that is missing and the line it is on. Fix the report, do

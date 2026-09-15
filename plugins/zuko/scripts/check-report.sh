@@ -30,9 +30,13 @@ import os
 import re
 import sys
 
-report = os.environ["ZUKO_REPORT"]
-lines = report.split("\n")
+lines = os.environ["ZUKO_REPORT"].split("\n")
 problems = []
+
+LABELS = ["What breaks", "Costs you", "Where", "Fix"]
+LABEL_LINE = re.compile(r'^\s*(%s)\s' % "|".join(LABELS))
+DECISION = re.compile(r'→.*skip')
+SEVERITY = re.compile(r'^\s*(?:\d+\.\s*)?(Critical|High|Medium|Low|Severity):')
 
 
 def fail(index, message):       # index is 0-based; reports are 1-based
@@ -56,90 +60,134 @@ for line in open(os.environ["ZUKO_GLOSSARY"], encoding="utf-8"):
         vocabulary.append(cell.group(1).lower())
 vocabulary = [w for w in vocabulary if w not in spared]
 
+
+def plain(line):
+    """The line's own words. A token holding a slash, or a dot or colon with
+    something after it, is a path, a branch or a file:line — never a word the
+    report used. Trailing punctuation is not part of a word: `token.` at the end
+    of a sentence is the same word as `token` in the middle of one."""
+    kept = []
+    for token in line.split():
+        bare = token.strip('.,;:!?()[]"\'')
+        if bare and "/" not in bare and not re.search(r'[.:]\S', bare):
+            kept.append(bare)
+    return kept
+
+
+def sentences(text):
+    """Sentence ends, counting the punctuation but not the dots inside a path or
+    a file:line — `api/import.ts:12` ends no sentence."""
+    kept = [t for t in text.split()
+            if "/" not in t and not re.search(r'[.:]\S', t.strip('()[]"\''))]
+    return len(re.findall(r'[.!?](?:\s|$)', " ".join(kept) + " "))
+
+
 filled = [(i, l) for i, l in enumerate(lines) if l.strip()]
-if not filled:
-    sys.exit(2)
 
 # Header. Line 1, not "the first line with something on it" — a report that
 # opens with a blank line has already lost the reader's first glance.
-head_at, head = 0, lines[0]
-if not re.match(r'^[A-Za-z][A-Za-z ]*: .+ [—-] .+$', head):
+head_at = 0
+if not re.match(r'^[A-Za-z][A-Za-z ]*: .+ [—-] .+$', lines[0]):
     fail(head_at, 'the first line is not a header — "{Stage}: {what was looked at} — {size}"')
 
 starts = [i for i, l in enumerate(lines) if re.match(r'^\d+\. ', l)]
 ends = starts[1:] + [len(lines)]
+inside = {i for n, start in enumerate(starts) for i in range(start, ends[n])}
 
 gloss_at = next((i for i, l in enumerate(lines) if l.strip() == "Glossary"), None)
 next_at = next((i for i, l in reversed(list(enumerate(lines))) if l.strip()), None)
 
-# Verdict and count line: at least two filled lines between the header and the
-# first finding, or the next-step line when there are none.
+# A finding nobody numbered is still a finding, and every check below hangs off
+# the numbering. Left unsaid, a report could skip the numbers and skip the rules.
+for i, line in enumerate(lines):
+    if i not in inside and (LABEL_LINE.match(line) or DECISION.search(line)):
+        fail(i, "a finding that is not numbered — findings are numbered 1., 2., 3.")
+    if SEVERITY.match(line):
+        fail(i, "a severity label — say what it costs someone instead")
+
+# Verdict and count line.
 stop = starts[0] if starts else (gloss_at if gloss_at is not None else next_at)
 opening = [(i, l) for i, l in filled if head_at < i < stop]
-if len(opening) < 2:
-    fail(head_at, "no verdict and count line between the header and what follows")
+counts = [(i, l) for i, l in opening if re.search(r'\braised\b', l)]
+if not counts:
+    fail(head_at, "no count line — say how many were raised and how many held up")
+if not [l for i, l in opening if (i, l) not in counts]:
+    fail(head_at, "no verdict between the header and what follows")
 
 # Findings.
-LABELS = ["What breaks", "Costs you", "Where", "Fix"]
 for n, start in enumerate(starts, 1):
     block = lines[start:ends[n - 1]]
     text = "\n".join(block)
 
-    seen = [l for l in LABELS if re.search(r'^\s*' + l + r'\b', text, re.M)]
-    if seen != LABELS:
-        missing = [l for l in LABELS if l not in seen]
-        if missing:
-            fail(start, 'finding %d has no "%s" line' % (n, missing[0]))
-        else:
-            fail(start, "finding %d has its labels out of order: %s" % (n, ", ".join(seen)))
-    elif not re.search(r'^\s*Where\s+\S+:\d+', text, re.M):
-        fail(start, 'finding %d has a "Where" line with no file:line' % n)
+    at = {}
+    for label in LABELS:
+        found = re.search(r'^\s*' + label + r'\b', text, re.M)
+        if found:
+            at[label] = found.start()
+    missing = [label for label in LABELS if label not in at]
+    if missing:
+        fail(start, 'finding %d has no "%s" line' % (n, missing[0]))
+    elif sorted(at, key=at.get) != LABELS:
+        fail(start, "finding %d has its labels out of order: %s"
+                    % (n, ", ".join(sorted(at, key=at.get))))
+    else:
+        if not re.search(r'^\s*Where\s+\S+:\d+', text, re.M):
+            fail(start, 'finding %d has a "Where" line with no file:line' % n)
+        edges = sorted(at.values()) + [len(text)]
+        for label in LABELS:
+            piece = text[at[label]:edges[sorted(at.values()).index(at[label]) + 1]]
+            if sentences(piece) > 2:
+                fail(start, 'finding %d runs to more than two sentences on "%s"'
+                            % (n, label))
 
-    if not re.search(r'→.*skip', text):
+    if not DECISION.search(text):
         fail(start, "finding %d has no fix-or-skip question" % n)
 
-    if re.match(r'^\d+\.\s+(Critical|High|Medium|Low)\b', block[0]):
-        fail(start, "finding %d is titled with a severity label — say the consequence" % n)
-
-for i, line in enumerate(lines):
-    if re.match(r'^\s*Severity:', line):
-        fail(i, "a Severity: line — say the consequence instead")
-
-# Glossary coverage. The header line and the next-step line are the report's own
-# furniture, and any token holding / . or : is a path, a branch, or a file:line,
-# never a word the report used. Plurals are not chased: a matcher that guesses
-# trades a false alarm you can see for a miss you cannot.
+# Glossary coverage.
 body_lines = [(i, l) for i, l in filled
               if i != head_at and i != next_at
               and not (gloss_at is not None and i >= gloss_at)]
-body = " ".join(re.sub(r'\S*[/.:]\S*', " ", l) for _, l in body_lines).lower()
+body = " ".join(" ".join(plain(l)) for _, l in body_lines).lower()
 
-defined = []
+defined, gloss_end = [], gloss_at
 if gloss_at is not None:
-    for line in lines[gloss_at + 1:]:
-        if not line.strip() or line.strip().startswith("Next:"):
+    for i in range(gloss_at + 1, len(lines)):
+        if not lines[i].strip() or lines[i].strip().startswith("Next:"):
             break
-        defined.append(" ".join(line.split()).lower())
+        defined.append(" ".join(lines[i].split()).lower())
+        gloss_end = i
 
 for word in vocabulary:
     if re.search(r'(?<![\w-])' + re.escape(word) + r'(?![\w-])', body):
         if not any(entry.startswith(word + " ") for entry in defined):
-            at = next((i for i, l in body_lines
-                       if re.search(r'(?<![\w-])' + re.escape(word) + r'(?![\w-])',
-                                    re.sub(r'\S*[/.:]\S*', " ", l).lower())), head_at)
-            fail(at, '"%s" is used here and not defined in the Glossary' % word)
+            at_line = next((i for i, l in body_lines
+                            if re.search(r'(?<![\w-])' + re.escape(word) + r'(?![\w-])',
+                                         " ".join(plain(l)).lower())), head_at)
+            fail(at_line, '"%s" is used here and not defined in the Glossary' % word)
+
+# Nothing after the findings but the next step. The verdict already said it.
+boundary = None
+if starts:
+    decisions = [i for i in range(starts[-1], len(lines)) if DECISION.search(lines[i])]
+    boundary = decisions[-1] if decisions else None
+if gloss_at is not None:
+    boundary = gloss_end
+if boundary is not None:
+    for i, line in filled:
+        if i > boundary and i != next_at:
+            fail(i, "a closing summary — the verdict already said it")
 
 # Next step.
 if next_at is None or not lines[next_at].strip().startswith("Next:"):
     fail(next_at if next_at is not None else head_at,
-         "the last line is not a next step — it must start with \"Next:\"")
+         'the last line is not a next step — it must start with "Next:"')
 
 if problems:
-    for at, message in sorted(problems):
-        print("check-report.sh: line %d — %s." % (at, message), file=sys.stderr)
+    for at_line, message in sorted(problems):
+        print("check-report.sh: line %d — %s." % (at_line, message), file=sys.stderr)
     sys.exit(1)
 
-parts = ["header", "verdict"]
+parts = ["header", "verdict", "count line"]
 if starts:
     parts.append("%d finding%s" % (len(starts), "" if len(starts) == 1 else "s"))
     parts.append("%d decision%s" % (len(starts), "" if len(starts) == 1 else "s"))

@@ -29,17 +29,20 @@ run() {       # run <file>; sets $out and $status
 # A mutation of the findings example, written to $box/broken.txt.
 mutate() {    # mutate <python expression over `text`>
   BOX="$box" python3 - "$1" <<'PY'
-import os, sys
+import os, re, sys
 text = open(os.path.join(os.environ["BOX"], "findings.txt")).read()
-text = eval(sys.argv[1])
-open(os.path.join(os.environ["BOX"], "broken.txt"), "w").write(text)
+broken = eval(sys.argv[1])
+# A mutation that changed nothing would leave the assertion below testing a
+# conforming report and passing for the wrong reason.
+assert broken != text, "mutation matched nothing: %s" % sys.argv[1]
+open(os.path.join(os.environ["BOX"], "broken.txt"), "w").write(broken)
 PY
 }
 
 # 1. Both examples out of the contract conform.
 run "$box/findings.txt"
 expect_exit 0 "$status" "the findings example in report.md conforms"
-expect_match 'header, verdict, 2 findings, 2 decisions, glossary \(4 words\), next step' "$out" "a passing run says what it checked"
+expect_match 'header, verdict, count line, 2 findings, 2 decisions, glossary \(3 words\), next step' "$out" "a passing run says what it checked"
 
 run "$box/clean.txt"
 expect_exit 0 "$status" "the clean example in report.md conforms"
@@ -66,7 +69,7 @@ run "$box/broken.txt"
 expect_exit 1 "$status" "a finding with no decision fails"
 expect_match 'finding 1.*fix-or-skip' "$out" "the decision failure names which finding"
 
-mutate "text.replace('  token           the secret string in a share link that proves you may read the report' + chr(10), '')"
+mutate "re.sub(r'^  token .*' + chr(10), '', text, flags=re.M)"
 run "$box/broken.txt"
 expect_exit 1 "$status" "a report using a word it never defines fails"
 expect_match "token" "$out" "the glossary failure names the undefined word"
@@ -99,5 +102,99 @@ expect_match 'nothing to check' "$out" "an empty input says so"
 
 run "$box/does-not-exist.txt"
 expect_exit 2 "$status" "a missing file exits 2"
+
+
+# --- What the first review of this slice found -------------------------------
+# Every case below is a report the checker used to pass, or a good report it
+# used to reject.
+
+minimal() {   # minimal > file -- the smallest conforming report
+  cat <<'REPORT'
+Review: feat/import — 1 files, 10 lines
+
+One real problem. It hands back rows the caller should not see.
+The reviewers raised 2 possible problems and 1 did not hold up on a second look.
+
+1. The importer trusts the caller
+   What breaks  The handler takes the account id from the address and never
+                checks it against who is signed in.
+   Costs you    One customer can read another customer's rows.
+   Where        api/import.ts:12
+   Fix          Check the signed-in account before reading.
+   → Fix it, or skip it?
+
+Next: answer each finding above, then /ship.
+REPORT
+}
+
+minimal >"$box/minimal.txt"
+run "$box/minimal.txt"
+expect_exit 0 "$status" "the smallest conforming report passes"
+
+# A finding nobody numbered is still a finding.
+minimal | sed 's/^1\. The importer trusts the caller/The importer trusts the caller/' >"$box/unnumbered.txt"
+run "$box/unnumbered.txt"
+expect_exit 1 "$status" "a finding-shaped block with no number fails"
+expect_match 'not numbered' "$out" "the unnumbered failure says what is wrong"
+
+printf 'Review: feat/x — 1 files, 2 lines\n\nOne problem.\nThe reviewers raised 1 possible problem and it held.\n\nCritical: the importer trusts the caller\n\nNext: /ship\n' >"$box/sev-title.txt"
+run "$box/sev-title.txt"
+expect_exit 1 "$status" "a severity-titled line outside a numbered finding fails"
+expect_match 'severity' "$out" "the severity failure says so"
+
+# A word at the end of a sentence is a word.
+minimal | sed 's/checks it against who is signed in./checks it against the session./' >"$box/fullstop.txt"
+run "$box/fullstop.txt"
+expect_exit 1 "$status" "a vocabulary word at a full stop is caught"
+expect_match 'session' "$out" "the full-stop failure names the word"
+
+# A two-word term wrapped across lines is the same term.
+minimal | sed 's/The handler takes the account id from the address and never/The handler returns from inside its catch/; s/checks it against who is signed in./block without telling anyone./' >"$box/wrapped.txt"
+run "$box/wrapped.txt"
+expect_exit 1 "$status" "a two-word term split across lines is caught"
+expect_match 'catch block' "$out" "the wrapped failure names the term"
+
+# Labels in the wrong order.
+python3 - <<PY
+text = open("$box/minimal.txt").read()
+where = "   Where        api/import.ts:12\n"
+fix = "   Fix          Check the signed-in account before reading.\n"
+open("$box/order.txt", "w").write(text.replace(where + fix, fix + where, 1))
+PY
+run "$box/order.txt"
+expect_exit 1 "$status" "labels out of order fail"
+expect_match 'out of order' "$out" "the order failure says so"
+
+# The count line is a part, not scenery.
+minimal | grep -v '^The reviewers raised' >"$box/nocount.txt"
+run "$box/nocount.txt"
+expect_exit 1 "$status" "a report with no count line fails"
+expect_match 'count line' "$out" "the count failure names the count line"
+
+# An honest title that happens to start with an ordinary word.
+minimal | sed 's/^1\. The importer trusts the caller/1. High traffic makes the import stop halfway/' >"$box/high.txt"
+run "$box/high.txt"
+expect_exit 0 "$status" "a title starting with the word High is not a severity label"
+
+# Two sentences per label, and no summary after the findings.
+minimal | sed 's/   Costs you    One customer can read another customer.s rows./   Costs you    One customer reads another. It is not logged. Nobody notices./' >"$box/long.txt"
+run "$box/long.txt"
+expect_exit 1 "$status" "a label carrying three sentences fails"
+expect_match 'two sentences' "$out" "the sentence failure says so"
+
+minimal | sed 's|^Next: answer each finding above, then /ship.|In short: one problem, worth fixing before this ships.\n\nNext: answer each finding above, then /ship.|' >"$box/summary.txt"
+run "$box/summary.txt"
+expect_exit 1 "$status" "a closing summary after the findings fails"
+expect_match 'summary' "$out" "the summary failure says so"
+
+# The stripping the spike was run to protect, tested where it actually fires.
+minimal | sed 's/One real problem. It hands back rows the caller should not see./One real problem, in api\/token.ts:9 and nowhere else./' >"$box/inline-path.txt"
+run "$box/inline-path.txt"
+expect_exit 0 "$status" "a file:line in the body is not read as an undefined word"
+
+minimal | sed 's/One real problem. It hands back rows the caller should not see./One real problem. The token is the thing at fault./' >"$box/inline-word.txt"
+run "$box/inline-word.txt"
+expect_exit 1 "$status" "the same word as prose is still caught"
+expect_match 'token' "$out" "the prose failure names the word"
 
 rm -rf "$box"

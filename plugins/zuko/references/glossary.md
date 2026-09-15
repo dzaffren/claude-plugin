@@ -66,6 +66,7 @@ software, not someone writing it.
 | empty | a list or text with nothing in it |
 | swallowed error | a failure the code catches and never mentions again |
 | catch block | the part of the code that runs when something fails |
+| clipboard | where Copy puts something so you can paste it |
 | silent failure | something that did not work and said nothing |
 
 ## Words the checker does not chase
