@@ -67,3 +67,21 @@ software, not someone writing it.
 | swallowed error | a failure the code catches and never mentions again |
 | catch block | the part of the code that runs when something fails |
 | silent failure | something that did not work and said nothing |
+
+## Words the checker does not chase
+
+`empty` · `null` · `boundary` · `secret` · `branch` · `held up` · `thrown out`
+
+Each of these is ordinary English at least as often as it is jargon, and a check
+that chased them would flag honest sentences. Define them when you mean them
+technically — nothing will remind you.
+
+## Also
+
+| Word | Line |
+| ---- | ---- |
+| endpoint | one address in the app that other software calls |
+| query string | the part of a web address after the "?", where values are passed |
+| session | the record of who is signed in |
+| job | a piece of work the server runs in the background |
+| worker | a background program that runs long jobs outside the app |
