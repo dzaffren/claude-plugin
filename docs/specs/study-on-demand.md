@@ -1,6 +1,6 @@
 # Study on demand
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/learning-mode/shape.md
 **Depends on:** None

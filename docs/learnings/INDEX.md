@@ -60,3 +60,12 @@ One line per lesson. Loaded into every session in this repo.
 - Merging is not shipping for a plugin — the cache holds a copy taken at install
   time, so reinstall and start a new session before checking the proof signal.
   ([detail](the-installed-plugin-is-not-the-merge.md))
+- A check that could not run is not a miss — `grep` exits 1 when it found
+  nothing and 2 when it never started, and memory pressure causes the second.
+  ([detail](a-check-that-could-not-run-is-not-a-miss.md))
+- Read the transcript before editing the prompt — five of six failures in a
+  prompt-driven test were the test measuring the wrong thing.
+  ([detail](read-the-transcript-before-editing-the-prompt.md))
+- A negative example still hands over the answer — never write a "do not say X"
+  example using the case the test will exercise.
+  ([detail](a-negative-example-still-hands-over-the-answer.md))
