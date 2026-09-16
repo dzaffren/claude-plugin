@@ -143,7 +143,7 @@ PY
 I want a --file flag that loads todos from todos.json.'
   check_turn "A1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if printf '%s\n' "$turn_text" | grep -qE 'Study mode on:'; then
+  if grep_text -E 'Study mode on:' "$turn_text"; then
     note PASS "A1 prints Study mode on"
   else
     note FAIL "A1 prints Study mode on" "reply began: ${turn_first:0:120}"
@@ -168,7 +168,7 @@ I want a --file flag that loads todos from todos.json.'
     note FAIL "A2 wrote the --file flag itself" "no --file in todo.py"
   fi
   for fixed in 'Your turn' 'Where:'; do
-    if printf '%s\n' "$turn_text" | grep -qF "$fixed"; then
+    if grep_text -F "$fixed" "$turn_text"; then
       note PASS "A2 reply carries $fixed"
     else
       note FAIL "A2 reply carries $fixed" "not in the reply"
@@ -194,7 +194,7 @@ I want a --file flag that loads todos from todos.json.'
   else
     note FAIL "A3 leaves the next piece as a gap" "no TODO(study) marker left"
   fi
-  if printf '%s\n' "$turn_text" | grep -qF 'Your turn'; then
+  if grep_text -F "Your turn" "$turn_text"; then
     note PASS "A3 reply carries Your turn"
   else
     note FAIL "A3 reply carries Your turn" "not in the reply"
@@ -204,7 +204,7 @@ I want a --file flag that loads todos from todos.json.'
   tree_before=$(tree_of "$dir")
   run_turn "$dir" "$box" "$sid" '/zuko:spec add a --done flag that marks a todo complete'
   check_turn "A4 the fourth turn returned a result" || return 0
-  if printf '%s\n' "$turn_text" | grep -qE "You're in study mode\. Stop studying and run /(zuko:)?spec\?"; then
+  if grep_text -E "You're in study mode\. Stop studying and run /(zuko:)?spec\?" "$turn_text"; then
     note PASS "A4 answers a typed stage with the guard sentence"
   else
     note FAIL "A4 answers a typed stage with the guard sentence" "reply began: ${turn_first:0:120}"
@@ -223,12 +223,12 @@ I want a --file flag that loads todos from todos.json.'
   # T5 -- scenario 5: leaving happens only when the user says so.
   run_turn "$dir" "$box" "$sid" 'stop studying'
   check_turn "A5 the fifth turn returned a result" || return 0
-  if printf '%s\n' "$turn_text" | grep -qF 'Study mode off.'; then
+  if grep_text -F "Study mode off." "$turn_text"; then
     note PASS "A5 prints Study mode off"
   else
     note FAIL "A5 prints Study mode off" "reply began: ${turn_first:0:120}"
   fi
-  if printf '%s\n' "$turn_text" | grep -qF 'Your turn'; then
+  if grep_text -F "Your turn" "$turn_text"; then
     note FAIL "A5 leaves no gap once the mode is off" "the reply still has a Your turn block"
   else
     note PASS "A5 leaves no gap once the mode is off"
@@ -276,7 +276,7 @@ PY
   run_turn "$dir" "$box" "" '/zuko:study python error handling'
   check_turn "B1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if printf '%s\n' "$turn_text" | grep -qF 'Study mode on:'; then
+  if grep_text -F "Study mode on:" "$turn_text"; then
     note PASS "B1 prints Study mode on"
   else
     note FAIL "B1 prints Study mode on" "reply began: ${turn_first:0:120}"
@@ -286,20 +286,24 @@ PY
   run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash, and I want a clear message
 instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   check_turn "B2 the attempt turn returned a result" || return 0
-  if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
+  if grep_text -F "Not yet." "$turn_first"; then
     note PASS "B2 opens a failed attempt with Not yet"
   else
     note FAIL "B2 opens a failed attempt with Not yet" "first line was: ${turn_first:0:120}"
   fi
-  if printf '%s\n' "$turn_text" | grep -qE '^[[:space:]]*Hint:'; then
+  if grep_text -E '^[[:space:]]*Hint:' "$turn_text"; then
     note PASS "B2 gives a Hint line"
   else
     note FAIL "B2 gives a Hint line" "no Hint: line in the reply"
   fi
-  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
-    note FAIL "B2 withholds the answer" "the reply already names FileNotFoundError"
+  # Scenario 3 asks for a hint "without writing the fix" -- not for the word to
+  # be absent. Python chains the original exception under the NameError, so the
+  # quoted traceback names it whatever the hint does, and reading that traceback
+  # is the lesson. What must not appear is the corrected line.
+  if grep_text -E 'except[[:space:]]+FileNotFoundError' "$turn_text"; then
+    note FAIL "B2 withholds the fix" "the reply writes the corrected except line"
   else
-    note PASS "B2 withholds the answer"
+    note PASS "B2 withholds the fix"
   fi
   if [ "$before" = "$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")" ]; then
     note PASS "B2 does not edit the user's attempt"
@@ -310,10 +314,10 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   # T3 -- scenario 3: the answer, once it is asked for.
   run_turn "$dir" "$box" "$sid" 'show me'
   check_turn "B3 the show me turn returned a result" || return 0
-  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
-    note PASS "B3 shows the answer when asked"
+  if grep_text -E 'except[[:space:]]+FileNotFoundError' "$turn_text"; then
+    note PASS "B3 shows the fix when asked"
   else
-    note FAIL "B3 shows the answer when asked" "FileNotFoundError not in the reply"
+    note FAIL "B3 shows the fix when asked" "the corrected except line is not in the reply"
   fi
 }
 
@@ -328,7 +332,7 @@ session_c() {
   run_turn "$dir" "$box" "" '/zuko:study system design'
   check_turn "C1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if printf '%s\n' "$turn_text" | grep -qF 'Study mode on:'; then
+  if grep_text -F "Study mode on:" "$turn_text"; then
     note PASS "C1 prints Study mode on"
   else
     note FAIL "C1 prints Study mode on" "reply began: ${turn_first:0:120}"
@@ -339,7 +343,7 @@ session_c() {
 in an interview. How would a URL shortener handle 10,000 new links a day?'
   check_turn "C2 the question turn returned a result" || return 0
   for fixed in 'Your turn' 'Decide:'; do
-    if printf '%s\n' "$turn_text" | grep -qF "$fixed"; then
+    if grep_text -F "$fixed" "$turn_text"; then
       note PASS "C2 reply carries $fixed"
     else
       note FAIL "C2 reply carries $fixed" "not in the reply"
@@ -354,12 +358,12 @@ in an interview. How would a URL shortener handle 10,000 new links a day?'
   # T3 -- scenario 2: a real choice gets explained, not marked wrong.
   run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
   check_turn "C3 the choice turn returned a result" || return 0
-  if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
+  if grep_text -F "Not yet." "$turn_first"; then
     note FAIL "C3 treats a reasoned choice as valid" "it opened with Not yet."
   else
     note PASS "C3 treats a reasoned choice as valid"
   fi
-  if printf '%s\n' "$turn_text" | grep -qE '^[[:space:]]*Glossary'; then
+  if grep_text -E '^[[:space:]]*Glossary' "$turn_text"; then
     note PASS "C3 explanation carries a Glossary heading"
   else
     note FAIL "C3 explanation carries a Glossary heading" "no Glossary heading in the reply"

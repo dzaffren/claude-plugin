@@ -19,14 +19,37 @@ expect_exit() {        # expect_exit <expected> <actual> <description>
   else record FAIL "$3" "expected exit $1, got $2"; fi
 }
 
+# grep can fail to start when the machine is short of memory, and the shell
+# reports that the same way as a clean miss. Exit 0 is a match and 1 is a miss;
+# anything else means grep never ran, so retry before believing it.
+grep_text() {          # grep_text <-E|-F> <pattern> <text>; 0 match, 1 miss, 2 never ran
+  local tries=0 status
+  while :; do
+    printf '%s\n' "$3" | grep -q "$1" -- "$2"
+    status=$?
+    [ "$status" -le 1 ] && return "$status"
+    tries=$((tries + 1))
+    [ "$tries" -ge 3 ] && return 2
+    sleep 1
+  done
+}
+
 expect_match() {       # expect_match <regex> <text> <description>
-  if printf '%s\n' "$2" | grep -qE "$1"; then record PASS "$3"
-  else record FAIL "$3" "nothing matched /$1/"; fi
+  grep_text -E "$1" "$2"
+  case $? in
+    0) record PASS "$3" ;;
+    1) record FAIL "$3" "nothing matched /$1/" ;;
+    *) record FAIL "$3" "grep could not run, so the check never happened" ;;
+  esac
 }
 
 expect_no_match() {    # expect_no_match <regex> <text> <description>
-  if printf '%s\n' "$2" | grep -qE "$1"; then record FAIL "$3" "matched /$1/ and should not have"
-  else record PASS "$3"; fi
+  grep_text -E "$1" "$2"
+  case $? in
+    0) record FAIL "$3" "matched /$1/ and should not have" ;;
+    1) record PASS "$3" ;;
+    *) record FAIL "$3" "grep could not run, so the check never happened" ;;
+  esac
 }
 
 name="${1:-}"
