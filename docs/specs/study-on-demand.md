@@ -340,7 +340,7 @@ stage whose text has already been loaded.
 | `plugins/zuko/scripts/tests/test-study-wiring.sh` | New. (1) `route-to-zuko.sh` output has the study row, above the learn row. (2) A sandbox copy of `run.sh`, holding one passing test and one `test-live-` test that fails: run with no name, it exits 0 and prints the skip line. Named, it exits 1. | Routing scope, and the skip must be visible, never silent |
 | `plugins/zuko/scripts/tests/test-live-study.sh` | New. The e2e, see Test plan. | Scenarios 1-5 |
 | `README.md:20`, `README.md:33` | "five helpers" becomes "six helpers". New `/study` row under `/learn`. | The command table is the user's index |
-| `plugins/zuko/.claude-plugin/plugin.json:4`, `.claude-plugin/marketplace.json:13` | `2.1.0` becomes `2.2.0` | A new command. The installed copy can be pinned back. |
+| `plugins/zuko/.claude-plugin/plugin.json:4`, `.claude-plugin/marketplace.json:13` | `2.2.0` becomes `2.3.0` (O10) | A new command. The installed copy can be pinned back. |
 
 Reusing: `run.sh`'s `expect_exit` / `expect_match` / `expect_no_match`; the sandbox
 copy of `run.sh` from `test-block-attribution.sh:31`; the `mktemp -d` scratch-repo
@@ -436,3 +436,4 @@ last. Parallel worktree agents were dropped here too
 | O7 | This machine has no Rust toolchain (`which cargo rustc` finds nothing), so scenario 3's `cargo build` cannot run in the e2e as written. Either the scenarios move to a language that is installed (`python3` is), or Rust gets installed. | flag | poc | user | Resolved | Python. Scenarios rewritten on a Python `todo-cli`, 2026-09-15. |
 | O8 | The e2e test checks only fixed lines, so it can prove the gap, the hint, the guard, and that a `Glossary` heading exists. It cannot prove the explanations are long and in simple words, so the "explain less" half of O2 stays unproven after the build. Options: accept that and judge it by reading, or add a word-count check on the explanation, which is free text and will be flaky. | flag | spec p2 | user | Accepted risk | Judge it by reading the first real study session. The user said "proceed" at pause 2, 2026-09-15. |
 | O9 | Unproven that the study rules survive auto-compaction in a long session. If they don't, study mode ends silently partway through. | unproven | spec p3 | user | Accepted risk | No spike, user's call 2026-09-15. The `Study mode on:` line lets the user notice and run `/study` again. |
+| O10 | The plan's version row said `2.1.0` becomes `2.2.0`, but `readable-review-findings` merged to main after this spec was written and already bumped both files to `2.2.0`. | flag | build | claude | Resolved | Bump `2.2.0` to `2.3.0` instead. Same intent — a new command gets a minor bump — against the version that is actually on main. |
