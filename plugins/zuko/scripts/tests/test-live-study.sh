@@ -25,7 +25,8 @@ fi
 # run_turn <dir> <meta-dir> <resume-id or empty> <prompt>
 # The transcript is written to <meta-dir>, never into <dir> -- the scratch repo
 # has to stay clean, both for the git checks and so the session never reads its
-# own transcript. Sets turn_session, turn_error, turn_text, turn_first.
+# own transcript. Sets turn_session, turn_error, turn_text, turn_first and
+# turn_verdict (the first text after the last tool call).
 run_turn() {
   local dir="$1" box="$2" resume="$3" prompt="$4" meta n
   local args=(-p "$prompt"
@@ -48,6 +49,7 @@ import json, os, sys
 d = sys.argv[1]
 session, error = "", "no result event in the stream"
 blocks, tools = [], []
+after_tool = 0
 try:
     lines = open(d + ".jsonl").read().splitlines()
 except OSError:
@@ -71,6 +73,7 @@ for line in lines:
             if block.get("type") == "text" and (block.get("text") or "").strip():
                 blocks.append(block["text"])
             elif block.get("type") == "tool_use":
+                after_tool = len(blocks)
                 tools.append("%s\t%s" % (block.get("name", ""),
                                          json.dumps(block.get("input", ""))))
     if event.get("type") == "result":
@@ -81,6 +84,9 @@ for line in lines:
 # of tool calls is invisible there.
 open(d + ".text", "w").write("\n".join(blocks))
 open(d + ".first", "w").write(blocks[0] if blocks else "")
+# The verdict on an attempt cannot come before the code has been run, so it is
+# the first text after the last tool call -- not the preamble above it.
+open(d + ".verdict", "w").write(blocks[after_tool] if len(blocks) > after_tool else "")
 open(d + ".tools", "w").write("\n".join(tools) + "\n")
 print(session)
 print(error)
@@ -90,6 +96,7 @@ PY
   turn_error=$(printf '%s\n' "$meta" | sed -n 2p)
   turn_text=$(cat "$box/$n.text")
   turn_first=$(grep -m1 -v '^[[:space:]]*$' "$box/$n.first" || true)
+  turn_verdict=$(grep -m1 -v '^[[:space:]]*$' "$box/$n.verdict" || true)
   turn_tools="$box/$n.tools"
 }
 
@@ -110,7 +117,7 @@ tree_of() { ( cd "$1" && find . -type f -not -path './.git/*' | sort ); }
 # ------------------------------------------------------------------ session A
 
 session_a() {
-  local dir="$work/a" box="$work/a.box" found="$work/a.found" sid tree_before todo_marker turn_tools
+  local dir="$work/a" box="$work/a.box" found="$work/a.found" sid tree_before todo_marker turn_tools turn_verdict
   : >"$found"
   mkdir -p "$dir" "$box"
   git -C "$dir" init -q -b main
@@ -238,7 +245,7 @@ I want a --file flag that loads todos from todos.json.'
 # ------------------------------------------------------------------ session B
 
 session_b() {
-  local dir="$work/b" box="$work/b.box" found="$work/b.found" sid before turn_tools
+  local dir="$work/b" box="$work/b.box" found="$work/b.found" sid before turn_tools turn_verdict
   : >"$found"
   mkdir -p "$dir" "$box"
   cat >"$dir/todo.py" <<'PY'
@@ -286,10 +293,10 @@ PY
   run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash, and I want a clear message
 instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   check_turn "B2 the attempt turn returned a result" || return 0
-  if grep_text -F "Not yet." "$turn_first"; then
+  if grep_text -F "Not yet." "$turn_verdict"; then
     note PASS "B2 opens a failed attempt with Not yet"
   else
-    note FAIL "B2 opens a failed attempt with Not yet" "first line was: ${turn_first:0:120}"
+    note FAIL "B2 opens a failed attempt with Not yet" "verdict began: ${turn_verdict:0:120}"
   fi
   if grep_text -E '^[[:space:]]*Hint:' "$turn_text"; then
     note PASS "B2 gives a Hint line"
@@ -324,7 +331,7 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
 # ------------------------------------------------------------------ session C
 
 session_c() {
-  local dir="$work/c" box="$work/c.box" found="$work/c.found" sid turn_tools
+  local dir="$work/c" box="$work/c.box" found="$work/c.found" sid turn_tools turn_verdict
   : >"$found"
   mkdir -p "$dir" "$box"
 
@@ -358,8 +365,8 @@ in an interview. How would a URL shortener handle 10,000 new links a day?'
   # T3 -- scenario 2: a real choice gets explained, not marked wrong.
   run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
   check_turn "C3 the choice turn returned a result" || return 0
-  if grep_text -F "Not yet." "$turn_first"; then
-    note FAIL "C3 treats a reasoned choice as valid" "it opened with Not yet."
+  if grep_text -F "Not yet." "$turn_verdict"; then
+    note FAIL "C3 treats a reasoned choice as valid" "the verdict opened with Not yet."
   else
     note PASS "C3 treats a reasoned choice as valid"
   fi
