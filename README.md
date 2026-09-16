@@ -17,7 +17,7 @@ flowchart LR
     S -. "next slice" .-> SP
 ```
 
-Five stages in the line, five helpers reached whenever needed.
+Five stages in the line, six helpers reached whenever needed.
 
 | Command | What it does |
 | ------- | ------------ |
@@ -31,6 +31,7 @@ Five stages in the line, five helpers reached whenever needed.
 | `/debug` | Reproduce, find the root cause, fix it if small or route to `/spec` if it is design |
 | `/status` | Where every slice sits: version, status, open items, next command |
 | `/learn` | Audit, consolidate, and remove lessons. Capture is automatic. |
+| `/study` | Learning mode for any topic: you write the key part of each piece, Claude explains it at length |
 
 ## One spec = one vertical slice
 
