@@ -42,8 +42,8 @@ run_turn() {
 import json, os, sys
 
 d = sys.argv[1]
-text, session, error = "", "", "no result event in the stream"
-tools = []
+session, error = "", "no result event in the stream"
+blocks, tools = [], []
 try:
     lines = open(os.path.join(d, "turn.jsonl")).read().splitlines()
 except OSError:
@@ -60,16 +60,23 @@ for line in lines:
         continue
     session = event.get("session_id") or session
     message = event.get("message")
-    if isinstance(message, dict):
+    if isinstance(message, dict) and event.get("type") == "assistant":
         for block in message.get("content") or []:
-            if isinstance(block, dict) and block.get("type") == "tool_use":
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "text" and (block.get("text") or "").strip():
+                blocks.append(block["text"])
+            elif block.get("type") == "tool_use":
                 tools.append("%s\t%s" % (block.get("name", ""),
                                          json.dumps(block.get("input", ""))))
     if event.get("type") == "result":
-        text = event.get("result") or ""
         error = "the result event is flagged is_error" if event.get("is_error") else ""
 
-open(os.path.join(d, "turn.text"), "w").write(text)
+# Everything the user saw this turn, not just the last message. The result
+# event carries only the final block, so a line printed before a long stretch
+# of tool calls is invisible there.
+open(os.path.join(d, "turn.text"), "w").write("\n".join(blocks))
+open(os.path.join(d, "turn.first"), "w").write(blocks[0] if blocks else "")
 open(os.path.join(d, "turn.tools"), "w").write("\n".join(tools) + "\n")
 print(session)
 print(error)
@@ -78,7 +85,7 @@ PY
   turn_session=$(printf '%s\n' "$meta" | sed -n 1p)
   turn_error=$(printf '%s\n' "$meta" | sed -n 2p)
   turn_text=$(cat "$box/turn.text")
-  turn_first=$(printf '%s\n' "$turn_text" | grep -m1 -v '^[[:space:]]*$' || true)
+  turn_first=$(grep -m1 -v '^[[:space:]]*$' "$box/turn.first" || true)
 }
 
 # Each session writes its findings to its own file, so parallel sessions never
@@ -258,41 +265,50 @@ if __name__ == "__main__":
 PY
   before=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")
 
-  # T1 -- scenario 3: a broken attempt gets a hint, never the fix.
-  run_turn "$dir" "$box" "" '/zuko:study python error handling
-
-I know try/except exists but my scripts just crash, and I want a clear message
-instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
+  # T1 -- the mode starts on its own turn. Scenario 1 requires the first reply
+  # to be the start line and the level questions, so the attempt cannot be
+  # judged in the same turn that switches the mode on.
+  run_turn "$dir" "$box" "" '/zuko:study python error handling'
   check_turn "B1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
-    note PASS "B1 opens a failed attempt with Not yet"
+  if printf '%s\n' "$turn_text" | grep -qF 'Study mode on:'; then
+    note PASS "B1 prints Study mode on"
   else
-    note FAIL "B1 opens a failed attempt with Not yet" "first line was: ${turn_first:0:120}"
-  fi
-  if printf '%s\n' "$turn_text" | grep -qE '^[[:space:]]*Hint:'; then
-    note PASS "B1 gives a Hint line"
-  else
-    note FAIL "B1 gives a Hint line" "no Hint: line in the reply"
-  fi
-  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
-    note FAIL "B1 withholds the answer" "the reply already names FileNotFoundError"
-  else
-    note PASS "B1 withholds the answer"
-  fi
-  if [ "$before" = "$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")" ]; then
-    note PASS "B1 does not edit the user's attempt"
-  else
-    note FAIL "B1 does not edit the user's attempt" "todo.py changed"
+    note FAIL "B1 prints Study mode on" "reply began: ${turn_first:0:120}"
   fi
 
-  # T2 -- scenario 3: the answer, once it is asked for.
-  run_turn "$dir" "$box" "$sid" 'show me'
-  check_turn "B2 the second turn returned a result" || return 0
-  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
-    note PASS "B2 shows the answer when asked"
+  # T2 -- scenario 3: a broken attempt gets a hint, never the fix.
+  run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash, and I want a clear message
+instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
+  check_turn "B2 the attempt turn returned a result" || return 0
+  if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
+    note PASS "B2 opens a failed attempt with Not yet"
   else
-    note FAIL "B2 shows the answer when asked" "FileNotFoundError not in the reply"
+    note FAIL "B2 opens a failed attempt with Not yet" "first line was: ${turn_first:0:120}"
+  fi
+  if printf '%s\n' "$turn_text" | grep -qE '^[[:space:]]*Hint:'; then
+    note PASS "B2 gives a Hint line"
+  else
+    note FAIL "B2 gives a Hint line" "no Hint: line in the reply"
+  fi
+  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
+    note FAIL "B2 withholds the answer" "the reply already names FileNotFoundError"
+  else
+    note PASS "B2 withholds the answer"
+  fi
+  if [ "$before" = "$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")" ]; then
+    note PASS "B2 does not edit the user's attempt"
+  else
+    note FAIL "B2 does not edit the user's attempt" "todo.py changed"
+  fi
+
+  # T3 -- scenario 3: the answer, once it is asked for.
+  run_turn "$dir" "$box" "$sid" 'show me'
+  check_turn "B3 the show me turn returned a result" || return 0
+  if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
+    note PASS "B3 shows the answer when asked"
+  else
+    note FAIL "B3 shows the answer when asked" "FileNotFoundError not in the reply"
   fi
 }
 
@@ -303,38 +319,45 @@ session_c() {
   : >"$found"
   mkdir -p "$dir" "$box"
 
-  # T1 -- scenario 2: no code to write, so the gap is the decision.
-  run_turn "$dir" "$box" "" '/zuko:study system design
-
-I have never designed a URL shortener. I want to be able to reason about one in
-an interview. How would a URL shortener handle 10,000 new links a day?'
+  # T1 -- the mode starts on its own turn, same as session B.
+  run_turn "$dir" "$box" "" '/zuko:study system design'
   check_turn "C1 the first turn returned a result" || return 0
   sid="$turn_session"
+  if printf '%s\n' "$turn_text" | grep -qF 'Study mode on:'; then
+    note PASS "C1 prints Study mode on"
+  else
+    note FAIL "C1 prints Study mode on" "reply began: ${turn_first:0:120}"
+  fi
+
+  # T2 -- scenario 2: no code to write, so the gap is the decision.
+  run_turn "$dir" "$box" "$sid" 'I have never designed a URL shortener. I want to be able to reason about one
+in an interview. How would a URL shortener handle 10,000 new links a day?'
+  check_turn "C2 the question turn returned a result" || return 0
   for fixed in 'Your turn' 'Decide:'; do
     if printf '%s\n' "$turn_text" | grep -qF "$fixed"; then
-      note PASS "C1 reply carries $fixed"
+      note PASS "C2 reply carries $fixed"
     else
-      note FAIL "C1 reply carries $fixed" "not in the reply"
+      note FAIL "C2 reply carries $fixed" "not in the reply"
     fi
   done
   if [ -z "$(tree_of "$dir")" ]; then
-    note PASS "C1 wrote no files for a topic with no code"
+    note PASS "C2 wrote no files for a topic with no code"
   else
-    note FAIL "C1 wrote no files for a topic with no code" "$(tree_of "$dir" | tr '\n' ' ')"
+    note FAIL "C2 wrote no files for a topic with no code" "$(tree_of "$dir" | tr '\n' ' ')"
   fi
 
-  # T2 -- scenario 2: a real choice gets explained, not marked wrong.
+  # T3 -- scenario 2: a real choice gets explained, not marked wrong.
   run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
-  check_turn "C2 the second turn returned a result" || return 0
+  check_turn "C3 the choice turn returned a result" || return 0
   if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
-    note FAIL "C2 treats a reasoned choice as valid" "it opened with Not yet."
+    note FAIL "C3 treats a reasoned choice as valid" "it opened with Not yet."
   else
-    note PASS "C2 treats a reasoned choice as valid"
+    note PASS "C3 treats a reasoned choice as valid"
   fi
   if printf '%s\n' "$turn_text" | grep -qE '^[[:space:]]*Glossary'; then
-    note PASS "C2 explanation carries a Glossary heading"
+    note PASS "C3 explanation carries a Glossary heading"
   else
-    note FAIL "C2 explanation carries a Glossary heading" "no Glossary heading in the reply"
+    note FAIL "C3 explanation carries a Glossary heading" "no Glossary heading in the reply"
   fi
 }
 
@@ -348,14 +371,23 @@ session_c &
 pid_c=$!
 wait "$pid_a" "$pid_b" "$pid_c"
 
+clean=yes
 for letter in a b c; do
   if [ ! -s "$work/$letter.found" ]; then
     record FAIL "session $letter" "the session recorded nothing"
+    clean=no
     continue
   fi
+  grep -q '^FAIL' "$work/$letter.found" && clean=no
   while IFS=$'\t' read -r status description detail; do
     record "$status" "$description" "$detail"
   done <"$work/$letter.found"
 done
 
-rm -rf "$work"
+# A failed run costs money to reproduce, so keep the transcripts. They are the
+# only way to see what the session actually printed.
+if [ "$clean" = yes ]; then
+  rm -rf "$work"
+else
+  echo "live-study: transcripts kept at $work" >&2
+fi
