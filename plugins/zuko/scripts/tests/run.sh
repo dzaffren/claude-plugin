@@ -57,6 +57,14 @@ total_fail=0
 for file in "${files[@]}"; do
   base=$(basename "$file" .sh)
   base=${base#test-}
+
+  # A live test drives real sessions against the API, so an unnamed run leaves
+  # it out. Print the skip: a silent one reads as a pass.
+  if [ -z "$name" ] && [ "${base#live-}" != "$base" ]; then
+    printf '%-19s%s\n' "$base" "skipped, costs money: run.sh $base"
+    continue
+  fi
+
   results_file="$work/$base.results"
   : >"$results_file"
 
@@ -82,6 +90,11 @@ for file in "${files[@]}"; do
     done <"$results_file"
   fi
 done
+
+if [ "$((total_pass + total_fail))" -eq 0 ]; then
+  echo "run.sh: no tests ran, every one was skipped. A run that scanned nothing is not a pass." >&2
+  exit 1
+fi
 
 printf '%-19s%3s passed, %s failed\n' "" "$total_pass" "$total_fail"
 [ "$total_fail" -eq 0 ] || exit 1

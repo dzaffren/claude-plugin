@@ -18,10 +18,12 @@ anything else:
   "can we even", "will this be fast enough", prove a claim  -> zuko:poc
   a bug, a failing test, wrong behaviour                    -> zuko:debug
   "where are we", "what's next"                             -> zuko:status
+  "study X", "teach me X", "I want to learn X"              -> zuko:study
   "what have you learned", clean up lessons                 -> zuko:learn
 
 The pipeline is shape -> spec -> build -> review -> ship, one vertical slice
-at a time. design, poc, debug, status and learn are reached whenever needed.
+at a time. design, poc, debug, status, learn and study are reached whenever
+needed.
 
 Three rules that hold everywhere in this session:
 
