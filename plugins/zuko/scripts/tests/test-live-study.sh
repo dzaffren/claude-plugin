@@ -27,7 +27,7 @@ fi
 # has to stay clean, both for the git checks and so the session never reads its
 # own transcript. Sets turn_session, turn_error, turn_text, turn_first.
 run_turn() {
-  local dir="$1" box="$2" resume="$3" prompt="$4" meta
+  local dir="$1" box="$2" resume="$3" prompt="$4" meta n
   local args=(-p "$prompt"
               --output-format stream-json --verbose
               --plugin-dir "$plugin" --add-dir "$plugin"
@@ -36,16 +36,20 @@ run_turn() {
               --permission-mode acceptEdits)
   [ -n "$resume" ] && args+=(--resume "$resume")
 
-  ( cd "$dir" && timeout 900 claude "${args[@]}" ) >"$box/turn.jsonl" 2>"$box/turn.err"
+  # One set of files per turn. Overwriting them would throw away the turn that
+  # actually failed, and re-running to see it costs money.
+  n=$(( $(find "$box" -maxdepth 1 -name '*.jsonl' | wc -l) + 1 ))
+  printf '%s\n' "$prompt" >"$box/$n.prompt"
+  ( cd "$dir" && timeout 900 claude "${args[@]}" ) >"$box/$n.jsonl" 2>"$box/$n.err"
 
-  meta=$(python3 - "$box" <<'PY'
+  meta=$(python3 - "$box/$n" <<'PY'
 import json, os, sys
 
 d = sys.argv[1]
 session, error = "", "no result event in the stream"
 blocks, tools = [], []
 try:
-    lines = open(os.path.join(d, "turn.jsonl")).read().splitlines()
+    lines = open(d + ".jsonl").read().splitlines()
 except OSError:
     lines = []
 for line in lines:
@@ -75,17 +79,18 @@ for line in lines:
 # Everything the user saw this turn, not just the last message. The result
 # event carries only the final block, so a line printed before a long stretch
 # of tool calls is invisible there.
-open(os.path.join(d, "turn.text"), "w").write("\n".join(blocks))
-open(os.path.join(d, "turn.first"), "w").write(blocks[0] if blocks else "")
-open(os.path.join(d, "turn.tools"), "w").write("\n".join(tools) + "\n")
+open(d + ".text", "w").write("\n".join(blocks))
+open(d + ".first", "w").write(blocks[0] if blocks else "")
+open(d + ".tools", "w").write("\n".join(tools) + "\n")
 print(session)
 print(error)
 PY
 )
   turn_session=$(printf '%s\n' "$meta" | sed -n 1p)
   turn_error=$(printf '%s\n' "$meta" | sed -n 2p)
-  turn_text=$(cat "$box/turn.text")
-  turn_first=$(grep -m1 -v '^[[:space:]]*$' "$box/turn.first" || true)
+  turn_text=$(cat "$box/$n.text")
+  turn_first=$(grep -m1 -v '^[[:space:]]*$' "$box/$n.first" || true)
+  turn_tools="$box/$n.tools"
 }
 
 # Each session writes its findings to its own file, so parallel sessions never
@@ -105,7 +110,7 @@ tree_of() { ( cd "$1" && find . -type f -not -path './.git/*' | sort ); }
 # ------------------------------------------------------------------ session A
 
 session_a() {
-  local dir="$work/a" box="$work/a.box" found="$work/a.found" sid tree_before todo_marker
+  local dir="$work/a" box="$work/a.box" found="$work/a.found" sid tree_before todo_marker turn_tools
   : >"$found"
   mkdir -p "$dir" "$box"
   git -C "$dir" init -q -b main
@@ -169,8 +174,8 @@ I want a --file flag that loads todos from todos.json.'
       note FAIL "A2 reply carries $fixed" "not in the reply"
     fi
   done
-  if grep -qE '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$box/turn.tools"; then
-    note FAIL "A2 starts no stage" "$(grep -oE 'zuko:(shape|spec|build|review|ship)' "$box/turn.tools" | head -1)"
+  if grep -qE '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$turn_tools"; then
+    note FAIL "A2 starts no stage" "$(grep -oE 'zuko:(shape|spec|build|review|ship)' "$turn_tools" | head -1)"
   else
     note PASS "A2 starts no stage"
   fi
@@ -233,7 +238,7 @@ I want a --file flag that loads todos from todos.json.'
 # ------------------------------------------------------------------ session B
 
 session_b() {
-  local dir="$work/b" box="$work/b.box" found="$work/b.found" sid before
+  local dir="$work/b" box="$work/b.box" found="$work/b.found" sid before turn_tools
   : >"$found"
   mkdir -p "$dir" "$box"
   cat >"$dir/todo.py" <<'PY'
@@ -315,7 +320,7 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
 # ------------------------------------------------------------------ session C
 
 session_c() {
-  local dir="$work/c" box="$work/c.box" found="$work/c.found" sid
+  local dir="$work/c" box="$work/c.box" found="$work/c.found" sid turn_tools
   : >"$found"
   mkdir -p "$dir" "$box"
 
