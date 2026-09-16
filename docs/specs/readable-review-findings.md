@@ -1,6 +1,6 @@
 # Readable review findings
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/readable-replies/shape.md
 **Depends on:** None
