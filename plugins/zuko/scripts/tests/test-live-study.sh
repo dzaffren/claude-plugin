@@ -22,11 +22,12 @@ fi
 
 # ---------------------------------------------------------------- turn driver
 
-# run_turn <dir> <resume-id or empty> <prompt>
-# Leaves .turn.jsonl, .turn.text and .turn.tools in <dir>; sets turn_session,
-# turn_error, turn_text, turn_first.
+# run_turn <dir> <meta-dir> <resume-id or empty> <prompt>
+# The transcript is written to <meta-dir>, never into <dir> -- the scratch repo
+# has to stay clean, both for the git checks and so the session never reads its
+# own transcript. Sets turn_session, turn_error, turn_text, turn_first.
 run_turn() {
-  local dir="$1" resume="$2" prompt="$3" meta
+  local dir="$1" box="$2" resume="$3" prompt="$4" meta
   local args=(-p "$prompt"
               --output-format stream-json --verbose
               --plugin-dir "$plugin" --add-dir "$plugin"
@@ -35,16 +36,16 @@ run_turn() {
               --permission-mode acceptEdits)
   [ -n "$resume" ] && args+=(--resume "$resume")
 
-  ( cd "$dir" && timeout 900 claude "${args[@]}" ) >"$dir/.turn.jsonl" 2>"$dir/.turn.err"
+  ( cd "$dir" && timeout 900 claude "${args[@]}" ) >"$box/turn.jsonl" 2>"$box/turn.err"
 
-  meta=$(python3 - "$dir" <<'PY'
+  meta=$(python3 - "$box" <<'PY'
 import json, os, sys
 
 d = sys.argv[1]
 text, session, error = "", "", "no result event in the stream"
 tools = []
 try:
-    lines = open(os.path.join(d, ".turn.jsonl")).read().splitlines()
+    lines = open(os.path.join(d, "turn.jsonl")).read().splitlines()
 except OSError:
     lines = []
 for line in lines:
@@ -68,15 +69,15 @@ for line in lines:
         text = event.get("result") or ""
         error = "the result event is flagged is_error" if event.get("is_error") else ""
 
-open(os.path.join(d, ".turn.text"), "w").write(text)
-open(os.path.join(d, ".turn.tools"), "w").write("\n".join(tools) + "\n")
+open(os.path.join(d, "turn.text"), "w").write(text)
+open(os.path.join(d, "turn.tools"), "w").write("\n".join(tools) + "\n")
 print(session)
 print(error)
 PY
 )
   turn_session=$(printf '%s\n' "$meta" | sed -n 1p)
   turn_error=$(printf '%s\n' "$meta" | sed -n 2p)
-  turn_text=$(cat "$dir/.turn.text")
+  turn_text=$(cat "$box/turn.text")
   turn_first=$(printf '%s\n' "$turn_text" | grep -m1 -v '^[[:space:]]*$' || true)
 }
 
@@ -92,14 +93,14 @@ check_turn() {   # check_turn <label>; fails the turn if claude itself errored
   return 0
 }
 
-tree_of() { ( cd "$1" && find . -type f -not -path './.git/*' -not -name '.turn.*' | sort ); }
+tree_of() { ( cd "$1" && find . -type f -not -path './.git/*' | sort ); }
 
 # ------------------------------------------------------------------ session A
 
 session_a() {
-  local dir="$work/a" found="$work/a.found" sid tree_before todo_marker
+  local dir="$work/a" box="$work/a.box" found="$work/a.found" sid tree_before todo_marker
   : >"$found"
-  mkdir -p "$dir"
+  mkdir -p "$dir" "$box"
   git -C "$dir" init -q -b main
   git -C "$dir" config user.email t@example.com
   git -C "$dir" config user.name Tester
@@ -125,7 +126,7 @@ PY
   git -C "$dir" commit -q --no-verify -m "chore(todo): the starting cli"
 
   # T1 -- scenario 1: the mode starts and asks before it writes.
-  run_turn "$dir" "" '/zuko:study python error handling
+  run_turn "$dir" "$box" "" '/zuko:study python error handling
 
 I want a --file flag that loads todos from todos.json.'
   check_turn "A1 the first turn returned a result" || return 0
@@ -142,7 +143,7 @@ I want a --file flag that loads todos from todos.json.'
   fi
 
   # T2 -- scenario 1: the piece is written and the gap is left for the user.
-  run_turn "$dir" "$sid" 'I know try/except exists but my scripts just crash. I want them to fail with a clear message. Go ahead and add the --file flag.'
+  run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash. I want them to fail with a clear message. Go ahead and add the --file flag.'
   check_turn "A2 the second turn returned a result" || return 0
   if grep -q 'TODO(study):' "$dir/todo.py"; then
     note PASS "A2 leaves a TODO(study) gap in todo.py"
@@ -161,15 +162,15 @@ I want a --file flag that loads todos from todos.json.'
       note FAIL "A2 reply carries $fixed" "not in the reply"
     fi
   done
-  if grep -qE '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$dir/.turn.tools"; then
-    note FAIL "A2 starts no stage" "$(grep -oE 'zuko:(shape|spec|build|review|ship)' "$dir/.turn.tools" | head -1)"
+  if grep -qE '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$box/turn.tools"; then
+    note FAIL "A2 starts no stage" "$(grep -oE 'zuko:(shape|spec|build|review|ship)' "$box/turn.tools" | head -1)"
   else
     note PASS "A2 starts no stage"
   fi
   todo_marker=$(grep -m1 'TODO(study):' "$dir/todo.py" || true)
 
   # T3 -- scenario 4: one piece handed back, the next still a gap.
-  run_turn "$dir" "$sid" 'just do this one for me. Then make it list unfinished todos before finished ones.'
+  run_turn "$dir" "$box" "$sid" 'just do this one for me. Then make it list unfinished todos before finished ones.'
   check_turn "A3 the third turn returned a result" || return 0
   if [ -n "$todo_marker" ] && grep -qF "$todo_marker" "$dir/todo.py"; then
     note FAIL "A3 fills the gap it was handed" "the old marker is still there"
@@ -189,7 +190,7 @@ I want a --file flag that loads todos from todos.json.'
 
   # T4 -- scenario 5: a typed stage is guarded, and nothing of it runs.
   tree_before=$(tree_of "$dir")
-  run_turn "$dir" "$sid" '/zuko:spec add a --done flag that marks a todo complete'
+  run_turn "$dir" "$box" "$sid" '/zuko:spec add a --done flag that marks a todo complete'
   check_turn "A4 the fourth turn returned a result" || return 0
   if printf '%s\n' "$turn_text" | grep -qE "You're in study mode\. Stop studying and run /(zuko:)?spec\?"; then
     note PASS "A4 answers a typed stage with the guard sentence"
@@ -208,7 +209,7 @@ I want a --file flag that loads todos from todos.json.'
   fi
 
   # T5 -- scenario 5: leaving happens only when the user says so.
-  run_turn "$dir" "$sid" 'stop studying'
+  run_turn "$dir" "$box" "$sid" 'stop studying'
   check_turn "A5 the fifth turn returned a result" || return 0
   if printf '%s\n' "$turn_text" | grep -qF 'Study mode off.'; then
     note PASS "A5 prints Study mode off"
@@ -225,9 +226,9 @@ I want a --file flag that loads todos from todos.json.'
 # ------------------------------------------------------------------ session B
 
 session_b() {
-  local dir="$work/b" found="$work/b.found" sid before
+  local dir="$work/b" box="$work/b.box" found="$work/b.found" sid before
   : >"$found"
-  mkdir -p "$dir"
+  mkdir -p "$dir" "$box"
   cat >"$dir/todo.py" <<'PY'
 import json
 import sys
@@ -258,7 +259,7 @@ PY
   before=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")
 
   # T1 -- scenario 3: a broken attempt gets a hint, never the fix.
-  run_turn "$dir" "" '/zuko:study python error handling
+  run_turn "$dir" "$box" "" '/zuko:study python error handling
 
 I know try/except exists but my scripts just crash, and I want a clear message
 instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
@@ -286,7 +287,7 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   fi
 
   # T2 -- scenario 3: the answer, once it is asked for.
-  run_turn "$dir" "$sid" 'show me'
+  run_turn "$dir" "$box" "$sid" 'show me'
   check_turn "B2 the second turn returned a result" || return 0
   if printf '%s\n' "$turn_text" | grep -qF 'FileNotFoundError'; then
     note PASS "B2 shows the answer when asked"
@@ -298,12 +299,12 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
 # ------------------------------------------------------------------ session C
 
 session_c() {
-  local dir="$work/c" found="$work/c.found" sid
+  local dir="$work/c" box="$work/c.box" found="$work/c.found" sid
   : >"$found"
-  mkdir -p "$dir"
+  mkdir -p "$dir" "$box"
 
   # T1 -- scenario 2: no code to write, so the gap is the decision.
-  run_turn "$dir" "" '/zuko:study system design
+  run_turn "$dir" "$box" "" '/zuko:study system design
 
 I have never designed a URL shortener. I want to be able to reason about one in
 an interview. How would a URL shortener handle 10,000 new links a day?'
@@ -323,7 +324,7 @@ an interview. How would a URL shortener handle 10,000 new links a day?'
   fi
 
   # T2 -- scenario 2: a real choice gets explained, not marked wrong.
-  run_turn "$dir" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
+  run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
   check_turn "C2 the second turn returned a result" || return 0
   if printf '%s\n' "$turn_first" | grep -qF 'Not yet.'; then
     note FAIL "C2 treats a reasoned choice as valid" "it opened with Not yet."
