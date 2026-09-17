@@ -211,6 +211,31 @@ gate "$repo"
 expect_exit 1 "$gate_status" "a real blank beside study's tokens still fails"
 expect_match '\{reviewer\}' "$gate_out" "the gate names the blank, not the documented token"
 
+# The blank on its own line is the easy case. Sharing a line with a documented
+# token is where dropping the whole line would wave it through.
+repo=$(new_repo feat/study-on-demand)
+printf '\nA gap is marked TODO(study): implement {reviewer} here.\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): a blank sharing a line with a token"
+gate "$repo"
+expect_exit 1 "$gate_status" "a blank on the same line as a documented token still fails"
+expect_match '\{reviewer\}' "$gate_out" "the gate names the blank sharing the line"
+
+repo=$(new_repo feat/ship-naming)
+printf '\nThe branch `{type}/{slice}` belongs to {owner}.\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): a blank beside the branch format"
+gate "$repo"
+expect_exit 1 "$gate_status" "a blank sharing a line with {type}/{slice} still fails"
+
+# And a line made only of documented tokens is still clean once they are cut out.
+repo=$(new_repo feat/study-on-demand)
+printf '\nRun `/study {topic}`, and the guard is `/{stage}`. TODO(study): is the marker.\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): a line of documented tokens only"
+gate "$repo"
+expect_exit 0 "$gate_status" "a line of nothing but documented tokens passes"
+
 repo=$(new_repo feat/ship-naming)
 printf '\n```gherkin\n  Then it retries TODO times\n```\n' >>"$repo/docs/specs/fixture.md"
 git -C "$repo" add -A

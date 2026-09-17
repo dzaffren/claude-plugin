@@ -48,8 +48,13 @@ grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 # {stage} and its TODO(study) marker, the runner's {name}, and mermaid's
 # {{node}} syntax -- because a documented format and an unfilled
 # blank are the same text, and only the list can tell them apart.
+# Documented tokens are cut out of the line, then whatever is left is judged.
+# Dropping the whole line instead would let a real blank ride along beside a
+# documented one -- `TODO(study): implement {reviewer}` would pass clean.
 ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null \
-  | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}|\{what was looked at\}|\{size\}|\{topic\}|\{stage\}|\{name\}|TODO\(study\)' \
+  | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{' \
+  | sed -E 's/\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}|\{what was looked at\}|\{size\}|\{topic\}|\{stage\}|\{name\}|TODO\(study\)//g' \
+  | grep -E '\{[a-z][^}]*\}|\[TBD\]|TODO' \
   | head -5 || true)
 [ -n "$ph" ] && problems="$problems
 - Placeholders left in the spec:
