@@ -39,6 +39,9 @@ expect_match 'free +1 passed' "$skip_out" "the free test still ran"
 named_out=$(bash "$sandbox/tests/run.sh" live-demo 2>&1)
 expect_exit 1 $? "a named live run actually runs it"
 expect_no_match 'skipped, costs money' "$named_out" "a named run does not print the skip line"
+# Exit 1 and no skip line are both true of a named run that never executed at
+# all, so check the test's own assertion text came back.
+expect_match 'a live test ran' "$named_out" "a named live run shows the test's own output"
 
 # Every test being a live one means a no-name run scanned nothing. That is an
 # error, not a clean sweep.
@@ -50,5 +53,27 @@ printf 'expect_exit 0 0 "never reached"\n' >"$only/tests/test-live-only.sh"
 only_out=$(bash "$only/tests/run.sh" 2>&1)
 expect_exit 1 $? "a run where every test was skipped is not a pass"
 expect_match 'no tests ran' "$only_out" "it says nothing ran"
+
+# grep -q stops reading at the first match. Behind a pipe that is a SIGPIPE for
+# the writer, and pipefail turns a real match into 141, which grep_text reads as
+# "never ran". It only bites above the pipe buffer, so it needs a big string.
+big="Study mode on: python error handling
+$(head -c 400000 /dev/zero | tr '\0' 'a')"
+grep_text -E 'Study mode on:' "$big"
+expect_exit 0 $? "grep_text matches in text larger than the pipe buffer"
+grep_text -F "a string that is nowhere in there" "$big"
+expect_exit 1 $? "grep_text reports a clean miss in a large text"
+grep_text -E '[' "$big"
+expect_exit 2 $? "grep_text reports a broken pattern as never having run"
+
+# The verdict a broken check reaches matters more than the exit code: a check
+# that could not run must read as a failure, never as a quiet pass.
+: >"$results_file.probe" 2>/dev/null || true
+probe=$(results_file="$work/probe.results"; : >"$results_file"
+        expect_match '[' "$big" "a check that cannot run"
+        expect_no_match '[' "$big" "an absence check that cannot run"
+        cat "$results_file")
+expect_match 'FAIL.*a check that cannot run' "$probe" "expect_match fails when grep never ran"
+expect_match 'FAIL.*an absence check that cannot run' "$probe" "expect_no_match fails when grep never ran"
 
 rm -rf "$work"

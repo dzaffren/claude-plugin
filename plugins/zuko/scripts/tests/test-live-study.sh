@@ -2,15 +2,15 @@
 # through the five acceptance scenarios of docs/specs/study-on-demand.md.
 #
 # Each turn is a `claude -p` call, chained with --resume. Sessions A, B and C
-# run in parallel; the turns inside one session run in order. Only fixed lines,
-# file contents and tool calls are checked -- never free text.
+# run one after another; the turns inside one session run in order. Only fixed
+# lines, file contents and tool calls are checked -- never free text.
 #
 # This costs real money, so run.sh leaves it out unless it is named:
 #     bash plugins/zuko/scripts/tests/run.sh live-study
 #
-# Sourced by run.sh, which provides $scripts and the expect_* helpers.
+# Sourced by run.sh, which provides $scripts, $results_file, record and
+# grep_text.
 
-plugin=$(dirname "$scripts")
 work=$(mktemp -d)
 
 # A live test that could not run is a failure, never a quiet pass.
@@ -19,6 +19,17 @@ if ! command -v claude >/dev/null 2>&1; then
   rm -rf "$work"
   return 0
 fi
+
+# The sessions under test get --add-dir on the plugin, and --add-dir grants
+# writes, not just reads. Pointed at the real plugins/zuko that is a session
+# able to edit the skill it is being tested against, in the developer's tracked
+# working tree. Give them a copy instead.
+plugin="$work/plugin"
+cp -r "$(dirname "$scripts")" "$plugin" || {
+  record FAIL "live-study" "could not copy the plugin into the scratch dir"
+  rm -rf "$work"
+  return 0
+}
 
 # ---------------------------------------------------------------- turn driver
 
@@ -44,7 +55,7 @@ run_turn() {
   ( cd "$dir" && timeout 900 claude "${args[@]}" ) >"$box/$n.jsonl" 2>"$box/$n.err"
 
   meta=$(python3 - "$box/$n" <<'PY'
-import json, os, sys
+import json, sys
 
 d = sys.argv[1]
 session, error = "", "no result event in the stream"
@@ -100,9 +111,29 @@ PY
   turn_tools="$box/$n.tools"
 }
 
-# Each session writes its findings to its own file, so parallel sessions never
-# interleave into one results file. The main shell replays them after wait.
+# Each session writes its findings to its own file, replayed by the main shell.
 note() { printf '%s\t%s\t%s\n' "$1" "$2" "${3:-}" >>"$found"; }
+
+# present / absent both fail when grep could not run. Writing the absence check
+# as `if grep_text ...; then FAIL; else PASS` scores "never ran" as a pass,
+# which is the false green run.sh's grep_text exists to prevent.
+present() {    # present <-E|-F> <pattern> <text> <description> [detail]
+  grep_text "$1" "$2" "$3"
+  case $? in
+    0) note PASS "$4" ;;
+    1) note FAIL "$4" "${5:-not in the reply}" ;;
+    *) note FAIL "$4" "grep could not run, so the check never happened" ;;
+  esac
+}
+
+absent() {     # absent <-E|-F> <pattern> <text> <description> [detail]
+  grep_text "$1" "$2" "$3"
+  case $? in
+    0) note FAIL "$4" "${5:-it is there and should not be}" ;;
+    1) note PASS "$4" ;;
+    *) note FAIL "$4" "grep could not run, so the check never happened" ;;
+  esac
+}
 
 check_turn() {   # check_turn <label>; fails the turn if claude itself errored
   if [ -n "$turn_error" ]; then
@@ -113,6 +144,7 @@ check_turn() {   # check_turn <label>; fails the turn if claude itself errored
 }
 
 tree_of() { ( cd "$1" && find . -type f -not -path './.git/*' | sort ); }
+hash_of() { python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$1"; }
 
 # ------------------------------------------------------------------ session A
 
@@ -150,11 +182,7 @@ PY
 I want a --file flag that loads todos from todos.json.'
   check_turn "A1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if grep_text -E 'Study mode on:' "$turn_text"; then
-    note PASS "A1 prints Study mode on"
-  else
-    note FAIL "A1 prints Study mode on" "reply began: ${turn_first:0:120}"
-  fi
+  present -F 'Study mode on:' "$turn_text" "A1 prints Study mode on" "reply began: ${turn_first:0:120}"
   if [ -z "$(git -C "$dir" status --porcelain)" ]; then
     note PASS "A1 writes no code before the level questions are answered"
   else
@@ -164,58 +192,31 @@ I want a --file flag that loads todos from todos.json.'
   # T2 -- scenario 1: the piece is written and the gap is left for the user.
   run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash. I want them to fail with a clear message. Go ahead and add the --file flag.'
   check_turn "A2 the second turn returned a result" || return 0
-  if grep -q 'TODO(study):' "$dir/todo.py"; then
-    note PASS "A2 leaves a TODO(study) gap in todo.py"
-  else
-    note FAIL "A2 leaves a TODO(study) gap in todo.py" "$(grep -c . "$dir/todo.py") lines, no marker"
-  fi
-  if grep -q -- '--file' "$dir/todo.py"; then
-    note PASS "A2 wrote the --file flag itself"
-  else
-    note FAIL "A2 wrote the --file flag itself" "no --file in todo.py"
-  fi
-  for fixed in 'Your turn' 'Where:'; do
-    if grep_text -F "$fixed" "$turn_text"; then
-      note PASS "A2 reply carries $fixed"
-    else
-      note FAIL "A2 reply carries $fixed" "not in the reply"
-    fi
-  done
-  if grep -qE '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$turn_tools"; then
-    note FAIL "A2 starts no stage" "$(grep -oE 'zuko:(shape|spec|build|review|ship)' "$turn_tools" | head -1)"
-  else
-    note PASS "A2 starts no stage"
-  fi
+  present -F 'TODO(study):' "$(cat "$dir/todo.py" 2>/dev/null)" "A2 leaves a TODO(study) gap in todo.py" "no marker in todo.py"
+  present -F '--file' "$(cat "$dir/todo.py" 2>/dev/null)" "A2 wrote the --file flag itself" "no --file in todo.py"
+  present -F 'Your turn' "$turn_text" "A2 reply carries Your turn"
+  present -F 'Where:' "$turn_text" "A2 reply carries Where:"
+  absent -E '^Skill\s.*zuko:(shape|spec|build|review|ship)' "$(cat "$turn_tools")" "A2 starts no stage" "a stage skill was called"
   todo_marker=$(grep -m1 'TODO(study):' "$dir/todo.py" || true)
 
   # T3 -- scenario 4: one piece handed back, the next still a gap.
   run_turn "$dir" "$box" "$sid" 'just do this one for me. Then make it list unfinished todos before finished ones.'
   check_turn "A3 the third turn returned a result" || return 0
-  if [ -n "$todo_marker" ] && grep -qF "$todo_marker" "$dir/todo.py"; then
-    note FAIL "A3 fills the gap it was handed" "the old marker is still there"
+  if [ -z "$todo_marker" ]; then
+    # Nothing was handed back, so there is nothing to have filled. Passing here
+    # would score scenario 4 green without ever exercising it.
+    note FAIL "A3 fills the gap it was handed" "turn 2 left no marker, so the hand-back was never exercised"
   else
-    note PASS "A3 fills the gap it was handed"
+    absent -F "$todo_marker" "$(cat "$dir/todo.py" 2>/dev/null)" "A3 fills the gap it was handed" "the old marker is still there"
   fi
-  if grep -q 'TODO(study):' "$dir/todo.py"; then
-    note PASS "A3 leaves the next piece as a gap"
-  else
-    note FAIL "A3 leaves the next piece as a gap" "no TODO(study) marker left"
-  fi
-  if grep_text -F "Your turn" "$turn_text"; then
-    note PASS "A3 reply carries Your turn"
-  else
-    note FAIL "A3 reply carries Your turn" "not in the reply"
-  fi
+  present -F 'TODO(study):' "$(cat "$dir/todo.py" 2>/dev/null)" "A3 leaves the next piece as a gap" "no TODO(study) marker left"
+  present -F 'Your turn' "$turn_text" "A3 reply carries Your turn"
 
   # T4 -- scenario 5: a typed stage is guarded, and nothing of it runs.
   tree_before=$(tree_of "$dir")
   run_turn "$dir" "$box" "$sid" '/zuko:spec add a --done flag that marks a todo complete'
   check_turn "A4 the fourth turn returned a result" || return 0
-  if grep_text -E "You're in study mode\. Stop studying and run /(zuko:)?spec\?" "$turn_text"; then
-    note PASS "A4 answers a typed stage with the guard sentence"
-  else
-    note FAIL "A4 answers a typed stage with the guard sentence" "reply began: ${turn_first:0:120}"
-  fi
+  present -E "You're in study mode\. Stop studying and run /(zuko:)?spec\?" "$turn_text" "A4 answers a typed stage with the guard sentence" "reply began: ${turn_first:0:120}"
   if [ "$tree_before" = "$(tree_of "$dir")" ]; then
     note PASS "A4 the guard left the file tree untouched"
   else
@@ -230,16 +231,8 @@ I want a --file flag that loads todos from todos.json.'
   # T5 -- scenario 5: leaving happens only when the user says so.
   run_turn "$dir" "$box" "$sid" 'stop studying'
   check_turn "A5 the fifth turn returned a result" || return 0
-  if grep_text -F "Study mode off." "$turn_text"; then
-    note PASS "A5 prints Study mode off"
-  else
-    note FAIL "A5 prints Study mode off" "reply began: ${turn_first:0:120}"
-  fi
-  if grep_text -F "Your turn" "$turn_text"; then
-    note FAIL "A5 leaves no gap once the mode is off" "the reply still has a Your turn block"
-  else
-    note PASS "A5 leaves no gap once the mode is off"
-  fi
+  present -F 'Study mode off.' "$turn_text" "A5 prints Study mode off" "reply began: ${turn_first:0:120}"
+  absent -F 'Your turn' "$turn_text" "A5 leaves no gap once the mode is off" "the reply still has a Your turn block"
 }
 
 # ------------------------------------------------------------------ session B
@@ -275,7 +268,7 @@ def main():
 if __name__ == "__main__":
     main()
 PY
-  before=$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")
+  before=$(hash_of "$dir/todo.py")
 
   # T1 -- the mode starts on its own turn. Scenario 1 requires the first reply
   # to be the start line and the level questions, so the attempt cannot be
@@ -283,36 +276,24 @@ PY
   run_turn "$dir" "$box" "" '/zuko:study python error handling'
   check_turn "B1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if grep_text -F "Study mode on:" "$turn_text"; then
-    note PASS "B1 prints Study mode on"
-  else
-    note FAIL "B1 prints Study mode on" "reply began: ${turn_first:0:120}"
-  fi
+  present -F 'Study mode on:' "$turn_text" "B1 prints Study mode on" "reply began: ${turn_first:0:120}"
 
   # T2 -- scenario 3: a broken attempt gets a hint, never the fix.
   run_turn "$dir" "$box" "$sid" 'I know try/except exists but my scripts just crash, and I want a clear message
 instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   check_turn "B2 the attempt turn returned a result" || return 0
-  if grep_text -F "Not yet." "$turn_verdict"; then
-    note PASS "B2 opens a failed attempt with Not yet"
+  if [ -z "$turn_verdict" ]; then
+    note FAIL "B2 opens a failed attempt with Not yet" "the turn produced no text after its last tool call"
   else
-    note FAIL "B2 opens a failed attempt with Not yet" "verdict began: ${turn_verdict:0:120}"
+    present -F 'Not yet.' "$turn_verdict" "B2 opens a failed attempt with Not yet" "verdict began: ${turn_verdict:0:120}"
   fi
-  if grep_text -E '^[[:space:]]*Hint:' "$turn_text"; then
-    note PASS "B2 gives a Hint line"
-  else
-    note FAIL "B2 gives a Hint line" "no Hint: line in the reply"
-  fi
+  present -E '^[[:space:]]*Hint:' "$turn_text" "B2 gives a Hint line" "no Hint: line in the reply"
   # Scenario 3 asks for a hint "without writing the fix" -- not for the word to
   # be absent. Python chains the original exception under the NameError, so the
   # quoted traceback names it whatever the hint does, and reading that traceback
   # is the lesson. What must not appear is the corrected line.
-  if grep_text -E 'except[[:space:]]+FileNotFoundError' "$turn_text"; then
-    note FAIL "B2 withholds the fix" "the reply writes the corrected except line"
-  else
-    note PASS "B2 withholds the fix"
-  fi
-  if [ "$before" = "$(python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$dir/todo.py")" ]; then
+  absent -E 'except[[:space:]]+FileNotFoundError' "$turn_text" "B2 withholds the fix" "the reply writes the corrected except line"
+  if [ "$before" = "$(hash_of "$dir/todo.py")" ]; then
     note PASS "B2 does not edit the user's attempt"
   else
     note FAIL "B2 does not edit the user's attempt" "todo.py changed"
@@ -321,11 +302,7 @@ instead. I filled in the TODO(study) gap in load_todos in todo.py. done'
   # T3 -- scenario 3: the answer, once it is asked for.
   run_turn "$dir" "$box" "$sid" 'show me'
   check_turn "B3 the show me turn returned a result" || return 0
-  if grep_text -E 'except[[:space:]]+FileNotFoundError' "$turn_text"; then
-    note PASS "B3 shows the fix when asked"
-  else
-    note FAIL "B3 shows the fix when asked" "the corrected except line is not in the reply"
-  fi
+  present -E 'except[[:space:]]+FileNotFoundError' "$turn_text" "B3 shows the fix when asked" "the corrected except line is not in the reply"
 }
 
 # ------------------------------------------------------------------ session C
@@ -339,23 +316,14 @@ session_c() {
   run_turn "$dir" "$box" "" '/zuko:study system design'
   check_turn "C1 the first turn returned a result" || return 0
   sid="$turn_session"
-  if grep_text -F "Study mode on:" "$turn_text"; then
-    note PASS "C1 prints Study mode on"
-  else
-    note FAIL "C1 prints Study mode on" "reply began: ${turn_first:0:120}"
-  fi
+  present -F 'Study mode on:' "$turn_text" "C1 prints Study mode on" "reply began: ${turn_first:0:120}"
 
   # T2 -- scenario 2: no code to write, so the gap is the decision.
   run_turn "$dir" "$box" "$sid" 'I have never designed a URL shortener. I want to be able to reason about one
 in an interview. How would a URL shortener handle 10,000 new links a day?'
   check_turn "C2 the question turn returned a result" || return 0
-  for fixed in 'Your turn' 'Decide:'; do
-    if grep_text -F "$fixed" "$turn_text"; then
-      note PASS "C2 reply carries $fixed"
-    else
-      note FAIL "C2 reply carries $fixed" "not in the reply"
-    fi
-  done
+  present -F 'Your turn' "$turn_text" "C2 reply carries Your turn"
+  present -F 'Decide:' "$turn_text" "C2 reply carries Decide:"
   if [ -z "$(tree_of "$dir")" ]; then
     note PASS "C2 wrote no files for a topic with no code"
   else
@@ -365,27 +333,26 @@ in an interview. How would a URL shortener handle 10,000 new links a day?'
   # T3 -- scenario 2: a real choice gets explained, not marked wrong.
   run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
   check_turn "C3 the choice turn returned a result" || return 0
-  if grep_text -F "Not yet." "$turn_verdict"; then
-    note FAIL "C3 treats a reasoned choice as valid" "the verdict opened with Not yet."
+  if [ -z "$turn_verdict" ]; then
+    note FAIL "C3 treats a reasoned choice as valid" "the turn produced no text after its last tool call"
   else
-    note PASS "C3 treats a reasoned choice as valid"
+    absent -F 'Not yet.' "$turn_verdict" "C3 treats a reasoned choice as valid" "the verdict opened with Not yet."
   fi
-  if grep_text -E '^[[:space:]]*Glossary' "$turn_text"; then
-    note PASS "C3 explanation carries a Glossary heading"
-  else
-    note FAIL "C3 explanation carries a Glossary heading" "no Glossary heading in the reply"
-  fi
+  present -E '^[[:space:]]*Glossary' "$turn_text" "C3 explanation carries a Glossary heading" "no Glossary heading in the reply"
 }
 
 # ------------------------------------------------------------------- run them
 
-session_a &
-pid_a=$!
-session_b &
-pid_b=$!
-session_c &
-pid_c=$!
-wait "$pid_a" "$pid_b" "$pid_c"
+# Serial, not parallel. Three live sessions at once left this machine near its
+# memory limit, and a grep that cannot fork is how three runs were misread.
+session_a
+session_b
+session_c
+
+# A session that dies partway leaves a short results file. Without a declared
+# count that reads as a clean run: the assertions it never reached are simply
+# absent, and absent looks exactly like nothing-went-wrong.
+declare -A expected=( [a]=15 [b]=6 [c]=6 )
 
 clean=yes
 for letter in a b c; do
@@ -393,6 +360,11 @@ for letter in a b c; do
     record FAIL "session $letter" "the session recorded nothing"
     clean=no
     continue
+  fi
+  got=$(grep -c . "$work/$letter.found")
+  if [ "$got" -ne "${expected[$letter]}" ]; then
+    record FAIL "session $letter ran every check" "recorded $got of ${expected[$letter]}; it stopped partway"
+    clean=no
   fi
   grep -q '^FAIL' "$work/$letter.found" && clean=no
   while IFS=$'\t' read -r status description detail; do

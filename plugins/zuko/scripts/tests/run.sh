@@ -22,10 +22,16 @@ expect_exit() {        # expect_exit <expected> <actual> <description>
 # grep can fail to start when the machine is short of memory, and the shell
 # reports that the same way as a clean miss. Exit 0 is a match and 1 is a miss;
 # anything else means grep never ran, so retry before believing it.
+#
+# The text goes in as a herestring, never a pipe. `grep -q` stops reading at the
+# first match, which hands SIGPIPE to a writer on the other end of a pipe; with
+# `set -o pipefail` that surfaces as 141 and a real match reads as "never ran".
+# It needs text larger than the pipe buffer, so it hides until one day it
+# doesn't.
 grep_text() {          # grep_text <-E|-F> <pattern> <text>; 0 match, 1 miss, 2 never ran
   local tries=0 status
   while :; do
-    printf '%s\n' "$3" | grep -q "$1" -- "$2"
+    grep -q "$1" -- "$2" <<<"$3" 2>/dev/null
     status=$?
     [ "$status" -le 1 ] && return "$status"
     tries=$((tries + 1))
