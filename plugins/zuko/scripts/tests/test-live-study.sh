@@ -330,8 +330,18 @@ in an interview. How would a URL shortener handle 10,000 new links a day?'
     note FAIL "C2 wrote no files for a topic with no code" "$(tree_of "$dir" | tr '\n' ' ')"
   fi
 
-  # T3 -- scenario 2: a real choice gets explained, not marked wrong.
-  run_turn "$dir" "$box" "$sid" 'I would use a base62 counter, because it never collides and I do not have to check whether a code is already taken.'
+  # T3 -- scenario 2: a real choice gets explained, not marked wrong. The answer
+  # has to actually answer: a Decide: block names the dimensions to cover, and a
+  # reply that covers one of three is incomplete, so `Not yet.` would be right
+  # and the check below would be testing nothing.
+  run_turn "$dir" "$box" "$sid" 'I would use a counter encoded in base62, and here is my reasoning on each part.
+Collisions: a counter never hands out the same number twice, so I never have to
+check whether a code is already taken. Two API servers: I would not hold the
+counter in the app, I would have the database hand each server its own block of
+ids to use up, so the two can never issue the same one. Guessability: sequential
+codes are guessable and someone can walk the range with a loop. I am accepting
+that cost, because these are public short links and nothing private sits behind
+one; if that changed I would add random characters on the end.'
   check_turn "C3 the choice turn returned a result" || return 0
   if [ -z "$turn_verdict" ]; then
     note FAIL "C3 treats a reasoned choice as valid" "the turn produced no text after its last tool call"
