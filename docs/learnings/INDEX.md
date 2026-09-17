@@ -69,3 +69,6 @@ One line per lesson. Loaded into every session in this repo.
 - A negative example still hands over the answer — never write a "do not say X"
   example using the case the test will exercise.
   ([detail](a-negative-example-still-hands-over-the-answer.md))
+- An acceptance test needs an acceptable fixture — "the agent should accept X"
+  pins its leniency in place unless X really is acceptable.
+  ([detail](an-acceptance-test-needs-an-acceptable-fixture.md))
