@@ -44,11 +44,12 @@ grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 
 # Placeholders left in the spec. The exclusion list names the tokens this
 # workflow writes down on purpose -- the convention's own {type}/{slice}, the
-# report header's {what was looked at} and {size}, and mermaid's {{node}}
-# syntax -- because a documented format and an unfilled
+# report header's {what was looked at} and {size}, study mode's {topic} and
+# {stage} and its TODO(study) marker, the runner's {name}, and mermaid's
+# {{node}} syntax -- because a documented format and an unfilled
 # blank are the same text, and only the list can tell them apart.
 ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null \
-  | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}|\{what was looked at\}|\{size\}' \
+  | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}|\{what was looked at\}|\{size\}|\{topic\}|\{stage\}|\{name\}|TODO\(study\)' \
   | head -5 || true)
 [ -n "$ph" ] && problems="$problems
 - Placeholders left in the spec:

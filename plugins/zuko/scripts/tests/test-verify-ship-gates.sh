@@ -183,6 +183,34 @@ gate "$repo"
 expect_exit 1 "$gate_status" "a bare placeholder in prose still fails the gate"
 expect_match 'Placeholders left in the spec' "$gate_out" "the gate names the placeholder rule"
 
+# The study slice writes four more formats down on purpose. Each one is a
+# documented token, not a blank someone forgot to fill in.
+repo=$(new_repo feat/study-on-demand)
+cat >>"$repo/docs/specs/fixture.md" <<'STUDY'
+
+`/study {topic}` turns the mode on, and the first line is `Study mode on: {topic}.`
+The guard is `You're in study mode. Stop studying and run /{stage}?`
+A gap in a file is a comment starting TODO(study): in that file's own syntax.
+The runner prints `{name} skipped, costs money: run.sh {name}`.
+STUDY
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): document the study formats"
+gate "$repo"
+expect_exit 0 "$gate_status" "study's documented tokens do not read as unfilled blanks"
+
+# Adding those four must not blind the rule to a real blank sitting beside them.
+repo=$(new_repo feat/study-on-demand)
+cat >>"$repo/docs/specs/fixture.md" <<'MIXED'
+
+`/study {topic}` turns the mode on.
+The reviewer is {reviewer}.
+MIXED
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): a blank beside a real token"
+gate "$repo"
+expect_exit 1 "$gate_status" "a real blank beside study's tokens still fails"
+expect_match '\{reviewer\}' "$gate_out" "the gate names the blank, not the documented token"
+
 repo=$(new_repo feat/ship-naming)
 printf '\n```gherkin\n  Then it retries TODO times\n```\n' >>"$repo/docs/specs/fixture.md"
 git -C "$repo" add -A
