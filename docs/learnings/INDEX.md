@@ -57,6 +57,3 @@ One line per lesson. Loaded into every session in this repo.
 - A mutation test whose replace matches nothing passes for the wrong reason —
   assert the mutation changed the text, and prove the assertion can go red.
   ([detail](a-mutation-that-matches-nothing-passes.md))
-- Merging is not shipping for a plugin — the cache holds a copy taken at install
-  time, so reinstall and start a new session before checking the proof signal.
-  ([detail](the-installed-plugin-is-not-the-merge.md))
