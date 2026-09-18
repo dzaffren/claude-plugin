@@ -1,2 +1,7 @@
 __pycache__/
 *.pyc
+
+# Installed on this machine, not shipped by this repo.
+.agents/skills/
+.claude/skills/
+.claude/settings.json
