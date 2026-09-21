@@ -143,7 +143,7 @@ sequenceDiagram
 
 | File | What changes | Why |
 | ---- | ------------ | --- |
-| `scripts/lib/git-command.py` | New. Reads a shell command on stdin, prints one line per bare `git` token — the arguments after it, unquoted, space-joined, with git's own options stripped so the subcommand is first. Exit 0 with output, exit 0 with no output when there are none, exit 3 on a parse error. A backslash-newline is collapsed to a space before tokenising, so a wrapped invocation stays one command — added later by `ship-naming`, see O4. | Scenarios 1–4 |
+| `scripts/lib/git-command.py` | New. Reads a shell command on stdin, prints one line per bare `git` token — the arguments after it, unquoted, space-joined, with git's own options stripped so the subcommand is first. Exit 0 with output, exit 0 with no output when there are none, exit 3 on a parse error. A backslash-newline is deleted before tokenising, so a wrapped invocation stays one command — added later by `ship-naming`, see O4, and corrected from a space to a deletion in O5. | Scenarios 1–4 |
 | `scripts/block-dangerous.sh:10` | Force-push check reads the helper's lines, matches `^push( .*)? (--force[^[:space:]]*\|-f)([[:space:]]\|$)` | Scenario 3 |
 | `scripts/block-dangerous.sh:18` | Commit check matches a helper line `^commit([[:space:]]\|$)` instead of grepping `$cmd` | Scenarios 1, 2 |
 | `scripts/block-dangerous.sh` | Calls the helper, then picks the subject and the pattern pair together: the helper's lines with the anchored patterns, or on exit 3 the raw command with the old substring patterns unchanged | Scenario 4 |
@@ -158,12 +158,14 @@ in `block-dangerous.sh:5`, `secret-scan.sh:5`, `check-open-items.sh:41` and
 1. Remove heredoc bodies: for each `<<-?\s*(['"]?)(\w+)\1`, drop through to the
    line that is exactly the delimiter. Done before tokenising, because a heredoc
    body is raw text that `shlex` would happily read as command words.
-2. Collapse line continuations: replace every `\` immediately followed by a
-   newline with a space. The shell joins those two lines before it ever sees a
-   command, so that newline is not a separator. Left in, a wrapped invocation
-   parses as a bare subcommand and every flag after the break is lost — which is
-   how a wrapped `git push --force` passed the guard. Added by `ship-naming`,
-   see O4.
+2. Collapse line continuations: delete every `\` immediately followed by a
+   newline. The shell deletes that pair before it ever sees a command, so the
+   newline is not a separator. Left in, a wrapped invocation parses as a bare
+   subcommand and every flag after the break is lost — which is how a wrapped
+   `git push --force` passed the guard. Deleted rather than replaced with a
+   space, because the break can fall inside a word: `git pu\`+newline+`sh` runs
+   as `git push`, and a space would split it into `pu` and `sh`. Added by
+   `ship-naming`, see O4; corrected in O5.
 3. Tokenise with `shlex.shlex(punctuation_chars=True)`, which keeps `;`, `&&`,
    `||` and `|` as their own tokens and collapses each quoted string into one.
 4. Walk the tokens. Where a token is exactly `git`, emit the following tokens
@@ -237,5 +239,6 @@ fixtures of the harness it builds.
 | O3 | The spec's algorithm step 3 — "a token is at command position if it is first, or follows a separator" — is wrong, and shipped three false allows. `sudo git commit`, `GIT_AUTHOR_NAME=x git commit`, `do git commit` inside a loop and `eval git push --force` all put a word before `git`, so none were seen. Two more: `shlex` glues a run of punctuation into one token, so `&&\n` and a blank line were not recognised as separators; and `--force-with-lease=main` failed the trailing `[[:space:]]` anchor. | flag | review | model | Resolved | Command position was the wrong test. The rule is now: any **bare** `git` token is an invocation. Quoting collapses prose into a single multi-word token and heredoc bodies are already stripped, so prose still cannot produce one — which is all the original bug needed. Enumerating wrappers would always miss one. Cost: an unquoted `echo git commit` now blocks; `main` blocked it too, so nothing regresses. Force regex widened to `--force[^[:space:]]*`, and git's global options are stripped so `git -C path commit` matches — a hole `main` had as well. Fixed and verified against both script versions, 2026-09-12. |
 | O2 | Shipping a security guard verified only by hand. | flag | spec p1 | user | Accepted risk | Unavoidable in this order: `ship-naming` chunk B needs `lib/git-command.py` from this slice, so this one lands first and the harness does not exist yet. `ship-naming` chunk D converts this spec's four-row test table into `tests/test-block-dangerous.sh` as its first fixtures. Risk window is one slice. Accepted on the model's recommendation, 2026-09-12. |
 | O4 | `lib/git-command.py`, shipped by this slice, was later amended by `ship-naming` (commit `1a84cf9`). Its review found `tokenise()` treating a backslash-newline as a command separator, so a wrapped `git commit` lost every flag after the break — and a wrapped `git push --force` had been passing `block-dangerous.sh` for the same reason, a hole this slice shipped. | flag | status | user | Resolved | Fixed at the root rather than in the caller, on the user's call. `CONTINUATION.sub()` now runs at the top of `tokenise()`, so the collapse happens after heredoc stripping and before `shlex`. Covered both ways by `test-block-attribution.sh:103` and `test-block-dangerous.sh:38`. This spec's Changes table and algorithm are updated to match; the algorithm gained a step, so O3's reference to "algorithm step 3" predates both rewrites and means the original step 3. 2026-09-21 |
+| O5 | The continuation collapse added in O4 replaced `\`+newline with a **space**, not with nothing. A break falling inside a word then split it: `git pu\`+newline+`sh --force` runs as `git push --force` but parsed as `pu`, `sh`, `--force`, so `block-dangerous.sh` saw subcommand `pu` and allowed it. `block-attribution.sh` had the same hole via `git com\`+newline+`mit`. Both guards failed open on a shape an attacker controls. | flag | review | sourcery-ai | Resolved | Real, and reproduced both ways before the fix. The shell deletes the pair outright, so `CONTINUATION.sub("", command)` is the shell-accurate form; the space was never right. A space before the backslash survives the deletion, so word-boundary wraps are unaffected — checked against five shapes, 0 regressions. Fixtures added to `test-block-dangerous.sh` and `test-block-attribution.sh`, both red before the fix and green after. Found by Sourcery on PR #28. 2026-09-21 |
 
 _Never delete this section or its rows. See references/ledger.md._

@@ -26,9 +26,13 @@ SEPARATOR_CHARS = set(";&|()`\n")
 # `>`, `>>`, `<`, `>&`. A bare `&` is a separator and is tested first.
 REDIRECTION_CHARS = set("<>&")
 
-# A backslash at end of line. The shell joins the two lines before it ever sees
-# a command, so this is not a separator. Left in, a wrapped invocation parses as
-# a bare subcommand and every flag after the break is lost.
+# A backslash at end of line. The shell deletes the pair outright before it ever
+# sees a command, so this is not a separator. Left in, a wrapped invocation
+# parses as a bare subcommand and every flag after the break is lost.
+#
+# Deleted, never replaced with a space: the break can fall inside a word, and
+# `git pu\<newline>sh --force` runs as `git push --force`. A space would split
+# it into `pu` and `sh` and the force-push guard would never see a `push`.
 CONTINUATION = re.compile(r"\\\n")
 
 # git's own options, which sit before the subcommand. These take a value.
@@ -93,7 +97,7 @@ def strip_heredocs(command):
 
 
 def tokenise(command):
-    command = CONTINUATION.sub(" ", command)
+    command = CONTINUATION.sub("", command)
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"
