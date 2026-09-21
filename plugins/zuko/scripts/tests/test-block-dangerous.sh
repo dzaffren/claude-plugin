@@ -39,6 +39,10 @@ run_hook "git push \\
   --force origin main"
 expect_exit 2 "$hook_status" "a force push wrapped over two lines is still a force push"
 
+run_hook "git pu\\
+sh --force origin main"
+expect_exit 2 "$hook_status" "a continuation splitting the subcommand is still a force push"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"

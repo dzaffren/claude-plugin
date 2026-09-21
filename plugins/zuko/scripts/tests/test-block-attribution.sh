@@ -106,6 +106,12 @@ run_hook 'git commit \\
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"'
 expect_exit 2 "$hook_status" "blocks a trailer behind a line continuation"
 
+run_hook 'git com\
+mit -m "feat(ship): continuation inside the subcommand
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "blocks a trailer when the continuation splits the subcommand"
+
 run_hook 'git commit -m "feat(ship): footer
 
 Generated with [Claude Code](https://claude.ai/code)"'
