@@ -102,8 +102,6 @@ Scenario: the ship gate refuses a stale or missing block
 
 - The hub page link — artifacts are private by default, and a public README would link
   to a page most readers cannot open.
-- Links to `DECISIONS.md` and `CHANGELOG.md` — added by slices 2 and 3 when those
-  files exist.
 - Badges, screenshots, licence — the user's, outside the markers.
 - Rewriting README prose outside the markers, ever.
 
@@ -137,6 +135,7 @@ at month end; about 400 invoices a run.
 
 - [Overview](OVERVIEW.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Decisions](DECISIONS.md)
 
 <!-- zuko:end -->
 ```
@@ -146,7 +145,7 @@ at month end; about 400 invoices a run.
 | What it does    | the paragraph between the `**Status:**` line and the first `##` | copied as is                                                                              |
 | Install and run | the `## Run it` table                                           | rows whose command is `not set up yet` are dropped; no rows left → section dropped        |
 | Features        | `## Slices` rows with Status `Shipped`                          | one bullet per row, the "What it does" cell, in table order; none → `Nothing shipped yet` |
-| Docs            | fixed list of repo files that exist                             | `OVERVIEW.md`, `docs/ARCHITECTURE.md`; slices 2 and 3 add theirs                     |
+| Docs | fixed list, each only if the file exists | `OVERVIEW.md`, `docs/ARCHITECTURE.md`, `DECISIONS.md`, `CHANGELOG.md` — slices 2 and 3 create the last two, so they appear with no renderer change |
 
 Headings are always `##`. The block never contains a URL outside the repo.
 
@@ -336,6 +335,7 @@ B merges after A. This slice builds after `auto-onboard` is merged — both edit
 | O1  | What happens when the README already covers the block's ground? | question | spec p1   | user   | Resolved | Propose moving it into the overview and replacing it with the block; user approves the diff; on rejection the block skips those parts |
 | O2  | Where does each feature's one-line description come from?       | question | spec p1   | user   | Resolved | A "What it does" column in the overview's slices table (amends `auto-onboard`, O8 there)                                              |
 | O3  | Link the hub page from the README?                              | flag     | spec p1   | claude | Resolved | No — artifacts are private by default; README links repo files only                                                                   |
+| O4 | Docs list for files later slices create | flag | spec p3 (decision-log) | claude | Resolved | The renderer lists DECISIONS.md and CHANGELOG.md when they exist, so slices 2 and 3 need no renderer change |
 
 ## Glossary
 

@@ -175,7 +175,7 @@ at month end; about 400 invoices a run.
 
 ## More
 
-README.md · docs/ARCHITECTURE.md · hub page: https://claude.ai/...
+README.md · docs/ARCHITECTURE.md · DECISIONS.md · CHANGELOG.md · hub page: https://claude.ai/...
 ```
 
 - **Status:** `Draft` or `Active`. Nothing else.
