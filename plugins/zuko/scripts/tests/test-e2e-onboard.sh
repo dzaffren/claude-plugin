@@ -33,6 +33,8 @@ echo work >"$repo/work.txt"
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "feat(export): write the ledger as one CSV"
 
+# Writes the overview and re-renders the README block from it, as onboarding
+# and /ship do, so the block never adds a failure of its own.
 write_overview() {   # write_overview <status> <slices rows>; commits it
   cat >"$repo/OVERVIEW.md" <<OVERVIEW
 # invoice-cli
@@ -40,6 +42,12 @@ write_overview() {   # write_overview <status> <slices rows>; commits it
 **Status:** $1 · **Updated:** 2026-09-24 by /spec export-csv
 
 Turns a folder of supplier invoices into one ledger CSV.
+
+## Run it
+
+| Task    | Command            |
+| ------- | ------------------ |
+| install | \`pip install -e .\` |
 
 ## Slices
 
@@ -51,6 +59,8 @@ $2
 
 README.md
 OVERVIEW
+  [ -f "$repo/README.md" ] || printf '# invoice-cli\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$repo/README.md"
+  CLAUDE_PROJECT_DIR="$repo" bash "$scripts/render-readme-block.sh" --write 2>/dev/null
   git -C "$repo" add -A
   git -C "$repo" commit -q --no-verify -m "docs(overview): update the overview"
 }
