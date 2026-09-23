@@ -23,6 +23,26 @@ write_spec() {
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1 | Nothing is unresolved. | question | fixture | user | Resolved | Yes. |
 SPEC
+  write_overview "$1" Active fixture
+}
+
+# An overview at <status> whose slices table has one row, for <slice>.
+write_overview() {   # write_overview <repo> <status> <slice>
+  cat >"$1/OVERVIEW.md" <<OVERVIEW
+# Fixture
+
+**Status:** $2 · **Updated:** 2026-09-24 by /ship $3
+
+## Slices
+
+| Slice | Status | What it does | Page |
+| ----- | ------ | ------------ | ---- |
+| $3 | Built | The slice under test | https://claude.ai/... |
+
+## More
+
+README.md
+OVERVIEW
 }
 
 new_repo() {   # new_repo <branch> [--no-base]; prints the repo path
@@ -189,5 +209,71 @@ git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "docs(spec): leave a TODO in a fence"
 gate "$repo"
 expect_exit 1 "$gate_status" "a TODO inside a fenced block still fails the gate"
+
+# 12. The overview. The slice is the spec's basename, "fixture"; each case
+# commits its overview so the tree stays clean and only this check talks.
+commit_overview() {   # commit_overview <repo>
+  git -C "$1" add -A
+  git -C "$1" commit -q --no-verify -m "docs(overview): change the overview"
+}
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+gate "$repo"
+expect_exit 0 "$gate_status" "an Active overview with the slice's row passes"
+expect_match '^Overview: row for "fixture" found$' "$gate_out" "the gate prints the overview scope line"
+
+repo=$(new_repo feat/fixture)
+git -C "$repo" rm -q OVERVIEW.md
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a missing overview fails the gate"
+expect_match '^- OVERVIEW\.md  not onboarded — run any writing stage first$' "$gate_out" "a missing overview says not onboarded"
+expect_no_match 'Overview: row' "$gate_out" "a missing overview prints no scope line"
+
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Draft fixture
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a Draft overview fails the gate"
+expect_match '^- OVERVIEW\.md  overview still Draft — approve it before shipping$' "$gate_out" "a Draft overview says approve it first"
+
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Active fixture
+grep -v 'Status:' "$repo/OVERVIEW.md" >"$repo/OVERVIEW.tmp" && mv "$repo/OVERVIEW.tmp" "$repo/OVERVIEW.md"
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "an overview with no Status line fails the gate"
+expect_match '^- OVERVIEW\.md  has no Status line — approve the onboarding draft first$' "$gate_out" "no Status line is named"
+
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Active other-slice
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "an Active overview without the slice's row fails the gate"
+expect_match '^- OVERVIEW\.md  slices table has no row for "fixture"$' "$gate_out" "the missing row names the slice"
+expect_no_match 'Overview: row' "$gate_out" "a missing row prints no scope line"
+
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Active fixture-v2
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a row for a near-miss slice does not count"
+expect_match 'slices table has no row for "fixture"' "$gate_out" "the near miss still names the slice"
+
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Active other-slice
+cat >>"$repo/OVERVIEW.md" <<'ELSEWHERE'
+
+## Where things are
+
+| fixture | mentioned here, outside the slices table |
+
+The fixture slice is mentioned in prose too.
+ELSEWHERE
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "the slice mentioned only outside ## Slices does not count"
+expect_match 'slices table has no row for "fixture"' "$gate_out" "a mention elsewhere still names the slice"
 
 rm -rf "$work"

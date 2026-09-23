@@ -24,6 +24,17 @@ cat >"$repo/docs/specs/naming.md" <<'SPEC'
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1 | Nothing is unresolved. | question | e2e | user | Resolved | Yes. |
 SPEC
+cat >"$repo/OVERVIEW.md" <<'OVERVIEW'
+# Naming
+
+**Status:** Active · **Updated:** 2026-09-24 by /ship naming
+
+## Slices
+
+| Slice  | Status | What it does           | Page                  |
+| ------ | ------ | ---------------------- | --------------------- |
+| naming | Built  | Standardise git naming | https://claude.ai/... |
+OVERVIEW
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "chore(spec): add the naming spec"
 git -C "$repo" checkout -q -b feat/ship-naming
