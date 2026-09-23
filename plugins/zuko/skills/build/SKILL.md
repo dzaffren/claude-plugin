@@ -18,6 +18,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`,
 `${CLAUDE_PLUGIN_ROOT}/references/slicing.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
 
+If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 ## Gate — before anything
 
 Run the gate **with the spec's path as its argument**:

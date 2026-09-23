@@ -48,3 +48,12 @@ One line per lesson. Loaded into every session in this repo.
   its base with cherry-pick, and diff against a backup to prove only the
   message moved.
   ([detail](reword-a-commit-without-rebase-i.md))
+- Run the whole suite before building on it — a red baseline is its own
+  light-path fix first, and exit 127 in a test means a missing command.
+  ([detail](run-the-suite-before-you-build.md))
+- A worktree agent starts from `main`, not your feature branch — a dependent
+  chunk's prompt names the commit it needs and tells it to fast-forward first.
+  ([detail](worktree-agents-start-from-main.md))
+- A gate's passing branch matches the one allowed value; the catch-all fails
+  and names what it saw — denylisting bad values fails open.
+  ([detail](gates-allow-the-pass-not-block-the-fail.md))

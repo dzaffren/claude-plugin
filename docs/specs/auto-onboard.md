@@ -1,6 +1,6 @@
 # Auto-onboard
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 1
 **Depends on:** None
@@ -224,6 +224,8 @@ Greenfield: the context diagram has the one product node; the Components section
 | Draft                               | `Project overview (OVERVIEW.md) — Draft — not yet confirmed:` then the file                          | 0    |
 | Missing                             | `No OVERVIEW.md — the next zuko stage will onboard this repo.`                                       | 0    |
 | Unreadable or no `**Status:**` line | `OVERVIEW.md has no Status line — loaded as Draft.` then the file                                    | 0    |
+| Symlink | `OVERVIEW.md is a symlink — not loaded.` — never followed out of the repo | 0 |
+| Over 16384 bytes in the first 150 lines | the first 16384 bytes, then `Warning: OVERVIEW.md is over 16384 bytes; loaded the first 16384. Trim it.` | 0 |
 
 A SessionStart hook never blocks a session, so every state exits 0; the message says
 what happened.
@@ -253,7 +255,7 @@ gates FAILED
   OVERVIEW.md  slices table has no row for "export-csv"
 ```
 
-The gate also fails on `OVERVIEW.md` missing (`not onboarded — run any writing
+Only `**Status:** Active` passes; any other status fails naming it (`status is 'draft', not Active`). Rows inside fenced code blocks never count. The gate also fails on `OVERVIEW.md` missing (`not onboarded — run any writing
 stage first`) or at `Status: Draft` (`overview still Draft — approve it before
 shipping`). It never passes on an overview it could not read.
 
@@ -409,6 +411,10 @@ The e2e test in chunk B calls `load-overview.sh` from chunk A, so B merges after
 | O6  | Does the overview replace the README?                                            | assumption | spec p1   | user   | Resolved      | No. README keeps a zuko-managed block generated from the overview — slice 1b `readme-block`                                                               |
 | O7  | Skill-prose behaviour (what the draft says) cannot be proven by the bash harness | flag       | spec p1   | claude | Accepted risk | Scripts, gates and file shape are tested; draft content is proven by one real run on this repo during /build, output shown to the user. Agreed 2026-09-24 |
 | O8 | Slices table needs a one-line description per slice for the README block | question | spec p1 (readme-block) | user | Resolved | Add a "What it does" column; `/ship` fills it from the spec's two-line summary when it adds the row |
+| O9 | Scenario 4 assumes a slices row already says Refined, but no stage adds a row before /ship | flag | build | claude | Resolved | Onboarding lists existing specs as rows; /ship adds the row if missing. /spec adding a row at pause 3 is not in this slice |
+| O10 | Brownfield repo with no specs: "Nothing shipped yet" would be false | flag | build | claude | Resolved | Brownfield says "No slices yet — earlier work is in git history (N commits, tags first..last)"; an existing docs/ARCHITECTURE.md is left untouched and named in the message |
+| O11 | Review: loader followed symlinks, capped lines not bytes, missed an unterminated last line; gate passed any non-Draft status and fenced rows | flag | review | claude | Resolved | All five fixed test-first (ef8bd9d, e68d375); Interface updated to match |
+| O12 | Review: /ship refresh ran before the gate but never committed; scope check, Draft resume, row naming and hub-link order contradicted the gate | flag | review | claude | Resolved | Fixed in the skill text (74a6d6b) |
 
 ## Glossary
 

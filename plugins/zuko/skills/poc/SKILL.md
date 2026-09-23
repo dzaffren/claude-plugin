@@ -15,6 +15,9 @@ written on a guess.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
 
+If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 ## Steps
 
 ### 1. State the question

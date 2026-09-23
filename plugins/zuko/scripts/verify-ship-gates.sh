@@ -30,6 +30,48 @@ $rows"
 grep -q '^## Open items' "$spec" || problems="$problems
 - Spec has no '## Open items' section. The ledger is never deleted."
 
+# Overview: the slice (the spec's basename) needs a row in OVERVIEW.md's
+# slices table. Matched by the first cell exactly, inside '## Slices' only, and
+# a file that could not be read is never a pass.
+slice=$(basename "$spec" .md)
+overview="$dir/OVERVIEW.md"
+if [ -L "$overview" ]; then
+  problems="$problems
+- OVERVIEW.md  is a symlink — the session loader will not load it"
+elif [ ! -f "$overview" ]; then
+  problems="$problems
+- OVERVIEW.md  not onboarded — run any writing stage first"
+else
+  ov_status=$(grep -oE '\*\*Status:\*\*[[:space:]]*[A-Za-z]+' "$overview" 2>/dev/null | head -1 | awk '{print $2}')
+  # Only Active passes. Anything else is named, so a typo never reads as approval.
+  case "$ov_status" in
+    Draft) problems="$problems
+- OVERVIEW.md  overview still Draft — approve it before shipping" ;;
+    "") problems="$problems
+- OVERVIEW.md  has no Status line — approve the onboarding draft first" ;;
+    Active)
+      # Fenced blocks are examples, never the table.
+      if awk -v s="$slice" '
+        /^[[:space:]]*(```|~~~)/ { fenced = !fenced; next }
+        fenced { next }
+        /^## / { on = ($0 ~ /^## Slices[[:space:]]*$/); next }
+        on && /^[[:space:]]*\|/ {
+          split($0, cell, "|"); c = cell[2]
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", c)
+          if (c == s) found = 1
+        }
+        END { exit !found }' "$overview" 2>/dev/null; then
+        echo "Overview: row for \"$slice\" found"
+      else
+        problems="$problems
+- OVERVIEW.md  slices table has no row for \"$slice\""
+      fi
+      ;;
+    *) problems="$problems
+- OVERVIEW.md  status is '$ov_status', not Active — approve the onboarding draft first" ;;
+  esac
+fi
+
 # Rollout / rollback must be stated.
 grep -qiE '\*\*Rollout\*\*|^\| \*\*Rollout\*\*' "$spec" || problems="$problems
 - No Rollout line in the non-functionals. State the flag and the rollback path."
