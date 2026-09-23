@@ -149,4 +149,111 @@ expect_match '^README\.md  no zuko block — onboarding adds it$' "$out" "no mar
 cmp -s "$dir/before" "$dir/README.md" && same=yes || same=no
 expect_match '^yes$' "$same" "no markers --write: README.md untouched"
 
+# Every byte of <file> outside the block: up to the end of the start marker
+# line, and from the end marker on.
+outside() {     # outside <file>
+  python3 -c '
+import sys
+data = open(sys.argv[1], "rb").read()
+start = data.index(b"\n", data.index(b"<!-- zuko:start")) + 1
+sys.stdout.buffer.write(data[:start] + data[data.index(b"<!-- zuko:end -->"):])
+' "$1"
+}
+
+same_bytes() {  # same_bytes <a> <b>; prints yes or no
+  cmp -s "$1" "$2" && echo yes || echo no
+}
+
+# invoice-cli's README: text before the block, and a License section after it.
+write_invoice_readme() {   # write_invoice_readme <dir>
+  cat >"$1/README.md" <<'README'
+# invoice-cli
+
+[![ci](badge.svg)](ci.yml)
+
+A small tool.
+
+<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->
+<!-- zuko:end -->
+
+## License
+
+MIT. Keep this   spacing.
+README
+}
+
+# 4. Scenario 4: a slice ships, the block is stale, --write re-renders it.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+render "$dir" --write
+outside "$dir/README.md" >"$dir/outside.before"
+write_overview "$dir" Shipped
+render "$dir" --check
+expect_exit 1 "$status" "shipped: --check exits 1"
+expect_match '^README\.md  zuko block is stale — run render-readme-block\.sh --write$' \
+  "$(printf '%s\n' "$out" | head -1)" "shipped: --check says stale first"
+expect_match '^\+- Export the ledger as one CSV$' "$out" "shipped: the diff shows the new feature"
+render "$dir" --write
+expect_exit 0 "$status" "shipped: --write exits 0"
+expect_match '^README\.md  zuko block rewritten$' "$out" "shipped: --write says rewritten"
+expect_match '^- Export the ledger as one CSV$' "$(cat "$dir/README.md")" "shipped: the feature is in the block"
+outside "$dir/README.md" >"$dir/outside.after"
+expect_match '^yes$' "$(same_bytes "$dir/outside.before" "$dir/outside.after")" "shipped: every byte outside the markers is unchanged"
+expect_match '^## License$' "$(cat "$dir/outside.after")" "shipped: the License section is still there"
+render "$dir" --check
+expect_exit 0 "$status" "shipped: --check after --write exits 0"
+expect_match '^README\.md  zuko block up to date$' "$out" "shipped: --check after --write says up to date"
+
+# 4b. CRLF line endings and no final newline survive a rewrite byte for byte.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"
+printf '# invoice-cli\r\n\r\n%s\r\nold\r\n%s\r\n\r\n## License\r\nMIT' \
+  '<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->' \
+  '<!-- zuko:end -->' >"$dir/README.md"
+outside "$dir/README.md" >"$dir/outside.before"
+render "$dir" --write
+expect_exit 0 "$status" "crlf: --write exits 0"
+outside "$dir/README.md" >"$dir/outside.after"
+expect_match '^yes$' "$(same_bytes "$dir/outside.before" "$dir/outside.after")" "crlf: bytes outside the markers unchanged"
+expect_match '^1$' "$(grep -vc $'\r$' "$dir/README.md")" "crlf: every line but the unterminated last one ends CRLF"
+render "$dir" --check
+expect_exit 0 "$status" "crlf: --check after --write exits 0"
+
+# 4c. A formatter re-pads the block's tables: still up to date.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+render "$dir" --write
+sed -E '/^\|/{s/ +/ /g; s/^\| -+ \| -+ \|$/|---|---|/; s/^\| install \|/|install|/;}; /^## What it does$/s/$/  /' \
+  "$dir/README.md" >"$dir/padded"
+cp "$dir/padded" "$dir/README.md"
+expect_match '^\|---\|---\|$' "$(cat "$dir/README.md")" "padded: the separator really was reshaped"
+render "$dir" --check
+expect_exit 0 "$status" "padded: --check still exits 0"
+expect_match '^README\.md  zuko block up to date$' "$out" "padded: --check says up to date"
+
+# 4d. A changed word is stale, whatever the padding.
+sed 's/`pytest`/`pytest -q`/' "$dir/padded" >"$dir/README.md"
+render "$dir" --check
+expect_exit 1 "$status" "changed command: --check exits 1"
+expect_match 'zuko block is stale' "$out" "changed command: says stale"
+
+# 4e. A hand-edit: stale, and the diff shows both sides.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+render "$dir" --write
+sed 's/pip install -e \./pip install invoice/' "$dir/README.md" >"$dir/edited"; cp "$dir/edited" "$dir/README.md"
+render "$dir" --check
+expect_exit 1 "$status" "hand-edit: --check exits 1"
+expect_match '^-\| install \| `pip install invoice`' "$out" "hand-edit: the diff shows the README line"
+expect_match '^\+\| install \| `pip install -e \.`' "$out" "hand-edit: the diff shows the rendered line"
+cmp -s "$dir/edited" "$dir/README.md" && same=yes || same=no
+expect_match '^yes$' "$same" "hand-edit: --check writes nothing"
+
+# 4f. The diff is capped at 40 lines.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"
+{ echo '# invoice-cli'; echo '<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->'
+  for i in $(seq 1 80); do echo "junk line $i"; done; echo '<!-- zuko:end -->'; } >"$dir/README.md"
+render "$dir" --check
+expect_exit 1 "$status" "long diff: --check exits 1"
+diff_lines=$(printf '%s\n' "$out" | sed 1d | grep -vc '^\.\.\. ')
+[ "$diff_lines" -le 40 ] && capped=yes || capped="no: $diff_lines lines"
+expect_match '^yes$' "$capped" "long diff: at most 40 diff lines"
+expect_match '^\.\.\. diff cut at 40 lines$' "$out" "long diff: says it was cut"
+
 rm -rf "$work"

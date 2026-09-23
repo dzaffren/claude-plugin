@@ -16,6 +16,7 @@ Exit 0 printed, rewritten, or up to date. Exit 1 stale, or README.md has no
 block. Exit 2 when the block cannot be rendered; the message names the file and
 what is wrong, and nothing is printed or written.
 """
+import difflib
 import os
 import re
 import sys
@@ -34,6 +35,7 @@ DOCS = [
 ]
 
 NOT_SET_UP = "not set up yet"
+DIFF_CAP = 40
 
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 SEPARATOR_CELL = re.compile(r"^:?-+:?$")
@@ -189,6 +191,34 @@ def block_lines(project, start):
     return lines + [END]
 
 
+def normalised(text):
+    """The block as --check compares it: padding and table shape ignored.
+
+    Trailing spaces go; a table row's cells lose their padding and inner runs
+    of spaces; a separator cell keeps only its dashes-and-colons shape. A
+    formatter that re-aligns the tables must not make the block look stale.
+    """
+    lines = []
+    for line in text.splitlines():
+        line = line.rstrip()
+        if line.lstrip().startswith("|"):
+            cells = [" ".join(cell.split()) for cell in split_row(line)]
+            if is_separator(line):
+                cells = [re.sub("-+", "-", cell) for cell in cells]
+            line = "| " + " | ".join(cells) + " |"
+        lines.append(line)
+    return lines
+
+
+def stale_diff(current, rendered):
+    diff = list(difflib.unified_diff(
+        current.splitlines(), rendered.splitlines(),
+        "README.md", "rendered from OVERVIEW.md", lineterm=""))
+    if len(diff) > DIFF_CAP:
+        diff = diff[:DIFF_CAP] + ["... diff cut at %d lines" % DIFF_CAP]
+    return diff
+
+
 class NoBlock(Exception):
     """README.md is missing or has no markers: exit 1."""
 
@@ -253,8 +283,12 @@ def main(argv):
             handle.write(readme[:inner_start] + inner + readme[inner_end:])
         sys.stderr.write("README.md  zuko block rewritten\n")
         return 0
-    if readme[inner_start:inner_end] != inner:
+    current = readme[inner_start:inner_end].decode("utf-8", "replace")
+    rendered = inner.decode("utf-8")
+    if normalised(current) != normalised(rendered):
         sys.stderr.write("README.md  zuko block is stale — run render-readme-block.sh --write\n")
+        for line in stale_diff(current, rendered):
+            sys.stderr.write(line + "\n")
         return 1
     sys.stderr.write("README.md  zuko block up to date\n")
     return 0
