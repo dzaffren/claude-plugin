@@ -285,6 +285,17 @@ expect_exit 1 "$gate_status" "a lowercase draft status fails the gate"
 expect_match "^- OVERVIEW\.md  status is 'draft', not Active — approve the onboarding draft first$" "$gate_out" "an unknown status is named"
 expect_no_match 'Overview: row' "$gate_out" "an unknown status prints no scope line"
 
+# A symlinked overview is refused, because the session loader refuses it too.
+repo=$(new_repo feat/fixture)
+outside=$(mktemp -d -p "$work")
+mv "$repo/OVERVIEW.md" "$outside/OVERVIEW.md"
+ln -s "$outside/OVERVIEW.md" "$repo/OVERVIEW.md"
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a symlinked overview fails the gate"
+expect_match '^- OVERVIEW\.md  is a symlink — the session loader will not load it$' "$gate_out" "a symlinked overview is named"
+expect_no_match 'Overview: row' "$gate_out" "a symlinked overview prints no scope line"
+
 # A row inside a code fence is an example, not the table.
 repo=$(new_repo feat/fixture)
 write_overview "$repo" Active other-slice

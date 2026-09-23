@@ -35,7 +35,10 @@ grep -q '^## Open items' "$spec" || problems="$problems
 # a file that could not be read is never a pass.
 slice=$(basename "$spec" .md)
 overview="$dir/OVERVIEW.md"
-if [ ! -f "$overview" ]; then
+if [ -L "$overview" ]; then
+  problems="$problems
+- OVERVIEW.md  is a symlink — the session loader will not load it"
+elif [ ! -f "$overview" ]; then
   problems="$problems
 - OVERVIEW.md  not onboarded — run any writing stage first"
 else
