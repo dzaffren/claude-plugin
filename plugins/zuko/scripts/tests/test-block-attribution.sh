@@ -14,7 +14,8 @@ git -C "$repo" commit -q -m "feat(repo): first commit" --no-verify
 run_hook() {   # run_hook <shell command>; sets $hook_out $hook_err $hook_status
   local payload
   payload=$(ZUKO_CMD="$1" python3 -c 'import json,os; print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]}}))')
-  hook_out=$(printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" timeout 5 bash "$scripts/block-attribution.sh" 2>"$work/err")
+  # perl's alarm, not coreutils timeout: macOS ships perl but not timeout.
+  hook_out=$(printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" perl -e 'alarm shift; exec @ARGV' 5 bash "$scripts/block-attribution.sh" 2>"$work/err")
   hook_status=$?
   hook_err=$(cat "$work/err")
 }
