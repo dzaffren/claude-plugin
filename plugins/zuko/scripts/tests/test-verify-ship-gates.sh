@@ -276,4 +276,30 @@ gate "$repo"
 expect_exit 1 "$gate_status" "the slice mentioned only outside ## Slices does not count"
 expect_match 'slices table has no row for "fixture"' "$gate_out" "a mention elsewhere still names the slice"
 
+# Only Active passes: any other status is named and fails.
+repo=$(new_repo feat/fixture)
+write_overview "$repo" draft fixture
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a lowercase draft status fails the gate"
+expect_match "^- OVERVIEW\.md  status is 'draft', not Active — approve the onboarding draft first$" "$gate_out" "an unknown status is named"
+expect_no_match 'Overview: row' "$gate_out" "an unknown status prints no scope line"
+
+# A row inside a code fence is an example, not the table.
+repo=$(new_repo feat/fixture)
+write_overview "$repo" Active other-slice
+cat >>"$repo/OVERVIEW.md" <<'FENCED'
+
+## Format
+
+```
+## Slices
+| fixture | Built |
+```
+FENCED
+commit_overview "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a row only inside a code fence does not count"
+expect_match 'slices table has no row for "fixture"' "$gate_out" "a fenced row still names the slice"
+
 rm -rf "$work"

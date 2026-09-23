@@ -40,13 +40,17 @@ if [ ! -f "$overview" ]; then
 - OVERVIEW.md  not onboarded — run any writing stage first"
 else
   ov_status=$(grep -oE '\*\*Status:\*\*[[:space:]]*[A-Za-z]+' "$overview" 2>/dev/null | head -1 | awk '{print $2}')
+  # Only Active passes. Anything else is named, so a typo never reads as approval.
   case "$ov_status" in
     Draft) problems="$problems
 - OVERVIEW.md  overview still Draft — approve it before shipping" ;;
     "") problems="$problems
 - OVERVIEW.md  has no Status line — approve the onboarding draft first" ;;
-    *)
+    Active)
+      # Fenced blocks are examples, never the table.
       if awk -v s="$slice" '
+        /^[[:space:]]*(```|~~~)/ { fenced = !fenced; next }
+        fenced { next }
         /^## / { on = ($0 ~ /^## Slices[[:space:]]*$/); next }
         on && /^[[:space:]]*\|/ {
           split($0, cell, "|"); c = cell[2]
@@ -60,6 +64,8 @@ else
 - OVERVIEW.md  slices table has no row for \"$slice\""
       fi
       ;;
+    *) problems="$problems
+- OVERVIEW.md  status is '$ov_status', not Active — approve the onboarding draft first" ;;
   esac
 fi
 
