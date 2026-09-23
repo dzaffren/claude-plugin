@@ -76,4 +76,77 @@ docs=$(printf '%s\n' "$out" | grep '^- \[' | tr '\n' '/')
 expect_match '^- \[Overview\]\(OVERVIEW\.md\)/- \[Architecture\]\(docs/ARCHITECTURE\.md\)/- \[Decisions\]\(DECISIONS\.md\)/- \[Changelog\]\(CHANGELOG\.md\)/$' \
   "$docs" "docs: every file that exists, in the fixed order"
 
+# The habit-tracker overview, as onboarding writes it on a greenfield repo.
+write_greenfield_overview() {   # write_greenfield_overview <dir>
+  cat >"$1/OVERVIEW.md" <<'OVERVIEW'
+# habit-tracker
+
+**Status:** Active · **Updated:** 2026-09-24 by /spec onboarding
+
+Tracks daily habits and shows streaks. Used by one person, on their phone.
+
+## Run it
+
+| Task    | Command        |
+| ------- | -------------- |
+| install | not set up yet |
+| run     | not set up yet |
+| test    | not set up yet |
+| lint    | not set up yet |
+
+## Slices
+
+Nothing shipped yet
+
+| Slice    | Status   | What it does | Page     |
+| -------- | -------- | ------------ | -------- |
+| none yet | none yet | none yet     | none yet |
+
+## More
+
+README.md
+OVERVIEW
+}
+
+# 3. Scenario 3: a greenfield README is the title and the block.
+dir=$(mktemp -d -p "$work"); write_greenfield_overview "$dir"
+printf '# habit-tracker\n\n%s\n%s\n' \
+  '<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->' \
+  '<!-- zuko:end -->' >"$dir/README.md"
+render "$dir" --write
+expect_exit 0 "$status" "greenfield --write: exits 0"
+expect_match '^README\.md  zuko block rewritten$' "$out" "greenfield --write: says rewritten"
+readme=$(cat "$dir/README.md")
+expect_match '^# habit-tracker$' "$(printf '%s\n' "$readme" | head -1)" "greenfield: the title comes first"
+expect_match '^<!-- zuko:start — generated from OVERVIEW\.md' "$(printf '%s\n' "$readme" | sed -n 3p)" "greenfield: the block follows the title"
+expect_match '^<!-- zuko:end -->$' "$(printf '%s\n' "$readme" | tail -1)" "greenfield: the block ends the file"
+expect_match '^Tracks daily habits and shows streaks\.' "$readme" "greenfield: the description is rendered"
+features=$(printf '%s\n' "$readme" | sed -n '/^## Features$/,/^## Docs$/p')
+expect_match '^Nothing shipped yet$' "$features" "greenfield: Features says Nothing shipped yet"
+expect_no_match 'none yet' "$readme" "greenfield: the none-yet row is not a feature"
+expect_no_match 'Install and run|not set up yet' "$readme" "greenfield: no command set up, no Install and run section"
+render "$dir" --check
+expect_exit 0 "$status" "greenfield --check after --write: exits 0"
+expect_match '^README\.md  zuko block up to date$' "$out" "greenfield --check after --write: up to date"
+
+# 3b. No README.md at all: onboarding adds it; the renderer never creates one.
+dir=$(mktemp -d -p "$work"); write_greenfield_overview "$dir"
+render "$dir" --write
+expect_exit 1 "$status" "no README --write: exits 1"
+expect_match '^README\.md  no zuko block — onboarding adds it$' "$out" "no README --write: says onboarding adds it"
+[ -e "$dir/README.md" ] && created=yes || created=no
+expect_match '^no$' "$created" "no README --write: no README is created"
+render "$dir" --check
+expect_exit 1 "$status" "no README --check: exits 1"
+expect_match '^README\.md  no zuko block — onboarding adds it$' "$out" "no README --check: says onboarding adds it"
+
+# 3c. A README with no markers: the same, and the file is left alone.
+dir=$(mktemp -d -p "$work"); write_greenfield_overview "$dir"
+printf '# habit-tracker\n\nNotes.\n' >"$dir/README.md"; cp "$dir/README.md" "$dir/before"
+render "$dir" --write
+expect_exit 1 "$status" "no markers --write: exits 1"
+expect_match '^README\.md  no zuko block — onboarding adds it$' "$out" "no markers --write: says onboarding adds it"
+cmp -s "$dir/before" "$dir/README.md" && same=yes || same=no
+expect_match '^yes$' "$same" "no markers --write: README.md untouched"
+
 rm -rf "$work"

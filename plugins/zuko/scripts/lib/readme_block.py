@@ -3,12 +3,18 @@
 
 Usage: readme_block.py <project-dir> [--write|--check]
 
-No flag prints the block, markers included. The block is a pure function of
-OVERVIEW.md: its description, its "## Run it" table and its "## Slices" table,
-plus a docs list of the repo files that exist.
+The block is a pure function of OVERVIEW.md: its description, its "## Run it"
+table and its "## Slices" table, plus a docs list of the repo files that exist.
+It sits in README.md between a line starting `<!-- zuko:start` and a line
+`<!-- zuko:end -->`.
 
-Exit 0 printed. Exit 2 when the overview cannot be rendered; the message names
-the file and what is wrong, and nothing partial is ever printed.
+  no flag   print the block, markers included
+  --write   replace the bytes between the markers; every other byte is kept
+  --check   compare the block in README.md with what the overview renders to
+
+Exit 0 printed, rewritten, or up to date. Exit 1 stale, or README.md has no
+block. Exit 2 when the block cannot be rendered; the message names the file and
+what is wrong, and nothing is printed or written.
 """
 import os
 import re
@@ -183,17 +189,74 @@ def block_lines(project, start):
     return lines + [END]
 
 
+class NoBlock(Exception):
+    """README.md is missing or has no markers: exit 1."""
+
+
+def find_block(readme):
+    """Where the block sits in README.md's bytes.
+
+    Returns (inner start, inner end, start marker line, line ending): the byte
+    range between the two marker lines, the start marker as text, and the
+    ending the start marker line uses, so a rewrite keeps the file's style.
+    """
+    start = end = None
+    offset = 0
+    for raw in readme.splitlines(keepends=True):
+        line = raw.rstrip(b"\r\n")
+        text = line.decode("utf-8", "replace")
+        if start is None and text.startswith("<!-- zuko:start"):
+            start = (offset, raw, line)
+        elif start is not None and text.rstrip() == END:
+            end = offset
+            break
+        offset += len(raw)
+    if start is None:
+        raise NoBlock("README.md  no zuko block — onboarding adds it")
+    begin, raw, line = start
+    return (begin + len(raw), end, line.decode("utf-8", "replace"),
+            raw[len(line):].decode())
+
+
 def main(argv):
-    if len(argv) != 2:
+    if len(argv) not in (2, 3) or argv[2:] not in ([], ["--write"], ["--check"]):
         sys.stderr.write(USAGE + "\n")
         return 2
-    project = argv[1]
+    project, mode = argv[1], (argv[2:] or [None])[0]
+    path = os.path.join(project, "README.md")
     try:
-        lines = block_lines(project, DEFAULT_START)
+        with open(path, "rb") as handle:
+            readme = handle.read()
+    except FileNotFoundError:
+        readme = b""
+    try:
+        try:
+            inner_start, inner_end, start, eol = find_block(readme)
+        except NoBlock:
+            if mode:
+                raise
+            start = DEFAULT_START
+        lines = block_lines(project, start)
+    except NoBlock as err:
+        sys.stderr.write("%s\n" % err)
+        return 1
     except CannotRender as err:
         sys.stderr.write("%s\n" % err)
         return 2
-    sys.stdout.buffer.write(("\n".join(lines) + "\n").encode("utf-8"))
+
+    if mode is None:
+        sys.stdout.buffer.write(("\n".join(lines) + "\n").encode("utf-8"))
+        return 0
+    inner = "".join(line + eol for line in lines[1:-1]).encode("utf-8")
+    if mode == "--write":
+        with open(path, "wb") as handle:
+            handle.write(readme[:inner_start] + inner + readme[inner_end:])
+        sys.stderr.write("README.md  zuko block rewritten\n")
+        return 0
+    if readme[inner_start:inner_end] != inner:
+        sys.stderr.write("README.md  zuko block is stale — run render-readme-block.sh --write\n")
+        return 1
+    sys.stderr.write("README.md  zuko block up to date\n")
     return 0
 
 
