@@ -6,6 +6,13 @@ set -uo pipefail
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 file="$dir/OVERVIEW.md"
 cap=150
+byte_cap=16384
+
+# A symlink could point anywhere on disk; never follow one into context.
+if [ -L "$file" ]; then
+  echo "OVERVIEW.md is a symlink — not loaded."
+  exit 0
+fi
 
 if [ ! -f "$file" ]; then
   echo "No OVERVIEW.md — the next zuko stage will onboard this repo."
@@ -23,9 +30,14 @@ case "$status" in
     ;;
 esac
 
-head -n "$cap" "$file" 2>/dev/null
-lines=$(wc -l <"$file" 2>/dev/null | tr -d ' ')
+head -n "$cap" "$file" 2>/dev/null | head -c "$byte_cap" | awk '1'
+# awk counts a last line with no newline; wc -l does not.
+lines=$(awk 'END { print NR }' "$file" 2>/dev/null)
+bytes=$(head -n "$cap" "$file" 2>/dev/null | wc -c | tr -d ' ')
 if [ "${lines:-0}" -gt "$cap" ]; then
   echo "Warning: OVERVIEW.md is $lines lines; loaded the first $cap. Trim it to $cap."
+fi
+if [ "${bytes:-0}" -gt "$byte_cap" ]; then
+  echo "Warning: OVERVIEW.md is over $byte_cap bytes; loaded the first $byte_cap. Trim it."
 fi
 exit 0

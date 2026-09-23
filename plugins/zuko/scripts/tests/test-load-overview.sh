@@ -84,4 +84,25 @@ print("ok" if l and o and o[0] > l[0] else "bad: %s" % cmds)
 ' "$scripts/../hooks/hooks.json" 2>&1)
 expect_match '^ok$' "$order" "hooks.json: valid, load-overview.sh after load-learnings.sh"
 
+# 8. 151 lines with no newline after the last: that line still counts.
+dir=$(mktemp -d -p "$work"); write_overview "$dir" "$active" 150; printf 'line 151' >>"$dir/OVERVIEW.md"; load "$dir"
+expect_match '^Warning: OVERVIEW\.md is 151 lines; loaded the first 150\. Trim it to 150\.$' "$load_out" "no final newline: the last line is counted and warned about"
+
+# 9. A symlink is never followed out of the repo.
+dir=$(mktemp -d -p "$work"); outside=$(mktemp -d -p "$work")
+printf '%s\n' "$active" "SECRET-OUTSIDE-THE-REPO" >"$outside/target.md"
+ln -s "$outside/target.md" "$dir/OVERVIEW.md"; load "$dir"
+expect_exit 0 "$load_status" "symlink: exits 0"
+expect_match '^OVERVIEW\.md is a symlink — not loaded\.$' "$load_out" "symlink: says it was not loaded"
+expect_no_match 'SECRET-OUTSIDE-THE-REPO' "$load_out" "symlink: the target's content never reaches context"
+
+# 10. The cap is bytes as well as lines.
+dir=$(mktemp -d -p "$work")
+{ echo "$active"; head -c 300000 /dev/zero | tr '\0' x; echo; } >"$dir/OVERVIEW.md"; load "$dir"
+expect_exit 0 "$load_status" "one huge line: exits 0"
+expect_match '^Warning: OVERVIEW\.md is over 16384 bytes; loaded the first 16384\. Trim it\.$' "$load_out" "one huge line: warns about the byte cap"
+bytes=$(printf '%s' "$load_out" | wc -c | tr -d ' ')
+[ "$bytes" -lt 17000 ] && ok=yes || ok="no: $bytes bytes"
+expect_match '^yes$' "$ok" "one huge line: output stays under 17000 bytes"
+
 rm -rf "$work"
