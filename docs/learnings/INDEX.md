@@ -54,3 +54,6 @@ One line per lesson. Loaded into every session in this repo.
 - A worktree agent starts from `main`, not your feature branch — a dependent
   chunk's prompt names the commit it needs and tells it to fast-forward first.
   ([detail](worktree-agents-start-from-main.md))
+- A gate's passing branch matches the one allowed value; the catch-all fails
+  and names what it saw — denylisting bad values fails open.
+  ([detail](gates-allow-the-pass-not-block-the-fail.md))
