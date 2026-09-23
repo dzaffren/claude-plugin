@@ -31,6 +31,7 @@ map of what is already there.
 ```mermaid
 flowchart LR
     S1["1 · auto-onboard<br/>overview + architecture"] --> S2["2 · decisions.md"]
+    S1 --> S1b["1b · README block"]
     S1 --> S3["3 · CHANGELOG from /ship"]
     S3 -. "needed by" .-> R4["v3-release-and-hosts · 4 /release"]
 ```
@@ -38,6 +39,7 @@ flowchart LR
 | #   | Slice        | What ships                                                                                                                                                                                                                                                                         | Why this order                                           |
 | --- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | 1   | Auto-onboard | First zuko stage in a repo with no `docs/overview.md` writes `overview.md` and `architecture.md` as Draft, shows them for correction, marks them Active, then carries on. SessionStart loads the overview. `/ship` keeps both current and republishes the hub page.                | Every later slice writes into or links from these files. |
+| 1b | README block | A zuko-managed block in README.md between `<!-- zuko:start -->` and `<!-- zuko:end -->`, generated from the overview (what it does, install and run, shipped features, doc links). Onboarding proposes where it goes; `/ship` regenerates it; the ship gate fails a stale block. Content outside the markers is never touched. | README is the repo's public docs and must not drift from the overview. |
 | 2   | Decision log | `docs/decisions.md` in D-entry format, written by `/spec` pause 3, `/poc`, `/design-system`, and ledger rows that resolve into a real choice. `/spec` and `/build` grep active entries before proposing. SessionStart loads titles only. A gate script checks the log's integrity. | Stops later slices re-proposing rejected options.        |
 | 3   | Changelog    | `/ship` writes human lines under `[Unreleased]` in `CHANGELOG.md` (Keep a Changelog 1.1.0), grouped from commit types. The ship gate fails a branch with a `feat` or `fix` commit and no new line.                                                                                 | `/release` (other shape, slice 4) cuts versions from it. |
 
@@ -133,6 +135,7 @@ the ship gate checks the `[Unreleased]` diff for it.
 | O7  | Overview load cost every session             | flag       | shape     | claude | Resolved | 150-line cap; SessionStart hook, not `@` import (code.claude.com/docs/en/memory)   |
 | O8  | Which stages trigger onboarding?             | assumption | shape     | claude | Resolved | All writing stages; `/status` and `/learn` only report — see slice 1               |
 | O9  | Decisions loaded at session start in full?   | flag       | shape     | claude | Resolved | Titles of active entries only; bodies read on demand by grep                       |
+| O10 | Does the overview replace or update the README? | question | spec p1 (auto-onboard) | user | Resolved | Neither replaces the other: README gets a generated block between markers, slice 1b |
 
 ## Glossary
 
