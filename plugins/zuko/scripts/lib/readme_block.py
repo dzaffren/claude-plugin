@@ -34,6 +34,10 @@ DOCS = [
     ("Changelog", "CHANGELOG.md"),
 ]
 
+# What a start marker's skip list may name: one key per section.
+SKIP_KEYS = ("what", "install", "features", "docs")
+SKIP = re.compile(r"^<!-- zuko:start\s+skip=(\S*)")
+
 NOT_SET_UP = "not set up yet"
 DIFF_CAP = 40
 
@@ -183,11 +187,26 @@ def sections(project):
     return found
 
 
+def skipped(start):
+    """The section keys the start marker's skip list leaves out."""
+    match = SKIP.match(start)
+    keys = [key for key in (match.group(1) if match else "").split(",") if key]
+    for key in keys:
+        if key not in SKIP_KEYS:
+            raise CannotRender('README.md  unknown skip key "%s"' % key)
+    return keys
+
+
 def block_lines(project, start):
-    """The whole block, markers included, one string per line."""
+    """The whole block, markers included, one string per line.
+
+    The start marker is kept as given: it carries the user's skip list.
+    """
+    skip = skipped(start)
     lines = [start, ""]
-    for _key, heading, body in sections(project):
-        lines += ["## " + heading, ""] + body + [""]
+    for key, heading, body in sections(project):
+        if key not in skip:
+            lines += ["## " + heading, ""] + body + [""]
     return lines + [END]
 
 

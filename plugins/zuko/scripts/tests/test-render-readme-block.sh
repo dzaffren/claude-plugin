@@ -256,4 +256,65 @@ diff_lines=$(printf '%s\n' "$out" | sed 1d | grep -vc '^\.\.\. ')
 expect_match '^yes$' "$capped" "long diff: at most 40 diff lines"
 expect_match '^\.\.\. diff cut at 40 lines$' "$out" "long diff: says it was cut"
 
+skip_marker='<!-- zuko:start skip=install — generated from OVERVIEW.md; edit that file, not this block -->'
+
+# invoice-cli's README after a rejected merge: its own Install section stays,
+# and the start marker records skip=<keys>.
+write_skipping_readme() {   # write_skipping_readme <dir> <keys>
+  cat >"$1/README.md" <<README
+# invoice-cli
+
+## Install
+
+    pip install -e .
+
+<!-- zuko:start skip=$2 — generated from OVERVIEW.md; edit that file, not this block -->
+<!-- zuko:end -->
+
+## License
+
+MIT.
+README
+}
+
+# 2. Scenario 2: skip=install keeps the user's Install and drops the section.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_skipping_readme "$dir" install
+outside "$dir/README.md" >"$dir/outside.before"
+render "$dir"
+expect_exit 0 "$status" "skip=install print: exits 0"
+expect_match "^$skip_marker\$" "$(printf '%s\n' "$out" | head -1)" "skip=install print: uses README's start marker"
+expect_no_match '^## Install and run$|pip install' "$out" "skip=install print: no Install and run section"
+expect_match '^## Features$' "$out" "skip=install print: the other sections stay"
+render "$dir" --write
+expect_exit 0 "$status" "skip=install --write: exits 0"
+readme=$(cat "$dir/README.md")
+expect_match "^$skip_marker\$" "$readme" "skip=install --write: the marker, skip list and all, survives"
+expect_no_match '^## Install and run$' "$readme" "skip=install --write: no Install and run section"
+expect_match '^## What it does$' "$readme" "skip=install --write: the block was rendered"
+outside "$dir/README.md" >"$dir/outside.after"
+expect_match '^yes$' "$(same_bytes "$dir/outside.before" "$dir/outside.after")" "skip=install --write: ## Install and everything outside unchanged"
+render "$dir" --check
+expect_exit 0 "$status" "skip=install --check: exits 0"
+render "$dir" --write
+expect_match "^$skip_marker\$" "$(cat "$dir/README.md")" "skip=install: survives a second re-render"
+
+# 2b. Several keys, every one of them honoured.
+dir=$(mktemp -d -p "$work"); write_overview "$dir" Shipped; write_skipping_readme "$dir" what,features,docs
+render "$dir" --write
+expect_exit 0 "$status" "skip=what,features,docs: exits 0"
+headings=$(sed -n '/zuko:start/,/zuko:end/p' "$dir/README.md" | grep '^## ' | tr '\n' '/')
+expect_match '^## Install and run/$' "$headings" "skip=what,features,docs: only Install and run is left"
+
+# 2c. An unknown key: exit 2, and README.md is not touched.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_skipping_readme "$dir" install,licence
+cp "$dir/README.md" "$dir/before"
+render "$dir" --write
+expect_exit 2 "$status" "skip=licence --write: exits 2"
+expect_match '^README\.md  unknown skip key "licence"$' "$out" "skip=licence: names the key"
+expect_match '^yes$' "$(same_bytes "$dir/before" "$dir/README.md")" "skip=licence --write: README.md byte-identical"
+render "$dir" --check
+expect_exit 2 "$status" "skip=licence --check: exits 2"
+render "$dir"
+expect_exit 2 "$status" "skip=licence print: exits 2"
+
 rm -rf "$work"
