@@ -140,12 +140,12 @@ at month end; about 400 invoices a run.
 <!-- zuko:end -->
 ```
 
-| Section         | Source in `OVERVIEW.md`                                    | Rule                                                                                      |
-| --------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| What it does    | the paragraph between the `**Status:**` line and the first `##` | copied as is                                                                              |
-| Install and run | the `## Run it` table                                           | rows whose command is `not set up yet` are dropped; no rows left → section dropped        |
-| Features        | `## Slices` rows with Status `Shipped`                          | one bullet per row, the "What it does" cell, in table order; none → `Nothing shipped yet` |
-| Docs | fixed list, each only if the file exists | `OVERVIEW.md`, `docs/ARCHITECTURE.md`, `DECISIONS.md`, `CHANGELOG.md` — slices 2 and 3 create the last two, so they appear with no renderer change |
+| Section         | Source in `OVERVIEW.md`                                         | Rule                                                                                                                                               |
+| --------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What it does    | the paragraph between the `**Status:**` line and the first `##` | copied as is                                                                                                                                       |
+| Install and run | the `## Run it` table                                           | rows whose command is `not set up yet` are dropped; no rows left → section dropped                                                                 |
+| Features        | `## Slices` rows with Status `Shipped`                          | one bullet per row, the "What it does" cell, in table order; none → `Nothing shipped yet`                                                          |
+| Docs            | fixed list, each only if the file exists                        | `OVERVIEW.md`, `docs/ARCHITECTURE.md`, `DECISIONS.md`, `CHANGELOG.md` — slices 2 and 3 create the last two, so they appear with no renderer change |
 
 Headings are always `##`. The block never contains a URL outside the repo.
 
@@ -170,11 +170,11 @@ render-readme-block.sh --check    compare; exit 1 if README.md's block differs
 
 Reads `OVERVIEW.md` and `README.md` under `$CLAUDE_PROJECT_DIR` (else `$PWD`).
 
-| Exit | Meaning                         | Message (stderr)                                                                                                                                                                           |
-| ---- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0    | printed, written, or up to date | `README.md  zuko block up to date` (`--check`) · `README.md  zuko block rewritten` (`--write`)                                                                                             |
-| 1    | stale (`--check` only)          | `README.md  zuko block is stale — run render-readme-block.sh --write` then a unified diff, capped at 40 lines                                                                              |
-| 1    | no markers                      | `README.md  no zuko block — onboarding adds it`                                                                                                                                            |
+| Exit | Meaning                         | Message (stderr)                                                                                                                                                                 |
+| ---- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | printed, written, or up to date | `README.md  zuko block up to date` (`--check`) · `README.md  zuko block rewritten` (`--write`)                                                                                   |
+| 1    | stale (`--check` only)          | `README.md  zuko block is stale — run render-readme-block.sh --write` then a unified diff, capped at 40 lines                                                                    |
+| 1    | no markers                      | `README.md  no zuko block — onboarding adds it`                                                                                                                                  |
 | 2    | cannot render                   | `OVERVIEW.md  missing` · `OVERVIEW.md  no "## Run it" table` · `README.md  zuko:start without zuko:end` · `README.md  two zuko blocks` · `README.md  unknown skip key "licence"` |
 
 `--write` touches nothing outside the markers and nothing at all when it would exit 2.
@@ -259,7 +259,7 @@ stale. Words, commands, order, and headings are compared exactly.
 | `plugins/zuko/scripts/lib/readme_block.py` (new)                                                    | Parse the overview's description, `## Run it` and `## Slices` (columns found by header name); render the block; find markers and skip list; `--write` / `--check` / print; exit codes and messages per the Interface table | scenarios 2–5                                     |
 | `plugins/zuko/scripts/render-readme-block.sh` (new)                                                 | Entry point: resolves the project dir and calls the Python module; nothing else                                                                                                                                            | one command for the gate, `/ship`, and onboarding |
 | `plugins/zuko/scripts/verify-ship-gates.sh`                                                         | After the overview check that `auto-onboard` adds: run `--check`, add non-zero output to `problems`, print the scope line on 0                                                                                             | scenario 5                                        |
-| `plugins/zuko/references/onboard.md`                                                                | Overlap heading list; the merge proposal message; writing moved text into the overview before `--write`; skip keys on rejection; creating README.md as a `#` title from the repo name plus the block                                           | scenarios 1–3                                     |
+| `plugins/zuko/references/onboard.md`                                                                | Overlap heading list; the merge proposal message; writing moved text into the overview before `--write`; skip keys on rejection; creating README.md as a `#` title from the repo name plus the block                       | scenarios 1–3                                     |
 | `plugins/zuko/skills/ship/SKILL.md`                                                                 | Run `--write` after updating the slices row on the branch, and again in the close-out commit                                                                                                                               | scenario 4                                        |
 | `plugins/zuko/scripts/tests/test-render-readme-block.sh` (new)                                      | Render cases, skip keys, every exit-2 input, byte-identical outside markers, formatter-padded tables still "up to date"                                                                                                    | scenarios 2–5                                     |
 | `plugins/zuko/scripts/tests/test-verify-ship-gates.sh`, `test-e2e-naming.sh`, `test-e2e-onboard.sh` | Fixtures gain a README with a current block                                                                                                                                                                                | old tests keep testing what they test             |
@@ -287,7 +287,7 @@ No new dependency: Python 3 standard library only, already required by
 | **Load**             | Two small files read per call; runs in well under a second                                                                                                                             |
 | **Breaks first**     | A hand-edited overview table the parser cannot read — exits 2 naming the file and table, never renders a partial block                                                                 |
 | **Security surface** | Writes only README.md, only between the markers; no network; no shell-out from the renderer. Rendered text comes from the repo's own overview, and the block never adds an outside URL |
-| **Proof it works**   | `verify-ship-gates.sh` prints `README: zuko block matches OVERVIEW.md` on the PR branch                                                                                           |
+| **Proof it works**   | `verify-ship-gates.sh` prints `README: zuko block matches OVERVIEW.md` on the PR branch                                                                                                |
 | **Rollout**          | No flag. Rollback: revert the merge commit; the block stays in READMEs as plain text and stops being checked                                                                           |
 
 ### Test plan
@@ -330,12 +330,13 @@ B merges after A. This slice builds after `auto-onboard` is merged — both edit
 
 ## Open items
 
-| ID  | What                                                            | Type     | Raised at | Owner  | Status   | Answer                                                                                                                                |
-| --- | --------------------------------------------------------------- | -------- | --------- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| O1  | What happens when the README already covers the block's ground? | question | spec p1   | user   | Resolved | Propose moving it into the overview and replacing it with the block; user approves the diff; on rejection the block skips those parts |
-| O2  | Where does each feature's one-line description come from?       | question | spec p1   | user   | Resolved | A "What it does" column in the overview's slices table (amends `auto-onboard`, O8 there)                                              |
-| O3  | Link the hub page from the README?                              | flag     | spec p1   | claude | Resolved | No — artifacts are private by default; README links repo files only                                                                   |
-| O4 | Docs list for files later slices create | flag | spec p3 (decision-log) | claude | Resolved | The renderer lists DECISIONS.md and CHANGELOG.md when they exist, so slices 2 and 3 need no renderer change |
+| ID  | What                                                                                     | Type     | Raised at              | Owner  | Status   | Answer                                                                                                                                |
+| --- | ---------------------------------------------------------------------------------------- | -------- | ---------------------- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| O1  | What happens when the README already covers the block's ground?                          | question | spec p1                | user   | Resolved | Propose moving it into the overview and replacing it with the block; user approves the diff; on rejection the block skips those parts |
+| O2  | Where does each feature's one-line description come from?                                | question | spec p1                | user   | Resolved | A "What it does" column in the overview's slices table (amends `auto-onboard`, O8 there)                                              |
+| O3  | Link the hub page from the README?                                                       | flag     | spec p1                | claude | Resolved | No — artifacts are private by default; README links repo files only                                                                   |
+| O4  | Docs list for files later slices create                                                  | flag     | spec p3 (decision-log) | claude | Resolved | The renderer lists DECISIONS.md and CHANGELOG.md when they exist, so slices 2 and 3 need no renderer change                           |
+| O5  | A repo onboarded before this slice has no block, and onboarding never reruns once Active | flag     | build (chunk C)        | claude | Resolved | `/ship`'s refresh runs onboarding's README step alone when README.md has no markers; `onboard.md` names that one exception            |
 
 ## Glossary
 
