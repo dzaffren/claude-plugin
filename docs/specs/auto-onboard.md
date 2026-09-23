@@ -168,10 +168,10 @@ at month end; about 400 invoices a run.
 
 ## Slices
 
-| Slice      | Status  | Page                  |
-| ---------- | ------- | --------------------- |
-| export-csv | Shipped | https://claude.ai/... |
-| import-csv | Refined | https://claude.ai/... |
+| Slice      | Status  | What it does                        | Page                  |
+| ---------- | ------- | ----------------------------------- | --------------------- |
+| export-csv | Shipped | Export the ledger as one CSV        | https://claude.ai/... |
+| import-csv | Refined | Import last month's ledger to check | https://claude.ai/... |
 
 ## More
 
@@ -325,7 +325,7 @@ follows the spec: the PR carries the row at `Built`, the close-out commit flips 
 | `plugins/zuko/references/onboard.md` (new)                                     | What to read, in order; the two file templates from the Interface section; the rules (≤150 lines, pointers not code, every command sourced from a named file, `not set up yet` otherwise); the onboarding message; the Draft → approve → Active step; adding `docs/specs/.pages/` to `.gitignore` if absent | scenarios 1, 2 — one copy, eight readers |
 | `skills/` shape, spec, poc, design, build, review, ship, debug — each `SKILL.md` | One line beside the existing `voice.md` line (e.g. `shape/SKILL.md:18`): "If `docs/overview.md` is missing, follow `references/onboard.md` first."                                                                                                                                                          | scenarios 1, 2                           |
 | `plugins/zuko/skills/status/SKILL.md`, `learn/SKILL.md`                        | One line: report "not onboarded" when the overview is missing; never write it                                                                                                                                                                                                                               | read-only stages stay read-only          |
-| `plugins/zuko/skills/ship/SKILL.md`                                            | Before "The gates" (`:26`): update the slices-table row to `Built` with the page link, update `architecture.md` if pause 3 added a component. Close-out (`:103`): flip the row to `Shipped` with the spec, republish the hub page                                                                           | scenarios 4, 5                           |
+| `plugins/zuko/skills/ship/SKILL.md`                                            | Before "The gates" (`:26`): update the slices-table row to `Built` with the page link and a "What it does" line from the spec summary, update `architecture.md` if pause 3 added a component. Close-out (`:103`): flip the row to `Shipped` with the spec, republish the hub page                                                                           | scenarios 4, 5                           |
 | `plugins/zuko/scripts/load-overview.sh` (new)                                  | The five states from the Interface table; head -150 plus warning over the cap; always exit 0                                                                                                                                                                                                                | scenario 3                               |
 | `plugins/zuko/hooks/hooks.json`                                                | Add `load-overview.sh` to SessionStart after `load-learnings.sh`                                                                                                                                                                                                                                            | scenario 3                               |
 | `plugins/zuko/scripts/verify-ship-gates.sh`                                    | New block after the ledger checks (`:30`): overview missing / Draft / no row for the spec's basename → problem; row found → a scope line `Overview: row for "{slice}" found`                                                                                                                                | scenario 4                               |
@@ -408,6 +408,7 @@ The e2e test in chunk B calls `load-overview.sh` from chunk A, so B merges after
 | O5  | Is a Draft overview loaded at session start, or only an Active one?              | assumption | spec p1   | user   | Resolved      | Yes, marked "Draft — not yet confirmed"                                                                                                                   |
 | O6  | Does the overview replace the README?                                            | assumption | spec p1   | user   | Resolved      | No. README keeps a zuko-managed block generated from the overview — slice 1b `readme-block`                                                               |
 | O7  | Skill-prose behaviour (what the draft says) cannot be proven by the bash harness | flag       | spec p1   | claude | Accepted risk | Scripts, gates and file shape are tested; draft content is proven by one real run on this repo during /build, output shown to the user. Agreed 2026-09-24 |
+| O8 | Slices table needs a one-line description per slice for the README block | question | spec p1 (readme-block) | user | Resolved | Add a "What it does" column; `/ship` fills it from the spec's two-line summary when it adds the row |
 
 ## Glossary
 
