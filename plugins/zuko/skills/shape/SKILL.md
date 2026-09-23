@@ -17,6 +17,9 @@ shippable on its own.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before writing anything.
 
+If `OVERVIEW.md` is missing at the repo root, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 **Never assume.** Every claim in the shape doc comes from the user or the
 codebase. When something is unknown, either ask, or write it into the ledger
 as an assumption. A silent guess here becomes a wrong spec later.

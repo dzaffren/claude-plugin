@@ -12,6 +12,9 @@ disable-model-invocation: false
 Where everything is, in one screen. Read the files; report what is actually
 there, never what should be there.
 
+If `OVERVIEW.md` is missing at the repo root, report "not onboarded — the
+next writing stage will onboard this repo". Never write it from here.
+
 ```!
 git status --short --branch
 git branch --list

@@ -16,6 +16,9 @@ reaches the user unverified.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
 
+If `OVERVIEW.md` is missing at the repo root, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 ## Size the effort
 
 Measure the diff first: `git diff --stat` against the branch point.

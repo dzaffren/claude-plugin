@@ -16,12 +16,28 @@ here is guessed — every gate is checked, not assumed.
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
 
+If `OVERVIEW.md` is missing at the repo root, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 ## Current state
 
 ```!
 git status --short --branch
 git log --oneline -8
 ```
+
+## Refresh the overview
+
+The gate below reads what this step writes, so it runs first.
+
+- `OVERVIEW.md` slices table: set this slice's row to `Built`, with the spec's
+  page link and a "What it does" line taken from the spec's two-line summary.
+  No row yet → add one, and drop a `none yet` row if there is one.
+- `docs/ARCHITECTURE.md`: when the spec's pause 3 added or changed a
+  component, update the components diagram and add or edit its table row —
+  folder and one line saying what it does.
+- Set `**Updated:**` on each file you changed to today, `by /ship {slice}`.
+- Keep `OVERVIEW.md` at 150 lines or fewer. Over → trim it before the gate.
 
 ## The gates
 
@@ -105,7 +121,11 @@ saying out loud.
 
 ## Close out
 
-- Spec Status → `Shipped`.
+- Spec Status → `Shipped`. In the same commit, flip this slice's row in the
+  `OVERVIEW.md` slices table to `Shipped`.
+- Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
+  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add
+  `hub page: {url}` to the overview's `## More` line in that same commit.
 - Capture lessons to `docs/learnings/` silently.
 - **Graduation:** a component from this slice that is now used in two or more
   slices, or that the user promotes, moves into the design system. Ask first,

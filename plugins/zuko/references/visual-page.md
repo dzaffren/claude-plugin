@@ -56,6 +56,37 @@ Load the `artifact-design` skill before writing the page, and
 Diagrams render natively in artifacts through `<pre class="mermaid">` blocks —
 do not load a diagram library.
 
+## Link back to the hub
+
+Once a hub page exists (its link is on the `## More` line of `OVERVIEW.md`),
+every spec page opens with one line above the slice line:
+
+`Part of invoice-cli — hub page: https://claude.ai/...`
+
+## Hub page
+
+One page for the whole project; each slice's page links from it. Built by
+`/ship` at close-out from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
+`DECISIONS.md` and `CHANGELOG.md` when they exist. The Markdown wins: the hub
+is regenerated from those files, never edited beside them.
+
+In this order:
+
+1. **Product line and status strip.** The overview's description · its
+   Status · the date it was last updated.
+2. **Run commands.** The `## Run it` table.
+3. **Architecture.** The context and components diagrams.
+4. **Slices.** The slices table, each row linking to that slice's spec page.
+5. **Links.** README and `docs/ARCHITECTURE.md`.
+
+Write it to `docs/specs/.pages/_hub.html` — next to the spec pages, so the one
+ignore rule covers both; the underscore keeps it from colliding with a slice
+name. Publish with the Artifact tool from that same path every time, so the
+link never changes. Title: the project name.
+
+On the hub's first publish, republish each existing spec page so it gains the
+back-link line.
+
 ## Style
 
 The page carries the same voice rules as everything else. It is a working

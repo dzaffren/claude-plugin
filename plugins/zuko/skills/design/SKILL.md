@@ -15,6 +15,9 @@ Two modes. Read `${CLAUDE_PLUGIN_ROOT}/references/craft.md` in full before
 either, and `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before writing
 anything.
 
+If `OVERVIEW.md` is missing at the repo root, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 **One design system per product.** It is the product's identity. Slices refer
 to it; a slice never has its own. It grows deliberately, never per-feature.
 

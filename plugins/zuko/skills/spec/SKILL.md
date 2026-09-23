@@ -21,6 +21,9 @@ Read these before starting:
 `${CLAUDE_PLUGIN_ROOT}/references/diagram-set.md`,
 `${CLAUDE_PLUGIN_ROOT}/references/ledger.md`.
 
+If `OVERVIEW.md` is missing at the repo root, follow
+`${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
+
 **Never assume.** Anything unknown is either asked or written into the ledger
 as an assumption. Never a silent guess.
 

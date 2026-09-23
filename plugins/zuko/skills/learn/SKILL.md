@@ -14,6 +14,9 @@ one-line-per-lesson summary that a SessionStart hook prints into every session.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
 
+If `OVERVIEW.md` is missing at the repo root, report "not onboarded — the
+next writing stage will onboard this repo". Never write it from here.
+
 ## Capture — automatic, not a command
 
 The stages capture silently. Never announce it, never ask permission.
