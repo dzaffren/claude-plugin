@@ -106,7 +106,7 @@ flowchart LR
 ### Slice 5 · pentest
 
 ```
-start the app from overview.md "how to run"
+start the app from OVERVIEW.md "how to run"
         ▼
 pentester agent (Claude Code) — target: localhost, or a staging URL the user names
         ▼
@@ -123,7 +123,7 @@ report        → docs/security/vX.Y.Z/report.md
   dependencies added in the release (A03), prompt injection for LLM apps. Each
   finding needs a proving input. Critical/high still blocks.
 - The report lists categories it could not assess. It never says "secure".
-- Skipping the pentest needs a typed reason, written to `decisions.md` and to the
+- Skipping the pentest needs a typed reason, written to `DECISIONS.md` and to the
   release notes as "Released without pentest: {reason}".
 - Never targets anything other than localhost or the named staging URL.
 
@@ -150,6 +150,7 @@ report        → docs/security/vX.Y.Z/report.md
 | ASCII in terminal | `voice.md`: diagrams printed to the terminal are ASCII; Mermaid stays in files and pages; README's "renders in the terminal" claim fixed                                       |
 | Figma / Jira      | `/design-system` accepts a Figma link when the Figma tools are connected; `/shape` accepts a Jira key when the Atlassian MCP is connected; otherwise neither is mentioned      |
 | Shape gate        | Ledger gains status `Handed to {slice}`. A shape cannot be `Shaped`, and a spec cannot be `Refined`, with any `Open` row. A handed row is copied into the named spec as `Open` |
+| Mermaid placeholder fix | `verify-ship-gates.sh` placeholder check stops flagging Mermaid decision nodes (`Q{label}` inside a mermaid fence); a test with a real flowchart proves it |
 
 ## Not doing
 
@@ -178,6 +179,7 @@ report        → docs/security/vX.Y.Z/report.md
 | O9  | Attribution on new surfaces                                       | question | shape     | user   | Resolved    | Ban and hook extend to PR/MR bodies, tag messages, release notes, changelog  |
 | O10 | Slice 7 over the size rule                                        | flag     | shape     | claude | Resolved    | Split into 7a (OWASP lens) and 7b (regression-aware review)                  |
 | O11 | glab flags verified on 1.93 only                                  | flag     | shape     | claude | Handed to 6 | Re-check against the installed glab at the slice 6 spec                      |
+| O12 | Ship gate flags Mermaid decision nodes as unfilled placeholders | flag | spec p3 (auto-onboard) | user | Resolved | Fixed in slice 8; specs quote node labels until then |
 
 ## Glossary
 

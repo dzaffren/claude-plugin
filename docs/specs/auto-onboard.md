@@ -34,10 +34,10 @@ so the light-path rules (≤3 files, nothing new) do not hold.
 
 ```mermaid
 flowchart TD
-    ST[any writing stage] --> Q{"docs/overview.md?"}
+    ST[any writing stage] --> Q{"OVERVIEW.md?"}
     Q -- present --> GO[carry on with the stage]
     Q -- missing --> R[read README, CLAUDE.md, manifests,<br/>git log, tags, folder layout]
-    R --> W[write overview.md + architecture.md<br/>Status: Draft]
+    R --> W[write OVERVIEW.md + ARCHITECTURE.md<br/>Status: Draft]
     W --> U{"user corrects the draft"}
     U -- approved --> A[Status: Active] --> GO
     SS[SessionStart] --> L[load-overview.sh] --> C[(context)]
@@ -62,23 +62,23 @@ stateDiagram-v2
 ```gherkin
 Scenario: a brownfield repo is onboarded on its first zuko stage
   Given the repo "invoice-cli" with a README, a pyproject.toml declaring pytest
-    and ruff, 43 commits, tags v0.1.0 and v0.2.0, and no docs/overview.md
+    and ruff, 43 commits, tags v0.1.0 and v0.2.0, and no OVERVIEW.md
   When the user runs /spec on "export-csv"
-  Then zuko writes docs/overview.md and docs/architecture.md with Status: Draft
-  And overview.md names the test command "pytest" and the lint command "ruff check ."
-  And overview.md is no longer than 150 lines and contains no copied source code
+  Then zuko writes OVERVIEW.md and docs/ARCHITECTURE.md with Status: Draft
+  And OVERVIEW.md names the test command "pytest" and the lint command "ruff check ."
+  And OVERVIEW.md is no longer than 150 lines and contains no copied source code
   And zuko shows the draft and waits before starting the spec
   And after the user approves, both files say Status: Active and /spec continues
 
 Scenario: a greenfield repo is onboarded with honest blanks
   Given an empty repo "habit-tracker" with one commit and no manifest
   When the user runs /shape
-  Then docs/overview.md says "Nothing shipped yet"
+  Then OVERVIEW.md says "Nothing shipped yet"
   And its run, test and lint lines say "not set up yet" rather than guessing a command
-  And docs/architecture.md holds a single-node context diagram and no components
+  And docs/ARCHITECTURE.md holds a single-node context diagram and no components
 
 Scenario: every session starts with the overview in context
-  Given "invoice-cli" with an Active docs/overview.md of 96 lines
+  Given "invoice-cli" with an Active OVERVIEW.md of 96 lines
   When a new session starts
   Then the SessionStart output contains the overview in full
   And when the overview grows to 180 lines, only the first 150 are loaded,
@@ -92,7 +92,7 @@ Scenario: shipping a slice keeps the overview current
     as Refined, and a spec whose pause 3 added the component "exporters/"
   When /ship prepares the branch for "export-csv"
   Then the slices table shows "export-csv" as Built with its page link
-  And docs/architecture.md lists "exporters/" with one line saying what it does
+  And docs/ARCHITECTURE.md lists "exporters/" with one line saying what it does
   And the ship gate passes
   And after the merge, the close-out commit that marks the spec Shipped also
     marks the "export-csv" row Shipped
@@ -119,14 +119,14 @@ Scenario: the hub page links every slice page both ways
   when their slices land). `/status` and `/learn` only report "not onboarded".
 - A SessionStart script that loads the overview, wired in `hooks.json` next to
   `load-learnings.sh`.
-- `/ship` close-out: update the slices table and `architecture.md`; a ship-gate check
+- `/ship` close-out: update the slices table and `ARCHITECTURE.md`; a ship-gate check
   that the shipped slice is in the table; republish the hub page.
 - The hub page reference, and a back-link line in `references/visual-page.md`.
 - Tests in `scripts/tests/` for every script path, plus the e2e walk.
 
 **Out:**
 
-- `docs/decisions.md` and its session load — slice 2.
+- `DECISIONS.md` and its session load — slice 2.
 - `CHANGELOG.md` and its onboarding seed — slice 3.
 - The latest-release line on the overview — `v3-release-and-hosts` slice 4.
 - README — slice 1b `readme-block` adds a generated block between markers; content
@@ -139,7 +139,7 @@ Scenario: the hub page links every slice page both ways
 No new command. The surface is two files, one SessionStart output, one onboarding
 message, one gate message, and one page.
 
-### `docs/overview.md`
+### `OVERVIEW.md`
 
 Fixed sections, in this order. `/ship` and the loader find them by heading.
 
@@ -175,7 +175,7 @@ at month end; about 400 invoices a run.
 
 ## More
 
-README.md · docs/architecture.md · hub page: https://claude.ai/...
+README.md · docs/ARCHITECTURE.md · hub page: https://claude.ai/...
 ```
 
 - **Status:** `Draft` or `Active`. Nothing else.
@@ -185,7 +185,7 @@ README.md · docs/architecture.md · hub page: https://claude.ai/...
 - **Hard rules:** ≤150 lines; paths as pointers, never pasted code; every command
   is one found in a manifest, script, or CI file — none invented.
 
-### `docs/architecture.md`
+### `docs/ARCHITECTURE.md`
 
 ````markdown
 # invoice-cli · architecture
@@ -219,11 +219,11 @@ Greenfield: the context diagram has the one product node; the Components section
 
 | State                               | Output                                                                                                    | Exit |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------- | ---- |
-| Active, ≤150 lines                  | `Project overview (docs/overview.md):` then the file                                                      | 0    |
-| Active, >150 lines                  | the first 150 lines, then `Warning: docs/overview.md is 180 lines; loaded the first 150. Trim it to 150.` | 0    |
-| Draft                               | `Project overview (docs/overview.md) — Draft — not yet confirmed:` then the file                          | 0    |
-| Missing                             | `No docs/overview.md — the next zuko stage will onboard this repo.`                                       | 0    |
-| Unreadable or no `**Status:**` line | `docs/overview.md has no Status line — loaded as Draft.` then the file                                    | 0    |
+| Active, ≤150 lines                  | `Project overview (OVERVIEW.md):` then the file                                                      | 0    |
+| Active, >150 lines                  | the first 150 lines, then `Warning: OVERVIEW.md is 180 lines; loaded the first 150. Trim it to 150.` | 0    |
+| Draft                               | `Project overview (OVERVIEW.md) — Draft — not yet confirmed:` then the file                          | 0    |
+| Missing                             | `No OVERVIEW.md — the next zuko stage will onboard this repo.`                                       | 0    |
+| Unreadable or no `**Status:**` line | `OVERVIEW.md has no Status line — loaded as Draft.` then the file                                    | 0    |
 
 A SessionStart hook never blocks a session, so every state exits 0; the message says
 what happened.
@@ -233,8 +233,8 @@ what happened.
 ```
 Not onboarded yet. Read: README.md, pyproject.toml, 43 commits, tags v0.1.0..v0.2.0.
 Wrote (Draft):
-  docs/overview.md       61 lines
-  docs/architecture.md   2 components
+  OVERVIEW.md       61 lines
+  docs/ARCHITECTURE.md   2 components
 Commands found: test "pytest" (pyproject.toml) · lint "ruff check ." (pyproject.toml)
 Not found: run command — marked "not set up yet"
 
@@ -250,10 +250,10 @@ Added to `verify-ship-gates.sh`, same shape as its existing failures:
 
 ```
 gates FAILED
-  docs/overview.md  slices table has no row for "export-csv"
+  OVERVIEW.md  slices table has no row for "export-csv"
 ```
 
-The gate also fails on `docs/overview.md` missing (`not onboarded — run any writing
+The gate also fails on `OVERVIEW.md` missing (`not onboarded — run any writing
 stage first`) or at `Status: Draft` (`overview still Draft — approve it before
 shipping`). It never passes on an overview it could not read.
 
@@ -274,7 +274,7 @@ Two deterministic pieces carry the guarantees — a loader script and a ship-gat
 — and everything else is stage prose pointing at one new reference. Onboarding itself
 is Claude reading the repo and writing two files, so it lives in
 `references/onboard.md` and each writing stage gets one line sending it there when
-`docs/overview.md` is missing. Nothing parses the overview except by its fixed
+`OVERVIEW.md` is missing. Nothing parses the overview except by its fixed
 headings and its `**Status:**` line.
 
 ```mermaid
@@ -287,7 +287,7 @@ flowchart TB
         LO[load-overview.sh] --- HK[hooks.json SessionStart]
         VG[verify-ship-gates.sh<br/>overview check]
     end
-    OB -- writes --> OV[(docs/overview.md<br/>docs/architecture.md)]
+    OB -- writes --> OV[(OVERVIEW.md<br/>docs/ARCHITECTURE.md)]
     LO -- reads --> OV
     VG -- reads --> OV
     SHIP -- edits --> OV
@@ -300,16 +300,16 @@ sequenceDiagram
     participant R as repo files
     participant H as SessionStart
     U->>S: /spec export-csv
-    S->>R: docs/overview.md?
+    S->>R: OVERVIEW.md?
     R-->>S: missing
     S->>R: read README, pyproject.toml, git log, tags, tree
-    S->>R: write overview.md + architecture.md (Draft)
+    S->>R: write OVERVIEW.md + ARCHITECTURE.md (Draft)
     S-->>U: onboarding message, waits
     U->>S: approve
     S->>R: Status: Active
     S-->>U: carries on with pause 1
     Note over H,R: next session
-    H->>R: load-overview.sh reads docs/overview.md
+    H->>R: load-overview.sh reads OVERVIEW.md
     R-->>H: overview in context
 ```
 
@@ -323,9 +323,9 @@ follows the spec: the PR carries the row at `Built`, the close-out commit flips 
 | File                                                                           | What changes                                                                                                                                                                                                                                                                                                | Why                                      |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `plugins/zuko/references/onboard.md` (new)                                     | What to read, in order; the two file templates from the Interface section; the rules (≤150 lines, pointers not code, every command sourced from a named file, `not set up yet` otherwise); the onboarding message; the Draft → approve → Active step; adding `docs/specs/.pages/` to `.gitignore` if absent | scenarios 1, 2 — one copy, eight readers |
-| `skills/` shape, spec, poc, design, build, review, ship, debug — each `SKILL.md` | One line beside the existing `voice.md` line (e.g. `shape/SKILL.md:18`): "If `docs/overview.md` is missing, follow `references/onboard.md` first."                                                                                                                                                          | scenarios 1, 2                           |
+| `skills/` shape, spec, poc, design, build, review, ship, debug — each `SKILL.md` | One line beside the existing `voice.md` line (e.g. `shape/SKILL.md:18`): "If `OVERVIEW.md` is missing, follow `references/onboard.md` first."                                                                                                                                                          | scenarios 1, 2                           |
 | `plugins/zuko/skills/status/SKILL.md`, `learn/SKILL.md`                        | One line: report "not onboarded" when the overview is missing; never write it                                                                                                                                                                                                                               | read-only stages stay read-only          |
-| `plugins/zuko/skills/ship/SKILL.md`                                            | Before "The gates" (`:26`): update the slices-table row to `Built` with the page link and a "What it does" line from the spec summary, update `architecture.md` if pause 3 added a component. Close-out (`:103`): flip the row to `Shipped` with the spec, republish the hub page                                                                           | scenarios 4, 5                           |
+| `plugins/zuko/skills/ship/SKILL.md`                                            | Before "The gates" (`:26`): update the slices-table row to `Built` with the page link and a "What it does" line from the spec summary, update `ARCHITECTURE.md` if pause 3 added a component. Close-out (`:103`): flip the row to `Shipped` with the spec, republish the hub page                                                                           | scenarios 4, 5                           |
 | `plugins/zuko/scripts/load-overview.sh` (new)                                  | The five states from the Interface table; head -150 plus warning over the cap; always exit 0                                                                                                                                                                                                                | scenario 3                               |
 | `plugins/zuko/hooks/hooks.json`                                                | Add `load-overview.sh` to SessionStart after `load-learnings.sh`                                                                                                                                                                                                                                            | scenario 3                               |
 | `plugins/zuko/scripts/verify-ship-gates.sh`                                    | New block after the ledger checks (`:30`): overview missing / Draft / no row for the spec's basename → problem; row found → a scope line `Overview: row for "{slice}" found`                                                                                                                                | scenario 4                               |
@@ -356,8 +356,8 @@ No new dependency. No config option.
 | **Load**             | One file read per session, ≤150 lines — roughly 2k tokens at most                                                                                                                                                                                                                         |
 | **Breaks first**     | The overview outgrowing 150 lines; the loader truncates and warns, `/ship` is told to trim                                                                                                                                                                                                |
 | **Security surface** | Reads repo files only, runs nothing it finds. The overview is repo text loaded into context — same trust as `CLAUDE.md`; the loader's header line labels it as project data. Onboarding never copies `.env` or secret-shaped values: `references/onboard.md` names `.env*` as not-to-read |
-| **Proof it works**   | The next session in an onboarded repo shows `Project overview (docs/overview.md):` in its SessionStart output                                                                                                                                                                             |
-| **Rollout**          | No flag — ships in the plugin. Rollback: revert the merge commit; existing `docs/overview.md` files stay and are simply no longer loaded                                                                                                                                                  |
+| **Proof it works**   | The next session in an onboarded repo shows `Project overview (OVERVIEW.md):` in its SessionStart output                                                                                                                                                                             |
+| **Rollout**          | No flag — ships in the plugin. Rollback: revert the merge commit; existing `OVERVIEW.md` files stay and are simply no longer loaded                                                                                                                                                  |
 
 ### Test plan
 

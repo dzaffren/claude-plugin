@@ -30,28 +30,30 @@ map of what is already there.
 
 ```mermaid
 flowchart LR
-    S1["1 · auto-onboard<br/>overview + architecture"] --> S2["2 · decisions.md"]
+    S1["1 · auto-onboard<br/>overview + architecture"] --> S2["2 · DECISIONS.md"]
     S1 --> S1b["1b · README block"]
+    S2 --> S2b["2b · ADR seeding"]
     S1 --> S3["3 · CHANGELOG from /ship"]
     S3 -. "needed by" .-> R4["v3-release-and-hosts · 4 /release"]
 ```
 
 | #   | Slice        | What ships                                                                                                                                                                                                                                                                         | Why this order                                           |
 | --- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 1   | Auto-onboard | First zuko stage in a repo with no `docs/overview.md` writes `overview.md` and `architecture.md` as Draft, shows them for correction, marks them Active, then carries on. SessionStart loads the overview. `/ship` keeps both current and republishes the hub page.                | Every later slice writes into or links from these files. |
+| 1   | Auto-onboard | First zuko stage in a repo with no `OVERVIEW.md` writes `OVERVIEW.md` and `ARCHITECTURE.md` as Draft, shows them for correction, marks them Active, then carries on. SessionStart loads the overview. `/ship` keeps both current and republishes the hub page.                | Every later slice writes into or links from these files. |
 | 1b | README block | A zuko-managed block in README.md between `<!-- zuko:start -->` and `<!-- zuko:end -->`, generated from the overview (what it does, install and run, shipped features, doc links). Onboarding proposes where it goes; `/ship` regenerates it; the ship gate fails a stale block. Content outside the markers is never touched. | README is the repo's public docs and must not drift from the overview. |
-| 2   | Decision log | `docs/decisions.md` in D-entry format, written by `/spec` pause 3, `/poc`, `/design-system`, and ledger rows that resolve into a real choice. `/spec` and `/build` grep active entries before proposing. SessionStart loads titles only. A gate script checks the log's integrity. | Stops later slices re-proposing rejected options.        |
+| 2   | Decision log | `DECISIONS.md` in D-entry format, written by `/spec` pause 3, `/poc`, `/design-system`, and ledger rows that resolve into a real choice. `/spec` and `/build` grep active entries before proposing. SessionStart loads titles only. A gate script checks the log's integrity. | Stops later slices re-proposing rejected options.        |
+| 2b | ADR seeding | Onboarding turns existing `docs/adr/*.md` files into D-entries in `DECISIONS.md`, each citing its ADR file. | Only repos with ADRs need it; ships right after 2. |
 | 3   | Changelog    | `/ship` writes human lines under `[Unreleased]` in `CHANGELOG.md` (Keep a Changelog 1.1.0), grouped from commit types. The ship gate fails a branch with a `feat` or `fix` commit and no new line.                                                                                 | `/release` (other shape, slice 4) cuts versions from it. |
 
 ### Slice 1 · auto-onboard
 
 ```
-any zuko stage ──► docs/overview.md exists? ── yes ──► carry on
+any zuko stage ──► OVERVIEW.md exists? ── yes ──► carry on
                           │ no
                           ▼
         read README, CLAUDE.md, manifests, git log, tags, folder layout
                           ▼
-        write overview.md + architecture.md   (Status: Draft)
+        write OVERVIEW.md + ARCHITECTURE.md   (Status: Draft)
                           ▼
         show the draft → user corrects → Status: Active → carry on
 ```
@@ -59,16 +61,16 @@ any zuko stage ──► docs/overview.md exists? ── yes ──► carry on
 - **Triggers:** `/shape`, `/spec`, `/poc`, `/design`, `/design-system`, `/build`,
   `/review`, `/ship`, `/release`, `/debug`. Read-only stages (`/status`, `/learn`)
   only report "not onboarded".
-- **overview.md** (≤150 lines): what it is, who uses it, how to run/test/lint (exact
+- **OVERVIEW.md** (≤150 lines): what it is, who uses it, how to run/test/lint (exact
   commands), folder map as `path/` pointers (no copied code), slices table (status
   and page link), links to architecture, decisions, changelog.
-- **architecture.md:** Mermaid context and component diagrams, one line per
+- **ARCHITECTURE.md:** Mermaid context and component diagrams, one line per
   component naming its folder. Separate from the overview so the overview stays
   small enough to load every session.
-- **Session load:** a SessionStart script loads `overview.md`; over 150 lines it
+- **Session load:** a SessionStart script loads `OVERVIEW.md`; over 150 lines it
   loads the head and prints a warning.
 - **Kept live:** `/ship` updates the slices table and any section the slice
-  changed, updates `architecture.md` when pause 3 added or changed a component,
+  changed, updates `ARCHITECTURE.md` when pause 3 added or changed a component,
   and republishes the hub page. Ship gate fails if the shipped slice is missing
   from the slices table.
 - **Hub page:** one HTML page from the four project docs, linking to every slice's
@@ -128,14 +130,16 @@ the ship gate checks the `[Unreleased]` diff for it.
 | --- | -------------------------------------------- | ---------- | --------- | ------ | -------- | ---------------------------------------------------------------------------------- |
 | O1  | Who is the overview for?                     | question   | shape     | user   | Resolved | Both people and Claude — one file, loaded at session start                         |
 | O2  | How does a brownfield repo start?            | question   | shape     | user   | Resolved | Automatically, on the first zuko stage run; the draft is shown once for correction |
-| O3  | Shape of decisions.md                        | question   | shape     | user   | Resolved | One file, D-entries, supersede never edit                                          |
+| O3  | Shape of DECISIONS.md                        | question   | shape     | user   | Resolved | One file, D-entries, supersede never edit                                          |
 | O4  | Overview as HTML too? One page or two kinds? | question   | shape     | user   | Resolved | Separate hub page linking to per-slice spec pages                                  |
-| O5  | Where does the architecture diagram live?    | question   | shape     | user   | Resolved | `docs/architecture.md`, created at onboarding if missing                           |
+| O5  | Where does the architecture diagram live?    | question   | shape     | user   | Resolved | `docs/ARCHITECTURE.md`, created at onboarding if missing                           |
 | O6  | Which branches need a changelog line?        | assumption | shape     | user   | Resolved | Any with `feat` or `fix`; chore/docs/test/refactor-only exempt — confirmed         |
 | O7  | Overview load cost every session             | flag       | shape     | claude | Resolved | 150-line cap; SessionStart hook, not `@` import (code.claude.com/docs/en/memory)   |
 | O8  | Which stages trigger onboarding?             | assumption | shape     | claude | Resolved | All writing stages; `/status` and `/learn` only report — see slice 1               |
 | O9  | Decisions loaded at session start in full?   | flag       | shape     | claude | Resolved | Titles of active entries only; bodies read on demand by grep                       |
 | O10 | Does the overview replace or update the README? | question | spec p1 (auto-onboard) | user | Resolved | Neither replaces the other: README gets a generated block between markers, slice 1b |
+| O11 | File names and places for the project docs | question | spec p1 (decisions) | user | Resolved | Caps, root: `OVERVIEW.md`, `DECISIONS.md`, `CHANGELOG.md`, `README.md`; diagrams in `docs/ARCHITECTURE.md` |
+| O12 | Slice 2 over the size rule (6 scenarios) | flag | spec p1 (decisions) | user | Resolved | ADR seeding moves to slice 2b; anti-deviation review stays in 2 |
 
 ## Glossary
 

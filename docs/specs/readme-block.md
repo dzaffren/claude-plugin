@@ -7,14 +7,14 @@
 **Page:** https://claude.ai/artifact/UjgNXmdzaq2Uaq1VkAMmmg
 
 The README's what-it-does, install-and-run, features and docs sections become one block
-that a script renders from `docs/overview.md`. `/ship` re-renders it and the ship gate
+that a script renders from `OVERVIEW.md`. `/ship` re-renders it and the ship gate
 refuses a stale one, so the repo's public front page never drifts from the overview.
 
 ## Problem
 
 README is the repo's documentation for everyone who lands on it, and it goes stale
 the fastest: a command changes, a feature ships, and nobody edits the README. After
-`auto-onboard` the same facts also live in `docs/overview.md`, so without this slice
+`auto-onboard` the same facts also live in `OVERVIEW.md`, so without this slice
 there would be two copies drifting apart. This repo shows it: `README.md` lists ten
 commands and its install steps by hand, and nothing checks them against the code.
 
@@ -33,9 +33,9 @@ commands and its install steps by hand, and nothing checks them against the code
 
 ```mermaid
 flowchart TD
-    OV[(docs/overview.md)] --> RN[render-readme-block.sh]
+    OV[(OVERVIEW.md)] --> RN[render-readme-block.sh]
     RN -- "--write" --> RM[README.md<br/>between the markers]
-    ON[onboarding] -- "README has Install / Usage / Features?" --> MP["propose: move that text into<br/>overview.md, replace with the block"]
+    ON[onboarding] -- "README has Install / Usage / Features?" --> MP["propose: move that text into<br/>OVERVIEW.md, replace with the block"]
     MP -- approved --> RM
     MP -- rejected --> SK["block with skip= those parts"] --> RM
     SH["/ship"] -- "--write" --> RN
@@ -53,7 +53,7 @@ Scenario: onboarding merges an overlapping README section into the overview
     and a "## License" section, and no zuko markers
   When onboarding runs and the user approves the proposed README diff
   Then the "## Install" section is gone and the zuko block stands in its place
-  And overview.md's "Run it" table holds "pip install -e ." as the install command
+  And OVERVIEW.md's "Run it" table holds "pip install -e ." as the install command
   And the "## License" section and every line outside the markers are unchanged
 
 Scenario: a rejected merge leaves the user's sections and skips those parts
@@ -88,7 +88,7 @@ Scenario: the ship gate refuses a stale or missing block
 
 **In:**
 
-- `scripts/render-readme-block.sh`: renders the block from `docs/overview.md`;
+- `scripts/render-readme-block.sh`: renders the block from `OVERVIEW.md`;
   `--write` replaces what sits between the markers, `--check` exits 1 when it differs.
 - The block's four sections: what it does, install and run, features (Shipped rows
   only, from the "What it does" column), docs (links to files in the repo only).
@@ -102,7 +102,7 @@ Scenario: the ship gate refuses a stale or missing block
 
 - The hub page link — artifacts are private by default, and a public README would link
   to a page most readers cannot open.
-- Links to `docs/decisions.md` and `CHANGELOG.md` — added by slices 2 and 3 when those
+- Links to `DECISIONS.md` and `CHANGELOG.md` — added by slices 2 and 3 when those
   files exist.
 - Badges, screenshots, licence — the user's, outside the markers.
 - Rewriting README prose outside the markers, ever.
@@ -114,7 +114,7 @@ Scenario: the ship gate refuses a stale or missing block
 Rendered for "invoice-cli" with one shipped slice:
 
 ```markdown
-<!-- zuko:start — generated from docs/overview.md; edit that file, not this block -->
+<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->
 
 ## What it does
 
@@ -135,18 +135,18 @@ at month end; about 400 invoices a run.
 
 ## Docs
 
-- [Overview](docs/overview.md)
-- [Architecture](docs/architecture.md)
+- [Overview](OVERVIEW.md)
+- [Architecture](docs/ARCHITECTURE.md)
 
 <!-- zuko:end -->
 ```
 
-| Section         | Source in `docs/overview.md`                                    | Rule                                                                                      |
+| Section         | Source in `OVERVIEW.md`                                    | Rule                                                                                      |
 | --------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | What it does    | the paragraph between the `**Status:**` line and the first `##` | copied as is                                                                              |
 | Install and run | the `## Run it` table                                           | rows whose command is `not set up yet` are dropped; no rows left → section dropped        |
 | Features        | `## Slices` rows with Status `Shipped`                          | one bullet per row, the "What it does" cell, in table order; none → `Nothing shipped yet` |
-| Docs            | fixed list of repo files that exist                             | `docs/overview.md`, `docs/architecture.md`; slices 2 and 3 add theirs                     |
+| Docs            | fixed list of repo files that exist                             | `OVERVIEW.md`, `docs/ARCHITECTURE.md`; slices 2 and 3 add theirs                     |
 
 Headings are always `##`. The block never contains a URL outside the repo.
 
@@ -155,7 +155,7 @@ Headings are always `##`. The block never contains a URL outside the repo.
 A rejected merge records what to leave out, in the start marker:
 
 ```markdown
-<!-- zuko:start skip=install,features — generated from docs/overview.md; edit that file, not this block -->
+<!-- zuko:start skip=install,features — generated from OVERVIEW.md; edit that file, not this block -->
 ```
 
 Keys: `what`, `install`, `features`, `docs`. The skip list is the user's decision and
@@ -169,14 +169,14 @@ render-readme-block.sh --write    replace the text between the markers in README
 render-readme-block.sh --check    compare; exit 1 if README.md's block differs
 ```
 
-Reads `docs/overview.md` and `README.md` under `$CLAUDE_PROJECT_DIR` (else `$PWD`).
+Reads `OVERVIEW.md` and `README.md` under `$CLAUDE_PROJECT_DIR` (else `$PWD`).
 
 | Exit | Meaning                         | Message (stderr)                                                                                                                                                                           |
 | ---- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0    | printed, written, or up to date | `README.md  zuko block up to date` (`--check`) · `README.md  zuko block rewritten` (`--write`)                                                                                             |
 | 1    | stale (`--check` only)          | `README.md  zuko block is stale — run render-readme-block.sh --write` then a unified diff, capped at 40 lines                                                                              |
 | 1    | no markers                      | `README.md  no zuko block — onboarding adds it`                                                                                                                                            |
-| 2    | cannot render                   | `docs/overview.md  missing` · `docs/overview.md  no "## Run it" table` · `README.md  zuko:start without zuko:end` · `README.md  two zuko blocks` · `README.md  unknown skip key "licence"` |
+| 2    | cannot render                   | `OVERVIEW.md  missing` · `OVERVIEW.md  no "## Run it" table` · `README.md  zuko:start without zuko:end` · `README.md  two zuko blocks` · `README.md  unknown skip key "licence"` |
 
 `--write` touches nothing outside the markers and nothing at all when it would exit 2.
 Exit 2 is never a pass, for `--check` either.
@@ -185,13 +185,13 @@ Exit 2 is never a pass, for `--check` either.
 
 `verify-ship-gates.sh` runs `render-readme-block.sh --check` and adds its message to the
 problems list on any non-zero exit; on 0 it prints the scope line
-`README: zuko block matches docs/overview.md`.
+`README: zuko block matches OVERVIEW.md`.
 
 ### Onboarding merge proposal (terminal)
 
 ```
 README.md overlaps the zuko block:
-  ## Install (lines 41-52)  →  moves into overview.md "Run it": install "pip install -e ."
+  ## Install (lines 41-52)  →  moves into OVERVIEW.md "Run it": install "pip install -e ."
 Proposed README.md change:
   - lines 41-52 (## Install)
   + zuko block at line 41
@@ -207,7 +207,7 @@ any `#` level). The list is closed and lives in `references/onboard.md`.
 
 ### Approach
 
-Rendering is a pure function from `docs/overview.md` to text, written in Python because
+Rendering is a pure function from `OVERVIEW.md` to text, written in Python because
 it parses Markdown tables and must rewrite a file byte-exactly outside the markers —
 both fragile in bash. It sits in `scripts/lib/` beside `git-command.py` and is called
 through a thin bash entry point, the same pattern as `block-dangerous.sh:14`. The gate
@@ -226,14 +226,14 @@ flowchart LR
         OB[references/onboard.md<br/>overlap list, merge proposal] -- "--write" --> SH
         SP[skills/ship/SKILL.md<br/>branch + close-out] -- "--write" --> SH
     end
-    PY -- reads --> OV[(docs/overview.md)]
+    PY -- reads --> OV[(OVERVIEW.md)]
     PY -- "reads, rewrites between markers" --> RM[(README.md)]
 ```
 
 ```mermaid
 sequenceDiagram
     participant S as /ship close-out
-    participant O as docs/overview.md
+    participant O as OVERVIEW.md
     participant R as render-readme-block.sh
     participant M as README.md
     participant G as ship gate (next branch)
@@ -288,7 +288,7 @@ No new dependency: Python 3 standard library only, already required by
 | **Load**             | Two small files read per call; runs in well under a second                                                                                                                             |
 | **Breaks first**     | A hand-edited overview table the parser cannot read — exits 2 naming the file and table, never renders a partial block                                                                 |
 | **Security surface** | Writes only README.md, only between the markers; no network; no shell-out from the renderer. Rendered text comes from the repo's own overview, and the block never adds an outside URL |
-| **Proof it works**   | `verify-ship-gates.sh` prints `README: zuko block matches docs/overview.md` on the PR branch                                                                                           |
+| **Proof it works**   | `verify-ship-gates.sh` prints `README: zuko block matches OVERVIEW.md` on the PR branch                                                                                           |
 | **Rollout**          | No flag. Rollback: revert the merge commit; the block stays in READMEs as plain text and stops being checked                                                                           |
 
 ### Test plan
