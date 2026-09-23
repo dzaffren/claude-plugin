@@ -5,3 +5,6 @@ __pycache__/
 .agents/skills/
 .claude/skills/
 .claude/settings.json
+
+# Visual pages are generated from the Markdown specs.
+docs/specs/.pages/
