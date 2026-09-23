@@ -3,7 +3,8 @@
 The first time zuko works in a repo, it writes down what the project is. Two
 files: `OVERVIEW.md` at the repo root and `docs/ARCHITECTURE.md`. The user
 corrects them once; every later session loads the overview at start, and
-`/ship` keeps both current.
+`/ship` keeps both current. `README.md` gets a block rendered from the
+overview, so the two never drift apart.
 
 ## When
 
@@ -15,11 +16,12 @@ stage does any of its own work, then carry on with that stage.
 there.
 
 `OVERVIEW.md` exists but still says `**Status:** Draft` → onboarding was
-interrupted. Do not rewrite it: go straight to step 5, show the existing
-draft, and wait for approval before the stage starts.
+interrupted. Do not rewrite it: go straight to step 4, plan the README block,
+show the existing draft, and wait for approval before the stage starts.
 
 Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
-change it after that.
+change it after that. One exception: `/ship` runs step 4 and the README part
+of step 7 alone for a repo onboarded before the README block existed.
 
 ## 1. Read, in this order
 
@@ -137,12 +139,69 @@ No manifest, a commit or two, nothing to read from:
 - Context diagram: the one product node, nothing else.
 - Components: the section says "none yet" — no diagram, no table.
 
-## 4. Ignore the pages folder
+## 4. Plan the README block
+
+`README.md` carries one block between two markers, rendered from `OVERVIEW.md`
+by `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh`: what it does,
+install and run, features, docs. The block links only to files in the repo —
+never the hub page, which most readers cannot open.
+
+This step reads `OVERVIEW.md`, so it runs after step 2. Plan the change here;
+write nothing to `README.md` until the user approves in step 7.
+
+**Overlap.** A README section overlaps the block when its heading is one of
+these, case-insensitive, at any `#` level. The list is closed: every other
+heading is the user's and stays.
+
+| Heading                                                | Skip key   |
+| ------------------------------------------------------ | ---------- |
+| Install, Installation, Getting started, Usage, Running | `install`  |
+| Features                                               | `features` |
+| Documentation, Docs                                    | `docs`     |
+
+A section runs from its heading to the line before the next heading of the
+same or higher level (as many `#` or fewer), or to the end of the file. A `#`
+line inside a code fence is not a heading.
+
+**Placement.** On a merge, the block stands where the first overlapping
+section started. Otherwise it goes after the first `# ` title and the
+paragraph under it — the first run of non-blank lines after the title, unless
+that run is a heading. No `# ` title → the top of the file. One blank line
+sits between the block and the text on either side.
+
+**Merge proposal.** For each overlapping section, name the facts the block
+would carry and where each lands in `OVERVIEW.md` — an install command goes in
+the "Run it" table. A fact with no place in the overview, such as a
+hand-written feature list on a repo with no Shipped slices, is named as
+dropped, so the user sees it before approving. Print this with the draft in
+step 6:
+
+```
+README.md overlaps the zuko block:
+  ## Install (lines 41-52)  →  moves into OVERVIEW.md "Run it": install "pip install -e ."
+Proposed README.md change:
+  - lines 41-52 (## Install)
+  + zuko block at line 41
+Everything else in README.md is unchanged. Approve, or reject to keep ## Install and
+skip "install" in the block.
+```
+
+**No overlap** → the block goes by the placement rule, with no skip list.
+
+**No `README.md`** → plan a new one: `# {project name}`, a blank line, the
+block. With no Shipped slices, its Features section reads "Nothing shipped
+yet". Add `README.md` to the overview's `## More` line.
+
+**Skip keys:** `what`, `install`, `features`, `docs`. Onboarding writes a skip
+list only when the user rejects the merge. After that the list is the user's
+decision: only a hand edit of the start marker changes it.
+
+## 5. Ignore the pages folder
 
 If `.gitignore` has no `docs/specs/.pages/` line, add it. The visual pages and
 the hub page are written there and are never committed.
 
-## 5. Show the draft and wait
+## 6. Show the draft and wait
 
 Print this, filled from what you actually read:
 
@@ -153,6 +212,8 @@ Wrote (Draft):
   docs/ARCHITECTURE.md   2 components
 Commands found: test "pytest" (pyproject.toml) · lint "ruff check ." (pyproject.toml)
 Not found: run command — marked "not set up yet"
+On approval:
+  README.md         zuko block after line 3; nothing else changes
 
 Check both files. Say what to change, or "approve" to mark them Active and carry on
 with /spec export-csv.
@@ -160,16 +221,46 @@ with /spec export-csv.
 
 - Every command listed names the file it came from.
 - Every `not set up yet` cell appears on the `Not found:` line.
+- The `README.md` line says where the block goes, or reads
+  `new — title and zuko block` when there is no README. When README.md
+  overlaps, print the merge proposal from step 4 in its place.
 - The last line names the stage the user actually ran, with its argument.
 
 Then stop. Do not start the stage until the user answers. A wrong overview
 loads into every later session, so this one check is worth the wait.
 
-## 6. Approve
+## 7. Approve
 
 - Corrections → apply them, show what changed, wait again.
-- "approve" → set `**Status:** Active` in both files, then commit what
-  onboarding wrote — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and `.gitignore` if
-  it changed — as `docs: onboard this repo`. On `main` or `master`, commit
-  nothing: leave the files for the stage's own branch to carry, and say so.
+- "approve" → set `**Status:** Active` in both files, write the README block
+  (below), then commit what onboarding wrote — `OVERVIEW.md`,
+  `docs/ARCHITECTURE.md`, `README.md`, and `.gitignore` if it changed — as
+  `docs: onboard this repo`. On `main` or `master`, commit nothing: leave the
+  files for the stage's own branch to carry, and say so.
+- The user can approve the overview and reject the README merge in one answer
+  ("approve, keep my Install section").
 - Then carry on with the stage the user ran, from its first step.
+
+**Writing the README block.** The empty marker pair is these two lines:
+
+```markdown
+<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->
+<!-- zuko:end -->
+```
+
+- **Merge approved** → write each moved fact into `OVERVIEW.md` first — the
+  install command into the "Run it" table. Then replace the overlapping
+  sections with the empty marker pair, at the first one's place.
+- **Merge rejected** → leave the user's sections exactly as they were. Insert
+  the marker pair by the placement rule, with a `skip=` list holding the skip
+  key of each overlapping section, each key once, joined by `,`:
+  `<!-- zuko:start skip=install — generated from OVERVIEW.md; edit that file, not this block -->`.
+- **No overlap** → insert the empty marker pair by the placement rule.
+- **No `README.md`** → create it: `# {project name}`, a blank line, the empty
+  marker pair.
+
+Then run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write`. The
+block is always rendered, never typed: write nothing between the markers by
+hand. Every line outside the replaced sections stays unchanged. The script
+exits non-zero → show its message, fix the overview if that is the cause, and
+do not commit `README.md` until it exits 0.
