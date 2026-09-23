@@ -1,6 +1,6 @@
 # Auto-onboard
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 1
 **Depends on:** None
@@ -409,6 +409,8 @@ The e2e test in chunk B calls `load-overview.sh` from chunk A, so B merges after
 | O6  | Does the overview replace the README?                                            | assumption | spec p1   | user   | Resolved      | No. README keeps a zuko-managed block generated from the overview — slice 1b `readme-block`                                                               |
 | O7  | Skill-prose behaviour (what the draft says) cannot be proven by the bash harness | flag       | spec p1   | claude | Accepted risk | Scripts, gates and file shape are tested; draft content is proven by one real run on this repo during /build, output shown to the user. Agreed 2026-09-24 |
 | O8 | Slices table needs a one-line description per slice for the README block | question | spec p1 (readme-block) | user | Resolved | Add a "What it does" column; `/ship` fills it from the spec's two-line summary when it adds the row |
+| O9 | Scenario 4 assumes a slices row already says Refined, but no stage adds a row before /ship | flag | build | claude | Resolved | Onboarding lists existing specs as rows; /ship adds the row if missing. /spec adding a row at pause 3 is not in this slice |
+| O10 | Brownfield repo with no specs: "Nothing shipped yet" would be false | flag | build | claude | Resolved | Brownfield says "No slices yet — earlier work is in git history (N commits, tags first..last)"; an existing docs/ARCHITECTURE.md is left untouched and named in the message |
 
 ## Glossary
 
