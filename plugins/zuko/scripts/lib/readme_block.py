@@ -160,7 +160,7 @@ def sections(project):
     path = os.path.join(project, "OVERVIEW.md")
     if not os.path.isfile(path):
         raise CannotRender("OVERVIEW.md  missing")
-    with open(path, encoding="utf-8") as handle:
+    with open(path, encoding="utf-8", errors="replace") as handle:
         lines = handle.read().splitlines()
     visible = visible_lines(lines)
 
@@ -248,22 +248,30 @@ def find_block(readme):
     Returns (inner start, inner end, start marker line, line ending): the byte
     range between the two marker lines, the start marker as text, and the
     ending the start marker line uses, so a rewrite keeps the file's style.
+    A second marker of either kind is never guessed past: it exits 2.
     """
-    start = end = None
+    starts, ends = [], []
     offset = 0
-    for raw in readme.splitlines(keepends=True):
+    for number, raw in enumerate(readme.splitlines(keepends=True), 1):
         line = raw.rstrip(b"\r\n")
         text = line.decode("utf-8", "replace")
-        if start is None and text.startswith("<!-- zuko:start"):
-            start = (offset, raw, line)
-        elif start is not None and text.rstrip() == END:
-            end = offset
-            break
+        if text.startswith("<!-- zuko:start"):
+            starts.append((number, offset, raw, line))
+        elif text.rstrip() == END:
+            ends.append((number, offset))
         offset += len(raw)
-    if start is None:
+    for found, kind in ((starts, "zuko:start"), (ends, "zuko:end")):
+        if len(found) > 1:
+            raise CannotRender("README.md  two zuko blocks — %s at lines %d and %d"
+                               % (kind, found[0][0], found[1][0]))
+    if not starts and not ends:
         raise NoBlock("README.md  no zuko block — onboarding adds it")
-    begin, raw, line = start
-    return (begin + len(raw), end, line.decode("utf-8", "replace"),
+    if not starts:
+        raise CannotRender("README.md  zuko:end without zuko:start")
+    number, begin, raw, line = starts[0]
+    if not ends or ends[0][0] < number:
+        raise CannotRender("README.md  zuko:start without zuko:end")
+    return (begin + len(raw), ends[0][1], line.decode("utf-8", "replace"),
             raw[len(line):].decode())
 
 
@@ -274,11 +282,15 @@ def main(argv):
     project, mode = argv[1], (argv[2:] or [None])[0]
     path = os.path.join(project, "README.md")
     try:
-        with open(path, "rb") as handle:
-            readme = handle.read()
-    except FileNotFoundError:
-        readme = b""
-    try:
+        # A symlink could point anywhere on disk; never read or write through one.
+        for name in ("README.md", "OVERVIEW.md"):
+            if os.path.islink(os.path.join(project, name)):
+                raise CannotRender("%s  is a symlink — not read" % name)
+        try:
+            with open(path, "rb") as handle:
+                readme = handle.read()
+        except FileNotFoundError:
+            readme = b""
         try:
             inner_start, inner_end, start, eol = find_block(readme)
         except NoBlock:
@@ -296,14 +308,14 @@ def main(argv):
     if mode is None:
         sys.stdout.buffer.write(("\n".join(lines) + "\n").encode("utf-8"))
         return 0
-    inner = "".join(line + eol for line in lines[1:-1]).encode("utf-8")
+    rendered = "".join(line + eol for line in lines[1:-1])
     if mode == "--write":
         with open(path, "wb") as handle:
-            handle.write(readme[:inner_start] + inner + readme[inner_end:])
+            handle.write(readme[:inner_start] + rendered.encode("utf-8")
+                         + readme[inner_end:])
         sys.stderr.write("README.md  zuko block rewritten\n")
         return 0
     current = readme[inner_start:inner_end].decode("utf-8", "replace")
-    rendered = inner.decode("utf-8")
     if normalised(current) != normalised(rendered):
         sys.stderr.write("README.md  zuko block is stale — run render-readme-block.sh --write\n")
         for line in stale_diff(current, rendered):

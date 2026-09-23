@@ -317,4 +317,74 @@ expect_exit 2 "$status" "skip=licence --check: exits 2"
 render "$dir"
 expect_exit 2 "$status" "skip=licence print: exits 2"
 
+# Every input that cannot render: exit 2 on every mode, its message, and
+# --write leaves README.md byte-identical.
+cannot_render() {   # cannot_render <dir> <message-regex> <label>
+  cp "$1/README.md" "$1/before"
+  local mode
+  for mode in --write --check ""; do
+    render "$1" $mode
+    expect_exit 2 "$status" "$3 ${mode:-print}: exits 2"
+    expect_match "$2" "$out" "$3 ${mode:-print}: says why"
+  done
+  expect_match '^yes$' "$(same_bytes "$1/before" "$1/README.md")" "$3: README.md byte-identical"
+}
+
+start_line='<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->'
+
+dir=$(mktemp -d -p "$work"); write_invoice_readme "$dir"
+cannot_render "$dir" '^OVERVIEW\.md  missing$' "no overview"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+sed '/^## Run it$/,/^## Where/{/^|/d;}' "$dir/OVERVIEW.md" >"$dir/o"; mv "$dir/o" "$dir/OVERVIEW.md"
+cannot_render "$dir" '^OVERVIEW\.md  no "## Run it" table$' "no Run it table"
+
+# A Run it table inside a fence is an example, not the table.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+sed -e '/^| Task/i\
+```' -e '/^| lint/a\
+```' "$dir/OVERVIEW.md" >"$dir/o"; mv "$dir/o" "$dir/OVERVIEW.md"
+expect_match '^```$' "$(cat "$dir/OVERVIEW.md")" "fenced table: the fixture really has a fence"
+cannot_render "$dir" '^OVERVIEW\.md  no "## Run it" table$' "fenced Run it table"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+sed 's/| What it does /| Summary      /' "$dir/OVERVIEW.md" >"$dir/o"; mv "$dir/o" "$dir/OVERVIEW.md"
+cannot_render "$dir" '^OVERVIEW\.md  cannot read the "## Slices" table: no "What it does" column$' "Slices without its column"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+sed 's/^| export-csv .*/| export-csv | Built | Export the ledger as one CSV |/' "$dir/OVERVIEW.md" >"$dir/o"; mv "$dir/o" "$dir/OVERVIEW.md"
+cannot_render "$dir" '^OVERVIEW\.md  cannot read the "## Slices" table: line [0-9]+ has 3 cells, the header 4$' "a short Slices row"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"
+printf '# invoice-cli\n\n%s\n\n## License\n' "$start_line" >"$dir/README.md"
+cannot_render "$dir" '^README\.md  zuko:start without zuko:end$' "start without end"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"
+printf '# invoice-cli\n%s\n\n## License\n' '<!-- zuko:end -->' >"$dir/README.md"
+cannot_render "$dir" '^README\.md  zuko:end without zuko:start$' "end without start"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"
+printf '# invoice-cli\n%s\n%s\ntext\n%s\n%s\n' "$start_line" '<!-- zuko:end -->' "$start_line" '<!-- zuko:end -->' >"$dir/README.md"
+cannot_render "$dir" '^README\.md  two zuko blocks — zuko:start at lines 2 and 5$' "two blocks"
+
+# README.md or OVERVIEW.md as a symlink could reach anywhere on disk.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+mv "$dir/README.md" "$dir/real.md"; ln -s "$dir/real.md" "$dir/README.md"
+cp "$dir/real.md" "$dir/real.before"
+cannot_render "$dir" '^README\.md  is a symlink — not read$' "symlinked README"
+expect_match '^yes$' "$(same_bytes "$dir/real.before" "$dir/real.md")" "symlinked README: its target is untouched"
+
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+mv "$dir/OVERVIEW.md" "$dir/real.md"; ln -s "$dir/real.md" "$dir/OVERVIEW.md"
+cannot_render "$dir" '^OVERVIEW\.md  is a symlink — not read$' "symlinked overview"
+
+# Arguments: one flag at most, and only a known one.
+dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+render "$dir" --force
+expect_exit 2 "$status" "unknown flag: exits 2"
+expect_match '^usage: render-readme-block\.sh \[--write\|--check\]$' "$out" "unknown flag: prints the usage line"
+out=$(cd "$dir" && CLAUDE_PROJECT_DIR="$dir" bash "$scripts/render-readme-block.sh" --write --check 2>&1); status=$?
+expect_exit 2 "$status" "two flags: exits 2"
+expect_match '^usage: ' "$out" "two flags: prints the usage line"
+
 rm -rf "$work"
