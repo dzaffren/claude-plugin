@@ -17,7 +17,7 @@ shippable on its own.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before writing anything.
 
-If `OVERVIEW.md` is missing at the repo root, follow
+If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
 
 **Never assume.** Every claim in the shape doc comes from the user or the

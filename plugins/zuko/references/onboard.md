@@ -14,8 +14,12 @@ stage does any of its own work, then carry on with that stage.
 `/status` and `/learn` never onboard. They report "not onboarded" and stop
 there.
 
-Once `OVERVIEW.md` exists — Draft or Active — do not onboard again. Only
-`/ship` and hand edits change it after that.
+`OVERVIEW.md` exists but still says `**Status:** Draft` → onboarding was
+interrupted. Do not rewrite it: go straight to step 5, show the existing
+draft, and wait for approval before the stage starts.
+
+Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
+change it after that.
 
 ## 1. Read, in this order
 
@@ -78,6 +82,9 @@ README.md · docs/ARCHITECTURE.md
   Makefile target, a CI step. Nothing found → the cell reads `not set up yet`.
   Never guess a command that looks right.
 - **Where things are:** paths as pointers, one line each. Never paste code.
+- **Slices:** the first cell of each row is the spec's file name without
+  `.md` — `docs/specs/export-csv.md` → `export-csv`. The ship gate matches
+  that name exactly.
 - **Slices:** one row per existing `docs/specs/*.md`, with its status and page
   link. None → one row, `none yet`, in every cell but the first, under the
   line "Nothing shipped yet" on a greenfield repo, or "No slices yet — earlier
@@ -161,5 +168,8 @@ loads into every later session, so this one check is worth the wait.
 ## 6. Approve
 
 - Corrections → apply them, show what changed, wait again.
-- "approve" → set `**Status:** Active` in both files, then carry on with the
-  stage the user ran, from its first step.
+- "approve" → set `**Status:** Active` in both files, then commit what
+  onboarding wrote — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and `.gitignore` if
+  it changed — as `docs: onboard this repo`. On `main` or `master`, commit
+  nothing: leave the files for the stage's own branch to carry, and say so.
+- Then carry on with the stage the user ran, from its first step.

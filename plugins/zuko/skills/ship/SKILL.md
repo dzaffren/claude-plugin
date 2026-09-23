@@ -16,7 +16,7 @@ here is guessed — every gate is checked, not assumed.
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
 `${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
 
-If `OVERVIEW.md` is missing at the repo root, follow
+If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
 
 ## Current state
@@ -32,12 +32,16 @@ The gate below reads what this step writes, so it runs first.
 
 - `OVERVIEW.md` slices table: set this slice's row to `Built`, with the spec's
   page link and a "What it does" line taken from the spec's two-line summary.
-  No row yet → add one, and drop a `none yet` row if there is one.
+  The row's first cell is the spec's file name without `.md` —
+  `docs/specs/export-csv.md` → `export-csv` — because that is what the gate
+  matches. No row yet → add one, and drop a `none yet` row if there is one.
 - `docs/ARCHITECTURE.md`: when the spec's pause 3 added or changed a
   component, update the components diagram and add or edit its table row —
   folder and one line saying what it does.
 - Set `**Updated:**` on each file you changed to today, `by /ship {slice}`.
 - Keep `OVERVIEW.md` at 150 lines or fewer. Over → trim it before the gate.
+- Commit these files on the branch — `docs(overview): mark {slice} built`. The
+  gate fails on an uncommitted tree, so this commit comes before it.
 
 ## The gates
 
@@ -54,7 +58,7 @@ what a script cannot:
 | No secrets | Nothing key-shaped in the diff |
 | Open items | Zero rows still `Open` |
 | Spec matches code | The plan describes what was actually built |
-| Scope | No files changed that the plan did not name |
+| Scope | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md` — are exempt |
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
 proceed on a "probably fine".
@@ -121,11 +125,12 @@ saying out loud.
 
 ## Close out
 
-- Spec Status → `Shipped`. In the same commit, flip this slice's row in the
-  `OVERVIEW.md` slices table to `Shipped`.
+- Flip this slice's row in the `OVERVIEW.md` slices table to `Shipped`.
 - Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
-  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add
-  `hub page: {url}` to the overview's `## More` line in that same commit.
+  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
+  `hub page: {url}` it returns to the overview's `## More` line.
+- Spec Status → `Shipped`, then one commit carrying the spec, the row, and any
+  hub link. The hub is published first because its link only exists after.
 - Capture lessons to `docs/learnings/` silently.
 - **Graduation:** a component from this slice that is now used in two or more
   slices, or that the user promotes, moves into the design system. Ask first,
