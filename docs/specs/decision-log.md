@@ -1,6 +1,6 @@
 # Decision log
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2
 **Depends on:** `auto-onboard` — onboarding creates the file, the session loader gains its titles
@@ -355,6 +355,7 @@ B merges after A. Builds after `readme-block` — all three slices edit
 | O4  | Who approves an entry, and when | assumption | spec p1   | claude | Resolved | The user, in the pause the choice came from; unapproved entries are dropped with the rest of that pause   |
 | O5  | Too many scenarios              | flag       | spec p1   | user   | Resolved | ADR seeding moved to slice 2b                                                                             |
 | O6  | File name and place             | question   | spec p1   | user   | Resolved | `DECISIONS.md` at the repo root (shape O11)                                                               |
+| O7  | Scenario 1 not proven by a real run | flag       | build     | user   | Open     | The plan named a real `/spec` pause 3 during `/build`; no slice was at pause 3, and skills edited this session do not load until the next one. Scenarios 2 to 5 are proven |
 
 ## Glossary
 

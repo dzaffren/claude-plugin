@@ -63,3 +63,6 @@ One line per lesson. Loaded into every session in this repo.
 - A run-once step that gains an artifact a gate requires needs a backfill path
   in a recurring stage, or repos onboarded earlier can never pass.
   ([detail](run-once-steps-need-a-backfill-path.md))
+- Integrate a chunk's worktree branch by cherry-pick — a merge commit's
+  subject fails the ship gate's naming check.
+  ([detail](integrate-chunks-without-merge-commits.md))
