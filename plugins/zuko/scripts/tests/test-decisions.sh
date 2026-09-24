@@ -239,4 +239,17 @@ check "$repo" deadbeefdeadbeef
 expect_exit 2 "$check_status" "check bad base: exits 2"
 expect_match "^decisions\.py: base 'deadbeefdeadbeef' is not a commit$" "$check_out" "check bad base: names the ref"
 
+# 23. The project is a subfolder of the git repo: its recorded entries are
+# still protected.
+repo=$(mktemp -d -p "$work")
+git -C "$repo" init -q -b main; git -C "$repo" config user.email t@example.com; git -C "$repo" config user.name Tester
+mkdir "$repo/app"; header "$repo/app/DECISIONS.md"; entry "$repo/app/DECISIONS.md" 1 "First"
+git -C "$repo" add -A; git -C "$repo" commit -q --no-verify -m "docs: record D1"
+git -C "$repo" checkout -q -b feat/sub
+rewrite "$repo/app/DECISIONS.md" '{ sub(/^Why: reason number 1,/, "Why: a new reason 1,"); print }'
+git -C "$repo" commit -q --no-verify -am "docs: edit D1"
+check "$repo/app" main
+expect_exit 1 "$check_status" "check subfolder: an edited entry fails"
+expect_match '^DECISIONS\.md  D1 changed after it was recorded' "$check_out" "check subfolder: names D1"
+
 rm -rf "$work"

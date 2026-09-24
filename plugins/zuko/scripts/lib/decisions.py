@@ -223,7 +223,8 @@ def check(project, base, label):
 
     entries, bad_headings = parse(read(project))
     problems = structure(entries, bad_headings)
-    shown = git(project, "show", "%s:%s" % (base, NAME))
+    # "./" resolves from the project dir, which may sit below the repo root.
+    shown = git(project, "show", "%s:./%s" % (base, NAME))
     if shown.returncode == 0:
         problems += history(parse(shown.stdout)[0], entries)
 
