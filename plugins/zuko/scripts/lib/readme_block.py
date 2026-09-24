@@ -143,6 +143,9 @@ def description(lines, visible):
         body.pop(0)
     while body and not body[-1].strip():
         body.pop()
+    # Copied as is, a marker line here would become a second marker in README.
+    if any(line.startswith("<!-- zuko:start") or line.rstrip() == END for line in body):
+        raise CannotRender("OVERVIEW.md  description holds a zuko marker line")
     return body
 
 

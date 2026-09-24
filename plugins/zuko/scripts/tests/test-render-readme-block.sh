@@ -367,6 +367,14 @@ dir=$(mktemp -d -p "$work"); write_overview "$dir"
 printf '# invoice-cli\n%s\n%s\ntext\n%s\n%s\n' "$start_line" '<!-- zuko:end -->' "$start_line" '<!-- zuko:end -->' >"$dir/README.md"
 cannot_render "$dir" '^README\.md  two zuko blocks — zuko:start at lines 2 and 5$' "two blocks"
 
+# A marker line in the description would become a second marker in README.md,
+# and no later --write could repair it.
+for marker in '<!-- zuko:end -->' "$start_line"; do
+  dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
+  awk -v m="$marker" '{ print } /^\*\*Status:\*\*/ { print ""; print m }' "$dir/OVERVIEW.md" >"$dir/o"; mv "$dir/o" "$dir/OVERVIEW.md"
+  cannot_render "$dir" '^OVERVIEW\.md  description holds a zuko marker line$' "marker in description (${marker:5:10})"
+done
+
 # README.md or OVERVIEW.md as a symlink could reach anywhere on disk.
 dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
 mv "$dir/README.md" "$dir/real.md"; ln -s "$dir/real.md" "$dir/README.md"
