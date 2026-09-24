@@ -73,7 +73,13 @@ Publish as a Claude Design canvas so the user can drag and edit rather than
 describe. Say which mode they are in — hand-editable and saveable, or
 view-and-export only.
 
-**Stop.** Wrong feel → back to pause A, not forward.
+Draft a D-entry per `${CLAUDE_PLUGIN_ROOT}/references/decisions.md` for the
+direction chosen, with the rejected directions and why each lost, and
+`docs/design/system-brief.md` as its Source. Show it with the canvas. No
+other direction was on the table → no entry.
+
+**Stop.** Wrong feel → back to pause A, not forward, and the draft is dropped.
+Approved → append the entry to `DECISIONS.md`.
 
 ## Pause C — the primitive set
 

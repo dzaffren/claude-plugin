@@ -62,6 +62,12 @@ Write down:
 - The evidence: the output, the number, the error, the code path you saw.
 - What this changes about the plan.
 
+The spike picked one option over another → draft a D-entry per
+`${CLAUDE_PLUGIN_ROOT}/references/decisions.md` and show it with the answer.
+Its Source is the spec whose ledger row the spike answers — the spike branch
+is about to be deleted. It is appended to `DECISIONS.md` only when the user
+approves the answer.
+
 ### 5. Delete the code
 
 `git checkout` back and delete the spike branch. No exceptions — a spike

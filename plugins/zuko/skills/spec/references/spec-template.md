@@ -90,6 +90,8 @@ _(added at pause 3)_
 
 {Two or three sentences.}
 
+Relies on: {D-entries from DECISIONS.md this plan depends on, or none}
+
 ```mermaid
 flowchart TB
     subgraph client

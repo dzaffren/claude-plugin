@@ -48,7 +48,9 @@ keep moving, it writes an `assumption` row first. The assumption still gets
 used — work continues — but it is now visible and owed an answer.
 
 **2. Rows are never deleted.** A resolved row is the decision record. Six
-months later it answers "why did we do it this way".
+months later it answers "why did we do it this way". A row resolved as a
+choice between options — one picked, another rejected — also drafts a D-entry
+per `decisions.md`, shown and approved in the same pause.
 
 **3. Resume starts with the ledger.** `/spec continue` prints the Open rows
 first and works through them. Resolved rows stay resolved and are not
