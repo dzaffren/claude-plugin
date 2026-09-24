@@ -231,3 +231,22 @@ expect_match 'D1 says "superseded by D2", but D2 does not say "Supersedes: D1"' 
 mv "$repo/DECISIONS.md" "$repo/DECISIONS.gone"
 check_out=$(python3 "$decisions" check "$repo" 2>&1)
 expect_exit 1 "$?" "no base: a missing file fails"
+
+# Two files with one number: which one "0002" means is unknowable, so neither seeds.
+repo=$(new_repo)
+mkdir -p "$repo/docs/adr"
+adr "$repo/docs/adr/0001-a.md" "Accepted" 2025-01-01
+adr "$repo/docs/adr/0002-b.md" "Accepted" 2025-02-01
+adr "$repo/docs/adr/0002-c.md" "Accepted" 2025-02-02
+adr "$repo/docs/adr/0003-d.md" "Superseded by ADR-0002" 2025-03-01
+adr "$repo/docs/adr/0004-e.md" "Accepted" 2025-04-01
+scan "$repo"
+dups=$(printf '%s' "$scan_out" | python3 -c '
+import json, sys
+for adr in json.load(sys.stdin):
+    print(adr["file"], adr["d"], adr["skip_reason"], sep=" | ")' 2>&1)
+expect_match '^docs/adr/0002-b\.md \| None \| number 0002 is used by 2 files$' "$dups" "shared number: first file not seeded"
+expect_match '^docs/adr/0002-c\.md \| None \| number 0002 is used by 2 files$' "$dups" "shared number: second file not seeded"
+expect_match '^docs/adr/0003-d\.md \| None \| Superseded by 0002, which is not seeded$' "$dups" \
+  "shared number: an ADR superseded by it is not seeded"
+expect_match '^docs/adr/0004-e\.md \| 2 \| None$' "$dups" "shared number: D-numbers stay unique"

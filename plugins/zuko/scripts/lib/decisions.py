@@ -382,8 +382,14 @@ def adr_scan(project, folder):
     def padded(n, like):   # an ADR number the way this repo writes it: 0003, 003
         return "%0*d" % (len(re.match(r"\d+", os.path.basename(like["file"])).group()), n)
 
+    uses = {}
     for adr in adrs:
-        if adr["status"] is None:
+        uses[adr["adr"]] = uses.get(adr["adr"], 0) + 1
+    for adr in adrs:
+        if uses[adr["adr"]] > 1:
+            # Which file "superseded by 0002" means is unknowable, so neither seeds.
+            adr["skip_reason"] = "number %s is used by %d files" % (padded(adr["adr"], adr), uses[adr["adr"]])
+        elif adr["status"] is None:
             adr["skip_reason"] = "no status"
         elif adr["status"] not in ("accepted", "superseded"):
             adr["skip_reason"] = adr["status"].capitalize() if adr["status"] in WORDS else adr["status"]
