@@ -175,7 +175,7 @@ Reads `OVERVIEW.md` and `README.md` under `$CLAUDE_PROJECT_DIR` (else `$PWD`).
 | 0    | printed, written, or up to date | `README.md  zuko block up to date` (`--check`) · `README.md  zuko block rewritten` (`--write`)                                                                                   |
 | 1    | stale (`--check` only)          | `README.md  zuko block is stale — run render-readme-block.sh --write` then a unified diff, capped at 40 lines                                                                    |
 | 1    | no markers                      | `README.md  no zuko block — onboarding adds it`                                                                                                                                  |
-| 2    | cannot render                   | `OVERVIEW.md  missing` · `OVERVIEW.md  no "## Run it" table` · `README.md  zuko:start without zuko:end` · `README.md  two zuko blocks` · `README.md  unknown skip key "licence"` |
+| 2    | cannot render                   | `OVERVIEW.md  missing` · `OVERVIEW.md  no "## Run it" table` · `README.md  zuko:start without zuko:end` · `README.md  two zuko blocks` · `README.md  unknown skip key "licence"` · added in build: `OVERVIEW.md  no **Status:** line` · `OVERVIEW.md  cannot read the "## …" table: …` · `README.md  zuko:end without zuko:start` · `README.md` or `OVERVIEW.md  is a symlink — not read` · added in review: `OVERVIEW.md  description holds a zuko marker line` |
 
 `--write` touches nothing outside the markers and nothing at all when it would exit 2.
 Exit 2 is never a pass, for `--check` either.
