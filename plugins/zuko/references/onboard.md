@@ -35,7 +35,9 @@ old entry's Status line ever changes.
 
 The ship gate fails a branch without it. Entries are drafted per
 `decisions.md`, never at onboarding. Created outside onboarding → the stage's
-own branch carries it.
+own branch carries it. A stage only reads this file while `OVERVIEW.md` is
+missing or Draft, so for a repo already Active, `/ship` creates the file
+before its gate.
 
 ## 1. Read, in this order
 
