@@ -79,12 +79,12 @@ Skip entirely on the light path. Skip when the slice has no interface at all.
 This is the interface stage, not the pixels stage. What it covers depends on
 the project type — see the table in `slicing.md`:
 
-| Project type | Design here |
-|---|---|
-| Web UI | screens, states, motion |
-| API / service | endpoint shape, payloads, status codes, error bodies |
-| CLI / library | command surface, flags, output format, help text, errors |
-| Data / LLM app | input and output contract, prompt shape, failure modes |
+| Project type   | Design here                                              |
+| -------------- | -------------------------------------------------------- |
+| Web UI         | screens, states, motion                                  |
+| API / service  | endpoint shape, payloads, status codes, error bodies     |
+| CLI / library  | command surface, flags, output format, help text, errors |
+| Data / LLM app | input and output contract, prompt shape, failure modes   |
 
 ### For web UI
 
@@ -167,11 +167,21 @@ For trade-offs and acceptable risk, ask — never assume.
 our load" — is an `unproven` ledger row, and you offer `/poc` to settle it
 before writing the plan as fact. Do not write a confident plan on a guess.
 
+**Check the decisions.** Read
+`${CLAUDE_PLUGIN_ROOT}/references/decisions.md`, then the active entries:
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/decisions.py" active .` — before
+proposing anything. The plan would use an option an active entry rejected →
+cite the entry ("D7 rejected SQLite for whole-file write locks") and ask
+whether to supersede it. Never propose it as new. Each choice this plan makes
+that rejected an option gets a drafted entry; a choice with nothing rejected
+gets none.
+
 **Write the Technical plan section** per the template:
 
 - **Approach** — a few sentences, an architecture diagram, and a sequence
   diagram of the main runtime path. Data flow diagram when data crosses a
-  trust or system boundary.
+  trust or system boundary. A `Relies on:` line naming the active entries the
+  plan depends on, including the ones drafted here.
 - **Changes** — per file, what changes and why, referencing real code as
   `path/file.ts:42`. Name the helpers being reused.
 - **Data** — ER diagram when the schema changes. Schema changes follow
@@ -191,13 +201,22 @@ before writing the plan as fact. Do not write a confident plan on a guess.
   files (types, barrel exports, lockfiles) belong to one chunk only. Small
   change → `Single chunk`.
 - **Risks** — real ones with mitigations. No filler.
+- **Decisions to record** — each drafted entry in full, as
+  `decisions.md` shows it. The spec carries them until `/build` appends them,
+  so they survive a new session.
 
 **Publish the visual page** per
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`.
 
 **Then stop.** Set Status to `Refined`. Give the spec path, the page link, and
-the plan's riskiest choice in one line. Print the ledger. Say `/build` is next.
-Do not write code.
+the plan's riskiest choice in one line. Print the ledger, then the drafted
+entries as "Decisions to record (approve with this pause)". Say `/build` is
+next. Do not write code.
+
+Running `/build` is the approval, so `/build` appends the drafted entries to
+`DECISIONS.md` — this stage never does. Corrections instead → change the
+entries in the spec with the rest of the plan; a rejected entry is deleted
+from the section.
 
 ## Versioning
 

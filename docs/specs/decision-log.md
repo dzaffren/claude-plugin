@@ -1,6 +1,6 @@
 # Decision log
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2
 **Depends on:** `auto-onboard` — onboarding creates the file, the session loader gains its titles
@@ -169,10 +169,20 @@ stands, so every entry is either fully in force or fully history.
 
 ```
 Decisions to record (approve with this pause):
-  D7  Use Postgres, not SQLite
-      Rejected: SQLite (whole-file write lock), DynamoDB (cost)
-Relies on: D2, D5
+
+## D7 · 2026-09-24 · Use Postgres, not SQLite
+
+Why: two finance users import at month end at the same time; SQLite locks the whole
+file on write.
+Rejected: SQLite (whole-file write lock), DynamoDB (cost for under 1 GB of data).
+Source: specs/import-csv.md
+Status: active
+
+Relies on: D2, D5, D7
 ```
+
+The drafted entry is shown in full, as it will be written — the file is
+append-only, so the user approves the Why and Source, not only a title.
 
 ### SessionStart output
 
@@ -279,6 +289,8 @@ onboarding creates it".
 | `plugins/zuko/references/ledger.md`                                                                                       | Rule 2 (`:50`): a row resolved as a choice between options also drafts an entry                                                                                                                                               | stage coverage                                       |
 | `plugins/zuko/references/onboard.md`                                                                                      | Create `DECISIONS.md` (title and the append-only line) when missing, on every writing stage                                                                                                                                   | gate never meets a missing file in an onboarded repo |
 | `plugins/zuko/agents/reviewer.md`, `skills/review/SKILL.md`                                                               | A fourth lens, **Decisions**: read `decisions.py active`; flag diff lines that do what an active entry rejected; report in the existing format naming the entry                                                               | scenario 5                                           |
+| `plugins/zuko/skills/build/SKILL.md` (added at review, finding C3) | Step 1: after branching, append the spec's Decisions to record to `DECISIONS.md` and commit before the first chunk | scenario 1 — pause-3 approval is running `/build` |
+| `plugins/zuko/skills/ship/SKILL.md` (added at review, finding C1) | Overview refresh: create a missing `DECISIONS.md` in a repo onboarded before it existed | the gate needs the file; onboarding never reruns |
 | `plugins/zuko/scripts/tests/test-decisions.sh` (new)                                                                      | Parser, titles, every `check` failure and pass, missing base file, missing branch file                                                                                                                                        | scenarios 2–4                                        |
 | `plugins/zuko/scripts/tests/test-verify-ship-gates.sh`, `test-e2e-naming.sh`, `test-e2e-onboard.sh`, `test-e2e-readme.sh` | Fixtures gain a valid `DECISIONS.md`                                                                                                                                                                                          | old tests keep testing what they test                |
 | `plugins/zuko/scripts/tests/test-e2e-decisions.sh` (new)                                                                  | The e2e walk below                                                                                                                                                                                                            | slice proof                                          |
@@ -347,14 +359,15 @@ B merges after A. Builds after `readme-block` — all three slices edit
 
 ## Open items
 
-| ID  | What                            | Type       | Raised at | Owner  | Status   | Answer                                                                                                    |
-| --- | ------------------------------- | ---------- | --------- | ------ | -------- | --------------------------------------------------------------------------------------------------------- |
-| O1  | Shape of the log                | question   | shape     | user   | Resolved | One file, D-entries, supersede never edit (shape O3)                                                      |
-| O2  | Session load cost               | flag       | shape     | claude | Resolved | Active titles only (shape O9)                                                                             |
-| O3  | What counts as an entry         | assumption | spec p1   | claude | Resolved | Only a choice with at least one rejected option; naming, style and reuse of existing helpers do not count |
-| O4  | Who approves an entry, and when | assumption | spec p1   | claude | Resolved | The user, in the pause the choice came from; unapproved entries are dropped with the rest of that pause   |
-| O5  | Too many scenarios              | flag       | spec p1   | user   | Resolved | ADR seeding moved to slice 2b                                                                             |
-| O6  | File name and place             | question   | spec p1   | user   | Resolved | `DECISIONS.md` at the repo root (shape O11)                                                               |
+| ID  | What                                | Type       | Raised at | Owner  | Status        | Answer                                                                                                                                                                                                                         |
+| --- | ----------------------------------- | ---------- | --------- | ------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O1  | Shape of the log                    | question   | shape     | user   | Resolved      | One file, D-entries, supersede never edit (shape O3)                                                                                                                                                                           |
+| O2  | Session load cost                   | flag       | shape     | claude | Resolved      | Active titles only (shape O9)                                                                                                                                                                                                  |
+| O3  | What counts as an entry             | assumption | spec p1   | claude | Resolved      | Only a choice with at least one rejected option; naming, style and reuse of existing helpers do not count                                                                                                                      |
+| O4  | Who approves an entry, and when     | assumption | spec p1   | claude | Resolved      | The user, in the pause the choice came from; unapproved entries are dropped with the rest of that pause                                                                                                                        |
+| O5  | Too many scenarios                  | flag       | spec p1   | user   | Resolved      | ADR seeding moved to slice 2b                                                                                                                                                                                                  |
+| O6  | File name and place                 | question   | spec p1   | user   | Resolved      | `DECISIONS.md` at the repo root (shape O11)                                                                                                                                                                                    |
+| O7  | Scenario 1 not proven by a real run | flag       | build     | user   | Accepted risk | 2026-09-24: no slice was at pause 3 during the build, and edited skills load only next session. The drafting prose was reviewed, the ship gate re-checks every entry it produces, and the next `/spec` pause 3 is the real run |
 
 ## Glossary
 

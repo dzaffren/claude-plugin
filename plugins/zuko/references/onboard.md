@@ -23,6 +23,22 @@ Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
 change it after that. One exception: `/ship` runs step 4 and the README part
 of step 7 alone for a repo onboarded before the README block existed.
 
+**`DECISIONS.md`.** Every writing stage, onboarded repo or not, checks for
+`DECISIONS.md` at the repo root and creates it when missing, holding only:
+
+```markdown
+# Decisions
+
+Append-only. A changed decision is a new entry that supersedes the old one; only an
+old entry's Status line ever changes.
+```
+
+The ship gate fails a branch without it. Entries are drafted per
+`decisions.md`, never at onboarding. Created outside onboarding → the stage's
+own branch carries it. A stage only reads this file while `OVERVIEW.md` is
+missing or Draft, so for a repo already Active, `/ship` creates the file
+before its gate.
+
 ## 1. Read, in this order
 
 1. `README.md` (or `README`, `README.rst`).
@@ -76,7 +92,7 @@ by heading, so the headings never change.
 
 ## More
 
-README.md · docs/ARCHITECTURE.md
+README.md · docs/ARCHITECTURE.md · DECISIONS.md
 ```
 
 - **Status:** `Draft` or `Active`. Nothing else.
@@ -239,9 +255,9 @@ loads into every later session, so this one check is worth the wait.
 - Corrections → apply them, show what changed, wait again.
 - "approve" → set `**Status:** Active` in both files, write the README block
   (below), then commit what onboarding wrote — `OVERVIEW.md`,
-  `docs/ARCHITECTURE.md`, `README.md`, and `.gitignore` if it changed — as
-  `docs: onboard this repo`. On `main` or `master`, commit nothing: leave the
-  files for the stage's own branch to carry, and say so.
+  `docs/ARCHITECTURE.md`, `README.md`, `DECISIONS.md`, and `.gitignore` if it
+  changed — as `docs: onboard this repo`. On `main` or `master`, commit
+  nothing: leave the files for the stage's own branch to carry, and say so.
 - The user can approve the overview and reject the README merge in one answer
   ("approve, keep my Install section").
 - Then carry on with the stage the user ran, from its first step.

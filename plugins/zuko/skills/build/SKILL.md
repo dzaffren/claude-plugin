@@ -55,6 +55,15 @@ changed since approval, and the plan's commands actually exist in this repo.
 `references/git-naming.md`. The repo's own convention wins if `CLAUDE.md`
 states one. Never build on `main` or `master`.
 
+Then record the spec's decisions on that branch — running `/build` approved
+them. Each entry under Technical plan › **Decisions to record** is appended to
+`DECISIONS.md` per `${CLAUDE_PLUGIN_ROOT}/references/decisions.md`, with the
+Status line of anything it supersedes flipped. `DECISIONS.md` grew since the
+spec was written → renumber the new entries to follow the highest, and fix
+the spec's `Relies on:` line to match. Replace the section's body with
+"Recorded as D7, D8." Commit it before the first chunk, as
+`docs: record {slice} decisions`.
+
 ### 2. Split
 
 Read the plan's **Chunks** table.
@@ -110,11 +119,11 @@ path, through every layer, following the acceptance criteria.
 
 By project type:
 
-| | The e2e test |
-|---|---|
-| Web UI | A browser test driving the real screens. Use `webapp-testing` when installed. |
-| API / service | Real requests against a running server, real database. |
-| CLI / library | Invoke the built binary, or import the built package. |
+|                | The e2e test                                                                            |
+| -------------- | --------------------------------------------------------------------------------------- |
+| Web UI         | A browser test driving the real screens. Use `webapp-testing` when installed.           |
+| API / service  | Real requests against a running server, real database.                                  |
+| CLI / library  | Invoke the built binary, or import the built package.                                   |
 | Data / LLM app | A record through the whole pipeline with fixture data. Evals where output is generated. |
 
 No harness in the repo → build it, as the plan said it would.
