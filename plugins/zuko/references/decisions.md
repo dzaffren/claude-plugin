@@ -84,7 +84,9 @@ Relies on: D2, D5, D7
 
 The user approves entries with the pause they came from. Approved → append
 them to `DECISIONS.md` as shown, and flip the Status line of anything they
-supersede. Not approved → drop them with the rest
+supersede. `/spec` pause 3 is approved by running `/build`, often in a new
+session, so its drafts live in the spec's **Decisions to record** section and
+`/build` appends them before building. Not approved → drop them with the rest
 of that pause; the user's corrections come back as a new draft.
 
 ## Reading the active entries

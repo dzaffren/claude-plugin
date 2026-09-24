@@ -79,12 +79,12 @@ Skip entirely on the light path. Skip when the slice has no interface at all.
 This is the interface stage, not the pixels stage. What it covers depends on
 the project type — see the table in `slicing.md`:
 
-| Project type | Design here |
-|---|---|
-| Web UI | screens, states, motion |
-| API / service | endpoint shape, payloads, status codes, error bodies |
-| CLI / library | command surface, flags, output format, help text, errors |
-| Data / LLM app | input and output contract, prompt shape, failure modes |
+| Project type   | Design here                                              |
+| -------------- | -------------------------------------------------------- |
+| Web UI         | screens, states, motion                                  |
+| API / service  | endpoint shape, payloads, status codes, error bodies     |
+| CLI / library  | command surface, flags, output format, help text, errors |
+| Data / LLM app | input and output contract, prompt shape, failure modes   |
 
 ### For web UI
 
@@ -201,6 +201,9 @@ gets none.
   files (types, barrel exports, lockfiles) belong to one chunk only. Small
   change → `Single chunk`.
 - **Risks** — real ones with mitigations. No filler.
+- **Decisions to record** — each drafted entry in full, as
+  `decisions.md` shows it. The spec carries them until `/build` appends them,
+  so they survive a new session.
 
 **Publish the visual page** per
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`.
@@ -210,8 +213,10 @@ the plan's riskiest choice in one line. Print the ledger, then the drafted
 entries as "Decisions to record (approve with this pause)". Say `/build` is
 next. Do not write code.
 
-On approval, append the drafted entries to `DECISIONS.md` per
-`decisions.md`. Not approved → they are dropped with the rest of the pause.
+Running `/build` is the approval, so `/build` appends the drafted entries to
+`DECISIONS.md` — this stage never does. Corrections instead → change the
+entries in the spec with the rest of the plan; a rejected entry is deleted
+from the section.
 
 ## Versioning
 

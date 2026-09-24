@@ -15,11 +15,11 @@
 
 ## Slice test
 
-| Check | Result |
-| ----- | ------ |
-| Cuts every layer it needs | {yes — screen, endpoint, table} |
-| One e2e test walks it | {yes — the four scenarios below} |
-| Worth shipping alone | {yes — a user can share a report} |
+| Check                         | Result                                 |
+| ----------------------------- | -------------------------------------- |
+| Cuts every layer it needs     | {yes — screen, endpoint, table}        |
+| One e2e test walks it         | {yes — the four scenarios below}       |
+| Worth shipping alone          | {yes — a user can share a report}      |
 | Fits (≤5 scenarios, ≤2 areas) | {yes — 4 scenarios, reports + sharing} |
 
 **Path:** {full | light} — {one line why}
@@ -116,9 +116,9 @@ sequenceDiagram
 
 ### Changes
 
-| File | What changes | Why |
-| ---- | ------------ | --- |
-| `path/file.ts:42` | {change} | {scenario it serves} |
+| File              | What changes | Why                  |
+| ----------------- | ------------ | -------------------- |
+| `path/file.ts:42` | {change}     | {scenario it serves} |
 
 Reusing: {existing helpers and patterns, by name}
 
@@ -136,25 +136,25 @@ erDiagram
 
 ### Earn-it
 
-| Added | Triggered by |
-| ----- | ------------ |
+| Added       | Triggered by                           |
+| ----------- | -------------------------------------- |
 | {new thing} | {the scenario or risk that demands it} |
 
 ### Non-functionals
 
-| | |
-| --- | --- |
-| **Load** | {expected volume today} |
-| **Breaks first** | {what fails at 10×, and what you'd do} |
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | {expected volume today}                                                       |
+| **Breaks first**     | {what fails at 10×, and what you'd do}                                        |
 | **Security surface** | {who can call it · what input it trusts · what secrets · what data it stores} |
-| **Proof it works** | {the exact log line or metric that says it's alive in prod} |
-| **Rollout** | {flag name, default state, and the rollback path} |
+| **Proof it works**   | {the exact log line or metric that says it's alive in prod}                   |
+| **Rollout**          | {flag name, default state, and the rollback path}                             |
 
 ### Test plan
 
-| Scenario | Test | Command |
-| -------- | ---- | ------- |
-| {name} | {file} | {exact command} |
+| Scenario | Test   | Command         |
+| -------- | ------ | --------------- |
+| {name}   | {file} | {exact command} |
 
 **E2E:** {the one test that walks the whole slice}
 
@@ -162,22 +162,28 @@ erDiagram
 
 _(how /build splits it — files must be disjoint; write `Single chunk` when it doesn't split)_
 
-| Chunk | Scenarios | Files owned |
-| ----- | --------- | ----------- |
-| A | 1, 2 | `db/`, `models/share_token.ts` |
+| Chunk | Scenarios | Files owned                    |
+| ----- | --------- | ------------------------------ |
+| A     | 1, 2      | `db/`, `models/share_token.ts` |
 
 Shared files (`types/`, barrel exports, lockfiles) are owned by chunk A only.
 
 ### Risks
 
-| Risk | Mitigation |
-| ---- | ---------- |
+| Risk       | Mitigation            |
+| ---------- | --------------------- |
 | {real one} | {what we do about it} |
+
+### Decisions to record
+
+{Each drafted D-entry in full, as `references/decisions.md` shows it, or
+"None — no choice here rejected an option." `/build` appends these to
+DECISIONS.md and replaces them with "Recorded as D7, D8."}
 
 ## Open items
 
-| ID | What | Type | Raised at | Owner | Status | Answer |
-| -- | ---- | ---- | --------- | ----- | ------ | ------ |
-| O1 | {…} | question | shape | user | Open | — |
+| ID  | What | Type     | Raised at | Owner | Status | Answer |
+| --- | ---- | -------- | --------- | ----- | ------ | ------ |
+| O1  | {…}  | question | shape     | user  | Open   | —      |
 
 _Never delete this section or its rows. See references/ledger.md._
