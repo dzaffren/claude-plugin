@@ -11,8 +11,8 @@ allowed-tools: Bash(git diff *) Bash(git status *) Bash(git log *) Bash(git stas
 
 # Review
 
-One pass over the diff covering correctness, security, and quality. Nothing
-reaches the user unverified.
+One pass over the diff covering correctness, security, quality, and the
+active decisions. Nothing reaches the user unverified.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
 
@@ -23,16 +23,16 @@ If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 
 Measure the diff first: `git diff --stat` against the branch point.
 
-| Diff                    | Shape                                                                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| ≤5 files and ≤300 lines | One `reviewer` agent across all three lenses. One `finding-verifier` per finding.                                                 |
-| Larger                  | One `reviewer` per chunk, each running all three lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
+| Diff                    | Shape                                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| ≤5 files and ≤300 lines | One `reviewer` agent across all four lenses. One `finding-verifier` per finding.                                                 |
+| Larger                  | One `reviewer` per chunk, each running all four lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
 
 Breadth scales with the diff. The verification bar never does.
 
-## The three lenses
+## The four lenses
 
-Every reviewer runs all three. They are questions, not agents.
+Every reviewer runs all four. They are questions, not agents.
 
 **Correctness** — does it do what the acceptance criteria say?
 
@@ -61,6 +61,17 @@ Every reviewer runs all three. They are questions, not agents.
 - Drive-by changes to files the plan did not name.
 - Comments that no longer match the code.
 
+**Decisions** — does it do what an active decision rejected?
+
+- The reviewer reads the active entries with
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/decisions.py" active .` — see
+  `${CLAUDE_PLUGIN_ROOT}/references/decisions.md`.
+- A diff line that does what an active entry rejected is a finding, and its
+  claim names the entry: `contradicts D7 (Use Postgres, not SQLite)`.
+- The failing case shows the rejected thing running in the product. Named
+  only in a test fixture or a comment → not a finding.
+- A superseded entry binds nothing.
+
 Use `static-analysis` and `differential-review` (Trail of Bits) when installed.
 
 ## UI slices — mechanical checks
@@ -81,10 +92,11 @@ For a slice with a web interface, run these as checks, not opinions:
 
 Put this in every reviewer prompt, verbatim:
 
-> Report correctness, security, and simplification gaps only — not style, not
-> preference, not "consider extracting this". Flag anything changed outside
-> the spec's named files. You will over-report if you are not careful:
-> a finding you cannot trace a concrete failing path for is not a finding.
+> Report correctness, security, and simplification gaps, and code that
+> contradicts an active decision — not style, not preference, not "consider
+> extracting this". Flag anything changed outside the spec's named files. You
+> will over-report if you are not careful: a finding you cannot trace a
+> concrete failing path for is not a finding.
 
 ## Verification
 
@@ -93,7 +105,7 @@ No raw finding reaches the user or gets fixed.
 Each finding goes to a `finding-verifier` agent that sees:
 
 - the bare claim, one sentence
-- the code
+- the code, plus `DECISIONS.md` for a Decisions finding
 - nothing else
 
 It never sees the finder's reasoning — a verifier shown the reasoning agrees
@@ -127,6 +139,10 @@ exception: a fix that changes something the user approved in the spec (an
 interface, a message, the scope) is proposed first and waits for a yes. Fix
 each finding test-first where a test can catch it, one commit per finding,
 then re-run the full suite and the e2e test, and confirm green.
+
+A Decisions finding is never fixed without asking. Offer exactly two fixes —
+change the code, or supersede the entry through `/spec` — and wait for the
+user to pick. `/review` never edits `DECISIONS.md`.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.
