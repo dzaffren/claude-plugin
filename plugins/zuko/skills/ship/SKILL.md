@@ -40,8 +40,16 @@ The gate below reads what this step writes, so it runs first.
   folder and one line saying what it does.
 - Set `**Updated:**` on each file you changed to today, `by /ship {slice}`.
 - Keep `OVERVIEW.md` at 150 lines or fewer. Over → trim it before the gate.
-- Commit these files on the branch — `docs(overview): mark {slice} built`. The
-  gate fails on an uncommitted tree, so this commit comes before it.
+- `README.md` has no zuko block (the repo was onboarded before the block
+  existed) → add one: plan it with step 4 of
+  `${CLAUDE_PLUGIN_ROOT}/references/onboard.md`, show the user the change, and
+  on approval write it as step 7's "Writing the README block" says.
+- Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
+  re-render the `README.md` block from the updated overview. It rewrites only
+  the text between the zuko markers.
+- Commit these files, `README.md` included, on the branch —
+  `docs(overview): mark {slice} built`. The gate fails on an uncommitted tree,
+  so this commit comes before it.
 
 ## The gates
 
@@ -58,7 +66,11 @@ what a script cannot:
 | No secrets | Nothing key-shaped in the diff |
 | Open items | Zero rows still `Open` |
 | Spec matches code | The plan describes what was actually built |
-| Scope | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md` — are exempt |
+| Scope | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and in `README.md` the zuko block plus what onboarding's README step changed to place it (the marker pair, sections an approved merge replaced, or a new `README.md`) — are exempt |
+
+The script also runs `render-readme-block.sh --check`. A stale block fails the
+gate, and the fix is `--write`. A missing block fails it too, and the fix is
+onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
 proceed on a "probably fine".
@@ -125,12 +137,15 @@ saying out loud.
 
 ## Close out
 
-- Flip this slice's row in the `OVERVIEW.md` slices table to `Shipped`.
+- Flip this slice's row in the `OVERVIEW.md` slices table to `Shipped`, then
+  run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` so the
+  README's Features list picks it up.
 - Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
   `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
   `hub page: {url}` it returns to the overview's `## More` line.
-- Spec Status → `Shipped`, then one commit carrying the spec, the row, and any
-  hub link. The hub is published first because its link only exists after.
+- Spec Status → `Shipped`, then one commit carrying the spec, the row,
+  `README.md`, and any hub link. The hub is published first because its link
+  only exists after.
 - Capture lessons to `docs/learnings/` silently.
 - **Graduation:** a component from this slice that is now used in two or more
   slices, or that the user promotes, moves into the design system. Ask first,

@@ -148,19 +148,34 @@ SessionStart hook replays the index every session. `/learn consolidate` merges
 duplicates, drops stale entries, and promotes real conventions into
 `CLAUDE.md`, so the store does not rot.
 
-## Install
+<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->
 
-```
-/plugin marketplace add dzaffren/claude-plugin
-/plugin install zuko@dzafran-claude-plugins
-```
+## What it does
 
-Optional, and used when present: `frontend-design`, `design-taste-frontend`,
-`shadcn`, `webapp-testing`, and Trail of Bits' `static-analysis` and
-`differential-review`.
+A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
+that takes a rough idea to a shipped vertical slice. Used by its author across personal
+projects.
 
-Docs land in `docs/specs/`, `docs/design/`, and `docs/learnings/` of whatever
-repo you run the workflow in.
+## Install and run
+
+| Task    | Command                                                                                             |
+| ------- | --------------------------------------------------------------------------------------------------- |
+| install | `/plugin marketplace add dzaffren/claude-plugin` then `/plugin install zuko@dzafran-claude-plugins` |
+| run     | `/shape` in a Claude Code session                                                                   |
+| test    | `bash plugins/zuko/scripts/tests/run.sh`                                                            |
+
+## Features
+
+- Guards match the git command that actually runs, not text inside arguments
+- One naming format for branches, commits and PRs, and no Claude attribution
+- Writes and loads a living project overview; /ship keeps it current
+
+## Docs
+
+- [Overview](OVERVIEW.md)
+- [Architecture](docs/ARCHITECTURE.md)
+
+<!-- zuko:end -->
 
 ## Replaces shipwright
 

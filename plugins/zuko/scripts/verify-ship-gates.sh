@@ -72,6 +72,20 @@ else
   esac
 fi
 
+# README: the zuko block must match what OVERVIEW.md renders to. Any non-zero
+# exit is a problem -- exit 2, a block the renderer cannot place, is never a
+# pass. The first line is the reason; the diff, if any, is indented under it.
+readme_out=$(CLAUDE_PROJECT_DIR="$dir" bash "$(dirname "${BASH_SOURCE[0]}")/render-readme-block.sh" --check 2>&1)
+if [ $? -eq 0 ]; then
+  echo "README: zuko block matches OVERVIEW.md"
+else
+  problems="$problems
+- $(printf '%s\n' "$readme_out" | head -1)"
+  readme_diff=$(printf '%s\n' "$readme_out" | tail -n +2 | sed 's/^/    /')
+  [ -n "$readme_diff" ] && problems="$problems
+$readme_diff"
+fi
+
 # Rollout / rollback must be stated.
 grep -qiE '\*\*Rollout\*\*|^\| \*\*Rollout\*\*' "$spec" || problems="$problems
 - No Rollout line in the non-functionals. State the flag and the rollback path."

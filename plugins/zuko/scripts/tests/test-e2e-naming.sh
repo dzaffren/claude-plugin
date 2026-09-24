@@ -29,12 +29,24 @@ cat >"$repo/OVERVIEW.md" <<'OVERVIEW'
 
 **Status:** Active · **Updated:** 2026-09-24 by /ship naming
 
+Keeps every commit on a branch in one naming convention.
+
+## Run it
+
+| Task | Command                         |
+| ---- | ------------------------------- |
+| test | `bash scripts/tests/run.sh`     |
+
 ## Slices
 
 | Slice  | Status | What it does           | Page                  |
 | ------ | ------ | ---------------------- | --------------------- |
 | naming | Built  | Standardise git naming | https://claude.ai/... |
 OVERVIEW
+# The README carries a current zuko block, rendered and never typed, so the
+# gate's README check passes and every failure below is naming.
+printf '# Naming\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$repo/README.md"
+CLAUDE_PROJECT_DIR="$repo" bash "$scripts/render-readme-block.sh" --write 2>/dev/null
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "chore(spec): add the naming spec"
 git -C "$repo" checkout -q -b feat/ship-naming

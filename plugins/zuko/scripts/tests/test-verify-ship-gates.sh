@@ -33,6 +33,14 @@ write_overview() {   # write_overview <repo> <status> <slice>
 
 **Status:** $2 · **Updated:** 2026-09-24 by /ship $3
 
+Turns a folder of supplier invoices into one ledger CSV.
+
+## Run it
+
+| Task    | Command            |
+| ------- | ------------------ |
+| install | \`pip install -e .\` |
+
 ## Slices
 
 | Slice | Status | What it does | Page |
@@ -45,6 +53,13 @@ README.md
 OVERVIEW
 }
 
+# A README whose zuko block is current: a title and an empty marker pair,
+# then the renderer fills it. The block is rendered, never typed.
+write_readme() {   # write_readme <repo>
+  printf '# Fixture\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$1/README.md"
+  CLAUDE_PROJECT_DIR="$1" bash "$scripts/render-readme-block.sh" --write 2>/dev/null
+}
+
 new_repo() {   # new_repo <branch> [--no-base]; prints the repo path
   local dir base_branch=main
   dir=$(mktemp -d -p "$work")
@@ -53,6 +68,7 @@ new_repo() {   # new_repo <branch> [--no-base]; prints the repo path
   git -C "$dir" config user.email t@example.com
   git -C "$dir" config user.name Tester
   write_spec "$dir"
+  write_readme "$dir"
   git -C "$dir" add -A
   git -C "$dir" commit -q --no-verify -m "chore(spec): add the fixture spec"
   [ "$base_branch" = "$1" ] || git -C "$dir" checkout -q -b "$1"
@@ -312,5 +328,46 @@ commit_overview "$repo"
 gate "$repo"
 expect_exit 1 "$gate_status" "a row only inside a code fence does not count"
 expect_match 'slices table has no row for "fixture"' "$gate_out" "a fenced row still names the slice"
+
+# 13. The README block. Each case commits its README so only this check talks.
+commit_readme() {   # commit_readme <repo>
+  git -C "$1" add -A
+  git -C "$1" commit -q --no-verify -m "docs(readme): change the readme"
+}
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+gate "$repo"
+expect_match '^README: zuko block matches OVERVIEW\.md$' "$gate_out" "a current block prints the README scope line"
+expect_no_match 'README\.md  ' "$gate_out" "a current block adds no README problem"
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+sed 's/pip install -e \./pip install invoice/' "$repo/README.md" >"$work/README.md" && mv "$work/README.md" "$repo/README.md"
+commit_readme "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a hand-edited block fails the gate"
+expect_match '^- README\.md  zuko block is stale — run render-readme-block\.sh --write$' "$gate_out" "a stale block is named with the fix"
+expect_match '^    \+\| install \| `pip install -e \.` +\|$' "$gate_out" "the diff shows the rendered line, indented under the problem"
+expect_no_match '^README: zuko block' "$gate_out" "a stale block prints no scope line"
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+printf '# Fixture\n' >"$repo/README.md"
+commit_readme "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a README with no markers fails the gate"
+expect_match '^- README\.md  no zuko block — onboarding adds it$' "$gate_out" "a missing block says onboarding adds it"
+expect_no_match '^README: zuko block' "$gate_out" "a missing block prints no scope line"
+
+# The renderer's exit 2 -- it cannot tell which block is the block -- is never a pass.
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+cat "$repo/README.md" "$repo/README.md" >"$work/README.md" && mv "$work/README.md" "$repo/README.md"
+commit_readme "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a README the renderer cannot read fails the gate"
+expect_match '^- README\.md  two zuko blocks — zuko:start at lines 3 and [0-9]+$' "$gate_out" "the renderer's reason is in the problems list"
+expect_no_match '^README: zuko block' "$gate_out" "an unreadable block prints no scope line"
 
 rm -rf "$work"

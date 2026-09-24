@@ -57,3 +57,9 @@ One line per lesson. Loaded into every session in this repo.
 - A gate's passing branch matches the one allowed value; the catch-all fails
   and names what it saw — denylisting bad values fails open.
   ([detail](gates-allow-the-pass-not-block-the-fail.md))
+- A new gate check breaks every fixture that lacks what it checks — commit
+  the fixture update before the gate so each commit stays green.
+  ([detail](a-new-gate-check-breaks-every-fixture.md))
+- A run-once step that gains an artifact a gate requires needs a backfill path
+  in a recurring stage, or repos onboarded earlier can never pass.
+  ([detail](run-once-steps-need-a-backfill-path.md))
