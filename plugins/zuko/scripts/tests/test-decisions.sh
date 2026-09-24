@@ -206,6 +206,14 @@ expect_exit 1 "$check_status" "check no Why or Source: fails"
 expect_match '^DECISIONS\.md  D8 has no Why line$' "$check_out" "check no Why: named"
 expect_match '^DECISIONS\.md  D8 has no Source line$' "$check_out" "check no Source: named"
 
+# An empty required line is no line at all.
+repo=$(new_repo); entry "$repo/DECISIONS.md" 8 "Hollow"
+rewrite "$repo/DECISIONS.md" '/^Rejected: option-8/ { print "Rejected:"; next } /^Why: reason number 8/ { print "Why:   "; next } { print }'
+check "$repo"
+expect_exit 1 "$check_status" "check empty lines: fails"
+expect_match '^DECISIONS\.md  D8 has no Rejected line — a choice with nothing rejected is not an entry$' "$check_out" "check empty Rejected: named"
+expect_match '^DECISIONS\.md  D8 has no Why line$' "$check_out" "check empty Why: named"
+
 # 16. A Status that is neither active nor superseded, and one not last.
 repo=$(new_repo); entry "$repo/DECISIONS.md" 8 "Odd" "maybe"; check "$repo"
 expect_exit 1 "$check_status" "check bad status: fails"

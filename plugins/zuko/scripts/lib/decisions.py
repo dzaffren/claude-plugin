@@ -154,13 +154,14 @@ def structure(entries, bad_headings):
 
     for entry in entries:
         for name in REQUIRED:
-            if name not in entry.fields:
+            # An empty line says nothing, so it counts as no line.
+            if not entry.value(name):
                 if name == "Rejected":
                     problems.append("D%d has no Rejected line — a choice with nothing "
                                     "rejected is not an entry" % entry.n)
                 else:
                     problems.append("D%d has no %s line" % (entry.n, name))
-        if "Status" not in entry.fields:
+        if not entry.status:
             continue
         status = entry.status
         if status != "active" and not SUPERSEDED.match(status):
