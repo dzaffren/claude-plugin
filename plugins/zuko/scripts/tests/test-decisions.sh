@@ -113,6 +113,15 @@ printf '\n```\n## D99 · 2026-09-24 · An example\n```\n' >>"$dir/DECISIONS.md"
 load "$dir"
 expect_match '^DECISIONS\.md has no entries yet\.$' "$load_out" "loader fence: a fenced heading is not an entry"
 
+# 6. A file the parser cannot read is never reported as empty.
+dir=$(mktemp -d -p "$work"); header "$dir/DECISIONS.md"; entry "$dir/DECISIONS.md" 1 "First"
+printf 'Why: caf\351\n' >>"$dir/DECISIONS.md"
+load "$dir"
+expect_exit 0 "$load_status" "loader unreadable: exits 0"
+expect_match '^DECISIONS\.md could not be read — run decisions\.py titles to see why\. Active decisions were not loaded\.$' \
+  "$load_out" "loader unreadable: says it could not read the file"
+expect_no_match 'no entries yet' "$load_out" "loader unreadable: never claims the file is empty"
+
 # --- active: the full entries, for the reviewer ---
 
 repo=$(new_repo); supersede_d7 "$repo"
