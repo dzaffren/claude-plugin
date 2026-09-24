@@ -169,6 +169,7 @@ projects.
 - Guards match the git command that actually runs, not text inside arguments
 - One naming format for branches, commits and PRs, and no Claude attribution
 - Writes and loads a living project overview; /ship keeps it current
+- A README block rendered from the overview and checked at ship time
 
 ## Docs
 
