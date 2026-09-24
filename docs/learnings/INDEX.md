@@ -66,3 +66,6 @@ One line per lesson. Loaded into every session in this repo.
 - Integrate a chunk's worktree branch by cherry-pick — a merge commit's
   subject fails the ship gate's naming check.
   ([detail](integrate-chunks-without-merge-commits.md))
+- Make a test's temp dir inside run.sh's `$work` — its trap cleans up, and an
+  `rm -rf` line in a heredoc trips the org's destructive-command hook.
+  ([detail](test-temp-dirs-live-under-run-sh.md))
