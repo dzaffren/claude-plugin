@@ -149,9 +149,14 @@ never the hub page, which most readers cannot open.
 This step reads `OVERVIEW.md`, so it runs after step 2. Plan the change here;
 write nothing to `README.md` until the user approves in step 7.
 
+**Block already there.** `README.md` already has a `<!-- zuko:start` line →
+plan nothing: no overlap check, no new markers. The existing start marker and
+its skip list stay as they are, and step 7 only runs `--write`.
+
 **Overlap.** A README section overlaps the block when its heading is one of
 these, case-insensitive, at any `#` level. The list is closed: every other
-heading is the user's and stays.
+heading is the user's and stays. Headings between zuko markers are the block's
+own and never overlap.
 
 | Heading                                                | Skip key   |
 | ------------------------------------------------------ | ---------- |
@@ -255,6 +260,7 @@ loads into every later session, so this one check is worth the wait.
   the marker pair by the placement rule, with a `skip=` list holding the skip
   key of each overlapping section, each key once, joined by `,`:
   `<!-- zuko:start skip=install — generated from OVERVIEW.md; edit that file, not this block -->`.
+- **Block already there** → write no markers; the existing ones stay.
 - **No overlap** → insert the empty marker pair by the placement rule.
 - **No `README.md`** → create it: `# {project name}`, a blank line, the empty
   marker pair.
