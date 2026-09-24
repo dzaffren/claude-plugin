@@ -169,10 +169,20 @@ stands, so every entry is either fully in force or fully history.
 
 ```
 Decisions to record (approve with this pause):
-  D7  Use Postgres, not SQLite
-      Rejected: SQLite (whole-file write lock), DynamoDB (cost)
-Relies on: D2, D5
+
+## D7 · 2026-09-24 · Use Postgres, not SQLite
+
+Why: two finance users import at month end at the same time; SQLite locks the whole
+file on write.
+Rejected: SQLite (whole-file write lock), DynamoDB (cost for under 1 GB of data).
+Source: specs/import-csv.md
+Status: active
+
+Relies on: D2, D5, D7
 ```
+
+The drafted entry is shown in full, as it will be written — the file is
+append-only, so the user approves the Why and Source, not only a title.
 
 ### SessionStart output
 
@@ -347,14 +357,14 @@ B merges after A. Builds after `readme-block` — all three slices edit
 
 ## Open items
 
-| ID  | What                            | Type       | Raised at | Owner  | Status   | Answer                                                                                                    |
-| --- | ------------------------------- | ---------- | --------- | ------ | -------- | --------------------------------------------------------------------------------------------------------- |
-| O1  | Shape of the log                | question   | shape     | user   | Resolved | One file, D-entries, supersede never edit (shape O3)                                                      |
-| O2  | Session load cost               | flag       | shape     | claude | Resolved | Active titles only (shape O9)                                                                             |
-| O3  | What counts as an entry         | assumption | spec p1   | claude | Resolved | Only a choice with at least one rejected option; naming, style and reuse of existing helpers do not count |
-| O4  | Who approves an entry, and when | assumption | spec p1   | claude | Resolved | The user, in the pause the choice came from; unapproved entries are dropped with the rest of that pause   |
-| O5  | Too many scenarios              | flag       | spec p1   | user   | Resolved | ADR seeding moved to slice 2b                                                                             |
-| O6  | File name and place             | question   | spec p1   | user   | Resolved | `DECISIONS.md` at the repo root (shape O11)                                                               |
+| ID  | What                                | Type       | Raised at | Owner  | Status        | Answer                                                                                                                                                                                                                         |
+| --- | ----------------------------------- | ---------- | --------- | ------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O1  | Shape of the log                    | question   | shape     | user   | Resolved      | One file, D-entries, supersede never edit (shape O3)                                                                                                                                                                           |
+| O2  | Session load cost                   | flag       | shape     | claude | Resolved      | Active titles only (shape O9)                                                                                                                                                                                                  |
+| O3  | What counts as an entry             | assumption | spec p1   | claude | Resolved      | Only a choice with at least one rejected option; naming, style and reuse of existing helpers do not count                                                                                                                      |
+| O4  | Who approves an entry, and when     | assumption | spec p1   | claude | Resolved      | The user, in the pause the choice came from; unapproved entries are dropped with the rest of that pause                                                                                                                        |
+| O5  | Too many scenarios                  | flag       | spec p1   | user   | Resolved      | ADR seeding moved to slice 2b                                                                                                                                                                                                  |
+| O6  | File name and place                 | question   | spec p1   | user   | Resolved      | `DECISIONS.md` at the repo root (shape O11)                                                                                                                                                                                    |
 | O7  | Scenario 1 not proven by a real run | flag       | build     | user   | Accepted risk | 2026-09-24: no slice was at pause 3 during the build, and edited skills load only next session. The drafting prose was reviewed, the ship gate re-checks every entry it produces, and the next `/spec` pause 3 is the real run |
 
 ## Glossary

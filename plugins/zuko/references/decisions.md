@@ -63,19 +63,28 @@ line of the old entry changes, and no entry is ever removed.
 
 ## Drafting in a pause
 
-The stage that made the choice drafts the entry and shows it in that stage's
-pause summary:
+The stage that made the choice drafts the entry in full — heading with today's
+date, every line, `Status: active` — and shows it in that stage's pause
+summary exactly as it will be written. The file is append-only, so the user
+approves the Why and Source they will be held to, not a title:
 
 ```
 Decisions to record (approve with this pause):
-  D7  Use Postgres, not SQLite
-      Rejected: SQLite (whole-file write lock), DynamoDB (cost)
-Relies on: D2, D5
+
+## D7 · 2026-09-24 · Use Postgres, not SQLite
+
+Why: two finance users import at month end at the same time; SQLite locks the whole
+file on write.
+Rejected: SQLite (whole-file write lock), DynamoDB (cost for under 1 GB of data).
+Source: specs/import-csv.md
+Status: active
+
+Relies on: D2, D5, D7
 ```
 
 The user approves entries with the pause they came from. Approved → append
-them to `DECISIONS.md`, full form, dated today, `Status: active`, and flip the
-Status line of anything they supersede. Not approved → drop them with the rest
+them to `DECISIONS.md` as shown, and flip the Status line of anything they
+supersede. Not approved → drop them with the rest
 of that pause; the user's corrections come back as a new draft.
 
 ## Reading the active entries
