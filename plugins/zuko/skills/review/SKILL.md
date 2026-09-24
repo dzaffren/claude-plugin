@@ -23,10 +23,10 @@ If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 
 Measure the diff first: `git diff --stat` against the branch point.
 
-| Diff | Shape |
-|---|---|
-| ≤5 files and ≤300 lines | One `reviewer` agent across all three lenses. One `finding-verifier` per finding. |
-| Larger | One `reviewer` per chunk, each running all three lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
+| Diff                    | Shape                                                                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| ≤5 files and ≤300 lines | One `reviewer` agent across all three lenses. One `finding-verifier` per finding.                                                 |
+| Larger                  | One `reviewer` per chunk, each running all three lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
 
 Breadth scales with the diff. The verification bar never does.
 
@@ -35,6 +35,7 @@ Breadth scales with the diff. The verification bar never does.
 Every reviewer runs all three. They are questions, not agents.
 
 **Correctness** — does it do what the acceptance criteria say?
+
 - Every scenario actually covered, including the error ones.
 - Off-by-one, null and empty handling, boundary values.
 - Concurrency: two of these at once, retries, partial failure.
@@ -42,6 +43,7 @@ Every reviewer runs all three. They are questions, not agents.
 - Does the test actually test the thing, or does it pass vacuously?
 
 **Security** — what can an attacker do?
+
 - Injection: SQL, command, template, path traversal.
 - Authorization at every new entry point. Not authentication — authorization.
   Can user A reach user B's data?
@@ -52,6 +54,7 @@ Every reviewer runs all three. They are questions, not agents.
 - Data leaving that should not — PII in logs, fields not stripped.
 
 **Quality** — is this the simple version?
+
 - Does it reinvent something the repo already has?
 - An abstraction the acceptance criteria do not demand — the earn-it rule.
 - Dead code, commented-out blocks, leftover debug output.
@@ -119,8 +122,11 @@ Order by severity. Say how many raw findings there were and how many survived
 Nothing survived → say so plainly. A clean review is a real outcome, not a
 failure to look hard enough.
 
-Ask before fixing. Then fix, re-run the full suite and the e2e test, and
-confirm green.
+Fix what survived without asking — verification already confirmed it. One
+exception: a fix that changes something the user approved in the spec (an
+interface, a message, the scope) is proposed first and waits for a yes. Fix
+each finding test-first where a test can catch it, one commit per finding,
+then re-run the full suite and the e2e test, and confirm green.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.
