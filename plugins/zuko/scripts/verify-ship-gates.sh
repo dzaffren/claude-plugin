@@ -194,6 +194,16 @@ SHAS
 - $broken of $count commits break the naming convention:$report"
     fi
   fi
+
+  # Decisions: against the same base, so "what this branch changed" has one
+  # definition. Every non-zero exit is a problem, one per line it printed.
+  decisions_out=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/decisions.py" check "$dir" --base "$base" --label "${base_ref#origin/}" 2>&1)
+  if [ $? -eq 0 ]; then
+    echo "$decisions_out"
+  else
+    problems="$problems
+$(printf '%s\n' "$decisions_out" | sed 's/^/- /')"
+  fi
 fi
 
 # Spike branches left alive.

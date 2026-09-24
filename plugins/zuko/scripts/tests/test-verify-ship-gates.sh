@@ -377,4 +377,74 @@ expect_exit 1 "$gate_status" "a README the renderer cannot read fails the gate"
 expect_match '^- README\.md  two zuko blocks — zuko:start at lines 3 and [0-9]+$' "$gate_out" "the renderer's reason is in the problems list"
 expect_no_match '^README: zuko block' "$gate_out" "an unreadable block prints no scope line"
 
+# 14. DECISIONS.md. Entries D1..D3 are recorded on main before the branch, so
+# the check has history to hold the branch to.
+decision() {   # decision <repo> <n> [status]
+  printf '\n## D%s · 2026-09-24 · Choice %s\n\nWhy: reason %s.\nRejected: option %s (slower).\nSource: specs/fixture.md\nStatus: %s\n' \
+    "$2" "$2" "$2" "$2" "${3:-active}" >>"$1/DECISIONS.md"
+}
+
+decisions_repo() {   # decisions_repo; prints a repo on feat/fixture, D1..D3 on main
+  local dir
+  dir=$(new_repo main)
+  decision "$dir" 1; decision "$dir" 2; decision "$dir" 3
+  git -C "$dir" add -A
+  git -C "$dir" commit -q --no-verify -m "docs: record D1 to D3"
+  git -C "$dir" checkout -q -b feat/fixture
+  add_commit "$dir" "feat(scripts): add the fixture"
+  printf '%s' "$dir"
+}
+
+commit_decisions() {   # commit_decisions <repo>
+  git -C "$1" add -A
+  git -C "$1" commit -q --no-verify -m "docs: change the decisions"
+}
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+gate "$repo"
+expect_exit 0 "$gate_status" "an empty DECISIONS.md passes"
+expect_match '^Decisions: 0 entries checked against main$' "$gate_out" "an empty file still prints the decisions scope line"
+
+repo=$(decisions_repo)
+decision "$repo" 4
+commit_decisions "$repo"
+gate "$repo"
+expect_exit 0 "$gate_status" "an appended entry passes"
+expect_match '^Decisions: 4 entries checked against main$' "$gate_out" "the scope line counts every entry"
+
+repo=$(decisions_repo)
+sed 's/^Why: reason 3\.$/Why: a better reason 3./' "$repo/DECISIONS.md" >"$work/DECISIONS.md" && mv "$work/DECISIONS.md" "$repo/DECISIONS.md"
+commit_decisions "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "an edited recorded entry fails the gate"
+expect_match '^- DECISIONS\.md  D3 changed after it was recorded — only its Status line may change; supersede it with a new entry$' \
+  "$gate_out" "the edited entry is named with the fix"
+expect_no_match '^Decisions: ' "$gate_out" "a failed decisions check prints no scope line"
+
+repo=$(decisions_repo)
+awk '/^## D2 · /{skip=1} /^## D3 · /{skip=0} !skip' "$repo/DECISIONS.md" >"$work/DECISIONS.md" && mv "$work/DECISIONS.md" "$repo/DECISIONS.md"
+commit_decisions "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a removed recorded entry fails the gate"
+expect_match '^- DECISIONS\.md  D2 was removed after it was recorded' "$gate_out" "the removed entry is named"
+
+repo=$(decisions_repo)
+decision "$repo" 3
+decision "$repo" 4
+grep -v '^Rejected: option 4' "$repo/DECISIONS.md" >"$work/DECISIONS.md" && mv "$work/DECISIONS.md" "$repo/DECISIONS.md"
+commit_decisions "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a duplicate and a missing Rejected line fail the gate"
+expect_match '^- DECISIONS\.md  D3 appears twice$' "$gate_out" "the duplicate is its own problem line"
+expect_match '^- DECISIONS\.md  D4 has no Rejected line' "$gate_out" "the missing Rejected line is its own problem line"
+
+repo=$(new_repo feat/fixture)
+add_commit "$repo" "feat(scripts): add the fixture"
+git -C "$repo" rm -q DECISIONS.md
+commit_decisions "$repo"
+gate "$repo"
+expect_exit 1 "$gate_status" "a branch without DECISIONS.md fails the gate"
+expect_match '^- DECISIONS\.md  missing — onboarding creates it$' "$gate_out" "the missing file says who creates it"
+
 rm -rf "$work"
