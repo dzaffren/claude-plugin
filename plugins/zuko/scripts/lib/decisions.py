@@ -220,6 +220,10 @@ def check(project, base, label):
     if not os.path.isfile(path):
         print("%s  missing — onboarding creates it" % NAME)
         return 1
+    # An untracked copy on disk is not what the branch merges.
+    if git(project, "ls-files", "--error-unmatch", "--", NAME).returncode != 0:
+        print("%s  not tracked by git — commit it on this branch" % NAME)
+        return 1
 
     entries, bad_headings = parse(read(project))
     problems = structure(entries, bad_headings)

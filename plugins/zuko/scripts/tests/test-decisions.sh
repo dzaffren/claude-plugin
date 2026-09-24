@@ -220,6 +220,7 @@ git -C "$repo" init -q -b main; git -C "$repo" config user.email t@example.com; 
 echo x >"$repo/work.txt"; git -C "$repo" add -A; git -C "$repo" commit -q --no-verify -m "chore: start"
 git -C "$repo" checkout -q -b feat/first
 header "$repo/DECISIONS.md"; entry "$repo/DECISIONS.md" 1 "First"
+git -C "$repo" add DECISIONS.md
 check "$repo"
 expect_exit 0 "$check_status" "check new file: passes"
 expect_match '^Decisions: 1 entries checked against main$' "$check_out" "check new file: scope line"
@@ -251,5 +252,15 @@ git -C "$repo" commit -q --no-verify -am "docs: edit D1"
 check "$repo/app" main
 expect_exit 1 "$check_status" "check subfolder: an edited entry fails"
 expect_match '^DECISIONS\.md  D1 changed after it was recorded' "$check_out" "check subfolder: names D1"
+
+# 24. The branch stops tracking the file but keeps it on disk, ignored:
+# merging it would delete every entry, so it fails like a missing file.
+repo=$(new_repo)
+git -C "$repo" rm -q --cached DECISIONS.md
+echo DECISIONS.md >"$repo/.gitignore"
+git -C "$repo" add .gitignore; git -C "$repo" commit -q --no-verify -m "chore: ignore the decisions"
+check "$repo"
+expect_exit 1 "$check_status" "check untracked: fails"
+expect_match '^DECISIONS\.md  not tracked by git — commit it on this branch$' "$check_out" "check untracked: says so"
 
 rm -rf "$work"
