@@ -18,6 +18,11 @@ there.
 `OVERVIEW.md` exists but still says `**Status:** Draft` → onboarding was
 interrupted. Do not rewrite it: go straight to step 4, plan the README block,
 show the existing draft, and wait for approval before the stage starts.
+`DECISIONS.md` not yet committed and holding entries → step 5 seeded it before
+the interruption, and the user has not approved those entries. Rerun its scan
+and its `check`, and show its summary in the draft again. `check` fails → the
+seeding was cut short: put the file back to the created header and run step 5
+again.
 
 Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
 change it after that. One exception: `/ship` runs step 4 and the README part
