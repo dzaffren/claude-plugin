@@ -43,6 +43,12 @@ Keeps every commit on a branch in one naming convention.
 | ------ | ------ | ---------------------- | --------------------- |
 | naming | Built  | Standardise git naming | https://claude.ai/... |
 OVERVIEW
+cat >"$repo/DECISIONS.md" <<'DECISIONS'
+# Decisions
+
+Append-only. A changed decision is a new entry that supersedes the old one; only an
+old entry's Status line ever changes.
+DECISIONS
 # The README carries a current zuko block, rendered and never typed, so the
 # gate's README check passes and every failure below is naming.
 printf '# Naming\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$repo/README.md"

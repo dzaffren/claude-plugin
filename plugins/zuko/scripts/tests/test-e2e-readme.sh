@@ -46,6 +46,12 @@ cat >"$repo/docs/specs/export-csv.md" <<'SPEC'
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1 | Nothing is unresolved. | question | e2e | user | Resolved | Yes. |
 SPEC
+cat >"$repo/DECISIONS.md" <<'DECISIONS'
+# Decisions
+
+Append-only. A changed decision is a new entry that supersedes the old one; only an
+old entry's Status line ever changes.
+DECISIONS
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "chore(spec): add the export-csv spec"
 git -C "$repo" checkout -q -b feat/export-csv

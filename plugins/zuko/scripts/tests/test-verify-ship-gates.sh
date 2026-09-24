@@ -23,6 +23,13 @@ write_spec() {
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1 | Nothing is unresolved. | question | fixture | user | Resolved | Yes. |
 SPEC
+  # Onboarding's DECISIONS.md, so the decisions check passes here too.
+  cat >"$1/DECISIONS.md" <<'DECISIONS'
+# Decisions
+
+Append-only. A changed decision is a new entry that supersedes the old one; only an
+old entry's Status line ever changes.
+DECISIONS
   write_overview "$1" Active fixture
 }
 
