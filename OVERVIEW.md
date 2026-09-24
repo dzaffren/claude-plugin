@@ -40,4 +40,4 @@ projects.
 
 ## More
 
-README.md · docs/ARCHITECTURE.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT
+README.md · docs/ARCHITECTURE.md · DECISIONS.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT

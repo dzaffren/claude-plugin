@@ -175,6 +175,7 @@ projects.
 
 - [Overview](OVERVIEW.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Decisions](DECISIONS.md)
 
 <!-- zuko:end -->
 
