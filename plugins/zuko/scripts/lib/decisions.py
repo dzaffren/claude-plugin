@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Read and check the repo's DECISIONS.md.
 
-Usage: decisions.py titles <project-dir>
-       decisions.py active <project-dir>
-       decisions.py check  <project-dir> --base <commit> [--label <name>]
+Usage: decisions.py titles   <project-dir>
+       decisions.py active   <project-dir>
+       decisions.py check    <project-dir> [--base <commit> [--label <name>]]
+       decisions.py adr-scan <project-dir> [--dir <path>]
 
 Every entry is a `## D<n> · <YYYY-MM-DD> · <title>` heading followed by its
 Why, Rejected, optional Supersedes, Source and Status lines. The format and the
@@ -15,12 +16,20 @@ rules live in references/decisions.md.
   check   the branch's file against the one at <commit>: every entry recorded
           there is still here, unchanged except its Status line; and the
           branch's file has unique ascending numbers, the required lines, and
-          supersede pairs that point at each other
+          supersede pairs that point at each other. With no --base, only the
+          file itself is checked -- how onboarding checks a log it just wrote,
+          before anything is committed
+  adr-scan  the repo's Architecture Decision Records as JSON, one object per
+          file in number order: status, date, and whether it seeds an entry,
+          with its D-number and supersede pair, or why not. Reads docs/adr/,
+          doc/adr/ or docs/decisions/, whichever holds ADRs first, or --dir.
+          Prints [] when there are none
 
 Exit 0 printed, or the check passed. Exit 1 the check found problems, one
-"DECISIONS.md  <problem>" line each. Exit 2 bad usage or a base that is not a
-commit.
+"DECISIONS.md  <problem>" line each. Exit 2 bad usage, a base that is not a
+commit, or a project or --dir folder that does not exist.
 """
+import json
 import os
 import re
 import subprocess
@@ -28,7 +37,8 @@ import sys
 
 NAME = "DECISIONS.md"
 USAGE = ("usage: decisions.py titles|active <project-dir>\n"
-         "       decisions.py check <project-dir> --base <commit> [--label <name>]")
+         "       decisions.py check <project-dir> [--base <commit> [--label <name>]]\n"
+         "       decisions.py adr-scan <project-dir> [--dir <path>]")
 
 HEADING = re.compile(r"^## D(\d+) · (\d{4}-\d{2}-\d{2}) · (.+)$")
 FIELD = re.compile(r"^(Why|Rejected|Supersedes|Source|Status):\s*(.*)$")
@@ -230,7 +240,8 @@ def git(project, *args):
 
 
 def check(project, base, label):
-    if git(project, "rev-parse", "--verify", "--quiet", base + "^{commit}").returncode != 0:
+    if base is not None and git(project, "rev-parse", "--verify", "--quiet",
+                                base + "^{commit}").returncode != 0:
         print("decisions.py: base '%s' is not a commit" % base, file=sys.stderr)
         return 2
     path = os.path.join(project, NAME)
@@ -241,22 +252,178 @@ def check(project, base, label):
         print("%s  missing — onboarding creates it" % NAME)
         return 1
     # An untracked copy on disk is not what the branch merges.
-    if git(project, "ls-files", "--error-unmatch", "--", NAME).returncode != 0:
+    if base is not None and git(project, "ls-files", "--error-unmatch", "--", NAME).returncode != 0:
         print("%s  not tracked by git — commit it on this branch" % NAME)
         return 1
 
     entries, bad_headings = parse(read(project))
     problems = structure(entries, bad_headings)
-    # "./" resolves from the project dir, which may sit below the repo root.
-    shown = git(project, "show", "%s:./%s" % (base, NAME))
-    if shown.returncode == 0:
-        problems += history(parse(shown.stdout)[0], entries)
+    if base is not None:
+        # "./" resolves from the project dir, which may sit below the repo root.
+        shown = git(project, "show", "%s:./%s" % (base, NAME))
+        if shown.returncode == 0:
+            problems += history(parse(shown.stdout)[0], entries)
 
     if problems:
         for problem in problems:
             print("%s  %s" % (NAME, problem))
         return 1
-    print("Decisions: %d entries checked against %s" % (len(entries), label or base))
+    against = "" if base is None else " against %s" % (label or base)
+    print("Decisions: %d entries checked%s" % (len(entries), against))
+    return 0
+
+
+ADR_DIRS = ("docs/adr", "doc/adr", "docs/decisions")
+ADR_FILE = re.compile(r"^(\d+)-.+\.md$")
+FRONT = re.compile(r"^([A-Za-z-]+):\s*(.*)$")
+STATUS_HEADING = re.compile(r"^#{2,}\s+status\s*$", re.I)
+DATE_LINE = re.compile(r"^Date:\s*(\S+)")
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# The first number after "superseded by", link or not: "ADR-0006",
+# "[6. Queue](0006-queue.md)", "[ADR-0006](0006-queue.md)".
+SUCCESSOR = re.compile(r"superseded by\D*?(\d+)", re.I)
+WORDS = ("accepted", "proposed", "rejected", "deprecated", "superseded")
+
+
+def adr_status(front, section):
+    """(status, successor number): a word from WORDS, the text as written,
+    or None; the successor only for a superseded ADR."""
+    text = front.get("status") or (section[0] if section else "")
+    if not text:
+        return None, None
+    word = re.sub(r"[^a-z]", "", text.split()[0].lower())
+    if word not in WORDS:
+        return text, None
+    successor = None
+    if word == "superseded":
+        # The /adr skill keeps the number in its own front matter key.
+        for source in [text, "superseded by " + front.get("superseded-by", "")] + section:
+            match = SUCCESSOR.search(source)
+            if match:
+                successor = int(match.group(1))
+                break
+    return word, successor
+
+
+def read_adr(project, path, number):
+    with open(path, encoding="utf-8") as handle:
+        lines = handle.read().splitlines()
+    front, body = {}, lines
+    if lines and lines[0].strip() == "---":
+        for i, line in enumerate(lines[1:], 1):
+            if line.strip() == "---":
+                body = lines[i + 1:]
+                break
+            match = FRONT.match(line)
+            if match:
+                front[match.group(1).lower()] = match.group(2).strip().strip("\"'")
+        else:
+            front = {}   # no closing line: not front matter
+    title, date, section = None, None, []
+    in_status = fenced = False
+    for line in body:
+        if FENCE.match(line):
+            fenced = not fenced
+        if fenced:
+            continue
+        if line.startswith("# ") and title is None:
+            title = line[2:].strip()
+        elif line.startswith("#"):
+            in_status = bool(STATUS_HEADING.match(line))
+        elif in_status and line.strip():
+            section.append(line.strip())
+        match = DATE_LINE.match(line)
+        if match and date is None:
+            date = match.group(1)
+
+    rel = os.path.relpath(path, project)
+    if title:
+        # "1. Title", "0006. Title", "ADR-0002: Title" -- only this ADR's own number.
+        prefix = re.match(r"^(?:ADR[-\s]?)?(\d+)\s*[.:)-]?\s+", title, re.I)
+        if prefix and int(prefix.group(1)) == number:
+            title = title[prefix.end():]
+    else:
+        title = front.get("title") or re.sub(r"^\d+-", "", os.path.basename(path))[:-3].replace("-", " ").capitalize()
+
+    date = front.get("date") or date
+    date_from = "adr"
+    if not (date and ISO_DATE.match(date)):
+        added = git(project, "log", "--diff-filter=A", "--format=%as", "--", rel).stdout.split()
+        date, date_from = (added[-1], "git") if added else (None, None)
+
+    status, successor = adr_status(front, section)
+    return {"file": rel, "adr": number, "title": title, "status": status,
+            "successor_adr": successor, "date": date, "date_from": date_from,
+            "seed": False, "d": None, "superseded_by_d": None, "supersedes_d": None,
+            "skip_reason": None}
+
+
+def adr_scan(project, folder):
+    if not os.path.isdir(project):
+        print("decisions.py: %s is not a directory" % project, file=sys.stderr)
+        return 2
+    if folder is not None:
+        folders = [folder]
+        if not os.path.isdir(os.path.join(project, folder)):
+            print("decisions.py: --dir %s is not a directory" % folder, file=sys.stderr)
+            return 2
+    else:
+        folders = ADR_DIRS
+    files = []
+    for candidate in folders:
+        full = os.path.join(project, candidate)
+        if os.path.isdir(full):
+            files = sorted((int(m.group(1)), name) for name in os.listdir(full)
+                           for m in [ADR_FILE.match(name)] if m)
+            if files:
+                break
+    adrs = [read_adr(project, os.path.join(full, name), n) for n, name in files]
+
+    def padded(n, like):   # an ADR number the way this repo writes it: 0003, 003
+        return "%0*d" % (len(re.match(r"\d+", os.path.basename(like["file"])).group()), n)
+
+    for adr in adrs:
+        if adr["status"] is None:
+            adr["skip_reason"] = "no status"
+        elif adr["status"] not in ("accepted", "superseded"):
+            adr["skip_reason"] = adr["status"].capitalize() if adr["status"] in WORDS else adr["status"]
+        elif adr["date"] is None:
+            adr["skip_reason"] = "no date"
+        elif adr["status"] == "superseded" and adr["successor_adr"] is None:
+            adr["skip_reason"] = "Superseded, successor not named"
+
+    # A superseded ADR seeds only when its successor seeds, and an entry
+    # supersedes exactly one other. Dropping one can strand another, so repeat.
+    changed = True
+    while changed:
+        changed = False
+        seeded = {a["adr"]: a for a in adrs if a["skip_reason"] is None}
+        claimed = {}
+        for adr in adrs:
+            if adr["skip_reason"] is not None or adr["status"] != "superseded":
+                continue
+            n = adr["successor_adr"]
+            if n not in seeded:
+                adr["skip_reason"] = "Superseded by %s, which is not seeded" % padded(n, adr)
+                changed = True
+            elif n in claimed:
+                adr["skip_reason"] = "Superseded by %s, which already supersedes %s" % (
+                    padded(n, adr), padded(claimed[n]["adr"], adr))
+                changed = True
+            else:
+                claimed[n] = adr
+
+    d_of = {}
+    for adr in adrs:
+        if adr["skip_reason"] is None:
+            adr["seed"] = True
+            adr["d"] = d_of[adr["adr"]] = len(d_of) + 1
+    for adr in adrs:
+        if adr["seed"] and adr["status"] == "superseded":
+            successor = next(a for a in adrs if a["seed"] and a["adr"] == adr["successor_adr"])
+            adr["superseded_by_d"] = successor["d"]
+            successor["supersedes_d"] = adr["d"]
+    print(json.dumps(adrs, indent=2, ensure_ascii=False))
     return 0
 
 
@@ -264,6 +431,13 @@ def main(argv):
     if len(argv) == 2 and argv[0] in ("titles", "active"):
         {"titles": titles, "active": active}[argv[0]](argv[1])
         return 0
+    if len(argv) == 2 and argv[0] == "check":
+        return check(argv[1], None, None)
+    if len(argv) in (2, 4) and argv[0] == "adr-scan":
+        if len(argv) == 4 and argv[2] != "--dir":
+            print(USAGE, file=sys.stderr)
+            return 2
+        return adr_scan(argv[1], argv[3] if len(argv) == 4 else None)
     if len(argv) >= 4 and argv[0] == "check" and argv[2] == "--base":
         label = None
         if len(argv) == 6 and argv[4] == "--label":
