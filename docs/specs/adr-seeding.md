@@ -270,6 +270,8 @@ after `decision-log` is merged.
 | O6 | Two ADRs superseded by the same ADR; an entry supersedes exactly one | assumption | build | claude | Resolved | The lower-numbered ADR pairs; the other is not seeded, named "Superseded by N, which already supersedes M" |
 | O7 | An ADR with no date in the file and no commit (untracked) | assumption | build | claude | Resolved | Not seeded, named "no date" — never given a guessed date, same as "(no status)" |
 | O8 | Onboarding's `check` runs on a new, uncommitted file, but `check` required `--base` and a tracked file | question | build | claude | Resolved | `check <dir>` with no `--base` runs the structure checks only. Seeding is onboarding step 5; steps 5 to 7 became 6 to 8, and ship/SKILL.md's one pointer followed |
+| O9 | Two ADR files with one number collided on a D-number and failed `check` | question | review | claude | Resolved | Every file sharing a number is not seeded, named "number 0002 is used by 2 files"; an ADR superseded by that number follows |
+| O10 | Onboarding resumed after step 5 committed seeded entries the user never saw | question | review | claude | Resolved | The Draft resume path reruns the scan and check and shows the seeded summary again; a failing check reruns step 5 from the header |
 
 ## Glossary
 
