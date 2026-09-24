@@ -170,6 +170,7 @@ projects.
 - One naming format for branches, commits and PRs, and no Claude attribution
 - Writes and loads a living project overview; /ship keeps it current
 - A README block rendered from the overview and checked at ship time
+- An append-only DECISIONS.md, loaded every session and enforced by /review
 
 ## Docs
 
