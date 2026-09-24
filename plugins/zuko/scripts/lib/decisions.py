@@ -76,6 +76,11 @@ class Entry:
         body = {name: self.value(name) for name in self.fields if name != "Status"}
         return (" ".join(self.heading.split()), " ".join(" ".join(self.preamble).split()), body)
 
+    def unnumbered(self):
+        """recorded() with the number left out, to find a renumbered entry."""
+        heading, preamble, body = self.recorded()
+        return (re.sub(r"^## D\d+ ", "## D ", heading), preamble, body)
+
 
 def parse(text):
     """The entries, and every `## ` heading that is not an entry heading."""
@@ -193,7 +198,21 @@ def history(recorded, entries):
     now = {}
     for entry in entries:
         now.setdefault(entry.n, entry)
+    seen = {}
     for old in recorded:
+        seen[old.n] = seen.get(old.n, 0) + 1
+    unmatched = list(entries)
+    for old in recorded:
+        if seen[old.n] > 1:
+            # Two merged branches both added this number. Renumbering one
+            # copy is the fix, so find each copy by its content instead.
+            match = next((e for e in unmatched if e.unnumbered() == old.unnumbered()), None)
+            if match is None:
+                problems.append("D%d changed after it was recorded — only its Status line may "
+                                "change; supersede it with a new entry" % old.n)
+            else:
+                unmatched.remove(match)
+            continue
         new = now.get(old.n)
         if new is None:
             problems.append("D%d was removed after it was recorded — supersede it with a new "

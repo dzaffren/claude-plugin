@@ -263,4 +263,32 @@ check "$repo"
 expect_exit 1 "$check_status" "check untracked: fails"
 expect_match '^DECISIONS\.md  not tracked by git — commit it on this branch$' "$check_out" "check untracked: says so"
 
+# 25. Two branches each added D2 and both merged: main holds D2 twice.
+# Renumbering one copy is the way out, and must pass.
+dup_repo() {   # dup_repo; prints a repo whose base holds D1, D2 "B", D2 "C"
+  local dir
+  dir=$(mktemp -d -p "$work")
+  git -C "$dir" init -q -b main; git -C "$dir" config user.email t@example.com; git -C "$dir" config user.name Tester
+  header "$dir/DECISIONS.md"
+  entry "$dir/DECISIONS.md" 1 "A"; entry "$dir/DECISIONS.md" 2 "B"; entry "$dir/DECISIONS.md" 2 "C"
+  git -C "$dir" add -A; git -C "$dir" commit -q --no-verify -m "docs: two D2s merged"
+  git -C "$dir" checkout -q -b feat/fix
+  printf '%s' "$dir"
+}
+repo=$(dup_repo); check "$repo"
+expect_exit 1 "$check_status" "check base duplicate untouched: fails"
+expect_match '^DECISIONS\.md  D2 appears twice$' "$check_out" "check base duplicate untouched: names the duplicate"
+expect_no_match 'changed after it was recorded' "$check_out" "check base duplicate untouched: no false edit"
+
+repo=$(dup_repo)
+rewrite "$repo/DECISIONS.md" '/^## D2 · 2026-09-24 · C$/ { print "## D3 · 2026-09-24 · C"; next } { print }'
+check "$repo"
+expect_exit 0 "$check_status" "check base duplicate renumbered: passes"
+
+repo=$(dup_repo)
+rewrite "$repo/DECISIONS.md" '/^## D2 · 2026-09-24 · C$/ { print "## D3 · 2026-09-24 · C, reworded"; next } { print }'
+check "$repo"
+expect_exit 1 "$check_status" "check base duplicate renumbered and edited: fails"
+expect_match '^DECISIONS\.md  D2 changed after it was recorded' "$check_out" "check base duplicate renumbered and edited: names D2"
+
 rm -rf "$work"
