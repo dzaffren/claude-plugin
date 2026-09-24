@@ -66,7 +66,7 @@ what a script cannot:
 | No secrets | Nothing key-shaped in the diff |
 | Open items | Zero rows still `Open` |
 | Spec matches code | The plan describes what was actually built |
-| Scope | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and the zuko block in `README.md` (only the text between the markers) — are exempt |
+| Scope | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and in `README.md` the zuko block plus what onboarding's README step changed to place it (the marker pair, sections an approved merge replaced, or a new `README.md`) — are exempt |
 
 The script also runs `render-readme-block.sh --check`. A stale block fails the
 gate, and the fix is `--write`. A missing block fails it too, and the fix is
