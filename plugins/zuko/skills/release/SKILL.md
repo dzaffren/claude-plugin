@@ -56,7 +56,8 @@ One yes covers steps 2 to 6. Do not ask again.
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" cut <repo-root> --version X.Y.Z --date "$(date +%F)"
 ```
 
-`cut` re-checks everything `plan` did. A refusal → print it and end; nothing
+`cut` re-checks everything `plan` did, test suite included, so give this
+Bash call `timeout: 600000` too. A refusal → print it and end; nothing
 was written. On success it rewrites `CHANGELOG.md`, the manifests and the
 overview's `**Release:**` field. Step 3 commits exactly the files it changed;
 `git status --short` lists them.
