@@ -99,6 +99,13 @@ class Gates:
     def fail(self, name, text):
         self.lines.append((name, text, False))
 
+    def redo(self, name, check):
+        """Run one gate again and put its new line where the old one was."""
+        again = Gates()
+        check(again)
+        at = next(i for i, line in enumerate(self.lines) if line[0] == name)
+        self.lines[at:at + 1] = again.lines
+
     @property
     def failed(self):
         return any(not passed for _, _, passed in self.lines)
@@ -552,6 +559,9 @@ class Release:
             return
         if repo:
             tests_gate(project, repo, gates)
+            # A test run can leave files behind (.coverage); judged only
+            # before it, the tree passes here and every cut after refuses.
+            gates.redo("tree", lambda again: tree_gate(project, again))
         self.lines = changelog_gate(project, gates)
         self.fields, self.notes = manifests(project, gates)
 

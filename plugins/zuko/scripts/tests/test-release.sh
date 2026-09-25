@@ -180,6 +180,16 @@ expect_match '^  tree       2 uncommitted files — commit or stash them first$'
 expect_match '^NEXT: stop$' "$(last_line "$out")" "tree: NEXT: stop"
 expect_match "^$before\$" "$(snapshot "$repo")" "tree: nothing written"
 
+# 3b. A test command that leaves a file behind dirties the tree after its gate
+# passed; plan must say so, or every cut after it refuses.
+repo=$(fixture)
+printf 'echo data >.coverage\nexit 0\n' >"$repo/check.sh"
+commit "$repo" "chore: write coverage"
+run plan "$repo"
+expect_exit 1 "$status" "test leaves a file: exits 1"
+expect_match '^  tree       1 uncommitted file — commit or stash them first$' "$out" "test leaves a file: the tree gate sees it"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "test leaves a file: NEXT: stop"
+
 # 4. The test command fails.
 repo=$(fixture)
 printf 'exit 1\n' >"$repo/check.sh"
