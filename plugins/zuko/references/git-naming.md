@@ -6,7 +6,7 @@ skill, or the two copies drift apart.
 | Thing | Format | Example |
 | ----- | ------ | ------- |
 | Branch | `{type}/{slice}` | `feat/ship-naming` |
-| Commit subject | `{type}({scope}): {subject}` | `feat(ship): standardise git naming` |
+| Commit subject | `{type}({scope}): {subject}` or `{type}({scope})!: {subject}` for a breaking change | `feat(ship): standardise git naming`, `feat(config)!: read settings from invoice.toml` |
 | Commit body | what changed and why, wrapped at 72 | — |
 | PR title | the squash commit subject, unchanged | `feat(ship): standardise git naming` |
 
@@ -16,6 +16,9 @@ skill, or the two copies drift apart.
 `scripts`, `docs`. Optional; `feat: …` is valid.
 
 **Subject:** imperative, no trailing period, whole line ≤72 characters.
+
+**Breaking change:** the `!` goes only right before the colon — `feat!:` and
+`feat(config)!:`, never `feat:!` or `feat!!:`.
 
 ## Banned in every commit message and PR body
 
