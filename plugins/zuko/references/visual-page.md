@@ -66,14 +66,19 @@ every spec page opens with one line above the slice line:
 ## Hub page
 
 One page for the whole project; each slice's page links from it. Built by
-`/ship` at close-out from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
-`DECISIONS.md` and `CHANGELOG.md` when they exist. The Markdown wins: the hub
-is regenerated from those files, never edited beside them.
+`/ship` at close-out, and republished by `/release`, from `OVERVIEW.md` and
+`docs/ARCHITECTURE.md`, plus `DECISIONS.md` and `CHANGELOG.md` when they
+exist. The Markdown wins: the hub is regenerated from those files, never
+edited beside them.
 
 In this order:
 
 1. **Product line and status strip.** The overview's description · its
-   Status · the date it was last updated.
+   Status · the latest release · the date it was last updated. The release
+   comes from the overview's `**Release:**` field and reads
+   `v2.2.0 · 2026-09-25`, the date from that version's `CHANGELOG.md`
+   heading, linked to its GitHub release page. No `**Release:**` field →
+   leave it out.
 2. **Run commands.** The `## Run it` table.
 3. **Architecture.** The context and components diagrams.
 4. **Slices.** The slices table, each row linking to that slice's spec page.
