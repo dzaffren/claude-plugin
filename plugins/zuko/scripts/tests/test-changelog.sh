@@ -373,3 +373,12 @@ run init "$repo"
 expect_exit 0 "$status" "init tag and branch share a name: exits 0"
 expect_match '^## \[0\.1\.0\] - ' "$(cat "$repo/CHANGELOG.md")" "init tag and branch share a name: the version is seeded"
 expect_no_match 'Skipped|tags/' "$out" "init tag and branch share a name: nothing skipped"
+
+# 28. Two tags for one version, with and without the v: one heading.
+repo=$(new_repo)
+git -C "$repo" tag v1.0.0
+git -C "$repo" tag 1.0.0
+run init "$repo"
+expect_exit 0 "$status" "init v1.0.0 and 1.0.0: exits 0"
+expect_match '^1$' "$(grep -c '^## \[1\.0\.0\]' "$repo/CHANGELOG.md")" "init v1.0.0 and 1.0.0: one heading"
+expect_match 'and 1 past version from tags \(v1\.0\.0, 1\.0\.0\)$' "$out" "init v1.0.0 and 1.0.0: one version, both tags named"

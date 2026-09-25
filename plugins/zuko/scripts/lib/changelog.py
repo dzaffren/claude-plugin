@@ -121,15 +121,20 @@ def init(project):
         else:
             skipped.append(tag)
     tags.sort(reverse=True)
+    # v1.0.0 and 1.0.0 are one release: one heading, dated by the first.
+    versions = []
+    for _, _, version, date in tags:
+        if not versions or versions[-1][0] != version:
+            versions.append((version, date))
 
     with open(path, "w", encoding="utf-8") as handle:
-        handle.write(HEADER + "".join(PAST % (version, date) for _, _, version, date in tags))
+        handle.write(HEADER + "".join(PAST % pair for pair in versions))
 
     if not tags:
         print("%s: created with [Unreleased] and no past versions" % NAME)
     else:
         print("%s: created with [Unreleased] and %d past version%s from tags (%s)"
-              % (NAME, len(tags), "" if len(tags) == 1 else "s",
+              % (NAME, len(versions), "" if len(versions) == 1 else "s",
                  ", ".join(tag for _, tag, _, _ in tags)))
     if skipped:
         print("Skipped tags that are not semver: %s" % ", ".join(skipped))
