@@ -158,7 +158,7 @@ else
       subject=$(git -C "$dir" log -1 --format=%s "$sha")
       message=$(git -C "$dir" log -1 --format=%B "$sha")
       reasons=""
-      if ! printf '%s' "$subject" | grep -qE '^(feat|fix|chore|docs|refactor|test)(\([a-z0-9._-]+\))?: .+'; then
+      if ! printf '%s' "$subject" | grep -qE '^(feat|fix|chore|docs|refactor|test)(\([a-z0-9._-]+\))?!?: .+'; then
         reasons="$reasons
     $sha  subject is not {type}({scope}): {subject}
              \"$subject\""

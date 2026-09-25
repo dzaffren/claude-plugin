@@ -460,4 +460,23 @@ gate "$repo"
 expect_exit 1 "$gate_status" "a branch without DECISIONS.md fails the gate"
 expect_match '^- DECISIONS\.md  missing — onboarding creates it$' "$gate_out" "the missing file says who creates it"
 
+# 15. The breaking-change marker: one "!" directly before the colon.
+for subject in "feat(config)!: read settings from invoice.toml" "chore!: drop python 3.8"; do
+  repo=$(new_repo feat/fixture)
+  changelog_line "$repo" "BREAKING: Settings move to invoice.toml; rename the file."
+  add_commit "$repo" "$subject"
+  gate "$repo"
+  expect_exit 0 "$gate_status" "a breaking-change subject passes: $subject"
+  expect_no_match 'subject is not' "$gate_out" "the naming check accepts: $subject"
+done
+
+for subject in "feat!!: x" "feat:! x" "feat(!): x" "feat!(config): x"; do
+  repo=$(new_repo feat/fixture)
+  add_commit "$repo" "$subject"
+  bad_sha=$(sha_of "$repo")
+  gate "$repo"
+  expect_exit 1 "$gate_status" "a misplaced marker fails the gate: $subject"
+  expect_match "$bad_sha  subject is not \{type\}\(\{scope\}\): \{subject\}" "$gate_out" "the naming check rejects: $subject"
+done
+
 rm -rf "$work"
