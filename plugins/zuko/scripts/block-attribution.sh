@@ -69,13 +69,27 @@ def short_options(token, rest, letters, drop_equals):
         return
 
 
-def read_options(rest, longs, letters, drop_equals=False):
+def long_option(name, longs, abbreviate):
+    """git takes any unambiguous prefix of a long option (--mess is --message);
+    gh's flag parser takes only the full name. An ambiguous prefix makes git
+    stop with an error, so matching it too only ever over-blocks."""
+    if name in longs:
+        return longs[name]
+    if abbreviate and len(name) > 2:
+        for full, meaning in longs.items():
+            if full.startswith(name):
+                return meaning
+    return None
+
+
+def read_options(rest, longs, letters, drop_equals=False, abbreviate=False):
     """Emit every option value that is message text or names a message file."""
     while rest:
         token = rest.pop(0)
         name, equals, value = token.partition("=")
-        if name in longs:
-            label, kind = longs[name]
+        meaning = long_option(name, longs, abbreviate) if name.startswith("--") else None
+        if meaning:
+            label, kind = meaning
             if equals:
                 emit(label, kind, value)
             elif rest:
@@ -95,7 +109,7 @@ for args in git_command.invocations(tokens):
         read_options(
             args[1:],
             {"--message": (label, "text"), "--file": (label, "file")},
-            {"m": (label, "text"), "F": (label, "file")})
+            {"m": (label, "text"), "F": (label, "file")}, abbreviate=True)
 
 NOTES = ("release notes", "text")
 NOTES_FILE = ("release notes", "file")
