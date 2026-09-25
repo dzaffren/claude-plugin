@@ -543,4 +543,21 @@ gate "$repo"
 expect_exit 1 "$gate_status" "a changelog without [Unreleased] fails the gate"
 expect_match '^- CHANGELOG\.md  has no "## \[Unreleased\]" heading$' "$gate_out" "the missing heading is named"
 
+# Repo settings that reshape git diff output never hide an attributed line.
+repo=$(new_repo feat/export-csv)
+git -C "$repo" config color.ui always
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "color.ui=always does not hide an attributed changelog line"
+expect_match 'new line carries Claude attribution' "$gate_out" "the coloured diff is still read"
+
+repo=$(new_repo feat/export-csv)
+printf 'CHANGELOG.md -diff\n' >"$repo/.gitattributes"
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "a -diff attribute does not hide an attributed changelog line"
+expect_match 'new line carries Claude attribution' "$gate_out" "the binary-marked file is still read as text"
+
 rm -rf "$work"

@@ -226,7 +226,9 @@ $(printf '%s\n' "$changelog_out" | sed 's/^[^ ]/- &/')"
 
   # The lines this branch added to CHANGELOG.md, and only those, carry no
   # attribution: a line already on the base is not this branch's to fix.
-  attributed=$(git -C "$dir" diff "$base"..HEAD -- CHANGELOG.md 2>/dev/null \
+  # The flags pin a plain unified diff whatever the repo's colour, external
+  # diff or -diff attribute say -- any of those would leave no "+" lines.
+  attributed=$(git -C "$dir" diff --no-color --no-ext-diff --text "$base"..HEAD -- CHANGELOG.md 2>/dev/null \
     | grep '^+' | grep -v '^+++' | cut -c2- \
     | grep -iE "$ban_session|$ban_coauthor|$ban_generated" || true)
   while IFS= read -r line; do
