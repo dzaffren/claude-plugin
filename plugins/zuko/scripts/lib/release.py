@@ -28,7 +28,8 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          lines around them: the GitHub release's notes
 
 The last version is the newest plain semver tag on HEAD's history; with no
-tag, the version the manifests share; with neither, plan asks for the first.
+tag, the version the manifests share, and the commits that count are those
+after the one that set it; with neither, plan asks for the first.
 The manifests are a closed list, each only when present: package.json,
 pyproject.toml's [project], Cargo.toml's [package], .claude-plugin/plugin.json,
 and in .claude-plugin/marketplace.json each plugin whose source is a path in
@@ -425,8 +426,24 @@ class Commit:
                              or changelog.BREAKING.search(body))
 
 
-def commits_since(project, tag):
-    log = git(project, "log", "--format=%s%x1f%b%x1e", tag + "..HEAD" if tag else "HEAD")
+def version_commit(project, fields):
+    """With no tag, the commit that last set the manifests' version: the newest
+    to add or remove a version line as it reads now. What came before it went
+    out in the release that version names. None when git has no such commit."""
+    newest = None
+    for field in fields:
+        text = read(project, field.path)
+        start = text.rfind("\n", 0, field.span[0]) + 1
+        line = text[start:field.span[1]].lstrip()
+        sha = git(project, "log", "-1", "--format=%H", "-S", line, "--", field.path).stdout.strip()
+        if sha and (newest is None or git(project, "merge-base", "--is-ancestor",
+                                           newest, sha).returncode == 0):
+            newest = sha
+    return newest
+
+
+def commits_since(project, base):
+    log = git(project, "log", "--format=%s%x1f%b%x1e", base + "..HEAD" if base else "HEAD")
     commits = []
     for record in log.stdout.split("\x1e"):
         fields = record.lstrip("\n").split("\x1f")
@@ -570,7 +587,8 @@ class Release:
         self.tag, self.last = tagged if tagged else (None, None)
         if not tagged and self.fields and not gates.failed:
             self.last = parse(self.fields[0].version)
-        self.commits = commits_since(project, self.tag)
+        base = self.tag or (version_commit(project, self.fields) if self.last else None)
+        self.commits = commits_since(project, base)
         if self.tag and not self.commits:
             gates.fail("commits", "no commits since %s" % self.tag)
         self.called, self.reason = called_for(self.last, self.commits) if self.last else (None, None)

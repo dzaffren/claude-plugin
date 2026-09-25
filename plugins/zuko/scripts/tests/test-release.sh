@@ -591,11 +591,12 @@ expect_match '^NEXT: ask-first$' "$(last_line "$out")" "first: versionless manif
 repo=$(untagged)
 marketplace "$repo" 2.1.0
 commit "$repo" "chore: add the marketplace"
+commit "$repo" "feat(exporters): add a summary row"
 run plan "$repo"
 expect_exit 0 "$status" "zuko shape: exits 0"
 expected="
 Last version  2.1.0  from plugin.json and marketplace.json (no tags yet)
-Since then    3 commits: 1 feat · 0 fix · 0 breaking
+Since then    1 commit: 1 feat · 0 fix · 0 breaking
 Proposed      2.2.0  — a feat since 2.1.0 bumps minor
 
 Will write
@@ -619,9 +620,28 @@ sed -i.bak 's|"./plugins/zuko"|"../outside"|' "$repo/.claude-plugin/marketplace.
 mkdir -p "$(dirname "$repo")/outside/.claude-plugin"
 printf '{ "version": "2.1.0" }\n' >"$(dirname "$repo")/outside/.claude-plugin/plugin.json"
 commit "$repo" "chore: add the marketplace"
+commit "$repo" "feat(exporters): add a summary row"
 run plan "$repo"
 expect_match '^  \.claude-plugin/marketplace\.json   2\.1\.0 → 2\.2\.0$' "$out" "outside source: the entry is still bumped"
 expect_no_match 'outside' "$out" "outside source: the plugin.json outside the repo is not"
+
+# 19b. No tags: only commits after the one that set the manifest's version
+# count. An old breaking change or feat before it was released already.
+repo=$(untagged)
+commit "$repo" "feat!: drop the v1 api"
+package_json "$repo" 2.1.0
+commit "$repo" "chore: bump to 2.1.0"
+commit "$repo" "fix(parsers): keep leading zeros"
+run plan "$repo"
+expect_match '^Since then    1 commit: 0 feat · 1 fix · 0 breaking$' "$out" "since the bump: counts only the fix"
+expect_match '^NEXT: ask 2\.1\.1$' "$(last_line "$out")" "since the bump: proposes a patch"
+
+repo=$(untagged)
+package_json "$repo" 2.1.0
+commit "$repo" "chore: release 2.1.0 by hand"
+commit "$repo" "docs: reword help"
+run plan "$repo"
+expect_match '^NEXT: ask-version$' "$(last_line "$out")" "since the bump: a feat before it calls for nothing"
 
 # 20. Manifests that disagree stop the release, naming every file and version.
 repo=$(untagged)
@@ -657,6 +677,7 @@ repo=$(untagged)
 package_json "$repo" 1.2.0
 printf '[project]\nname = "invoice-cli"\ndynamic = ["version"]\n' >"$repo/pyproject.toml"
 commit "$repo" "chore: add manifests"
+commit "$repo" "feat(exporters): add a summary row"
 run plan "$repo"
 expect_match '^Last version  1\.2\.0  from package\.json \(no tags yet\)$' "$out" "dynamic: the last version is package.json's"
 expect_match '^  pyproject\.toml: version comes from the tag, not touched$' "$out" "dynamic: says so"
