@@ -24,6 +24,9 @@ the interruption, and the user has not approved those entries. Rerun its scan
 and its `check`, and show its summary in the draft again. `check` fails → the
 seeding was cut short: put the file back to the created header and run step 5
 again.
+`CHANGELOG.md` not yet committed → step 6 created it before the interruption,
+and the user has not seen it. Show it in the draft as created, with its
+version headings, as though `init` had just printed them.
 
 Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
 change it after that. One exception: `/ship` runs step 4 and the README part
@@ -316,7 +319,8 @@ makes the file ready; `/ship` writes the lines, per `changelog.md`.
   as it is.
 
 - **`CHANGELOG.md` with `[Unreleased]`** → nothing to do, and nothing in the
-  draft.
+  draft — unless the file is not yet committed, which the resume rule under
+  "When" covers.
 
 Old entries are never reformatted. Past versions get only the one line `init`
 writes under each tag; nothing is invented from commit messages.
