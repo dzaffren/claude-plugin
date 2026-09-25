@@ -99,8 +99,8 @@ proceed on a "probably fine".
 
 - Squash noise commits. Keep commits that tell a real story. A squash keeps
   the `CHANGELOG.md` lines the refresh committed — the gate passed on them.
-- Commit messages: subject `{type}({scope}): {subject}`, body saying what
-  changed and why, and nothing from the ban list in `references/git-naming.md`.
+- Commit messages follow `references/git-naming.md` — subject, body, and
+  the ban list. A squash of a breaking-change commit keeps its `!`.
 - Rebase or merge the base branch per the repo's own convention.
 
 ## The PR
