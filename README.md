@@ -178,6 +178,7 @@ projects.
 - [Overview](OVERVIEW.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Decisions](DECISIONS.md)
+- [Changelog](CHANGELOG.md)
 
 <!-- zuko:end -->
 
