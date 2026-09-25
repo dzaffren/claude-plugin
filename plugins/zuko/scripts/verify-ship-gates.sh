@@ -125,6 +125,13 @@ if [ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ]; then
 - Working tree is dirty. Commit or stash before shipping."
 fi
 
+# Claude attribution, as references/git-naming.md bans it. One list: the
+# naming check reads it for commit messages, the changelog check for the
+# lines a branch adds to CHANGELOG.md.
+ban_session='claude-session:|https://claude\.ai/code/session_'
+ban_coauthor='co-authored-by:.*(claude|noreply@anthropic\.com)'
+ban_generated='generated with claude code'
+
 # Naming, over every commit ahead of the base. An empty range and a base that
 # will not resolve are the same failure: a gate that scanned nothing is not a
 # pass, so neither is allowed to look like one.
@@ -170,15 +177,15 @@ else
         [ "${#subject}" -gt 72 ] && reasons="$reasons
     $sha  subject is longer than 72 characters"
       fi
-      if printf '%s\n' "$message" | grep -qiE 'claude-session:|https://claude\.ai/code/session_'; then
+      if printf '%s\n' "$message" | grep -qiE "$ban_session"; then
         reasons="$reasons
     $sha  carries a Claude-Session trailer"
       fi
-      if printf '%s\n' "$message" | grep -qiE 'co-authored-by:.*(claude|noreply@anthropic\.com)'; then
+      if printf '%s\n' "$message" | grep -qiE "$ban_coauthor"; then
         reasons="$reasons
     $sha  carries a Co-Authored-By trailer naming Claude"
       fi
-      if printf '%s\n' "$message" | grep -qiE 'generated with claude code'; then
+      if printf '%s\n' "$message" | grep -qiE "$ban_generated"; then
         reasons="$reasons
     $sha  carries a \"Generated with Claude Code\" line"
       fi
@@ -204,6 +211,30 @@ SHAS
     problems="$problems
 $(printf '%s\n' "$decisions_out" | sed 's/^/- /')"
   fi
+
+  # Changelog: against the same base. A feat or fix branch adds a line under
+  # [Unreleased]. Every non-zero exit is a problem -- exit 2, a base it cannot
+  # read, is never a pass. A problem line gets "- "; its indented detail
+  # lines keep their indent, so the commit listing stays under its problem.
+  changelog_out=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/changelog.py" check "$dir" --base "$base" --label "${base_ref#origin/}" 2>&1)
+  if [ $? -eq 0 ]; then
+    echo "$changelog_out"
+  else
+    problems="$problems
+$(printf '%s\n' "$changelog_out" | sed 's/^[^ ]/- &/')"
+  fi
+
+  # The lines this branch added to CHANGELOG.md, and only those, carry no
+  # attribution: a line already on the base is not this branch's to fix.
+  attributed=$(git -C "$dir" diff "$base"..HEAD -- CHANGELOG.md 2>/dev/null \
+    | grep '^+' | grep -v '^+++' | cut -c2- \
+    | grep -iE "$ban_session|$ban_coauthor|$ban_generated" || true)
+  while IFS= read -r line; do
+    [ -n "$line" ] && problems="$problems
+- CHANGELOG.md  new line carries Claude attribution: \"$line\""
+  done <<ATTRIBUTED
+$attributed
+ATTRIBUTED
 fi
 
 # Spike branches left alive.

@@ -479,4 +479,68 @@ for subject in "feat!!: x" "feat:! x" "feat(!): x" "feat!(config): x"; do
   expect_match "$bad_sha  subject is not \{type\}\(\{scope\}\): \{subject\}" "$gate_out" "the naming check rejects: $subject"
 done
 
+# 16. CHANGELOG.md. new_repo's base carries an empty [Unreleased].
+commit_changelog() {   # commit_changelog <repo> <subject>
+  git -C "$1" add -A
+  git -C "$1" commit -q --no-verify -m "$2"
+}
+
+repo=$(new_repo feat/export-csv)
+add_commit "$repo" "feat(exporters): write ledger csv"
+feat_sha=$(sha_of "$repo")
+gate "$repo"
+expect_exit 1 "$gate_status" "a feat branch with no changelog line fails the gate"
+expect_match '^- CHANGELOG\.md  no new line under \[Unreleased\] — this branch has feat or fix commits:$' \
+  "$gate_out" "the missing line is its own problem"
+expect_match "^ {16}$feat_sha feat\(exporters\): write ledger csv$" "$gate_out" "the commit that needs it is listed, indented under the problem"
+expect_no_match '^Changelog: ' "$gate_out" "a failed changelog check prints no scope line"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 0 "$gate_status" "a feat branch with its changelog line passes"
+expect_match '^Changelog: 1 new line under \[Unreleased\] for 1 feat/fix commit$' "$gate_out" "the scope line counts lines and commits"
+
+repo=$(new_repo chore/bump-ruff)
+add_commit "$repo" "chore(deps): bump ruff"
+gate "$repo"
+expect_exit 0 "$gate_status" "a chore-only branch passes with no changelog change"
+expect_match '^Changelog: no feat or fix commits — no line needed$' "$gate_out" "the scope line says no line was needed"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "a new changelog line with attribution fails the gate"
+expect_match '^- CHANGELOG\.md  new line carries Claude attribution: "- Generated with Claude Code"$' \
+  "$gate_out" "the attributed line is quoted back"
+
+repo=$(new_repo main)
+changelog_line "$repo" "Generated with Claude Code"
+commit_changelog "$repo" "docs(changelog): an old line"
+git -C "$repo" checkout -q -b feat/export-csv
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 0 "$gate_status" "attribution already on the base is not this branch's"
+expect_no_match 'attribution' "$gate_out" "only the lines a branch adds are checked for attribution"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+git -C "$repo" rm -q CHANGELOG.md
+write_readme "$repo"
+commit_changelog "$repo" "docs(changelog): drop the changelog"
+gate "$repo"
+expect_exit 1 "$gate_status" "a branch without CHANGELOG.md fails the gate"
+expect_match '^- CHANGELOG\.md  missing — /ship creates it$' "$gate_out" "the missing file says who creates it"
+
+repo=$(new_repo chore/bump-ruff)
+printf '# Changelog\n\n## [0.1.0] - 2025-03-02\n\nReleased before this changelog was kept.\n' >"$repo/CHANGELOG.md"
+commit_changelog "$repo" "chore(changelog): drop the unreleased heading"
+gate "$repo"
+expect_exit 1 "$gate_status" "a changelog without [Unreleased] fails the gate"
+expect_match '^- CHANGELOG\.md  has no "## \[Unreleased\]" heading$' "$gate_out" "the missing heading is named"
+
 rm -rf "$work"
