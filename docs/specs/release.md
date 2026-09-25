@@ -167,7 +167,7 @@ flowchart LR
     G -- "any FAILED" --> F[stop · every failed gate listed]
     G -- "tag at HEAD, no release" --> RS[resume message] --> DONE
     G -- pass --> P[plan + question]
-    P -- "another version" --> OV{valid and higher?}
+    P -- "another version" --> OV{"valid and higher?"}
     OV -- "no: refused" --> P
     OV -- "yes, but size off" --> AD[advice · confirm once] --> P
     OV -- "yes, matches" --> P
@@ -401,12 +401,15 @@ skipped `plan` still cannot write a bad release.
 
 **Version rule.** Commits `last..HEAD`, reusing `changelog.py`'s `NEEDS_LINE` and
 `BREAKING`: any breaking → major, or minor below 1.0.0; else any `feat` → minor; else
-any `fix` → patch; else nothing. The last version is the newest semver tag; no tag →
-the manifests' shared version; none → `ask-first`.
+any `fix` → patch; else nothing. The last version is the newest semver tag on HEAD's
+history; no tag → the manifests' shared version, counting only the commits after the
+one that set it (review A1); none → `ask-first`.
 
-**Tests gate.** `gh api repos/{owner}/{repo}/commits/{sha}/check-runs` plus
-`/status`. Both `total_count` 0 → no CI, so run the `test` cell of the overview's
-"Run it" table with `bash -c` in the repo, and require exit 0. Any check failing →
+**Tests gate.** `gh api repos/OWNER/REPO/commits/SHA/check-runs` plus `/status`, 100
+a page, read until `total_count` items are in (review A4). Both `total_count` 0 → no
+CI, so run the `test` cell of the overview's "Run it" table with `bash -c` in the
+repo, and require exit 0; the tree is checked again after it, so a run that leaves a
+file behind fails `plan` rather than every `cut` (review A3). Any check failing →
 fail naming them; a gh error → fail with its message, never "no CI".
 
 ### Changes
