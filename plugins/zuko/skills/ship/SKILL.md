@@ -60,7 +60,10 @@ The gate below reads what this step writes, so it runs first.
   `git log {base}..HEAD`, where `{base}` is the branch this one merges into.
   Only a branch with `feat`, `fix` or `!` commits, or a `BREAKING CHANGE:`
   footer, gets lines; one of only `chore`, `docs`, `test` or `refactor`
-  commits adds none. Show the user the lines you wrote.
+  commits adds none. Lines this branch already added count: read
+  `git diff {base}..HEAD -- CHANGELOG.md` first and write only for changes
+  those lines do not cover, so a second `/ship` run adds nothing twice. Show
+  the user the lines you wrote.
 - Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
   re-render the `README.md` block from the updated overview. It rewrites only
   the text between the zuko markers.
