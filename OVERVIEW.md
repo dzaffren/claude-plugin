@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-09-25 by /ship changelog
+**Status:** Active · **Updated:** 2026-09-25 by /ship release
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -18,7 +18,7 @@ projects.
 ## Where things are
 
 - `.claude-plugin/` — the marketplace manifest
-- `plugins/zuko/skills/` — one folder per stage: shape, spec, build, review, ship, and the helpers
+- `plugins/zuko/skills/` — one folder per stage: shape, spec, build, review, ship, release, and the helpers
 - `plugins/zuko/agents/` — subagents the stages dispatch (chunk-builder, reviewer, finding-verifier)
 - `plugins/zuko/references/` — rules every stage reads (voice, slicing, ledger, onboarding)
 - `plugins/zuko/scripts/` — hook and gate scripts; `tests/` holds their bash test harness
