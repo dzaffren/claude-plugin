@@ -51,6 +51,7 @@ old entry's Status line ever changes.
 DECISIONS
 # The README carries a current zuko block, rendered and never typed, so the
 # gate's README check passes and every failure below is naming.
+python3 "$scripts/lib/changelog.py" init "$repo" >/dev/null
 printf '# Naming\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$repo/README.md"
 CLAUDE_PROJECT_DIR="$repo" bash "$scripts/render-readme-block.sh" --write 2>/dev/null
 git -C "$repo" add -A
@@ -76,7 +77,8 @@ gate() {
   gate_status=$?
 }
 
-# 1. A clean conventional commit goes through.
+# 1. A clean conventional commit goes through, with its changelog line.
+printf '\n### Added\n\n- Every commit follows one naming convention.\n' >>"$repo/CHANGELOG.md"
 commit_through_hook "feat(ship): standardise git naming"
 expect_exit 0 "$hook_status" "e2e: the hook lets a clean commit through"
 expect_match 'feat\(ship\): standardise git naming' "$(git -C "$repo" log -1 --format=%s)" "e2e: the clean commit landed"

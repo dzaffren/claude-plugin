@@ -75,6 +75,8 @@ new_repo() {   # new_repo <branch> [--no-base]; prints the repo path
   git -C "$dir" config user.email t@example.com
   git -C "$dir" config user.name Tester
   write_spec "$dir"
+  # Before the README: its block links CHANGELOG.md once the file exists.
+  python3 "$scripts/lib/changelog.py" init "$dir" >/dev/null
   write_readme "$dir"
   git -C "$dir" add -A
   git -C "$dir" commit -q --no-verify -m "chore(spec): add the fixture spec"
@@ -92,6 +94,12 @@ add_commit() {  # add_commit <repo> <subject> [body]
   fi
 }
 
+# A line under [Unreleased], which a feat or fix branch needs to pass. It
+# lands with the next commit.
+changelog_line() {  # changelog_line <repo> <line>
+  printf '\n### Added\n\n- %s\n' "$2" >>"$1/CHANGELOG.md"
+}
+
 sha_of() { git -C "$1" log -1 --format=%h; }
 
 gate() {        # gate <repo>; sets $gate_out $gate_status
@@ -101,6 +109,7 @@ gate() {        # gate <repo>; sets $gate_out $gate_status
 
 # 1. A clean branch.
 repo=$(new_repo feat/ship-naming)
+changelog_line "$repo" "Every commit follows one naming convention."
 add_commit "$repo" "feat(ship): standardise git naming"
 add_commit "$repo" "feat(scripts): add the attribution hook"
 add_commit "$repo" "test(scripts): cover the naming gate"
@@ -241,6 +250,7 @@ commit_overview() {   # commit_overview <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_exit 0 "$gate_status" "an Active overview with the slice's row passes"
@@ -343,6 +353,7 @@ commit_readme() {   # commit_readme <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_match '^README: zuko block matches OVERVIEW\.md$' "$gate_out" "a current block prints the README scope line"
@@ -391,6 +402,7 @@ decisions_repo() {   # decisions_repo; prints a repo on feat/fixture, D1..D3 on 
   git -C "$dir" add -A
   git -C "$dir" commit -q --no-verify -m "docs: record D1 to D3"
   git -C "$dir" checkout -q -b feat/fixture
+  changelog_line "$dir" "The fixture ships."
   add_commit "$dir" "feat(scripts): add the fixture"
   printf '%s' "$dir"
 }
@@ -401,6 +413,7 @@ commit_decisions() {   # commit_decisions <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_exit 0 "$gate_status" "an empty DECISIONS.md passes"
