@@ -87,6 +87,10 @@ expect_no_match 'Injection: SQL, command, template, path traversal' "$sk" "revie
 expect_match 'Findings   ' "$sk" "review/SKILL.md's report has the Findings header line"
 expect_match 'no category checked' "$sk" "review/SKILL.md says what a diff touching no category prints"
 
+# --- the seeded diff makes its A10 fail-open reachable from a route ---
+bp=$(text "$fixture/branch.patch")
+expect_match '^\+.*if not is_admin\(' "$bp" "branch.patch calls is_admin() from a route"
+
 # --- the seeded-run fixture still applies to its base ---
 for patch in branch readme; do
   repo="$work/$patch"

@@ -88,9 +88,12 @@ Scenario: exclusions keep noise out of the report
   Then none of those four is a finding
 
 Scenario: where an exclusion and OWASP disagree, OWASP wins, narrowed to the diff
-  Given the diff changes uv.lock to add requests-toolbelt 0.10.1
+  Given the diff changes uv.lock to add requests-toolbelt 0.10.1, which no code
+    imports yet
   And removes log.warning("login failed for %s", username) from auth.py
   And is_admin() now returns True when the roles lookup raises
+  And the new GET /export/all route lets only users is_admin() approves export
+    every customer's invoices
   When the user runs /review
   Then it reports three findings: A03:2025 Software Supply Chain Failures for the
     new dependency, A09:2025 Security Logging and Alerting Failures for the removed

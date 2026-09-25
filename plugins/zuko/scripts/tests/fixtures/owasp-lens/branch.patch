@@ -17,6 +17,23 @@ index a56597e..fcb7f18 100644
 -        return False
 +        return True
      return any(role == "admin" for (role,) in roles)
+diff --git a/invoice_api/exporters/csv_export.py b/invoice_api/exporters/csv_export.py
+index 8a62705..46d6c6e 100644
+--- a/invoice_api/exporters/csv_export.py
++++ b/invoice_api/exporters/csv_export.py
+@@ -15,3 +15,12 @@ def export_csv(customer):
+     writer.writerow(["number", "issued_at", "total"])
+     writer.writerows(rows)
+     return out.getvalue(), 200, {"Content-Type": "text/csv"}
++
++
++def export_all_csv():
++    rows = db.run("SELECT customer, number, issued_at, total FROM invoices ORDER BY customer, issued_at")
++    out = io.StringIO()
++    writer = csv.writer(out)
++    writer.writerow(["customer", "number", "issued_at", "total"])
++    writer.writerows(rows)
++    return out.getvalue(), 200, {"Content-Type": "text/csv"}
 diff --git a/invoice_api/exporters/ledger.py b/invoice_api/exporters/ledger.py
 new file mode 100644
 index 0000000..0dd076c
@@ -38,19 +55,24 @@ index 0000000..0dd076c
 +    conn.close()
 +    return render_template("ledger.html", customer=customer, rows=rows)
 diff --git a/invoice_api/routes/export.py b/invoice_api/routes/export.py
-index 5661bd1..14f9af1 100644
+index 5661bd1..fe4b4e1 100644
 --- a/invoice_api/routes/export.py
 +++ b/invoice_api/routes/export.py
-@@ -4,7 +4,7 @@ import re
- from flask import Blueprint, abort, request
+@@ -1,10 +1,10 @@
+ """Export routes. Customer codes are checked before anything reads the database."""
+ import re
  
- from ..auth import login_required
+-from flask import Blueprint, abort, request
++from flask import Blueprint, abort, request, session
+ 
+-from ..auth import login_required
 -from ..exporters import csv_export
++from ..auth import is_admin, login_required
 +from ..exporters import csv_export, ledger
  
  bp = Blueprint("export", __name__)
  
-@@ -18,3 +18,13 @@ def export():
+@@ -18,3 +18,21 @@ def export():
      if not CUSTOMER.match(customer):
          abort(400)
      return csv_export.export_csv(customer)
@@ -64,6 +86,14 @@ index 5661bd1..14f9af1 100644
 +        abort(400)
 +    order = request.args.get("order", "issued_at")
 +    return ledger.export_ledger(customer, order)
++
++
++@bp.get("/export/all")
++@login_required
++def export_all():
++    if not is_admin(session["user_id"]):
++        abort(403)
++    return csv_export.export_all_csv()
 diff --git a/invoice_api/templates/ledger.html b/invoice_api/templates/ledger.html
 new file mode 100644
 index 0000000..5e1d210
