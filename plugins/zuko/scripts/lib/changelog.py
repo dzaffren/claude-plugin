@@ -2,14 +2,21 @@
 """Create and check the repo's CHANGELOG.md (Keep a Changelog 1.1.0).
 
 Usage: changelog.py init           <project-dir>
+       changelog.py add-unreleased <project-dir> [--write]
 
   init    write a new file: the header, an empty "## [Unreleased]", and one
           heading per semver tag, newest first, dated by the tag and saying
           only "Released before this changelog was kept." Tags that are not
           semver are named and skipped. Refuses a file that already exists
+  add-unreleased  for a file in another shape: propose "## [Unreleased]"
+          directly above its first "## " heading, or at the end when it has
+          none. --write applies it; every other byte stays as it was
 
-Exit 0 written. Exit 1 the file already exists. Exit 2 bad usage or a project
-folder that does not exist.
+Code fences are skipped: a "## " line inside one is an example, not a heading.
+
+Exit 0 written, proposed, or nothing to do. Exit 1 init found a file already
+there. Exit 2 bad usage, a project folder that does not exist, or no file for
+add-unreleased.
 """
 import os
 import re
@@ -17,7 +24,8 @@ import subprocess
 import sys
 
 NAME = "CHANGELOG.md"
-USAGE = "usage: changelog.py init <project-dir>"
+USAGE = ("usage: changelog.py init <project-dir>\n"
+         "       changelog.py add-unreleased <project-dir> [--write]")
 
 HEADER = """# Changelog
 
@@ -29,11 +37,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 """
 PAST = "\n## [%s] - %s\n\nReleased before this changelog was kept.\n"
 SEMVER = re.compile(r"^v?(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$")
+UNRELEASED = re.compile(r"^## \[Unreleased\]\s*$")
+FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 
 
 def git(project, *args):
     return subprocess.run(["git", "-C", project] + list(args),
                           capture_output=True, text=True)
+
+
+def headings(lines):
+    """(index, line) of every "## " heading outside a code fence."""
+    fenced = False
+    for i, line in enumerate(lines):
+        if FENCE.match(line):
+            fenced = not fenced
+        elif not fenced and line.startswith("## "):
+            yield i, line
 
 
 def precedence(version):
@@ -80,12 +100,45 @@ def init(project):
     return 0
 
 
+def add_unreleased(project, write):
+    path = os.path.join(project, NAME)
+    if not os.path.isfile(path):
+        print("changelog.py: no %s in %s — init creates one" % (NAME, project), file=sys.stderr)
+        return 2
+    # newline="" keeps the file's own line endings, byte for byte.
+    with open(path, encoding="utf-8", newline="") as handle:
+        text = handle.read()
+    lines = text.splitlines(keepends=True)
+    found = list(headings(lines))
+    if any(UNRELEASED.match(line) for _, line in found):
+        print("%s already has [Unreleased]" % NAME)
+        return 0
+    if found:
+        i, line = found[0]
+        where = "above line %d" % (i + 1)
+        shown = '%s, "%s"' % (where, line[3:].strip())
+        new = lines[:i] + ["## [Unreleased]\n", "\n"] + lines[i:]
+    else:
+        where = shown = "at the end of the file"
+        new = [text, "" if text.endswith("\n") else "\n", "\n## [Unreleased]\n"]
+    if not write:
+        print("%s exists without [Unreleased]. Proposed change:" % NAME)
+        print("  + ## [Unreleased]   (%s)" % shown)
+        return 0
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write("".join(new))
+    print("%s: added [Unreleased] %s" % (NAME, where))
+    return 0
+
+
 def main(argv):
+    if len(argv) >= 2 and not os.path.isdir(argv[1]):
+        print("changelog.py: %s is not a directory" % argv[1], file=sys.stderr)
+        return 2
     if len(argv) == 2 and argv[0] == "init":
-        if not os.path.isdir(argv[1]):
-            print("changelog.py: %s is not a directory" % argv[1], file=sys.stderr)
-            return 2
         return init(argv[1])
+    if len(argv) in (2, 3) and argv[0] == "add-unreleased" and argv[2:] in ([], ["--write"]):
+        return add_unreleased(argv[1], argv[2:] == ["--write"])
     print(USAGE, file=sys.stderr)
     return 2
 

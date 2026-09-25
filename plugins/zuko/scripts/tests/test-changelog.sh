@@ -131,3 +131,82 @@ expect_exit 0 "$(same "$repo/CHANGELOG.md" "$work/before")" "init exists: file u
 # 7. A project dir that does not exist.
 run init "$work/nowhere"
 expect_exit 2 "$status" "init no dir: exits 2"
+
+# --- add-unreleased: an existing file in another shape ---
+
+legacy() {     # legacy <dir>: legacy-api's changelog, newest heading on line 5
+  cat >"$1/CHANGELOG.md" <<'OLD'
+# Changelog for legacy-api
+
+Everything notable, newest first.
+
+## v3.4 (June 2025)
+
+- Faster login.
+
+## v3.3 (May 2025)
+
+- Fixed a crash on empty input.
+OLD
+}
+
+# 8. Without --write: the proposal only, file untouched.
+dir=$(mktemp -d -p "$work"); legacy "$dir"; cp "$dir/CHANGELOG.md" "$work/before"
+run add-unreleased "$dir"
+expect_exit 0 "$status" "add proposal: exits 0"
+expect_match '^CHANGELOG\.md exists without \[Unreleased\]\. Proposed change:$' "$out" "add proposal: first line"
+expect_match '^  \+ ## \[Unreleased\]   \(above line 5, "v3\.4 \(June 2025\)"\)$' "$out" "add proposal: names line 5 and its heading"
+expect_match '^2$' "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" "add proposal: two lines, the approval prose is the skill's"
+expect_exit 0 "$(same "$dir/CHANGELOG.md" "$work/before")" "add proposal: file untouched"
+
+# 9. --write: the heading lands above line 5 and nothing else changes.
+run add-unreleased "$dir" --write
+expect_exit 0 "$status" "add write: exits 0"
+expect_match '^CHANGELOG\.md: added \[Unreleased\] above line 5$' "$out" "add write: says where"
+expect_match '^## \[Unreleased\]$' "$(sed -n 5p "$dir/CHANGELOG.md")" "add write: line 5 is the new heading"
+expect_match '^$' "$(sed -n 6p "$dir/CHANGELOG.md")" "add write: one blank line after it"
+expect_match '^## v3\.4 \(June 2025\)$' "$(sed -n 7p "$dir/CHANGELOG.md")" "add write: the old heading follows"
+sed '5,6d' "$dir/CHANGELOG.md" >"$work/after-minus-new"
+expect_exit 0 "$(same "$work/after-minus-new" "$work/before")" "add write: every other byte unchanged"
+
+# 10. Already there: nothing to do.
+cp "$dir/CHANGELOG.md" "$work/before"
+run add-unreleased "$dir" --write
+expect_exit 0 "$status" "add present: exits 0"
+expect_match '^CHANGELOG\.md already has \[Unreleased\]$' "$out" "add present: says so"
+expect_exit 0 "$(same "$dir/CHANGELOG.md" "$work/before")" "add present: file untouched"
+
+# 11. No "## " heading at all: appended at the end.
+dir=$(mktemp -d -p "$work")
+printf '# Changelog\n\nNothing released yet.\n' >"$dir/CHANGELOG.md"
+cp "$dir/CHANGELOG.md" "$work/before"
+run add-unreleased "$dir"
+expect_match '^  \+ ## \[Unreleased\]   \(at the end of the file\)$' "$out" "add append: proposal says at the end"
+expect_exit 0 "$(same "$dir/CHANGELOG.md" "$work/before")" "add append: proposal leaves the file"
+run add-unreleased "$dir" --write
+expect_exit 0 "$status" "add append: exits 0"
+expect_match '^CHANGELOG\.md: added \[Unreleased\] at the end of the file$' "$out" "add append: says where"
+{ cat "$work/before"; printf '\n## [Unreleased]\n'; } >"$work/expected"
+expect_exit 0 "$(same "$dir/CHANGELOG.md" "$work/expected")" "add append: after a blank line, nothing else changed"
+
+# 12. Headings inside a code fence are examples, not headings.
+dir=$(mktemp -d -p "$work")
+cat >"$dir/CHANGELOG.md" <<'OLD'
+# Changelog
+
+```
+## [Unreleased]
+## 9.9 (example)
+```
+
+## 2.0 (2024)
+
+- Rewrote the parser.
+OLD
+run add-unreleased "$dir"
+expect_match '^  \+ ## \[Unreleased\]   \(above line 8, "2\.0 \(2024\)"\)$' "$out" "add fence: fenced headings skipped"
+
+# 13. No file to add to.
+dir=$(mktemp -d -p "$work")
+run add-unreleased "$dir"
+expect_exit 2 "$status" "add no file: exits 2"
