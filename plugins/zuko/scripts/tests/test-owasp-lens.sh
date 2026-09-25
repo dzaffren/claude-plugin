@@ -71,6 +71,9 @@ fv=$(text "$verifier")
 expect_match '\$\{CLAUDE_PLUGIN_ROOT\}/references/owasp\.md' "$fv" "finding-verifier.md cites owasp.md by the plugin root"
 expect_match 'SEVERITY:' "$fv" "finding-verifier.md's output carries SEVERITY"
 expect_match '[Nn]ever (raise|above)' "$fv" "finding-verifier.md says severity is never raised"
+# 13 of 18 verifier runs in the first seeded run stopped at 12 turns while
+# tracing code; the longest needed 17.
+expect_match '^maxTurns: 20$' "$fv" "finding-verifier.md allows 20 turns"
 
 # --- the skill points at owasp.md and drops the uninstalled plugins ---
 sk=$(text "$skill")
