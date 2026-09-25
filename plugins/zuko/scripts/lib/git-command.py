@@ -133,14 +133,19 @@ def subcommand_args(args):
     return rest
 
 
-def invocations(tokens):
-    """The arguments of every bare `git` token.
+def invocations(tokens, program="git"):
+    """The arguments of every bare `program` token, `git` unless told otherwise.
 
     Bare is the whole test. Quoting collapses "how to git commit" into one
     token, and heredoc bodies are gone by now, so prose can never produce a
     `git` token on its own. Everything else is treated as a real invocation —
     `sudo git`, `VAR=x git`, `do git` inside a loop — because a guard that
     tries to list the wrappers it knows about will always miss one.
+
+    `gh` gets the same rule, because `gh release create -n "..."` quoted in
+    prose is just as much text. Its arguments go through the same walk: gh
+    takes no options before its subcommand, so in practice the walk only
+    drops redirections for it.
     """
     found = []
     args = None
@@ -152,7 +157,7 @@ def invocations(tokens):
             continue
         if args is not None:
             args.append(token)
-        elif token == "git":
+        elif token == program:
             args = []
     if args is not None:
         found.append(subcommand_args(args))

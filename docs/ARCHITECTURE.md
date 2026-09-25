@@ -1,6 +1,6 @@
 # dzafran-claude-plugins · architecture
 
-**Status:** Active · **Updated:** 2026-09-24 by /build onboarding
+**Status:** Active · **Updated:** 2026-09-25 by /ship release
 
 ## Context
 
@@ -21,7 +21,7 @@ flowchart LR
 
 | Component  | Folder                     | Does                                                                  |
 | ---------- | -------------------------- | --------------------------------------------------------------------- |
-| skills     | `plugins/zuko/skills/`     | the stages a user runs: shape, spec, build, review, ship, and helpers |
+| skills     | `plugins/zuko/skills/`     | the stages a user runs: shape, spec, build, review, ship, release, helpers |
 | references | `plugins/zuko/references/` | shared rules the stages read: voice, slicing, ledger, onboarding      |
 | agents     | `plugins/zuko/agents/`     | subagents for parallel build chunks and blind review verification     |
 | hooks      | `plugins/zuko/hooks/`      | binds scripts to Claude Code events (SessionStart, PreToolUse, Stop)  |

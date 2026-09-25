@@ -1,7 +1,8 @@
-# scripts/block-attribution.sh -- the PreToolUse guard on commit messages.
+# scripts/block-attribution.sh -- the PreToolUse guard on commit messages,
+# tag messages, and release notes and titles.
 # Sourced by run.sh, which provides $scripts and the expect_* helpers.
 
-work=$(mktemp -d)
+work=$(mktemp -d -p "$work")
 repo="$work/repo"
 mkdir -p "$repo"
 git -C "$repo" init -q -b main
@@ -133,4 +134,145 @@ expect_exit 0 "$hook_status" "allows the trailer as a search argument to git log
 run_hook 'echo "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"'
 expect_exit 0 "$hook_status" "allows the trailer in a command that is not a commit"
 
-rm -rf "$work"
+run_hook 'git commit -m "feat(build): add the runner
+
+Generated with Claude Code"'
+expect_match 'the commit message carries' "$hook_err" "a blocked commit names the commit message"
+
+# Tag messages: every option form git tag reads a message from.
+run_hook 'git tag -a v2.2.0 -m "v2.2.0
+
+Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in a git tag -m message"
+expect_match 'the tag message carries' "$hook_err" "a blocked tag names the tag message"
+expect_match 'Generated with Claude Code' "$hook_err" "a blocked tag quotes the offending line"
+expect_no_match 'settings\.json' "$hook_err" "a blocked tag does not offer the commit settings fix"
+
+run_hook 'git tag -a v2.2.0 -m"v2.2.0
+
+Generated with [Claude Code](https://claude.com/claude-code)"'
+expect_exit 2 "$hook_status" "blocks attribution in an attached git tag -m value"
+
+run_hook 'git tag -am "v2.2.0
+
+Generated with [Claude Code](https://claude.ai/code)" v2.2.0'
+expect_exit 2 "$hook_status" "blocks attribution behind a clustered git tag -am"
+
+run_hook 'git tag -a v2.2.0 --message "v2.2.0
+
+Claude-Session: https://claude.ai/code/session_01SX"'
+expect_exit 2 "$hook_status" "blocks attribution in a git tag --message value"
+
+run_hook 'git tag -a v2.2.0 --message="v2.2.0
+
+Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in a git tag --message= value"
+
+printf 'v2.2.0\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' >"$work/tag-signed.txt"
+printf 'v2.2.0\n' >"$work/tag-clean.txt"
+
+run_hook "git tag -a v2.2.0 -F $work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a git tag -F file"
+
+run_hook "git tag -a v2.2.0 --file $work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a git tag --file file"
+
+run_hook "git tag -a v2.2.0 --file=$work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a git tag --file= file"
+
+run_hook 'git tag -a v2.2.0 -m "v2.2.0"'
+expect_exit 0 "$hook_status" "allows a clean git tag message"
+expect_no_match '.' "$hook_out$hook_err" "a clean git tag prints nothing"
+
+run_hook "git tag -a v2.2.0 -F $work/tag-clean.txt"
+expect_exit 0 "$hook_status" "allows a clean git tag -F file"
+
+run_hook 'git tag -a v2.2.0 -F -'
+expect_exit 0 "$hook_status" "a git tag -F - reads stdin and is skipped"
+
+# Release notes and titles: every option form gh release create reads them from.
+run_hook 'gh release create v2.2.0 --verify-tag -t v2.2.0 -n "- feat: cut a version
+
+Generated with [Claude Code](https://claude.com/claude-code)"'
+expect_exit 2 "$hook_status" "blocks attribution in gh release create -n notes"
+expect_match 'the release notes carry' "$hook_err" "a blocked release names the release notes"
+expect_match 'Generated with \[Claude Code\]' "$hook_err" "a blocked release quotes the offending line"
+expect_no_match 'settings\.json' "$hook_err" "a blocked release does not offer the commit settings fix"
+
+run_hook 'gh release create v2.2.0 -n"Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in an attached gh release -n value"
+
+run_hook 'gh release create v2.2.0 --notes "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh release create --notes"
+
+run_hook 'gh release create v2.2.0 --notes="Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh release create --notes="
+
+run_hook "gh release create v2.2.0 --verify-tag -t v2.2.0 -F $work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a gh release -F notes file"
+
+run_hook "gh release create v2.2.0 --notes-file $work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a gh release --notes-file file"
+
+run_hook "gh release create v2.2.0 --notes-file=$work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a gh release --notes-file= file"
+
+run_hook 'gh release create v2.2.0 -t "v2.2.0 Generated with Claude Code" -n "clean notes"'
+expect_exit 2 "$hook_status" "blocks attribution in a gh release -t title"
+expect_match 'the release title carries' "$hook_err" "a blocked title names the release title"
+
+run_hook 'gh release create v2.2.0 --title "v2.2.0 Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in a gh release --title"
+
+run_hook 'gh release create v2.2.0 --title="v2.2.0 Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in a gh release --title="
+
+# gh release new is gh's own alias for create (gh release create --help).
+run_hook 'gh release new v2.2.0 -n "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh release new, the alias for create"
+
+# gh's flag parser drops the = in -F=path and reads path; git keeps it.
+run_hook "gh release create v2.2.0 -F=$work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a gh release -F=path notes file"
+
+# git takes any unambiguous prefix of a long option: --mess is --message.
+run_hook "git tag -a v2.2.0 --mess 'Generated with Claude Code'"
+expect_exit 2 "$hook_status" "blocks attribution behind an abbreviated git tag --mess"
+
+run_hook "git tag -a v2.2.0 --fi=$work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution behind an abbreviated git tag --fi= file"
+
+run_hook "gh release create v2.2.0 --verify-tag -t v2.2.0 -F $work/tag-clean.txt"
+expect_exit 0 "$hook_status" "allows a clean gh release create"
+expect_no_match '.' "$hook_out$hook_err" "a clean gh release create prints nothing"
+
+run_hook 'gh release create v2.2.0 -F -'
+expect_exit 0 "$hook_status" "a gh release -F - reads stdin and is skipped"
+
+run_hook 'gh release view v2.2.0 --json body'
+expect_exit 0 "$hook_status" "allows a gh release command that writes no notes"
+
+# Quoted, a tag or release command is prose: the bare-token rule, for gh too.
+run_hook 'echo "gh release create v2.2.0 -n \"Generated with Claude Code\""'
+expect_exit 0 "$hook_status" "allows a quoted gh release create inside an echo"
+
+run_hook 'git log --grep="git tag -m Generated with Claude Code" --oneline'
+expect_exit 0 "$hook_status" "allows a quoted git tag inside a git log search"
+
+run_hook 'git commit -m "docs(release): explain git tag -m and gh release create -n"'
+expect_exit 0 "$hook_status" "allows a commit message that names the tag and release commands"
+
+# The hook only sees what hooks.json routes to it. `if` takes one permission
+# rule, so each command it guards is its own entry.
+routed=$(python3 -c '
+import json, sys
+hooks = json.load(open(sys.argv[1]))["hooks"]["PreToolUse"]
+print(" ".join(sorted(h.get("if", "") for g in hooks for h in g["hooks"]
+                      if "block-attribution.sh" in h["command"])))
+' "$scripts/../hooks/hooks.json" 2>&1)
+expect_exit 'Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
+  "hooks.json routes git commit, git tag and gh release to the attribution hook"
+
+# The CLI keeps printing git invocations only; gh is opt-in for callers.
+cli_out=$(printf '%s' 'gh release create v2.2.0 -n "notes" && git tag -a v2.2.0 -m v2.2.0' | python3 "$scripts/lib/git-command.py")
+expect_exit 'tag -a v2.2.0 -m v2.2.0' "$cli_out" "git-command.py on stdin still prints only the git invocation"

@@ -72,3 +72,9 @@ One line per lesson. Loaded into every session in this repo.
 - A fixture writes every project file before it renders the README —
   the block links to files that exist, so a file added after goes stale.
   ([detail](fixture-files-before-the-render.md))
+- A test's `url.<bare>.insteadOf` names the whole remote URL — git takes the
+  longest match, and this machine's global config rewrites github.com.
+  ([detail](insteadof-longest-match-wins.md))
+- A guard over a CLI reads every spelling that CLI's parser accepts —
+  aliases, abbreviated long options, `-F=path` — and git and gh differ.
+  ([detail](guard-every-spelling-the-parser-accepts.md))

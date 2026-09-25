@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-09-25 by /ship changelog
+**Status:** Active · **Updated:** 2026-09-25 by /ship release
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -18,7 +18,7 @@ projects.
 ## Where things are
 
 - `.claude-plugin/` — the marketplace manifest
-- `plugins/zuko/skills/` — one folder per stage: shape, spec, build, review, ship, and the helpers
+- `plugins/zuko/skills/` — one folder per stage: shape, spec, build, review, ship, release, and the helpers
 - `plugins/zuko/agents/` — subagents the stages dispatch (chunk-builder, reviewer, finding-verifier)
 - `plugins/zuko/references/` — rules every stage reads (voice, slicing, ledger, onboarding)
 - `plugins/zuko/scripts/` — hook and gate scripts; `tests/` holds their bash test harness
@@ -36,8 +36,9 @@ projects.
 | readme-block       | Shipped | A README block rendered from the overview and checked at ship time         | https://claude.ai/artifact/UjgNXmdzaq2Uaq1VkAMmmg |
 | decision-log       | Shipped | An append-only DECISIONS.md, loaded every session and enforced by /review  | https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM |
 | adr-seeding        | Shipped | Seeds DECISIONS.md from a repo's existing ADRs                             | https://claude.ai/artifact/Xh4g34k8RftqLVG11HfZX6 |
-| changelog          | Built   | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
+| changelog          | Shipped | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
+| release            | Built   | /release cuts a version from the commits: changelog, tag, GitHub release | https://claude.ai/artifact/GWzbvfunoJvLFAsWrBkimp |
 
 ## More
 
-README.md · docs/ARCHITECTURE.md · DECISIONS.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT
+README.md · docs/ARCHITECTURE.md · DECISIONS.md · CHANGELOG.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT

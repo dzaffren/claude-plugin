@@ -172,6 +172,7 @@ projects.
 - A README block rendered from the overview and checked at ship time
 - An append-only DECISIONS.md, loaded every session and enforced by /review
 - Seeds DECISIONS.md from a repo's existing ADRs
+- /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate
 
 ## Docs
 

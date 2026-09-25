@@ -20,7 +20,7 @@ skill, or the two copies drift apart.
 **Breaking change:** the `!` goes only right before the colon — `feat!:` and
 `feat(config)!:`, never `feat:!` or `feat!!:`.
 
-## Banned in every commit message and PR body
+## Banned in every commit message, PR body, tag message and release notes
 
 - `Co-Authored-By:` naming Claude or `noreply@anthropic.com`
 - `Claude-Session:` and any `https://claude.ai/code/session_…` link
@@ -30,8 +30,9 @@ skill, or the two copies drift apart.
 
 The harness re-injects an attribution instruction every session, so this will
 keep being asked for. Say no. `scripts/block-attribution.sh` blocks the first
-three at commit time, and `scripts/verify-ship-gates.sh` blocks them again for
-the whole branch before the PR. To stop it at the source, the user sets
+three at `git commit`, `git tag` and `gh release create`, and
+`scripts/verify-ship-gates.sh` blocks them again for the whole branch before
+the PR. To stop it at the source, the user sets
 `attribution` in `~/.claude/settings.json`:
 
 ```json
