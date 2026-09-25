@@ -605,7 +605,7 @@ def section(lines, heading):
     """(start, end) of the lines under the first "## " heading that heading
     matches, up to the next one or the link definitions; None when absent."""
     body = lines[:link_start(lines)]
-    heads = [i for i, line in changelog.unfenced(body) if line.startswith("## ")]
+    heads = [i for i, _ in changelog.headings(body)]
     start = next((i for i in heads if heading.match(body[i])), None)
     if start is None:
         return None
