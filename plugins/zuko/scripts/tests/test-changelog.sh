@@ -210,3 +210,154 @@ expect_match '^  \+ ## \[Unreleased\]   \(above line 8, "2\.0 \(2024\)"\)$' "$ou
 dir=$(mktemp -d -p "$work")
 run add-unreleased "$dir"
 expect_exit 2 "$status" "add no file: exits 2"
+
+# --- check: the ship gate's question ---
+
+commit() {     # commit <repo> <message>: stage everything and commit, empty or not
+  git -C "$1" add -A
+  git -C "$1" commit -q --allow-empty --no-verify -m "$2"
+}
+
+gate_repo() {  # gate_repo; prints a repo on feat/export-csv whose base has one line under [Unreleased]
+  local dir
+  dir=$(new_repo)
+  header "$dir/CHANGELOG.md"
+  printf '\n### Added\n\n- Import invoices from a folder.\n' >>"$dir/CHANGELOG.md"
+  past "$dir/CHANGELOG.md" 0.1.0 2025-03-02
+  commit "$dir" "docs: start the changelog"
+  git -C "$dir" checkout -q -b feat/export-csv
+  printf '%s' "$dir"
+}
+
+# Rewrite <file> through an awk program, in place.
+rewrite() {    # rewrite <file> <awk program>
+  awk "$2" "$1" >"$1.tmp" && mv "$1.tmp" "$1"
+}
+
+add_line() {   # add_line <repo> <bullet>: a new line under Added, below the existing one
+  rewrite "$1/CHANGELOG.md" "{ print } /^- Import invoices from a folder\\.\$/ { print \"$2\" }"
+}
+
+check() {      # check <repo>; sets $out $status
+  out=$(python3 "$changelog" check "$1" --base "$(git -C "$1" merge-base HEAD main)" --label main 2>&1)
+  status=$?
+}
+
+short() {      # short <repo> <rev>: the abbreviated sha git log prints
+  git -C "$1" log -1 --format=%h "$2"
+}
+
+# 14. No file: fails whatever the commits are.
+repo=$(new_repo); git -C "$repo" checkout -q -b chore/deps
+commit "$repo" "chore(deps): bump ruff"
+check "$repo"
+expect_exit 1 "$status" "check missing: fails"
+expect_match '^CHANGELOG\.md  missing — /ship creates it$' "$out" "check missing: says /ship creates it"
+
+# 15. A file with no [Unreleased] heading: fails whatever the commits are.
+repo=$(gate_repo)
+rewrite "$repo/CHANGELOG.md" '!/^## \[Unreleased\]$/'
+commit "$repo" "chore(deps): bump ruff"
+check "$repo"
+expect_exit 1 "$status" "check no heading: fails"
+expect_match '^CHANGELOG\.md  has no "## \[Unreleased\]" heading$' "$out" "check no heading: says so"
+
+# 16. A feat commit and no new line: fails, naming the commits that need one.
+repo=$(gate_repo)
+commit "$repo" "feat(exporters): write ledger csv"
+commit "$repo" "chore(deps): bump ruff"
+check "$repo"
+expect_exit 1 "$status" "check no line: fails"
+expect_match '^CHANGELOG\.md  no new line under \[Unreleased\] — this branch has feat or fix commits:$' \
+  "$out" "check no line: the problem line"
+expect_match "^                $(short "$repo" HEAD~1) feat\\(exporters\\): write ledger csv\$" \
+  "$out" "check no line: names the sha and subject"
+expect_no_match 'bump ruff' "$out" "check no line: the chore commit is not listed"
+expect_no_match '^[^ ]' "$(printf '%s\n' "$out" | grep -v '^CHANGELOG\.md  ')" \
+  "check no line: every other line is an indented continuation"
+
+# 17. feat and fix commits with new lines: passes with the count.
+repo=$(gate_repo)
+commit "$repo" "feat(exporters): write ledger csv"
+commit "$repo" "fix: keep leading zeros in invoice numbers"
+commit "$repo" "chore(deps): bump ruff"
+add_line "$repo" "- Export the ledger as one CSV file."
+printf '\n### Fixed\n\n- Invoice numbers keep their leading zeros.\n' >"$work/fixed"
+rewrite "$repo/CHANGELOG.md" "/^## \\[0\\.1\\.0\\]/ { while ((getline l < \"$work/fixed\") > 0) print l; print \"\" } { print }"
+check "$repo"
+expect_exit 0 "$status" "check lines: passes"
+expect_match '^Changelog: 2 new lines under \[Unreleased\] for 2 feat/fix commits$' "$out" "check lines: counts lines and commits"
+
+# One of each: singular.
+repo=$(gate_repo)
+commit "$repo" "feat(exporters): write ledger csv"
+add_line "$repo" "- Export the ledger as one CSV file."
+check "$repo"
+expect_exit 0 "$status" "check one line: passes"
+expect_match '^Changelog: 1 new line under \[Unreleased\] for 1 feat/fix commit$' "$out" "check one line: singular"
+
+# 18. Only chores: no line needed.
+repo=$(gate_repo)
+commit "$repo" "chore(deps): bump ruff"
+commit "$repo" "docs: explain the exporter"
+check "$repo"
+expect_exit 0 "$status" "check chores: passes"
+expect_match '^Changelog: no feat or fix commits — no line needed$' "$out" "check chores: says no line needed"
+
+# 19-21. Breaking changes need a line, whatever their type.
+for subject in "feat(config)!: read settings from invoice.toml" "chore!: drop python 3.8"; do
+  repo=$(gate_repo)
+  commit "$repo" "$subject"
+  check "$repo"
+  expect_exit 1 "$status" "check breaking '$subject': fails"
+  expect_match "^                $(short "$repo" HEAD) ${subject//[()]/.}\$" "$out" "check breaking '$subject': listed"
+done
+for footer in "BREAKING CHANGE" "BREAKING-CHANGE"; do
+  repo=$(gate_repo)
+  commit "$repo" "$(printf 'refactor(config): load settings once\n\n%s: settings.ini is no longer read.' "$footer")"
+  check "$repo"
+  expect_exit 1 "$status" "check footer '$footer': fails"
+  expect_match "^                $(short "$repo" HEAD) refactor\\(config\\): load settings once\$" "$out" "check footer '$footer': listed"
+done
+
+# 22. Moving an existing line is not a new line.
+repo=$(gate_repo)
+commit "$repo" "feat(exporters): write ledger csv"
+rewrite "$repo/CHANGELOG.md" '/^- Import invoices from a folder\.$/ { next } /^## \[0\.1\.0\]/ { print "### Changed"; print ""; print "- Import invoices from a folder."; print "" } { print }'
+expect_match '^### Changed$' "$(cat "$repo/CHANGELOG.md")" "check moved: the fixture moved the line"
+check "$repo"
+expect_exit 1 "$status" "check moved: fails"
+
+# 23. Rewording an existing line is a new line.
+repo=$(gate_repo)
+commit "$repo" "feat(importers): read zip files"
+rewrite "$repo/CHANGELOG.md" '{ sub(/^- Import invoices from a folder\.$/, "- Import invoices from a folder or a zip file."); print }'
+check "$repo"
+expect_exit 0 "$status" "check reworded: passes"
+expect_match '^Changelog: 1 new line under \[Unreleased\] for 1 feat/fix commit$' "$out" "check reworded: counted"
+
+# 24. A line under an old version is not under [Unreleased].
+repo=$(gate_repo)
+commit "$repo" "feat(exporters): write ledger csv"
+printf '\n- Export the ledger as one CSV file.\n' >>"$repo/CHANGELOG.md"
+check "$repo"
+expect_exit 1 "$status" "check old section: a line under 0.1.0 does not count"
+
+# 25. The base has no changelog: every line under [Unreleased] is new.
+repo=$(new_repo); git -C "$repo" checkout -q -b feat/export-csv
+header "$repo/CHANGELOG.md"
+printf '\n### Added\n\n- Export the ledger as one CSV file.\n' >>"$repo/CHANGELOG.md"
+commit "$repo" "feat(exporters): write ledger csv"
+check "$repo"
+expect_exit 0 "$status" "check no base file: passes"
+expect_match '^Changelog: 1 new line under \[Unreleased\] for 1 feat/fix commit$' "$out" "check no base file: every line is new"
+
+# 26. Bad input is exit 2, not a gate result.
+repo=$(gate_repo)
+run check "$repo" --base no-such-commit
+expect_exit 2 "$status" "check bad base: exits 2"
+expect_match 'no-such-commit' "$out" "check bad base: names it"
+run check "$repo"
+expect_exit 2 "$status" "check no --base: exits 2"
+run check "$work/nowhere" --base HEAD
+expect_exit 2 "$status" "check no dir: exits 2"

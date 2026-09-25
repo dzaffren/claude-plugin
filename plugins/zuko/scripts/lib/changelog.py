@@ -3,6 +3,7 @@
 
 Usage: changelog.py init           <project-dir>
        changelog.py add-unreleased <project-dir> [--write]
+       changelog.py check          <project-dir> --base <commit> [--label <name>]
 
   init    write a new file: the header, an empty "## [Unreleased]", and one
           heading per semver tag, newest first, dated by the tag and saying
@@ -11,21 +12,32 @@ Usage: changelog.py init           <project-dir>
   add-unreleased  for a file in another shape: propose "## [Unreleased]"
           directly above its first "## " heading, or at the end when it has
           none. --write applies it; every other byte stays as it was
+  check   the ship gate's question. A branch needs a line when a commit in
+          <commit>..HEAD is feat or fix, carries "!" before its colon, or has a
+          "BREAKING CHANGE: " footer. New lines are the "- " lines under
+          [Unreleased] on disk that were not there at <commit>, counted as a
+          multiset: a moved line is not new, a reworded one is. The file must
+          exist and have the heading whatever the commits are. --label is
+          accepted, like decisions.py, and not printed
 
 Code fences are skipped: a "## " line inside one is an example, not a heading.
 
-Exit 0 written, proposed, or nothing to do. Exit 1 init found a file already
-there. Exit 2 bad usage, a project folder that does not exist, or no file for
-add-unreleased.
+Exit 0 written, proposed, nothing to do, or the check passed. Exit 1 init found
+a file already there, or the check found problems, each on a
+"CHANGELOG.md  <problem>" line with any detail on indented lines below it.
+Exit 2 bad usage, a base that is not a commit, a project folder that does not
+exist, or no file for add-unreleased.
 """
 import os
 import re
 import subprocess
 import sys
+from collections import Counter
 
 NAME = "CHANGELOG.md"
 USAGE = ("usage: changelog.py init <project-dir>\n"
-         "       changelog.py add-unreleased <project-dir> [--write]")
+         "       changelog.py add-unreleased <project-dir> [--write]\n"
+         "       changelog.py check <project-dir> --base <commit> [--label <name>]")
 
 HEADER = """# Changelog
 
@@ -39,6 +51,8 @@ PAST = "\n## [%s] - %s\n\nReleased before this changelog was kept.\n"
 SEMVER = re.compile(r"^v?(\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?)$")
 UNRELEASED = re.compile(r"^## \[Unreleased\]\s*$")
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+NEEDS_LINE = re.compile(r"^(feat|fix)(\([^)]*\))?!?: |^[a-z]+(\([^)]*\))?!: ")
+BREAKING = re.compile(r"^BREAKING[ -]CHANGE: ", re.M)
 
 
 def git(project, *args):
@@ -46,14 +60,34 @@ def git(project, *args):
                           capture_output=True, text=True)
 
 
-def headings(lines):
-    """(index, line) of every "## " heading outside a code fence."""
+def unfenced(lines):
+    """(index, line) of every line outside a code fence."""
     fenced = False
     for i, line in enumerate(lines):
         if FENCE.match(line):
             fenced = not fenced
-        elif not fenced and line.startswith("## "):
+        elif not fenced:
             yield i, line
+
+
+def headings(lines):
+    """(index, line) of every "## " heading outside a code fence."""
+    return [(i, line) for i, line in unfenced(lines) if line.startswith("## ")]
+
+
+def unreleased(text):
+    """The "- " lines under [Unreleased], stripped, up to the next "## "
+    heading; None when the file has no [Unreleased] heading."""
+    section = None
+    for _, line in unfenced(text.splitlines()):
+        if line.startswith("## "):
+            if section is not None:
+                break
+            if UNRELEASED.match(line):
+                section = []
+        elif section is not None and line.startswith("- "):
+            section.append(line.strip())
+    return section
 
 
 def precedence(version):
@@ -109,7 +143,7 @@ def add_unreleased(project, write):
     with open(path, encoding="utf-8", newline="") as handle:
         text = handle.read()
     lines = text.splitlines(keepends=True)
-    found = list(headings(lines))
+    found = headings(lines)
     if any(UNRELEASED.match(line) for _, line in found):
         print("%s already has [Unreleased]" % NAME)
         return 0
@@ -131,16 +165,59 @@ def add_unreleased(project, write):
     return 0
 
 
+def check(project, base):
+    if git(project, "rev-parse", "--verify", "--quiet", base + "^{commit}").returncode != 0:
+        print("changelog.py: base '%s' is not a commit" % base, file=sys.stderr)
+        return 2
+    path = os.path.join(project, NAME)
+    if not os.path.isfile(path):
+        print("%s  missing — /ship creates it" % NAME)
+        return 1
+    with open(path, encoding="utf-8") as handle:
+        now = unreleased(handle.read())
+    if now is None:
+        print('%s  has no "## [Unreleased]" heading' % NAME)
+        return 1
+
+    log = git(project, "log", "--format=%h%x1f%s%x1f%b%x1e", base + "..HEAD")
+    needing = []
+    for record in log.stdout.split("\x1e"):
+        fields = record.lstrip("\n").split("\x1f")
+        if len(fields) == 3 and (NEEDS_LINE.match(fields[1]) or BREAKING.search(fields[2])):
+            needing.append("%s %s" % (fields[0], fields[1]))
+    if not needing:
+        print("Changelog: no feat or fix commits — no line needed")
+        return 0
+
+    # "./" resolves from the project dir, which may sit below the repo root.
+    shown = git(project, "show", "%s:./%s" % (base, NAME))
+    before = (unreleased(shown.stdout) if shown.returncode == 0 else None) or []
+    new = sum((Counter(now) - Counter(before)).values())
+    if new == 0:
+        print("%s  no new line under [Unreleased] — this branch has feat or fix commits:" % NAME)
+        for commit in needing:
+            print("                %s" % commit)
+        return 1
+    print("Changelog: %d new line%s under [Unreleased] for %d feat/fix commit%s"
+          % (new, "" if new == 1 else "s", len(needing), "" if len(needing) == 1 else "s"))
+    return 0
+
+
 def main(argv):
-    if len(argv) >= 2 and not os.path.isdir(argv[1]):
+    if len(argv) == 2 and argv[0] == "init":
+        command, args = init, [argv[1]]
+    elif len(argv) in (2, 3) and argv[0] == "add-unreleased" and argv[2:] in ([], ["--write"]):
+        command, args = add_unreleased, [argv[1], argv[2:] == ["--write"]]
+    elif (len(argv) in (4, 6) and argv[0] == "check" and argv[2] == "--base"
+          and argv[4:5] in ([], ["--label"])):
+        command, args = check, [argv[1], argv[3]]
+    else:
+        print(USAGE, file=sys.stderr)
+        return 2
+    if not os.path.isdir(argv[1]):
         print("changelog.py: %s is not a directory" % argv[1], file=sys.stderr)
         return 2
-    if len(argv) == 2 and argv[0] == "init":
-        return init(argv[1])
-    if len(argv) in (2, 3) and argv[0] == "add-unreleased" and argv[2:] in ([], ["--write"]):
-        return add_unreleased(argv[1], argv[2:] == ["--write"])
-    print(USAGE, file=sys.stderr)
-    return 2
+    return command(*args)
 
 
 if __name__ == "__main__":
