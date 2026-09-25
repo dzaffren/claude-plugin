@@ -97,7 +97,9 @@ OWASP wins, narrowed to what this diff introduced.
 
 - **Outdated libraries (exclusion 9) → A03.** A dependency this branch adds, or
   whose version it changes, in a lockfile or manifest is a finding. A
-  dependency already there before the branch is not.
+  dependency already there before the branch is not. The finding needs no
+  caller: the risk lands at install time, so the lockfile line in the diff is
+  the whole path, whether or not any code imports the package.
 - **Missing audit logs (exclusion 17) → A09.** Logging this branch removes, or
   never writes, on an auth or security event (a failed login, a permission
   denied, a role change) is a finding. Missing logs elsewhere are not.
@@ -152,7 +154,7 @@ dependencies, a CI install step, or vendors third-party code.
 **Check:**
 
 - A dependency added, or its version changed, in the lockfile. Name it and the
-  version.
+  version. This needs no caller; see **Where OWASP wins**.
 - A dependency pulled from a new registry, a git URL, or an unpinned range.
 - An install or build step that runs a downloaded script.
 

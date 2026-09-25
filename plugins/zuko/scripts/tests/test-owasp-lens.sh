@@ -74,6 +74,10 @@ expect_match '[Nn]ever (raise|above)' "$fv" "finding-verifier.md says severity i
 # 13 of 18 verifier runs in the first seeded run stopped at 12 turns while
 # tracing code; the longest needed 17.
 expect_match '^maxTurns: 20$' "$fv" "finding-verifier.md allows 20 turns"
+# A lockfile change is an install-time risk: it needs no caller to count.
+expect_match 'exception to rule 1: an `A03:2025 Software Supply Chain Failures`' "$fv" "finding-verifier.md names A03 as the exception to the reachable-path rule"
+expect_match 'needs no caller' "$fv" "finding-verifier.md says an A03 lockfile finding needs no caller"
+expect_match 'needs no caller' "$ref" "owasp.md says an A03 lockfile change needs no caller"
 
 # --- the skill points at owasp.md and drops the uninstalled plugins ---
 sk=$(text "$skill")

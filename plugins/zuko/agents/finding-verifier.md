@@ -32,6 +32,13 @@ issue that the next review may catch. The asymmetry is deliberate.
 
 Any one of those you cannot establish → REJECT.
 
+One exception to rule 1: an `A03:2025 Software Supply Chain Failures` finding
+on a dependency added or changed in a lockfile or manifest needs no caller and
+no reachable path. Its risk lands at install time. Confirm it when the diff
+adds that dependency, or changes its version, and the base branch did not
+already have it at that version. Every other category, A10 included, still
+needs a reachable path.
+
 ## Always REJECT
 
 - The issue existed before this diff.
