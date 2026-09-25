@@ -36,8 +36,8 @@ projects.
 | readme-block       | Shipped | A README block rendered from the overview and checked at ship time         | https://claude.ai/artifact/UjgNXmdzaq2Uaq1VkAMmmg |
 | decision-log       | Shipped | An append-only DECISIONS.md, loaded every session and enforced by /review  | https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM |
 | adr-seeding        | Shipped | Seeds DECISIONS.md from a repo's existing ADRs                             | https://claude.ai/artifact/Xh4g34k8RftqLVG11HfZX6 |
-| changelog          | Built   | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
+| changelog          | Shipped | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
 
 ## More
 
-README.md · docs/ARCHITECTURE.md · DECISIONS.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT
+README.md · docs/ARCHITECTURE.md · DECISIONS.md · CHANGELOG.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT
