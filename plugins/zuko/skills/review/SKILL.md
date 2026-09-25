@@ -42,16 +42,14 @@ Every reviewer runs all four. They are questions, not agents.
 - What does this catch-block hide? A swallowed error is a silent failure.
 - Does the test actually test the thing, or does it pass vacuously?
 
-**Security** — what can an attacker do?
+**Security** — what can an attacker do? Judged against OWASP Top 10:2025 in
+`${CLAUDE_PLUGIN_ROOT}/references/owasp.md`.
 
-- Injection: SQL, command, template, path traversal.
-- Authorization at every new entry point. Not authentication — authorization.
-  Can user A reach user B's data?
-- Secrets: hardcoded, logged, in error messages, in URLs.
-- Untrusted input reaching a sink without validation.
-- New dependencies: known CVEs, unmaintained, oddly permissive.
-- Tokens and identifiers: random enough, compared safely, expiring.
-- Data leaving that should not — PII in logs, fields not stripped.
+- The reviewer runs its **Context first** step: finds the repo's own
+  defences, and picks the categories this diff can touch. Only those are
+  checked. The rest are named in the scope block with a reason.
+- Each security finding carries a `CATEGORY` and a `SEVERITY` from the grid.
+- **Never a finding** and **Where OWASP wins** hold in every category.
 
 **Quality** — is this the simple version?
 
@@ -71,8 +69,6 @@ Every reviewer runs all four. They are questions, not agents.
 - The failing case shows the rejected thing running in the product. Named
   only in a test fixture or a comment → not a finding.
 - A superseded entry binds nothing.
-
-Use `static-analysis` and `differential-review` (Trail of Bits) when installed.
 
 ## UI slices — mechanical checks
 
@@ -105,8 +101,9 @@ No raw finding reaches the user or gets fixed.
 Each finding goes to a `finding-verifier` agent that sees:
 
 - the bare claim, one sentence
+- its `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL` and `SNIPPET`
 - the code, plus `DECISIONS.md` for a Decisions finding
-- nothing else
+- nothing else — never the `FAILING CASE`, never the scope block
 
 It never sees the finder's reasoning — a verifier shown the reasoning agrees
 with it. It defaults to false-positive and confirms only when it has traced a
@@ -119,22 +116,52 @@ findings on lines the diff did not touch.
 Small diff: one verifier, must confirm. Large diff: three verifiers with the
 reachability / impact / defenses lenses, 2-of-3 to keep.
 
+A confirmed security finding keeps the lowest `SEVERITY` a confirming verifier
+returned, capped at the reported tier. A verifier's tier above the reported
+one is ignored.
+
+With several reviewers, the scope block is the union: a category any reviewer
+checked is checked.
+
 ## Report and fix
 
-Report only what survived. For each:
+Report only what survived, in this layout:
 
-- what is wrong, in one sentence
-- the concrete failing case: these inputs produce this wrong result
-- `file:line`
-- the fix
+```
+Security   checked A01 Broken Access Control, A05 Injection,
+           A10 Mishandling of Exceptional Conditions
+           not checked: 7 categories, listed at the end
+Findings   7 raw, 3 survived
 
-Order by severity. Say how many raw findings there were and how many survived
-— that number is how the user knows the filter is working.
+medium · A05:2025 Injection · exporters/ledger.py:31 in export_ledger
+  The new query builds SQL from order instead of calling db.run.
+  Failing case: GET /export?customer=ACME-01&order=CASE WHEN (SELECT ...) THEN total
+    ELSE issued_at END sorts by a secret, one bit per request.
+  Fix: db.run with customer as a parameter, and order checked against
+    ("issued_at", "total", "customer").
 
-Nothing survived → say so plainly. A clean review is a real outcome, not a
-failure to look hard enough.
+correctness · exporters/ledger.py:52 in write_rows
+  ...
 
-Fix what survived without asking — verification already confirmed it. One
+Not checked
+  A02 no config or deployment file changed
+  ...
+```
+
+Each finding gives what is wrong in one sentence, the concrete failing case,
+`file:line` with its symbol, and the fix. Security findings come first,
+critical to low. Then correctness, decisions and quality, in that order.
+
+The `Findings` line says how many raw findings there were and how many
+survived — that number is how the user knows the filter is working.
+
+A diff that touches no category prints
+`Security   no category checked — the diff changes README.md only`, naming
+what it does change. Nothing survived → `Findings   7 raw, 0 survived — clean`.
+A clean review is a real outcome, not a failure to look hard enough.
+
+Fix what survived without asking, whatever its severity — verification
+already confirmed it, and severity sets the order, not whether it is fixed. One
 exception: a fix that changes something the user approved in the spec (an
 interface, a message, the scope) is proposed first and waits for a yes. Fix
 each finding test-first where a test can catch it, one commit per finding,
