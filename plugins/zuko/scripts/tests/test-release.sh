@@ -828,6 +828,19 @@ run cut "$repo" --version 1.4.0 --date 2026-09-25
 expect_exit 1 "$status" "cut disagreeing manifests: exits 1"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut disagreeing manifests: nothing written"
 
+# A file cut would write is read-only: nothing is written, not half of it.
+repo=$(fixture)
+package_json "$repo" 1.4.2
+commit "$repo" "chore: add package.json"
+chmod a-w "$repo/package.json"
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+chmod u+w "$repo/package.json"
+expect_exit 1 "$status" "cut a read-only manifest: exits 1"
+expect_match '^Cannot write package\.json\.$' "$out" "cut a read-only manifest: names the file"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "cut a read-only manifest: says nothing was written"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut a read-only manifest: nothing written"
+
 # A version the user confirmed despite the advice is cut.
 repo=$(fixture)
 run cut "$repo" --version 1.4.3 --date 2026-09-25

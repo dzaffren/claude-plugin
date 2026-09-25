@@ -790,7 +790,16 @@ def cut(project, version, today):
             print(release.refused)
         print("Nothing written.")
         return 1
-    for path, text in rewritten(release, today).items():
+    files = rewritten(release, today)
+    # Checked before the first write: a read-only manifest found halfway
+    # would leave the changelog cut and the versions not bumped.
+    locked = [path for path in files if not os.access(os.path.join(project, path), os.W_OK)]
+    if locked:
+        print()
+        print("Cannot write %s." % ", ".join(locked))
+        print("Nothing written.")
+        return 1
+    for path, text in files.items():
         with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
     print()
