@@ -551,9 +551,9 @@ Status: active
 | O14 | GitHub's answer for a commit with no CI                                  | unproven   | spec p3   | claude | Resolved | Probed on this repo 2026-09-25: check-runs `total_count` 0, combined status `pending` with `total_count` 0. Decide on the counts          |
 | O15 | `gh release view` when the release does not exist                       | unproven   | spec p3   | claude | Resolved | Exit 1, "release not found" (gh 2.92.0, probed 2026-09-25)                                                                                |
 | O16 | An e2e remote that reads github.com but pushes locally                  | unproven   | spec p3   | claude | Resolved | `url.<bare>.insteadOf`: `git config --get remote.origin.url` keeps the github.com URL, pushes land in the bare repo (probed 2026-09-25) |
-| O17 | A test suite longer than the 10-minute Bash cap                          | flag       | spec p3   | user   | Open     | —                                                                                                                                         |
-| O18 | A marketplace with more than one plugin                                 | assumption | spec p3   | claude | Open     | Stop: "one plugin per release"; which plugin to version is not guessed                                                                    |
-| O19 | `pyproject.toml` with `dynamic = ["version"]`                            | assumption | spec p3   | claude | Open     | Not a version source; named in the plan as "dynamic version, not touched"                                                                 |
+| O17 | A test suite longer than the 10-minute Bash cap                          | flag       | spec p3   | user   | Accepted risk | zuko's suite takes about 2 minutes; a repo whose suite runs past 10 minutes gets a timeout, not a false pass. Revisit when one does. Accepted 2026-09-25 |
+| O18 | A marketplace with more than one plugin                                 | assumption | spec p3   | claude | Resolved | No special case: /release releases the repo it runs in, whatever it is. Every manifest found in the closed list is bumped when they agree; when they disagree it stops (O9). User clarified 2026-09-25 |
+| O19 | `pyproject.toml` with `dynamic = ["version"]`                            | assumption | spec p3   | claude | Resolved | Yes: not a version source; the plan prints "pyproject.toml: version comes from the tag, not touched" |
 
 ## Glossary
 
