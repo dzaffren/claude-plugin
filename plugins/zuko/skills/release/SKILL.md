@@ -6,7 +6,7 @@ description: >
   commits, tags, pushes and creates the GitHub release. Use when the user says
   "release it", "cut a version", "tag a release", or runs /release.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *)
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *) Bash(mktemp *)
 ---
 
 # Release
@@ -30,7 +30,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" plan <repo-root> [--versi
 
 Pass `--version` when the user named one (`/release 3.0.0`). `plan` runs the
 test suite, so give the Bash call `timeout: 600000`. Print its output as it
-is. Its last line is `NEXT:`. Branch on that line and nothing else:
+is. Its last line is `NEXT:`. Branch on that line and nothing else — `plan`
+exits 1 on `NEXT: stop`, and that is its answer, not a crash:
 
 | Line                          | Skill does                                                      | Then                      |
 | ----------------------------- | --------------------------------------------------------------- | ------------------------- |
