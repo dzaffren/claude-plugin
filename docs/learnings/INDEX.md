@@ -69,3 +69,6 @@ One line per lesson. Loaded into every session in this repo.
 - Make a test's temp dir inside run.sh's `$work` — its trap cleans up, and an
   `rm -rf` line in a heredoc trips the org's destructive-command hook.
   ([detail](test-temp-dirs-live-under-run-sh.md))
+- A fixture writes every project file before it renders the README —
+  the block links to files that exist, so a file added after goes stale.
+  ([detail](fixture-files-before-the-render.md))

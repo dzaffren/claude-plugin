@@ -17,16 +17,20 @@ there.
 
 `OVERVIEW.md` exists but still says `**Status:** Draft` → onboarding was
 interrupted. Do not rewrite it: go straight to step 4, plan the README block,
-show the existing draft, and wait for approval before the stage starts.
+run step 6, show the existing draft, and wait for approval before the stage
+starts.
 `DECISIONS.md` not yet committed and holding entries → step 5 seeded it before
 the interruption, and the user has not approved those entries. Rerun its scan
 and its `check`, and show its summary in the draft again. `check` fails → the
 seeding was cut short: put the file back to the created header and run step 5
 again.
+`CHANGELOG.md` not yet committed → step 6 created it before the interruption,
+and the user has not seen it. Show it in the draft as created, with its
+version headings, as though `init` had just printed them.
 
 Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
 change it after that. One exception: `/ship` runs step 4 and the README part
-of step 8 alone for a repo onboarded before the README block existed.
+of step 9 alone for a repo onboarded before the README block existed.
 
 **`DECISIONS.md`.** Every writing stage, onboarded repo or not, checks for
 `DECISIONS.md` at the repo root and creates it when missing, holding only:
@@ -44,6 +48,12 @@ step 5 creates it and seeds it from the repo's existing ADRs. Created outside
 onboarding → the stage's own branch carries it, empty. A stage only reads this file while `OVERVIEW.md` is
 missing or Draft, so for a repo already Active, `/ship` creates the file
 before its gate.
+
+**`CHANGELOG.md`.** The ship gate fails a branch without it, or without its
+`## [Unreleased]` heading. Onboarding creates it in step 6, and lines are
+written per `changelog.md`. For a repo already Active — onboarded before this
+file existed — `/ship`'s refresh step creates it with `init`, or adds
+`[Unreleased]` with `add-unreleased` on the user's approval.
 
 ## 1. Read, in this order
 
@@ -169,11 +179,11 @@ install and run, features, docs. The block links only to files in the repo —
 never the hub page, which most readers cannot open.
 
 This step reads `OVERVIEW.md`, so it runs after step 2. Plan the change here;
-write nothing to `README.md` until the user approves in step 8.
+write nothing to `README.md` until the user approves in step 9.
 
 **Block already there.** `README.md` already has a `<!-- zuko:start` line →
 plan nothing: no overlap check, no new markers. The existing start marker and
-its skip list stay as they are, and step 8 only runs `--write`.
+its skip list stay as they are, and step 9 only runs `--write`.
 
 **Overlap.** A README section overlaps the block when its heading is one of
 these, case-insensitive, at any `#` level. The list is closed: every other
@@ -201,7 +211,7 @@ would carry and where each lands in `OVERVIEW.md` — an install command goes in
 the "Run it" table. A fact with no place in the overview, such as a
 hand-written feature list on a repo with no Shipped slices, is named as
 dropped, so the user sees it before approving. Print this with the draft in
-step 7:
+step 8:
 
 ```
 README.md overlaps the zuko block:
@@ -264,7 +274,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/decisions.py" check <repo-root>
 
 Non-zero → fix the lines you wrote, never the numbers, and check again.
 
-Build the summary for step 7 from the scan: one line per seeded ADR in D
+Build the summary for step 8 from the scan: one line per seeded ADR in D
 order, then every `seed: false` ADR with its `skip_reason`:
 
 ```
@@ -277,12 +287,50 @@ Seeded DECISIONS.md from docs/adr/ (7 ADRs):
 Not seeded: 0005 (Proposed), 0007 (Deprecated)
 ```
 
-## 6. Ignore the pages folder
+## 6. Create `CHANGELOG.md`
+
+The ship gate needs `CHANGELOG.md` with a `## [Unreleased]` heading. This step
+makes the file ready; `/ship` writes the lines, per `changelog.md`.
+
+- **No `CHANGELOG.md`** → create it from the repo's tags:
+
+  ```
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/changelog.py" init <repo-root>
+  ```
+
+  Put the line it prints in the draft, and the line naming skipped tags when
+  it prints one.
+
+- **`CHANGELOG.md` without `[Unreleased]`** → print the proposed change, and
+  write nothing yet:
+
+  ```
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/changelog.py" add-unreleased <repo-root>
+  ```
+
+  Show its proposal in the draft, followed by:
+
+  ```
+  Nothing else in the file changes. Approve, or reject to leave it — the ship gate will
+  then fail until [Unreleased] exists.
+  ```
+
+  Approved in step 9 → run it again with `--write`. Rejected → leave the file
+  as it is.
+
+- **`CHANGELOG.md` with `[Unreleased]`** → nothing to do, and nothing in the
+  draft — unless the file is not yet committed, which the resume rule under
+  "When" covers.
+
+Old entries are never reformatted. Past versions get only the one line `init`
+writes under each tag; nothing is invented from commit messages.
+
+## 7. Ignore the pages folder
 
 If `.gitignore` has no `docs/specs/.pages/` line, add it. The visual pages and
 the hub page are written there and are never committed.
 
-## 7. Show the draft and wait
+## 8. Show the draft and wait
 
 Print this, filled from what you actually read:
 
@@ -297,6 +345,7 @@ Seeded DECISIONS.md from docs/adr/ (3 ADRs):
   D1  Record architecture decisions        0001  active
   D2  Use Postgres                         0002  active
 Not seeded: 0003 (Proposed)
+CHANGELOG.md: created with [Unreleased] and 2 past versions from tags (v0.2.0, v0.1.0)
 On approval:
   README.md         zuko block after line 3; nothing else changes
 
@@ -311,21 +360,25 @@ with /spec export-csv.
   overlaps, print the merge proposal from step 4 in its place.
 - The seeded summary from step 5 goes after the `Not found:` line. No ADRs →
   leave it out.
+- The `CHANGELOG.md` line from step 6 goes next — or, for an existing file
+  without `[Unreleased]`, its proposal and the approve line. Nothing to do →
+  leave it out.
 - The last line names the stage the user actually ran, with its argument.
 
 Then stop. Do not start the stage until the user answers. A wrong overview
 loads into every later session, so this one check is worth the wait.
 
-## 8. Approve
+## 9. Approve
 
 - Corrections → apply them, show what changed, wait again.
 - "approve" → set `**Status:** Active` in both files, write the README block
-  (below), then commit what onboarding wrote — `OVERVIEW.md`,
-  `docs/ARCHITECTURE.md`, `README.md`, `DECISIONS.md`, and `.gitignore` if it
-  changed — as `docs: onboard this repo`. On `main` or `master`, commit
-  nothing: leave the files for the stage's own branch to carry, and say so.
-- The user can approve the overview and reject the README merge in one answer
-  ("approve, keep my Install section").
+  (below) and any `[Unreleased]` proposed in step 6, then commit what
+  onboarding wrote — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, `README.md`,
+  `DECISIONS.md`, `CHANGELOG.md`, and `.gitignore` if it changed — as
+  `docs: onboard this repo`. On `main` or `master`, commit nothing: leave the
+  files for the stage's own branch to carry, and say so.
+- The user can approve the overview and reject the README merge or the
+  `[Unreleased]` change in one answer ("approve, keep my Install section").
 - Then carry on with the stage the user ran, from its first step.
 
 **Writing the README block.** The empty marker pair is these two lines:

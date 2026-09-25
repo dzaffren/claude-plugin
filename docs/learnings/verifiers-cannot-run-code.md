@@ -23,3 +23,8 @@ recalling documentation.
 
 Rejections that need no rerun are the ones the vote is good at: unreachable
 paths, pre-existing behaviour, style dressed up as a bug.
+
+Seen again in the changelog review (2026-09-25): three verifiers rejected
+"refname:short prints tags/v0.1.0 when a branch shares the name", two from
+memory of the docs and one because it could not check. A scratch repo showed
+the claim true in one command, and the fix shipped on that evidence.

@@ -75,6 +75,8 @@ new_repo() {   # new_repo <branch> [--no-base]; prints the repo path
   git -C "$dir" config user.email t@example.com
   git -C "$dir" config user.name Tester
   write_spec "$dir"
+  # Before the README: its block links CHANGELOG.md once the file exists.
+  python3 "$scripts/lib/changelog.py" init "$dir" >/dev/null
   write_readme "$dir"
   git -C "$dir" add -A
   git -C "$dir" commit -q --no-verify -m "chore(spec): add the fixture spec"
@@ -92,6 +94,12 @@ add_commit() {  # add_commit <repo> <subject> [body]
   fi
 }
 
+# A line under [Unreleased], which a feat or fix branch needs to pass. It
+# lands with the next commit.
+changelog_line() {  # changelog_line <repo> <line>
+  printf '\n### Added\n\n- %s\n' "$2" >>"$1/CHANGELOG.md"
+}
+
 sha_of() { git -C "$1" log -1 --format=%h; }
 
 gate() {        # gate <repo>; sets $gate_out $gate_status
@@ -101,6 +109,7 @@ gate() {        # gate <repo>; sets $gate_out $gate_status
 
 # 1. A clean branch.
 repo=$(new_repo feat/ship-naming)
+changelog_line "$repo" "Every commit follows one naming convention."
 add_commit "$repo" "feat(ship): standardise git naming"
 add_commit "$repo" "feat(scripts): add the attribution hook"
 add_commit "$repo" "test(scripts): cover the naming gate"
@@ -241,6 +250,7 @@ commit_overview() {   # commit_overview <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_exit 0 "$gate_status" "an Active overview with the slice's row passes"
@@ -343,6 +353,7 @@ commit_readme() {   # commit_readme <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_match '^README: zuko block matches OVERVIEW\.md$' "$gate_out" "a current block prints the README scope line"
@@ -391,6 +402,7 @@ decisions_repo() {   # decisions_repo; prints a repo on feat/fixture, D1..D3 on 
   git -C "$dir" add -A
   git -C "$dir" commit -q --no-verify -m "docs: record D1 to D3"
   git -C "$dir" checkout -q -b feat/fixture
+  changelog_line "$dir" "The fixture ships."
   add_commit "$dir" "feat(scripts): add the fixture"
   printf '%s' "$dir"
 }
@@ -401,6 +413,7 @@ commit_decisions() {   # commit_decisions <repo>
 }
 
 repo=$(new_repo feat/fixture)
+changelog_line "$repo" "The fixture ships."
 add_commit "$repo" "feat(scripts): add the fixture"
 gate "$repo"
 expect_exit 0 "$gate_status" "an empty DECISIONS.md passes"
@@ -446,5 +459,105 @@ commit_decisions "$repo"
 gate "$repo"
 expect_exit 1 "$gate_status" "a branch without DECISIONS.md fails the gate"
 expect_match '^- DECISIONS\.md  missing — onboarding creates it$' "$gate_out" "the missing file says who creates it"
+
+# 15. The breaking-change marker: one "!" directly before the colon.
+for subject in "feat(config)!: read settings from invoice.toml" "chore!: drop python 3.8"; do
+  repo=$(new_repo feat/fixture)
+  changelog_line "$repo" "BREAKING: Settings move to invoice.toml; rename the file."
+  add_commit "$repo" "$subject"
+  gate "$repo"
+  expect_exit 0 "$gate_status" "a breaking-change subject passes: $subject"
+  expect_no_match 'subject is not' "$gate_out" "the naming check accepts: $subject"
+done
+
+for subject in "feat!!: x" "feat:! x" "feat(!): x" "feat!(config): x"; do
+  repo=$(new_repo feat/fixture)
+  add_commit "$repo" "$subject"
+  bad_sha=$(sha_of "$repo")
+  gate "$repo"
+  expect_exit 1 "$gate_status" "a misplaced marker fails the gate: $subject"
+  expect_match "$bad_sha  subject is not \{type\}\(\{scope\}\): \{subject\}" "$gate_out" "the naming check rejects: $subject"
+done
+
+# 16. CHANGELOG.md. new_repo's base carries an empty [Unreleased].
+commit_changelog() {   # commit_changelog <repo> <subject>
+  git -C "$1" add -A
+  git -C "$1" commit -q --no-verify -m "$2"
+}
+
+repo=$(new_repo feat/export-csv)
+add_commit "$repo" "feat(exporters): write ledger csv"
+feat_sha=$(sha_of "$repo")
+gate "$repo"
+expect_exit 1 "$gate_status" "a feat branch with no changelog line fails the gate"
+expect_match '^- CHANGELOG\.md  no new line under \[Unreleased\] — this branch has feat or fix commits:$' \
+  "$gate_out" "the missing line is its own problem"
+expect_match "^ {16}$feat_sha feat\(exporters\): write ledger csv$" "$gate_out" "the commit that needs it is listed, indented under the problem"
+expect_no_match '^Changelog: ' "$gate_out" "a failed changelog check prints no scope line"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 0 "$gate_status" "a feat branch with its changelog line passes"
+expect_match '^Changelog: 1 new line under \[Unreleased\] for 1 feat/fix commit$' "$gate_out" "the scope line counts lines and commits"
+
+repo=$(new_repo chore/bump-ruff)
+add_commit "$repo" "chore(deps): bump ruff"
+gate "$repo"
+expect_exit 0 "$gate_status" "a chore-only branch passes with no changelog change"
+expect_match '^Changelog: no feat or fix commits — no line needed$' "$gate_out" "the scope line says no line was needed"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "a new changelog line with attribution fails the gate"
+expect_match '^- CHANGELOG\.md  new line carries Claude attribution: "- Generated with Claude Code"$' \
+  "$gate_out" "the attributed line is quoted back"
+
+repo=$(new_repo main)
+changelog_line "$repo" "Generated with Claude Code"
+commit_changelog "$repo" "docs(changelog): an old line"
+git -C "$repo" checkout -q -b feat/export-csv
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 0 "$gate_status" "attribution already on the base is not this branch's"
+expect_no_match 'attribution' "$gate_out" "only the lines a branch adds are checked for attribution"
+
+repo=$(new_repo feat/export-csv)
+changelog_line "$repo" "Export the ledger as one CSV file."
+add_commit "$repo" "feat(exporters): write ledger csv"
+git -C "$repo" rm -q CHANGELOG.md
+write_readme "$repo"
+commit_changelog "$repo" "docs(changelog): drop the changelog"
+gate "$repo"
+expect_exit 1 "$gate_status" "a branch without CHANGELOG.md fails the gate"
+expect_match '^- CHANGELOG\.md  missing — /ship creates it$' "$gate_out" "the missing file says who creates it"
+
+repo=$(new_repo chore/bump-ruff)
+printf '# Changelog\n\n## [0.1.0] - 2025-03-02\n\nReleased before this changelog was kept.\n' >"$repo/CHANGELOG.md"
+commit_changelog "$repo" "chore(changelog): drop the unreleased heading"
+gate "$repo"
+expect_exit 1 "$gate_status" "a changelog without [Unreleased] fails the gate"
+expect_match '^- CHANGELOG\.md  has no "## \[Unreleased\]" heading$' "$gate_out" "the missing heading is named"
+
+# Repo settings that reshape git diff output never hide an attributed line.
+repo=$(new_repo feat/export-csv)
+git -C "$repo" config color.ui always
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "color.ui=always does not hide an attributed changelog line"
+expect_match 'new line carries Claude attribution' "$gate_out" "the coloured diff is still read"
+
+repo=$(new_repo feat/export-csv)
+printf 'CHANGELOG.md -diff\n' >"$repo/.gitattributes"
+changelog_line "$repo" "Generated with Claude Code"
+add_commit "$repo" "feat(exporters): write ledger csv"
+gate "$repo"
+expect_exit 1 "$gate_status" "a -diff attribute does not hide an attributed changelog line"
+expect_match 'new line carries Claude attribution' "$gate_out" "the binary-marked file is still read as text"
 
 rm -rf "$work"

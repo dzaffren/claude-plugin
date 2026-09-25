@@ -52,10 +52,12 @@ cat >"$repo/DECISIONS.md" <<'DECISIONS'
 Append-only. A changed decision is a new entry that supersedes the old one; only an
 old entry's Status line ever changes.
 DECISIONS
+python3 "$scripts/lib/changelog.py" init "$repo" >/dev/null
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "chore(spec): add the export-csv spec"
 git -C "$repo" checkout -q -b feat/export-csv
 echo work >"$repo/work.txt"
+printf '\n### Added\n\n- Export the ledger as one CSV file.\n' >>"$repo/CHANGELOG.md"
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "feat(export): write the ledger as one CSV"
 

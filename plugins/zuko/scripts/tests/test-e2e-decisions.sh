@@ -66,6 +66,7 @@ Rejected: SQLite (whole-file write lock), DynamoDB (cost for under 1 GB of data)
 Source: specs/import-csv.md
 Status: active
 D7
+python3 "$scripts/lib/changelog.py" init "$repo" >/dev/null
 printf '# invoice-cli\n\n<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->\n<!-- zuko:end -->\n' >"$repo/README.md"
 CLAUDE_PROJECT_DIR="$repo" bash "$scripts/render-readme-block.sh" --write 2>/dev/null
 git -C "$repo" add -A
@@ -111,6 +112,7 @@ Supersedes: D7
 Source: specs/offline-mode.md
 Status: active
 D8
+printf '\n### Added\n\n- Import invoices with no network; they sync when it returns.\n' >>"$repo/CHANGELOG.md"
 commit "feat(store): cache imports locally in SQLite"
 cp "$repo/DECISIONS.md" "$work/DECISIONS.superseded"
 gate

@@ -1,6 +1,6 @@
 # Changelog
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 3
 **Depends on:** `auto-onboard` — onboarding creates the file
@@ -99,7 +99,9 @@ Scenario: an existing changelog in another shape gets an Unreleased section
   have lines.
 - Onboarding: create it with tag-seeded headings, or add `[Unreleased]` to an existing
   one with approval.
-- `/ship`: write the lines on the branch before the gate.
+- `/ship`: write the lines on the branch before the gate. A repo onboarded before this
+  slice gets the file from `/ship`'s refresh step — `init` when missing, `add-unreleased`
+  with approval when it has no `[Unreleased]` (O8).
 - Ship gate: new line required for `feat`, `fix` or `!` commits; attribution ban on the
   added lines.
 - The naming convention accepts the breaking marker: `references/git-naming.md` and the
@@ -184,7 +186,7 @@ gates FAILED
   CHANGELOG.md  no new line under [Unreleased] — this branch has feat or fix commits:
                 a3f9c21 feat(exporters): write ledger csv
   CHANGELOG.md  new line carries Claude attribution: "- Generated with Claude Code"
-  CHANGELOG.md  missing — onboarding creates it
+  CHANGELOG.md  missing — /ship creates it
   CHANGELOG.md  has no "## [Unreleased]" heading
 ```
 
@@ -264,17 +266,17 @@ message.
 | File                                                                                                                  | What changes                                                                                                                                                                                                                                                                                        | Why                                   |
 | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
 | `plugins/zuko/scripts/lib/changelog.py` (new)                                                                         | `init` (create file: header, empty `[Unreleased]`, one heading per semver tag newest first with its tag date and the pre-changelog line); `add-unreleased` (print the one-line diff for an existing file, `--write` applies it); `check --base <ref>` (the two rules above, messages per Interface) | scenarios 1, 4, 5                     |
-| `plugins/zuko/scripts/verify-ship-gates.sh`                                                                           | Subject pattern (`:105`) gains an optional `!` before `:`; new changelog block after the merge-base is found: call `check`, then run the existing three attribution patterns over the added lines of `CHANGELOG.md`                                                                                 | scenarios 3, 4                        |
+| `plugins/zuko/scripts/verify-ship-gates.sh`                                                                           | Subject pattern (`:168`) gains an optional `!` before `:`; new changelog block after the merge-base is found: call `check`, then run the existing three attribution patterns over the added lines of `CHANGELOG.md`                                                                                 | scenarios 3, 4                        |
 | `plugins/zuko/references/changelog.md` (new)                                                                          | Type-to-section table, one line per user-visible change, user wording, BREAKING wording, security lines without exploit detail                                                                                                                                                                      | scenarios 2, 3                        |
 | `plugins/zuko/references/git-naming.md`                                                                               | Commit subject row gains the `!` form and its example                                                                                                                                                                                                                                               | scenario 3                            |
 | `plugins/zuko/references/onboard.md`                                                                                  | Call `init` when the file is missing; `add-unreleased` and show its diff when it exists without the heading                                                                                                                                                                                         | scenarios 1, 5                        |
-| `plugins/zuko/skills/ship/SKILL.md`                                                                                   | "Tidy the branch" (`:46`): write the lines per `references/changelog.md` before the gates run                                                                                                                                                                                                       | scenario 2                            |
+| `plugins/zuko/skills/ship/SKILL.md`                                                                                   | "Refresh the overview" (`:29`): create the file when missing (O8), then write the lines per `references/changelog.md` — before the gates, which "Tidy the branch" follows                                                                                                                                                                                                      | scenario 2                            |
 | `plugins/zuko/scripts/tests/test-changelog.sh` (new)                                                                  | `init` with 0, 1, 2 tags and a non-semver tag; `add-unreleased` diff and write; `check` for every pass and fail                                                                                                                                                                                     | scenarios 1, 4, 5                     |
 | `plugins/zuko/scripts/tests/test-verify-ship-gates.sh`                                                                | `feat(config)!: …` passes naming; changelog failures surface; attribution in a changelog line fails                                                                                                                                                                                                 | scenarios 3, 4                        |
 | `plugins/zuko/scripts/tests/test-e2e-naming.sh`, `test-e2e-onboard.sh`, `test-e2e-readme.sh`, `test-e2e-decisions.sh` | Fixtures gain a valid `CHANGELOG.md`                                                                                                                                                                                                                                                                | old tests keep testing what they test |
 | `plugins/zuko/scripts/tests/test-e2e-changelog.sh` (new)                                                              | The e2e walk below                                                                                                                                                                                                                                                                                  | slice proof                           |
 
-Reusing: the three attribution patterns already in `verify-ship-gates.sh:117-127`; the
+Reusing: the three attribution patterns in `verify-ship-gates.sh`, now one list at `:131-133`; the
 merge-base the naming block resolves; the `lib/` layout.
 
 ### Earn-it
@@ -347,6 +349,14 @@ turns on `verify-ship-gates.sh`.
 | O5  | An existing changelog in another format                           | assumption | spec p1             | claude | Resolved | Add [Unreleased] on top with the user's approval; old entries never reformatted                                                                                                                                     |
 | O6  | The naming gate rejects `feat(config)!:` — its pattern has no `!` | flag       | spec p1             | claude | Resolved | In scope: the convention and the gate pattern accept `!` before the colon; a test proves it                                                                                                                         |
 | O7  | Use commitizen (`cz bump`, `cz changelog`) instead?               | question   | spec p2             | user   | Resolved | No — native only, even where commitizen is configured. Its lines are commit subjects (developer wording) and it adds a Python dependency to every repo. Checked against commitizen-tools.github.io docs, 2026-09-24 |
+| O8  | Repos onboarded before this slice have no `CHANGELOG.md`, and onboarding never reruns | flag | build | user | Resolved | `/ship`'s refresh step runs `init` when the file is missing and `add-unreleased` with approval when it lacks `[Unreleased]`, as it does for `DECISIONS.md`. The gate's missing message says "/ship creates it" |
+| O9  | `init` skipped a tag sharing a branch's name — git printed it as `tags/v0.1.0` | question | review | claude | Resolved | Tag names read with `refname:lstrip=2`; test 27 |
+| O10 | Tags `v1.0.0` and `1.0.0` gave two `## [1.0.0]` headings | question | review | claude | Resolved | One heading per version, dated by the first tag in semver order, every tag still named; test 28 |
+| O11 | `color.ui=always`, `diff.external` or a `-diff` attribute hid attributed changelog lines from the gate | question | review | claude | Resolved | The gate reads `git diff --no-color --no-ext-diff --text`; two gate tests |
+| O12 | A resumed onboarding committed a CHANGELOG.md the user never saw | question | review | claude | Resolved | An uncommitted CHANGELOG.md is shown in the draft as created, as DECISIONS.md already is |
+| O13 | A second `/ship` run wrote the slice's lines again, reworded | question | review | claude | Resolved | The refresh step reads the branch's changelog diff first and writes only what it does not cover |
+| O14 | The tidy step restated the subject format without `!`, so a squash dropped it | question | review | claude | Resolved | The tidy step defers to `git-naming.md` and says a squash keeps the `!` |
+| O15 | Captured lessons in `docs/learnings/` failed the Scope gate | question | review | claude | Resolved | Added to the Scope row's exempt list in `ship/SKILL.md` |
 
 ## Glossary
 
