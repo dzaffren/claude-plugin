@@ -1,6 +1,6 @@
 # ADR seeding
 
-**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2b
 **Depends on:** `decision-log` — the file format and the gate this slice writes into
