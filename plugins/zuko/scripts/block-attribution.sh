@@ -50,15 +50,18 @@ def emit(label, kind, value):
         print("%s\t%s" % (label, line))
 
 
-def short_options(token, rest, letters):
+def short_options(token, rest, letters, drop_equals):
     """git's rule for -am"x", which gh's -n"x" follows too: the letters before
     the one that takes a value are flags, everything after it is the value,
-    and an empty tail takes the next argument."""
+    and an empty tail takes the next argument. gh's flag parser also drops
+    one "=" after the letter (-F=path reads path); git keeps it."""
     for index, letter in enumerate(token[1:], start=1):
         if letter not in letters:
             continue
         label, kind = letters[letter]
         tail = token[index + 1:]
+        if drop_equals and tail.startswith("="):
+            tail = tail[1:]
         if tail:
             emit(label, kind, tail)
         elif rest:
@@ -66,7 +69,7 @@ def short_options(token, rest, letters):
         return
 
 
-def read_options(rest, longs, letters):
+def read_options(rest, longs, letters, drop_equals=False):
     """Emit every option value that is message text or names a message file."""
     while rest:
         token = rest.pop(0)
@@ -80,7 +83,7 @@ def read_options(rest, longs, letters):
         elif token.startswith("--"):
             continue
         elif token.startswith("-") and len(token) > 1:
-            short_options(token, rest, letters)
+            short_options(token, rest, letters, drop_equals)
 
 
 # git commit and git tag take a message through the same four options.
@@ -104,7 +107,7 @@ for args in git_command.invocations(tokens, program="gh"):
         read_options(
             args[2:],
             {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE},
-            {"n": NOTES, "F": NOTES_FILE, "t": TITLE})
+            {"n": NOTES, "F": NOTES_FILE, "t": TITLE}, drop_equals=True)
 PY
 )
 case $? in

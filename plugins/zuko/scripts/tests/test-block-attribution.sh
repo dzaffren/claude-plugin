@@ -231,6 +231,10 @@ expect_exit 2 "$hook_status" "blocks attribution in a gh release --title="
 run_hook 'gh release new v2.2.0 -n "Generated with Claude Code"'
 expect_exit 2 "$hook_status" "blocks attribution in gh release new, the alias for create"
 
+# gh's flag parser drops the = in -F=path and reads path; git keeps it.
+run_hook "gh release create v2.2.0 -F=$work/tag-signed.txt"
+expect_exit 2 "$hook_status" "blocks attribution in a gh release -F=path notes file"
+
 run_hook "gh release create v2.2.0 --verify-tag -t v2.2.0 -F $work/tag-clean.txt"
 expect_exit 0 "$hook_status" "allows a clean gh release create"
 expect_no_match '.' "$hook_out$hook_err" "a clean gh release create prints nothing"
