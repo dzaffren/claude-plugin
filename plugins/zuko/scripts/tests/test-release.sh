@@ -819,3 +819,99 @@ expect_exit 2 "$status" "cut bad date: exits 2"
 run cut "$repo" --date 2026-09-25
 expect_exit 2 "$status" "cut no version: exits 2"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut bad input: nothing written"
+
+# --- resuming a release that stopped after the tag ---
+
+pushes_to() {  # pushes_to <repo> <bare>: origin still reads github.com; pushes land in <bare>
+  git -C "$1" config "url.$2.insteadOf" https://github.com/acme/invoice-cli.git
+}
+
+# The fixture released as far as the tag: cut, committed and tagged 1.5.0,
+# with origin pushing to an empty bare repo.
+tagged() {     # tagged; prints the repo path
+  local dir bare
+  dir=$(fixture)
+  bare=$(mktemp -d -p "$work")
+  git init -q --bare "$bare"
+  pushes_to "$dir" "$bare"
+  python3 "$release" cut "$dir" --version 1.5.0 --date 2026-09-25 >/dev/null
+  commit "$dir" "chore(release): v1.5.0"
+  git -C "$dir" tag -a v1.5.0 -m v1.5.0
+  : >"$dir.ran"
+  : >"$FAKE_GH/calls"
+  printf '%s' "$dir"
+}
+
+gates_resumed="Release gates
+  branch     main
+  tree       clean
+  remote     github.com/acme/invoice-cli
+"
+
+# 29. Tagged at HEAD, not on origin: push it, then create the release.
+repo=$(tagged)
+before=$(snapshot "$repo")
+run plan "$repo"
+expect_exit 0 "$status" "resume push: exits 0"
+expected="${gates_resumed}
+v1.5.0 is tagged at HEAD ($(short "$repo")) but not on origin.
+Resuming: pushing main and v1.5.0, then creating the release from the [1.5.0] section. No new commit or tag.
+NEXT: resume v1.5.0 push"
+[ "$out" = "$expected" ]
+expect_exit 0 "$?" "resume push: the report and the message, line for line"
+expect_match '^$' "$(cat "$repo.ran")" "resume push: the tests are not run again"
+expect_no_match 'api ' "$(cat "$FAKE_GH/calls")" "resume push: CI not asked again"
+expect_match "^$before\$" "$(snapshot "$repo")" "resume push: nothing written or tagged"
+
+# 30. On origin, and GitHub has no release: create it.
+git -C "$repo" push -q origin main v1.5.0
+run plan "$repo"
+expect_exit 0 "$status" "resume release: exits 0"
+expected="${gates_resumed}
+v1.5.0 is tagged at HEAD ($(short "$repo")) and on origin, but GitHub has no release v1.5.0.
+Resuming: creating the release from the [1.5.0] section. No new commit or tag.
+NEXT: resume v1.5.0 release"
+[ "$out" = "$expected" ]
+expect_exit 0 "$?" "resume release: the spec's message, line for line"
+expect_match '^release view v1\.5\.0 --repo acme/invoice-cli$' "$(cat "$FAKE_GH/calls")" "resume release: asked GitHub for that release"
+
+# cut refuses to cut again.
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_exit 1 "$status" "resume cut: exits 1"
+expect_match '^v1\.5\.0 is tagged at HEAD; resume the release instead of cutting again\.$' "$out" "resume cut: says why"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "resume cut: nothing written"
+expect_match "^$before\$" "$(snapshot "$repo")" "resume cut: the files are untouched"
+
+# 31. The release exists: nothing to resume, and nothing since it.
+touch "$FAKE_GH/released"
+run plan "$repo"
+expect_exit 1 "$status" "released: exits 1"
+expect_match '^  commits    no commits since v1\.5\.0$' "$out" "released: no commits since the tag"
+expect_match '^  changelog  \[Unreleased\] has no lines — nothing to release$' "$out" "released: [Unreleased] is empty"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "released: NEXT: stop"
+
+# 32. GitHub cannot be asked: fail with gh's message, never guess.
+repo=$(tagged)
+git -C "$repo" push -q origin main v1.5.0
+echo "HTTP 401: Bad credentials" >"$FAKE_GH/view-error"
+run plan "$repo"
+expect_exit 1 "$status" "release view error: exits 1"
+expect_match '^  release    could not check GitHub for release v1\.5\.0: HTTP 401: Bad credentials$' "$out" "release view error: quotes gh"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "release view error: NEXT: stop"
+
+# Origin cannot be reached: fail, never read it as "not pushed".
+repo=$(tagged)
+bare=$(git -C "$repo" config --local --get-regexp '^url\..*\.insteadof$' | awk '{ print $1 }' | sed 's/^url\.//; s/\.insteadof$//')
+mv "$bare" "$bare.gone"
+run plan "$repo"
+expect_exit 1 "$status" "origin unreachable: exits 1"
+expect_match '^  remote     could not reach origin: ' "$out" "origin unreachable: says so"
+expect_no_match 'Resuming' "$out" "origin unreachable: no resume"
+
+# 33. Resuming still needs main and a clean tree.
+repo=$(tagged)
+git -C "$repo" checkout -q -b feat/export-csv
+run plan "$repo"
+expect_match '^  branch     on feat/export-csv — release from main$' "$out" "resume on a branch: the gate fails"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "resume on a branch: NEXT: stop"

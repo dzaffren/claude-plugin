@@ -13,9 +13,13 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          minor, else a fix bumps patch, else nothing is proposed. --version
          checks an override: refused when it is not a plain X.Y.Z above the
          last version, advised against when its size does not match the
-         commits. The last line is always one "NEXT: " line saying what the
-         skill does: stop, ask X.Y.Z, confirm X.Y.Z, ask-first or ask-version
-  cut    re-check everything plan checks, then write: [Unreleased] stays,
+         commits. A release tag at HEAD whose release is unfinished is
+         resumed instead: not on origin, or on origin with no GitHub
+         release; the tests and changelog are not checked again. The last
+         line is always one "NEXT: " line saying what the skill does: stop,
+         ask X.Y.Z, confirm X.Y.Z, ask-first, ask-version, resume vX.Y.Z push
+         or resume vX.Y.Z release
+  cut   re-check everything plan checks, then write: [Unreleased] stays,
          empty, and its lines move under "## [X.Y.Z] - date", with compare
          links at the bottom; each manifest's version characters, and no
          other byte; the overview's status line gains **Release:** vX.Y.Z.
@@ -500,14 +504,43 @@ def has_status_line(project):
         return any(line.startswith("**Status:**") for line in handle)
 
 
+def resume_state(project, repo, gates):
+    """(tag, short sha, "push" or "release") when a release tag sits at HEAD
+    and its release is not finished; None when there is nothing to resume."""
+    at_head = semver_tags(project, "--points-at", "HEAD")
+    if not at_head:
+        return None
+    tag = max(at_head, key=lambda pair: pair[1])[0]
+    short = git(project, "rev-parse", "--short", "HEAD").stdout.strip()
+    remote = git(project, "ls-remote", "--tags", "origin", "refs/tags/" + tag)
+    if remote.returncode != 0:
+        gates.fail("remote", "could not reach origin: %s" % first_line(remote.stderr))
+        return None
+    if not remote.stdout.strip():
+        return tag, short, "push"
+    code, out, err = gh("release", "view", tag, "--repo", repo)
+    if code == 0:
+        return None
+    if "release not found" in err:
+        return tag, short, "release"
+    gates.fail("release", "could not check GitHub for release %s: %s" % (tag, first_line(err or out)))
+    return None
+
+
 class Release:
-    """Everything plan shows and cut writes, worked out once."""
+    """Everything plan shows and cut writes, worked out once. A release to
+    resume skips the rest: its tests passed and its changelog was cut."""
 
     def __init__(self, project, override):
         self.gates = gates = Gates()
         branch_gate(project, gates)
         tree_gate(project, gates)
         repo = remote_gate(project, gates)
+        self.resume = None
+        if repo and not gates.failed:
+            self.resume = resume_state(project, repo, gates)
+        if self.resume:
+            return
         if repo:
             tests_gate(project, repo, gates)
         self.lines = changelog_gate(project, gates)
@@ -519,6 +552,8 @@ class Release:
         if not tagged and self.fields and not gates.failed:
             self.last = parse(self.fields[0].version)
         self.commits = commits_since(project, self.tag)
+        if self.tag and not self.commits:
+            gates.fail("commits", "no commits since %s" % self.tag)
         self.called, self.reason = called_for(self.last, self.commits) if self.last else (None, None)
         self.proposed = bump(self.last, self.called) if self.called else None
 
@@ -669,6 +704,20 @@ def plan(project, override):
         print("NEXT: stop")
         return 1
     print()
+    if release.resume:
+        tag, short, step = release.resume
+        section_name = show(parse(tag))
+        if step == "push":
+            print("%s is tagged at HEAD (%s) but not on origin." % (tag, short))
+            print("Resuming: pushing main and %s, then creating the release from the [%s] "
+                  "section. No new commit or tag." % (tag, section_name))
+        else:
+            print("%s is tagged at HEAD (%s) and on origin, but GitHub has no release %s."
+                  % (tag, short, tag))
+            print("Resuming: creating the release from the [%s] section. No new commit or tag."
+                  % section_name)
+        print("NEXT: resume %s %s" % (tag, step))
+        return 0
     if release.last is None and override is None:
         print("No tags and no manifest version to start from.")
         print("First version: 0.1.0 (still changing) or 1.0.0 (stable)?")
@@ -712,8 +761,12 @@ def plan(project, override):
 def cut(project, version, today):
     release = Release(project, version)
     release.gates.show()
-    if release.gates.failed or release.refused:
-        if release.refused:
+    if release.gates.failed or release.resume or release.refused:
+        if release.resume:
+            print()
+            print("%s is tagged at HEAD; resume the release instead of cutting again."
+                  % release.resume[0])
+        elif release.refused:
             print()
             print(release.refused)
         print("Nothing written.")
