@@ -188,17 +188,26 @@ def tests_gate(project, repo, gates):
     short = git(project, "rev-parse", "--short", "HEAD").stdout.strip()
     total, failing = 0, []
     for endpoint, key, label, passed in (
-            ("check-runs?per_page=100", "check_runs", "name",
+            ("check-runs", "check_runs", "name",
              lambda run: run.get("conclusion") in PASSING_RUN),
             ("status", "statuses", "context",
              lambda status: status.get("state") == "success")):
-        code, out, err = gh("api", "repos/%s/commits/%s/%s" % (repo, sha, endpoint))
+        # GitHub returns at most 100 a page; a failure on page 2 still counts.
+        items, page = [], 1
         try:
-            if code != 0:
-                raise ValueError(first_line(err or out))
-            data = json.loads(out)
-            total += int(data["total_count"])
-            failing += [item.get(label, "?") for item in data.get(key, []) if not passed(item)]
+            while True:
+                code, out, err = gh("api", "repos/%s/commits/%s/%s?per_page=100&page=%d"
+                                    % (repo, sha, endpoint, page))
+                if code != 0:
+                    raise ValueError(first_line(err or out))
+                data = json.loads(out)
+                count = int(data["total_count"])
+                items += data.get(key, [])
+                if len(items) >= count or not data.get(key):
+                    break
+                page += 1
+            total += count
+            failing += [item.get(label, "?") for item in items if not passed(item)]
         except (ValueError, KeyError, TypeError, AttributeError) as problem:
             gates.fail("tests", "could not read CI checks on %s: %s" % (short, problem))
             return

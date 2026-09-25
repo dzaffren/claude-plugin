@@ -14,8 +14,9 @@ cat >"$work/bin/gh" <<'GH'
 printf '%s\n' "$*" >>"$FAKE_GH/calls"
 if [ -f "$FAKE_GH/api-error" ] && [ "$1" = api ]; then cat "$FAKE_GH/api-error" >&2; exit 1; fi
 case "$1 $2" in
+  "api "*/check-runs*page=2*) cat "$FAKE_GH/check-runs-2" ;;
   "api "*/check-runs*) cat "$FAKE_GH/check-runs" ;;
-  "api "*/status) cat "$FAKE_GH/status" ;;
+  "api "*/status*) cat "$FAKE_GH/status" ;;
   "release view")
     if [ -f "$FAKE_GH/view-error" ]; then cat "$FAKE_GH/view-error" >&2; exit 1; fi
     if [ -f "$FAKE_GH/released" ]; then printf 'title:\t%s\n' "$3"; exit 0; fi
@@ -148,7 +149,7 @@ expected="Release gates
 expect_exit 0 "$?" "gates pass: the report, line for line"
 expect_match '^ran$' "$(cat "$repo.ran" 2>/dev/null)" "gates pass: the test command really ran"
 expect_match 'api repos/acme/invoice-cli/commits/[0-9a-f]{40}/check-runs' "$(cat "$FAKE_GH/calls" 2>/dev/null)" "gates pass: asked GitHub for check runs on HEAD"
-expect_match 'api repos/acme/invoice-cli/commits/[0-9a-f]{40}/status$' "$(cat "$FAKE_GH/calls" 2>/dev/null)" "gates pass: asked GitHub for commit statuses on HEAD"
+expect_match 'api repos/acme/invoice-cli/commits/[0-9a-f]{40}/status\?per_page=100&page=1$' "$(cat "$FAKE_GH/calls" 2>/dev/null)" "gates pass: asked GitHub for commit statuses on HEAD"
 
 # 2. On a feature branch.
 repo=$(fixture)
@@ -242,6 +243,20 @@ expect_exit 1 "$status" "gh error: exits 1"
 expect_match "^  tests      could not read CI checks on $(short "$repo"): HTTP 401: Bad credentials" "$out" "gh error: quotes gh"
 expect_no_match 'no CI checks' "$out" "gh error: not read as no CI"
 expect_no_match '^ran$' "$(cat "$repo.ran" 2>/dev/null)" "gh error: the local command did not run"
+
+# 6b. More check runs than one page holds: a failure on page 2 still fails.
+repo=$(fixture)
+python3 - "$FAKE_GH" <<'PAGES'
+import json, os, sys
+run = lambda n, c: {"name": n, "status": "completed", "conclusion": c}
+with open(os.path.join(sys.argv[1], "check-runs"), "w") as f:
+    json.dump({"total_count": 101, "check_runs": [run("shard-%d" % i, "success") for i in range(1, 101)]}, f)
+with open(os.path.join(sys.argv[1], "check-runs-2"), "w") as f:
+    json.dump({"total_count": 101, "check_runs": [run("shard-101", "failure")]}, f)
+PAGES
+run plan "$repo"
+expect_exit 1 "$status" "paged CI: exits 1"
+expect_match '^  tests      1 of 101 CI checks on [0-9a-f]+ failing: shard-101$' "$out" "paged CI: reads page 2 and names its failure"
 
 # 7. The changelog: no lines, no heading, no file.
 repo=$(fixture)

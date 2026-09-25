@@ -20,7 +20,7 @@ cat >"$work/bin/gh" <<'GH'
 printf '%s\n' "$*" >>"$FAKE_GH/calls"
 case "$1 $2" in
   "api "*/check-runs*) echo '{"total_count": 0, "check_runs": []}' ;;
-  "api "*/status) echo '{"state": "pending", "total_count": 0, "statuses": []}' ;;
+  "api "*/status*) echo '{"state": "pending", "total_count": 0, "statuses": []}' ;;
   "release view") echo "release not found" >&2; exit 1 ;;
   "release create")
     while [ $# -gt 0 ]; do
