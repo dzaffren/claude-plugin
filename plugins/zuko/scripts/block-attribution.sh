@@ -98,8 +98,9 @@ NOTES = ("release notes", "text")
 NOTES_FILE = ("release notes", "file")
 TITLE = ("release title", "text")
 
+# "new" is gh's own alias for "create" (gh release create --help).
 for args in git_command.invocations(tokens, program="gh"):
-    if args[:2] == ["release", "create"]:
+    if args[:1] == ["release"] and args[1:2] in (["create"], ["new"]):
         read_options(
             args[2:],
             {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE},
