@@ -1,6 +1,6 @@
 # ADR seeding
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2b
 **Depends on:** `decision-log` — the file format and the gate this slice writes into
@@ -206,6 +206,7 @@ sequenceDiagram
 | `plugins/zuko/scripts/tests/test-adr-scan.sh` (new)     | Seven fixture ADRs (both formats, every status, one missing date) → expected JSON; empty and missing directories → `[]`                                                                                                                                       | scenarios 3, 4                           |
 | `plugins/zuko/scripts/tests/fixtures/adr/` (new)        | The seven fixture ADR files                                                                                                                                                                                                                                   | test input                               |
 | `plugins/zuko/scripts/tests/test-e2e-adr-seed.sh` (new) | The e2e walk below                                                                                                                                                                                                                                            | slice proof                              |
+| `plugins/zuko/skills/ship/SKILL.md`                     | Added at build: its pointer to onboarding's README-block step moves from step 7 to step 8, because seeding became step 5                                                                                                                                     | O8                                       |
 
 Reusing: `decisions.py`'s parser and `check` (from `decision-log`); the lib-plus-tests
 layout.
@@ -241,7 +242,7 @@ No new file of code; no new dependency.
 
 **E2E:** `scripts/tests/test-e2e-adr-seed.sh` — scratch repo with the fixture ADRs →
 `adr-scan` → a `DECISIONS.md` written from its JSON with honest-gap Rejected lines →
-`decisions.py check` passes → `load-decisions.sh` lists the three active entries →
+`decisions.py check` passes → `load-decisions.sh` lists the four active entries →
 flipping one supersede pair by hand fails `check`.
 
 ### Chunks
@@ -265,6 +266,12 @@ after `decision-log` is merged.
 | O2  | Proposed, Rejected and Deprecated ADRs | assumption | spec p1   | claude | Resolved | Not seeded; named in the onboarding message. DECISIONS.md keeps two states                     |
 | O3  | Seeding into an existing DECISIONS.md  | assumption | spec p1   | claude | Resolved | Only when onboarding creates the file; this repo has no ADRs (find over the repo returns none) |
 | O4 | Why and Rejected wording is Claude reading the ADR, not code | flag | spec p3 | claude | Accepted risk | Mapping and numbering are tested in code; wording is proven by one real run on the fixture ADRs during /build and approved in the onboarding draft. Agreed 2026-09-24 |
+| O5 | The /adr skill marks a superseded ADR `status: Superseded` and keeps the number in a separate `superseded-by:` front matter key | assumption | build | claude | Resolved | adr-scan reads the successor from the status text, then `superseded-by:`, then the `## Status` section. Without it every /adr-written supersede would be skipped |
+| O6 | Two ADRs superseded by the same ADR; an entry supersedes exactly one | assumption | build | claude | Resolved | The lower-numbered ADR pairs; the other is not seeded, named "Superseded by N, which already supersedes M" |
+| O7 | An ADR with no date in the file and no commit (untracked) | assumption | build | claude | Resolved | Not seeded, named "no date" — never given a guessed date, same as "(no status)" |
+| O8 | Onboarding's `check` runs on a new, uncommitted file, but `check` required `--base` and a tracked file | question | build | claude | Resolved | `check <dir>` with no `--base` runs the structure checks only. Seeding is onboarding step 5; steps 5 to 7 became 6 to 8, and ship/SKILL.md's one pointer followed |
+| O9 | Two ADR files with one number collided on a D-number and failed `check` | question | review | claude | Resolved | Every file sharing a number is not seeded, named "number 0002 is used by 2 files"; an ADR superseded by that number follows |
+| O10 | Onboarding resumed after step 5 committed seeded entries the user never saw | question | review | claude | Resolved | The Draft resume path reruns the scan and check and shows the seeded summary again; a failing check reruns step 5 from the header |
 
 ## Glossary
 

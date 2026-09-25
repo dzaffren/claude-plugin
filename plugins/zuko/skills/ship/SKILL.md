@@ -43,7 +43,7 @@ The gate below reads what this step writes, so it runs first.
 - `README.md` has no zuko block (the repo was onboarded before the block
   existed) → add one: plan it with step 4 of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md`, show the user the change, and
-  on approval write it as step 7's "Writing the README block" says.
+  on approval write it as step 8's "Writing the README block" says.
 - No `DECISIONS.md` at the repo root (the repo was onboarded before the file
   existed) → create it as the `DECISIONS.md` paragraph of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` says. The gate fails without
