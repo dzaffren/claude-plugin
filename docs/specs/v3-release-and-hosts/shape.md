@@ -27,7 +27,6 @@ flowchart LR
 ```mermaid
 flowchart LR
     P1["v3-project-memory · 3 changelog"] --> S4["4 · /release"]
-    S4 --> S6["6 · GitLab host"]
     S7a["7a · OWASP lens"] --> S5["5 · pentest in /release"]
     S4 --> S5
     S7b["7b · regression-aware review"]
@@ -36,12 +35,11 @@ flowchart LR
 
 | Order | #   | Slice                   | What ships                                                                                | Why this order                                            |
 | ----- | --- | ----------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 1     | 4   | `/release`              | Version from commits, changelog cut, tag, GitHub release, hub page                        | First thing you can release with; 5 and 6 plug into it    |
-| 2     | 6   | GitLab host             | `/ship` and `/release` detect the host and use `glab`                                     | Reuses 4's flow with a second host                        |
-| 3     | 7a  | OWASP lens              | `/review` security pass grounded in OWASP Top 10:2025 with a shared `references/owasp.md` | 5 reuses the reference                                    |
-| 4     | 5   | Pentest                 | zuko `pentester` agent runs inside `/release`; critical or high blocks                    | Needs 4's release step and 7a's reference                 |
-| 5     | 7b  | Regression-aware review | Deleted guards count, verifier needs a real defense, silent failures under A10            | Independent; after 7a so both touch `/review` in sequence |
-| 6     | 8   | Stage polish            | `/design-system`, glossary gate, ASCII terminal, Figma/Jira if connected, shape gate      | Small; last so it blocks nothing                          |
+| 1     | 4   | `/release`              | Version from commits, changelog cut, tag, GitHub release, hub page                        | First thing you can release with; 5 plugs into it         |
+| 2     | 7a  | OWASP lens              | `/review` security pass grounded in OWASP Top 10:2025 with a shared `references/owasp.md` | 5 reuses the reference                                    |
+| 3     | 5   | Pentest                 | zuko `pentester` agent runs inside `/release`; critical or high blocks                    | Needs 4's release step and 7a's reference                 |
+| 4     | 7b  | Regression-aware review | Deleted guards count, verifier needs a real defense, silent failures under A10            | Independent; after 7a so both touch `/review` in sequence |
+| 5     | 8   | Stage polish            | `/design-system`, glossary gate, ASCII terminal, Figma/Jira if connected, shape gate      | Small; last so it blocks nothing                          |
 
 ### Slice 4 · `/release`
 
@@ -63,26 +61,6 @@ flowchart LR
 - First release on a repo with no tags asks: `0.1.0` or `1.0.0`.
 - Attribution ban (`references/git-naming.md`) extends to tag messages and release
   notes; `block-attribution.sh` gains `git tag` and `gh release create`.
-
-### Slice 6 · GitLab host
-
-| Remote host                                       | CLI             |
-| ------------------------------------------------- | --------------- |
-| `github.com`                                      | `gh`            |
-| contains `gitlab`, or known to `glab auth status` | `glab`          |
-| anything else                                     | stop and say so |
-
-| Action      | GitHub                             | GitLab                                          |
-| ----------- | ---------------------------------- | ----------------------------------------------- |
-| open review | `gh pr create`                     | `glab mr create --fill --yes -b main -t … -d …` |
-| watch CI    | `gh pr checks --watch`             | `glab ci status --live`                         |
-| release     | `gh release create`                | `glab release create vX.Y.Z -F notes.md`        |
-| template    | `.github/pull_request_template.md` | `.gitlab/merge_request_templates/Default.md`    |
-
-- One reference file holds this table; `/ship` and `/release` read it.
-- Attribution ban and hook extend to `gh pr create` bodies (a gap today — the hook
-  fires on `git commit` only) and `glab mr create`.
-- glab flags come from glab 1.93; the spec re-checks against the installed version.
 
 ### Slice 7a · OWASP lens
 
@@ -150,10 +128,14 @@ report        → docs/security/vX.Y.Z/report.md
 | ASCII in terminal | `voice.md`: diagrams printed to the terminal are ASCII; Mermaid stays in files and pages; README's "renders in the terminal" claim fixed                                       |
 | Figma / Jira      | `/design-system` accepts a Figma link when the Figma tools are connected; `/shape` accepts a Jira key when the Atlassian MCP is connected; otherwise neither is mentioned      |
 | Shape gate        | Ledger gains status `Handed to {slice}`. A shape cannot be `Shaped`, and a spec cannot be `Refined`, with any `Open` row. A handed row is copied into the named spec as `Open` |
+| PR body attribution | Attribution ban and `block-attribution.sh` extend to `gh pr create` bodies and titles (a gap today: the hook reads commits, tags and releases only) |
+| Release host message | `release.py` remote gate says "origin is {host} — /release supports GitHub only"; the "GitLab releases come in slice 6" text goes |
 | Mermaid placeholder fix | `verify-ship-gates.sh` placeholder check stops flagging Mermaid decision nodes (`Q{label}` inside a mermaid fence); a test with a real flowchart proves it |
 
 ## Not doing
 
+- **GitLab and `glab`.** Dropped 2026-09-25 to focus on GitHub (O13). `/ship` and
+  `/release` stay GitHub-only; any other origin stops and says so.
 - **Strix.** Every run mode needs a separate LLM — a key, paid cloud credits, or a
   ~70B local model; Claude Code cannot power it (usestrix/strix
   `skills/penetration-testing-with-strix/SKILL.md`; `docs/llm-providers/local.mdx`).
@@ -178,8 +160,9 @@ report        → docs/security/vX.Y.Z/report.md
 | O8  | How does a shape finish when a question belongs to a later slice? | question | shape     | user   | Resolved    | New status `Handed to {slice}`; zero `Open` rows to mark Shaped or Refined   |
 | O9  | Attribution on new surfaces                                       | question | shape     | user   | Resolved    | Ban and hook extend to PR/MR bodies, tag messages, release notes, changelog  |
 | O10 | Slice 7 over the size rule                                        | flag     | shape     | claude | Resolved    | Split into 7a (OWASP lens) and 7b (regression-aware review)                  |
-| O11 | glab flags verified on 1.93 only                                  | flag     | shape     | claude | Handed to 6 | Re-check against the installed glab at the slice 6 spec                      |
+| O11 | glab flags verified on 1.93 only                                  | flag     | shape     | claude | Resolved    | Moot — GitLab dropped (O13)                                                  |
 | O12 | Ship gate flags Mermaid decision nodes as unfilled placeholders | flag | spec p3 (auto-onboard) | user | Resolved | Fixed in slice 8; specs quote node labels until then |
+| O13 | Keep GitLab in v3? | question | spec p1 (slice 6) | user | Resolved | No — GitHub only; slice 6 dropped 2026-09-25. Supersedes O6's GitLab half |
 
 ## Glossary
 
