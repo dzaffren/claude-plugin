@@ -107,9 +107,11 @@ def init(project):
         print("%s already exists — use add-unreleased" % NAME)
         return 1
     # creatordate is the tagger date of an annotated tag and the commit date
-    # of a lightweight one. Outside a git repo this fails: no tags.
+    # of a lightweight one. lstrip=2 drops exactly "refs/tags/": refname:short
+    # prints "tags/v0.1.0" when a branch has the same name. Outside a git repo
+    # this fails: no tags.
     listed = git(project, "for-each-ref",
-                 "--format=%(refname:short) %(creatordate:short)", "refs/tags")
+                 "--format=%(refname:lstrip=2) %(creatordate:short)", "refs/tags")
     tags, skipped = [], []
     for line in listed.stdout.splitlines() if listed.returncode == 0 else []:
         tag, _, date = line.partition(" ")

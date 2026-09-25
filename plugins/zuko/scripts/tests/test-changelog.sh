@@ -361,3 +361,15 @@ run check "$repo"
 expect_exit 2 "$status" "check no --base: exits 2"
 run check "$work/nowhere" --base HEAD
 expect_exit 2 "$status" "check no dir: exits 2"
+
+# --- init: tag names git would print ambiguously ---
+
+# 27. A branch with a tag's name: git shortens the tag to tags/v0.1.0, which
+# is still the v0.1.0 release.
+repo=$(new_repo)
+git -C "$repo" tag v0.1.0
+git -C "$repo" branch v0.1.0
+run init "$repo"
+expect_exit 0 "$status" "init tag and branch share a name: exits 0"
+expect_match '^## \[0\.1\.0\] - ' "$(cat "$repo/CHANGELOG.md")" "init tag and branch share a name: the version is seeded"
+expect_no_match 'Skipped|tags/' "$out" "init tag and branch share a name: nothing skipped"
