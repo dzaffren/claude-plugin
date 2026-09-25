@@ -660,3 +660,162 @@ expected="Will write
   OVERVIEW.md                               Release: v1.5.0 on the status line"
 [ "$(printf '%s\n' "$out" | sed -n '/^Will write$/,/^Then$/p' | sed '$d')" = "$expected" ]
 expect_exit 0 "$?" "every kind: listed in order, decoys left out"
+
+# --- cut and notes ---
+
+same() {       # same <file> <file>; prints 0 when the bytes match
+  cmp -s "$1" "$2"
+  printf '%s' "$?"
+}
+
+changed() {    # changed <repo>: the paths git sees changed, one line
+  git -C "$1" status --porcelain | awk '{ print $2 }' | sort | tr '\n' ' '
+}
+
+# 22. The feature release: [Unreleased] moves under 1.5.0, with compare links.
+repo=$(fixture)
+cp "$repo/OVERVIEW.md" "$work/overview-before"
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_exit 0 "$status" "cut: exits 0"
+cat >"$work/expected" <<'LOG'
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+## [Unreleased]
+
+## [1.5.0] - 2026-09-25
+
+### Added
+
+- Export the ledger as one CSV file.
+
+### Fixed
+
+- Invoice numbers keep their leading zeros.
+
+## [1.4.2] - 2026-08-01
+
+### Fixed
+
+- Totals round to the cent.
+
+[unreleased]: https://github.com/acme/invoice-cli/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/acme/invoice-cli/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/acme/invoice-cli/compare/v1.4.1...v1.4.2
+LOG
+expect_exit 0 "$(same "$repo/CHANGELOG.md" "$work/expected")" "cut: CHANGELOG.md byte for byte"
+sed 's/^\*\*Status:\*\* Active · /**Status:** Active · **Release:** v1.5.0 · /' "$work/overview-before" >"$work/expected"
+expect_exit 0 "$(same "$repo/OVERVIEW.md" "$work/expected")" "cut: the overview's status line gains the release, nothing else"
+expect_match '^CHANGELOG\.md OVERVIEW\.md $' "$(changed "$repo")" "cut: writes only what the plan listed"
+expected="Wrote
+  CHANGELOG.md   [Unreleased] → [1.5.0] - 2026-09-25, links
+  OVERVIEW.md    Release: v1.5.0 on the status line"
+[ "$(printf '%s\n' "$out" | sed -n '/^Wrote$/,$p')" = "$expected" ]
+expect_exit 0 "$?" "cut: says what it wrote"
+expect_match '^Project overview \(OVERVIEW\.md\):$' \
+  "$(CLAUDE_PROJECT_DIR="$repo" bash "$scripts/load-overview.sh" | head -n 1)" "cut: the session loader still reads the status as Active"
+expect_no_match '^Proposed' "$(python3 "$release" plan "$repo" 2>&1)" "cut: a dirty tree after it, as the skill commits next"
+
+# 23. notes: the lines under a version, exactly, without the heading.
+run notes "$repo" --version 1.5.0
+expect_exit 0 "$status" "notes: exits 0"
+[ "$out" = "$(printf '### Added\n\n- Export the ledger as one CSV file.\n\n### Fixed\n\n- Invoice numbers keep their leading zeros.')" ]
+expect_exit 0 "$?" "notes: the [1.5.0] lines, exactly"
+python3 "$release" notes "$repo" --version 1.5.0 >"$work/notes"
+expect_match '^- Invoice numbers keep their leading zeros\.$' "$(tail -c 200 "$work/notes")" "notes: ends on its last line"
+expect_exit 0 "$(tail -c 1 "$work/notes" | od -An -c | tr -d ' ' | grep -qx '\\n'; printf '%s' $?)" "notes: with one newline after it"
+run notes "$repo" --version 1.4.2
+[ "$out" = "$(printf '### Fixed\n\n- Totals round to the cent.')" ]
+expect_exit 0 "$?" "notes: the last section stops before the link definitions"
+run notes "$repo" --version 9.9.9
+expect_exit 1 "$status" "notes: no such version exits 1"
+expect_match '^CHANGELOG\.md has no \[9\.9\.9\] section$' "$out" "notes: says which"
+run notes "$repo" --version banana
+expect_exit 2 "$status" "notes: not a version exits 2"
+
+# 24. A first release from the manifests: the entry and its plugin.json bumped
+# in place, the metadata and the remote plugin untouched, and the release page
+# linked, since there is no tag to compare with.
+repo=$(untagged)
+marketplace "$repo" 2.1.0
+printf '# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Export the ledger as one CSV file.\n' >"$repo/CHANGELOG.md"
+commit "$repo" "chore: add the marketplace"
+run cut "$repo" --version 2.2.0 --date 2026-09-25
+expect_exit 0 "$status" "cut first: exits 0"
+printf '# Changelog\n\n## [Unreleased]\n\n## [2.2.0] - 2026-09-25\n\n### Added\n\n- Export the ledger as one CSV file.\n\n[unreleased]: https://github.com/acme/invoice-cli/compare/v2.2.0...HEAD\n[2.2.0]: https://github.com/acme/invoice-cli/releases/tag/v2.2.0\n' >"$work/expected"
+expect_exit 0 "$(same "$repo/CHANGELOG.md" "$work/expected")" "cut first: links added at the bottom, the release page for 2.2.0"
+mkdir -p "$work/zuko"
+marketplace "$work/zuko" 2.2.0
+sed 's/"metadata": { "version": "2.2.0" }/"metadata": { "version": "2.1.0" }/' "$work/zuko/.claude-plugin/marketplace.json" >"$work/expected"
+expect_exit 0 "$(same "$repo/.claude-plugin/marketplace.json" "$work/expected")" "cut first: marketplace.json byte for byte"
+expect_exit 0 "$(same "$repo/plugins/zuko/.claude-plugin/plugin.json" "$work/zuko/plugins/zuko/.claude-plugin/plugin.json")" "cut first: plugin.json byte for byte"
+expect_match '^\.claude-plugin/marketplace\.json CHANGELOG\.md OVERVIEW\.md plugins/zuko/\.claude-plugin/plugin\.json $' \
+  "$(changed "$repo")" "cut first: those files and no others"
+
+# 25. Every kind at once: the version line, and not the decoys.
+repo=$(fixture)
+package_json "$repo" 1.4.2
+pyproject "$repo" 1.4.2
+cargo "$repo" 1.4.2
+commit "$repo" "chore: add manifests"
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_exit 0 "$status" "cut every kind: exits 0"
+mkdir -p "$work/kinds"
+package_json "$work/kinds" 1.5.0
+pyproject "$work/kinds" 1.5.0
+cargo "$work/kinds" 1.5.0
+for file in package.json pyproject.toml Cargo.toml; do
+  expect_exit 0 "$(same "$repo/$file" "$work/kinds/$file")" "cut every kind: $file byte for byte"
+done
+
+# 26. An existing Release field is replaced, not repeated.
+repo=$(fixture)
+sed -i.bak 's/^\*\*Status:\*\* Active · /**Status:** Active · **Release:** v1.4.2 · /' "$repo/OVERVIEW.md" && rm "$repo/OVERVIEW.md.bak"
+commit "$repo" "docs: record the last release"
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_match '^\*\*Status:\*\* Active · \*\*Release:\*\* v1\.5\.0 · \*\*Updated:\*\* 2026-09-25 by /ship export-csv$' \
+  "$(cat "$repo/OVERVIEW.md")" "cut: the Release field replaced"
+
+# 27. cut re-checks what plan checks, and writes nothing on any failure.
+repo=$(fixture)
+git -C "$repo" checkout -q -b feat/export-csv
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_exit 1 "$status" "cut on a branch: exits 1"
+expect_match '^  branch     on feat/export-csv — release from main$' "$out" "cut on a branch: names the gate"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "cut on a branch: says nothing was written"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut on a branch: nothing written"
+
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.4.2 --date 2026-09-25
+expect_exit 1 "$status" "cut a refused version: exits 1"
+expect_match '^"1\.4\.2" is not above 1\.4\.2\.' "$out" "cut a refused version: says why"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut a refused version: nothing written"
+
+repo=$(untagged)
+package_json "$repo" 1.2.0
+pyproject "$repo" 1.3.0
+commit "$repo" "chore: add manifests"
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.4.0 --date 2026-09-25
+expect_exit 1 "$status" "cut disagreeing manifests: exits 1"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut disagreeing manifests: nothing written"
+
+# A version the user confirmed despite the advice is cut.
+repo=$(fixture)
+run cut "$repo" --version 1.4.3 --date 2026-09-25
+expect_exit 0 "$status" "cut a confirmed patch: exits 0"
+expect_match '^## \[1\.4\.3\] - 2026-09-25$' "$(cat "$repo/CHANGELOG.md")" "cut a confirmed patch: written"
+
+# 28. Bad input is exit 2, and writes nothing.
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0
+expect_exit 2 "$status" "cut no date: exits 2"
+run cut "$repo" --version 1.5.0 --date 25-09-2026
+expect_exit 2 "$status" "cut bad date: exits 2"
+run cut "$repo" --date 2026-09-25
+expect_exit 2 "$status" "cut no version: exits 2"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut bad input: nothing written"

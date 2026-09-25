@@ -4,6 +4,8 @@ manifest versions. Commits, tags, pushes and the GitHub release are the
 /release skill's; this script never runs them.
 
 Usage: release.py plan  <project-dir> [--version X.Y.Z]
+       release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD
+       release.py notes <project-dir> --version X.Y.Z
 
   plan   run the gates and print the report; every failing gate is listed.
          Then the last version, the commits since it and the proposed one:
@@ -13,6 +15,13 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          last version, advised against when its size does not match the
          commits. The last line is always one "NEXT: " line saying what the
          skill does: stop, ask X.Y.Z, confirm X.Y.Z, ask-first or ask-version
+  cut    re-check everything plan checks, then write: [Unreleased] stays,
+         empty, and its lines move under "## [X.Y.Z] - date", with compare
+         links at the bottom; each manifest's version characters, and no
+         other byte; the overview's status line gains **Release:** vX.Y.Z.
+         On any failure it writes nothing
+  notes  print the lines under "## [X.Y.Z]", without the heading or the blank
+         lines around them: the GitHub release's notes
 
 The last version is the newest plain semver tag on HEAD's history; with no
 tag, the version the manifests share; with neither, plan asks for the first.
@@ -22,9 +31,10 @@ and in .claude-plugin/marketplace.json each plugin whose source is a path in
 the repo, with that plugin's own .claude-plugin/plugin.json. Manifests that
 disagree stop the release.
 
-Exit 0 the gates passed. Exit 1 a gate failed or the override was refused:
-"NEXT: stop". Exit 2 bad usage, a project folder that does not exist, or one
-that is not a git repository.
+Exit 0 planned, written, or printed. Exit 1 a gate failed or the version was
+refused (plan says "NEXT: stop", cut "Nothing written."), or notes found no
+such section. Exit 2 bad usage, a bad date, a project folder that does not
+exist, or one that is not a git repository.
 """
 import importlib.util
 import json
@@ -48,7 +58,9 @@ changelog = load("changelog")
 readme_block = load("readme_block")
 git = changelog.git
 
-USAGE = "usage: release.py plan <project-dir> [--version X.Y.Z]"
+USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
+         "       release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD\n"
+         "       release.py notes <project-dir> --version X.Y.Z")
 
 # host, then owner/repo, from https, ssh:// and scp-style git@host:path URLs.
 REMOTE = re.compile(r"^(?:[a-z][a-z+]*://)?(?:[^@/]+@)?([^/:]+)(?::\d+)?[:/]+(.+?)(?:\.git)?/*$")
@@ -65,6 +77,10 @@ JSON_VERSION = re.compile(r'"version"\s*:\s*"([^"\\]*)"')
 TOML_VERSION = re.compile(r"""^\s*version\s*=\s*(["'])([^"']*)\1""")
 TOML_DYNAMIC = re.compile(r"^\s*dynamic\s*=")
 PROBE = "zuko-probe"
+LINK = re.compile(r"^\[[^\]]+\]:\s*\S")
+STATUS_WORD = re.compile(r"^(\*\*Status:\*\*\s*\S+)")
+RELEASE_FIELD = re.compile(r"\*\*Release:\*\*\s*\S+")
+DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class Gates:
@@ -517,6 +533,114 @@ class Release:
         if self.version and not self.refused:
             tag_gate(project, self.version, gates)
         self.overview = has_status_line(project)
+        self.project, self.repo = project, repo
+
+
+def writes(release, today):
+    """(path, what) for every file cut writes, in the order the plan lists them."""
+    v = show(release.version)
+    found = [(changelog.NAME, "[Unreleased] → [%s] - %s, links" % (v, today))]
+    for field in release.fields:
+        if field.path not in [path for path, _ in found]:
+            found.append((field.path, "%s → %s" % (field.version, v)))
+    if release.overview:
+        found.append(("OVERVIEW.md", "Release: v%s on the status line" % v))
+    return found
+
+
+def print_writes(heading, found, notes=()):
+    width = max(len(path) for path, _ in found) + 3
+    print(heading)
+    for path, what in found:
+        print("  %s%s" % (path.ljust(width), what))
+    for note in notes:
+        print("  " + note)
+
+
+def link_start(lines):
+    """Where the link definitions at the bottom begin, blank lines above them
+    included; len(lines) when there are none."""
+    start = len(lines)
+    while start and (not lines[start - 1].strip() or LINK.match(lines[start - 1])):
+        start -= 1
+    return start if any(LINK.match(line) for line in lines[start:]) else len(lines)
+
+
+def section(lines, heading):
+    """(start, end) of the lines under the first "## " heading that heading
+    matches, up to the next one or the link definitions; None when absent."""
+    body = lines[:link_start(lines)]
+    heads = [i for i, line in changelog.unfenced(body) if line.startswith("## ")]
+    start = next((i for i in heads if heading.match(body[i])), None)
+    if start is None:
+        return None
+    return start, next((i for i in heads if i > start), len(body))
+
+
+def trimmed(lines):
+    """lines without blank lines at either end."""
+    while lines and not lines[0].strip():
+        lines = lines[1:]
+    while lines and not lines[-1].strip():
+        lines = lines[:-1]
+    return lines
+
+
+def cut_changelog(text, version, today, repo, last_tag):
+    """[Unreleased] stays, empty; its lines move under the new version, and the
+    links at the bottom point at the new tag."""
+    lines = text.splitlines(keepends=True)
+    if lines and not lines[-1].endswith("\n"):
+        lines[-1] += "\n"
+    start, end = section(lines, changelog.UNRELEASED)
+    moved = trimmed(lines[start + 1:end])
+    body, links = lines[:link_start(lines)], lines[link_start(lines):]
+    after = ["\n"] + body[end:] if end < len(body) else []
+    body = body[:start + 1] + ["\n", "## [%s] - %s\n" % (version, today), "\n"] + moved + after
+
+    url = "https://github.com/" + repo
+    new = ["[unreleased]: %s/compare/v%s...HEAD\n" % (url, version),
+           "[%s]: %s/compare/%s...v%s\n" % (version, url, last_tag, version) if last_tag
+           else "[%s]: %s/releases/tag/v%s\n" % (version, url, version)]
+    old = next((i for i, line in enumerate(links) if line.lower().startswith("[unreleased]:")), None)
+    if old is not None:
+        links[old:old + 1] = new
+    elif links:
+        first = next(i for i, line in enumerate(links) if LINK.match(line))
+        links[first:first] = new
+    else:
+        links = ["\n"] + new
+    return "".join(body + links)
+
+
+def release_field(text, version):
+    """The overview with its status line naming the release. Readers of the
+    line take only the first word after **Status:**, so the field goes after it."""
+    lines = text.splitlines(keepends=True)
+    for i, line in enumerate(lines):
+        if line.startswith("**Status:**"):
+            if RELEASE_FIELD.search(line):
+                lines[i] = RELEASE_FIELD.sub("**Release:** v" + version, line, count=1)
+            else:
+                lines[i] = STATUS_WORD.sub(r"\1 · **Release:** v" + version, line, count=1)
+            break
+    return "".join(lines)
+
+
+def rewritten(release, today):
+    """{path: new text} for every file cut writes, worked out before any is written."""
+    v, project = show(release.version), release.project
+    files = {changelog.NAME: cut_changelog(read(project, changelog.NAME), v, today,
+                                           release.repo, release.tag)}
+    for field in release.fields:
+        files.setdefault(field.path, read(project, field.path))
+    # Spans are offsets into the file as read: replace from the end backwards.
+    for field in sorted(release.fields, key=lambda field: field.span, reverse=True):
+        text = files[field.path]
+        files[field.path] = text[:field.span[0]] + v + text[field.span[1]:]
+    if release.overview:
+        files["OVERVIEW.md"] = release_field(read(project, "OVERVIEW.md"), v)
+    return files
 
 
 def print_plan(release, today):
@@ -531,18 +655,7 @@ def print_plan(release, today):
         why = "the first release"
     print("Proposed      %s  — %s" % (v, why))
     print()
-    writes = [(changelog.NAME, "[Unreleased] → [%s] - %s, links" % (v, today))]
-    for field in release.fields:
-        if field.path not in [path for path, _ in writes]:
-            writes.append((field.path, "%s → %s" % (field.version, v)))
-    if release.overview:
-        writes.append(("OVERVIEW.md", "Release: v%s on the status line" % v))
-    width = max(len(path) for path, _ in writes) + 3
-    print("Will write")
-    for path, what in writes:
-        print("  %s%s" % (path.ljust(width), what))
-    for note in release.notes:
-        print("  " + note)
+    print_writes("Will write", writes(release, today), release.notes)
     print("Then")
     print('  commit "chore(release): v%s" on main · annotated tag v%s' % (v, v))
     print("  push main and v%s to origin · GitHub release v%s" % (v, v))
@@ -596,9 +709,56 @@ def plan(project, override):
     return 0
 
 
+def cut(project, version, today):
+    release = Release(project, version)
+    release.gates.show()
+    if release.gates.failed or release.refused:
+        if release.refused:
+            print()
+            print(release.refused)
+        print("Nothing written.")
+        return 1
+    for path, text in rewritten(release, today).items():
+        with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
+            handle.write(text)
+    print()
+    print_writes("Wrote", writes(release, today))
+    return 0
+
+
+def notes(project, version):
+    if not os.path.isfile(os.path.join(project, changelog.NAME)):
+        print("%s missing" % changelog.NAME, file=sys.stderr)
+        return 1
+    lines = read(project, changelog.NAME).splitlines(keepends=True)
+    found = section(lines, re.compile(r"^## \[%s\](\s|$)" % re.escape(version)))
+    if found is None:
+        print("%s has no [%s] section" % (changelog.NAME, version), file=sys.stderr)
+        return 1
+    text = "".join(trimmed(lines[found[0] + 1:found[1]]))
+    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return 0
+
+
+def is_date(text):
+    try:
+        return bool(DATE.match(text)) and bool(date.fromisoformat(text))
+    except ValueError:
+        return False
+
+
 def main(argv):
-    if len(argv) in (2, 4) and argv[0] == "plan" and argv[2:3] in ([], ["--version"]):
-        project, override = argv[1], (argv[3] if len(argv) == 4 else None)
+    # <command> <project-dir> then --option value pairs, each option once.
+    pairs = argv[2:]
+    options = dict(zip(pairs[::2], pairs[1::2]))
+    given = sorted(options) if len(argv) >= 2 and len(options) * 2 == len(pairs) else None
+    command, project = (argv[0], argv[1]) if given is not None else (None, None)
+    if command == "plan" and given in ([], ["--version"]):
+        run = lambda: plan(project, options.get("--version"))
+    elif command == "cut" and given == ["--date", "--version"] and is_date(options["--date"]):
+        run = lambda: cut(project, options["--version"], options["--date"])
+    elif command == "notes" and given == ["--version"] and parse(options["--version"]):
+        run = lambda: notes(project, show(parse(options["--version"])))
     else:
         print(USAGE, file=sys.stderr)
         return 2
@@ -608,7 +768,7 @@ def main(argv):
     if git(project, "rev-parse", "--git-dir").returncode != 0:
         print("release.py: %s is not a git repository" % project, file=sys.stderr)
         return 2
-    return plan(project, override)
+    return run()
 
 
 if __name__ == "__main__":
