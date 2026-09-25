@@ -475,3 +475,188 @@ expect_match '^NEXT: stop$' "$(last_line "$out")" "tag elsewhere: NEXT: stop"
 expect_match "^$before\$" "$(snapshot "$repo")" "tag elsewhere: nothing written"
 run plan "$repo" --version 1.6.0
 expect_match '^NEXT: ask 1\.6\.0$' "$(last_line "$out")" "tag elsewhere: another version is free"
+
+# --- a first release, and the manifests ---
+
+# An untagged repo with every other gate passing and one feat.
+untagged() {   # untagged; prints the repo path
+  local dir
+  dir=$(mktemp -d -p "$work")
+  bare_repo "$dir"
+  overview "$dir" '`true`'
+  changelog "$dir"
+  commit "$dir" "chore: start"
+  commit "$dir" "feat(exporters): write ledger csv"
+  gh_reset
+  printf '%s' "$dir"
+}
+
+marketplace() {  # marketplace <dir> <version>: zuko's shape, one local plugin and one remote
+  mkdir -p "$1/.claude-plugin" "$1/plugins/zuko/.claude-plugin"
+  cat >"$1/.claude-plugin/marketplace.json" <<JSON
+{
+  "name": "dzafran-claude-plugins",
+  "metadata": { "version": "$2" },
+  "plugins": [
+    {
+      "name": "zuko",
+      "source": "./plugins/zuko",
+      "version": "$2",
+      "tags": ["workflow", "spec"]
+    },
+    {
+      "name": "elsewhere",
+      "source": { "source": "github", "repo": "acme/elsewhere" },
+      "version": "9.0.0"
+    }
+  ]
+}
+JSON
+  cat >"$1/plugins/zuko/.claude-plugin/plugin.json" <<JSON
+{
+  "name": "zuko",
+  "version": "$2",
+  "keywords": ["workflow", "spec"]
+}
+JSON
+}
+
+package_json() {  # package_json <dir> <version>
+  printf '{\n  "name": "invoice-cli",\n  "version": "%s",\n  "private": true\n}\n' "$2" >"$1/package.json"
+}
+
+pyproject() {  # pyproject <dir> <version>: [project] holds it; a [tool.poetry] version is a decoy
+  printf '[build-system]\nrequires = ["hatchling"]\n\n[project]\nname = "invoice-cli"\nversion = "%s"\n\n[tool.poetry]\nversion = "9.9.9"\n' "$2" >"$1/pyproject.toml"
+}
+
+cargo() {      # cargo <dir> <version>: [package] holds it; the others are decoys
+  printf '[package]\nname = "invoice-cli"\nversion = "%s"\nedition = "2021"\n\n[[bin]]\nname = "invoice"\nversion = "0.0.1"\n\n[dependencies]\nserde = { version = "1.0" }\n' "$2" >"$1/Cargo.toml"
+}
+
+# 18. No tags and no manifest version: ask for the first one.
+repo=$(untagged)
+run plan "$repo"
+expect_exit 0 "$status" "first: exits 0"
+expected="
+No tags and no manifest version to start from.
+First version: 0.1.0 (still changing) or 1.0.0 (stable)?
+NEXT: ask-first"
+[ "$(printf '%s\n' "$out" | tail -n +7)" = "$expected" ]
+expect_exit 0 "$?" "first: asks 0.1.0 or 1.0.0, line for line"
+expect_no_match '^Proposed' "$out" "first: proposes nothing itself"
+
+run plan "$repo" --version 0.1.0
+expect_match '^Last version  none — no tags and no manifest version$' "$out" "first 0.1.0: no last version"
+expect_match '^Proposed      0\.1\.0  — the first release$' "$(proposed "$out")" "first 0.1.0: the user's"
+expect_match '^NEXT: ask 0\.1\.0$' "$(last_line "$out")" "first 0.1.0: NEXT: ask"
+run plan "$repo" --version banana
+expect_match '^"banana" is not a version\. Give a plain X\.Y\.Z\.$' "$out" "first banana: refused"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "first banana: NEXT: stop"
+
+# A package.json with no version, and a pyproject whose version comes from the
+# tag, are not sources.
+repo=$(untagged)
+printf '{\n  "name": "ledger-tools",\n  "private": true\n}\n' >"$repo/package.json"
+printf '[project]\nname = "ledger-tools"\ndynamic = [\n  "version",\n]\n' >"$repo/pyproject.toml"
+commit "$repo" "chore: add manifests"
+run plan "$repo"
+expect_match '^NEXT: ask-first$' "$(last_line "$out")" "first: versionless manifests are not a start"
+
+# 19. zuko's own shape: no tags, the marketplace entry and its plugin.json.
+repo=$(untagged)
+marketplace "$repo" 2.1.0
+commit "$repo" "chore: add the marketplace"
+run plan "$repo"
+expect_exit 0 "$status" "zuko shape: exits 0"
+expected="
+Last version  2.1.0  from plugin.json and marketplace.json (no tags yet)
+Since then    3 commits: 1 feat · 0 fix · 0 breaking
+Proposed      2.2.0  — a feat since 2.1.0 bumps minor
+
+Will write
+  CHANGELOG.md                              [Unreleased] → [2.2.0] - $today, links
+  .claude-plugin/marketplace.json           2.1.0 → 2.2.0
+  plugins/zuko/.claude-plugin/plugin.json   2.1.0 → 2.2.0
+  OVERVIEW.md                               Release: v2.2.0 on the status line
+Then
+  commit \"chore(release): v2.2.0\" on main · annotated tag v2.2.0
+  push main and v2.2.0 to origin · GitHub release v2.2.0
+
+Release 2.2.0? Say yes, or give another version.
+NEXT: ask 2.2.0"
+[ "$(printf '%s\n' "$out" | tail -n +7)" = "$expected" ]
+expect_exit 0 "$?" "zuko shape: the plan, line for line"
+
+# A local source that climbs out of the repo is not followed.
+repo=$(untagged)
+marketplace "$repo" 2.1.0
+sed -i.bak 's|"./plugins/zuko"|"../outside"|' "$repo/.claude-plugin/marketplace.json" && rm "$repo/.claude-plugin/marketplace.json.bak"
+mkdir -p "$(dirname "$repo")/outside/.claude-plugin"
+printf '{ "version": "2.1.0" }\n' >"$(dirname "$repo")/outside/.claude-plugin/plugin.json"
+commit "$repo" "chore: add the marketplace"
+run plan "$repo"
+expect_match '^  \.claude-plugin/marketplace\.json   2\.1\.0 → 2\.2\.0$' "$out" "outside source: the entry is still bumped"
+expect_no_match 'outside' "$out" "outside source: the plugin.json outside the repo is not"
+
+# 20. Manifests that disagree stop the release, naming every file and version.
+repo=$(untagged)
+package_json "$repo" 1.2.0
+pyproject "$repo" 1.3.0
+commit "$repo" "chore: add manifests"
+before=$(snapshot "$repo")
+run plan "$repo"
+expect_exit 1 "$status" "disagree: exits 1"
+expect_match '^  manifests  versions disagree: package\.json 1\.2\.0 · pyproject\.toml 1\.3\.0$' "$out" "disagree: both files, both versions"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "disagree: NEXT: stop"
+expect_no_match 'First version' "$out" "disagree: no question asked"
+expect_match "^$before\$" "$(snapshot "$repo")" "disagree: nothing written"
+
+repo=$(untagged)
+package_json "$repo" 1.0
+commit "$repo" "chore: add package.json"
+run plan "$repo"
+expect_match '^  manifests  package\.json version "1\.0" is not a plain X\.Y\.Z$' "$out" "bad version: named"
+repo=$(untagged)
+printf '{ "version": "1.2.0", }\n' >"$repo/package.json"
+commit "$repo" "chore: add package.json"
+run plan "$repo"
+expect_match '^  manifests  package\.json is not valid JSON$' "$out" "bad json: named"
+repo=$(untagged)
+printf '{ "version": "1.2\\u002e0" }\n' >"$repo/package.json"
+commit "$repo" "chore: add package.json"
+run plan "$repo"
+expect_match '^  manifests  package\.json: cannot find its version to bump in place — bump it by hand$' "$out" "escaped version: not guessed at"
+
+# A pyproject whose version comes from the tag is not touched, and says so.
+repo=$(untagged)
+package_json "$repo" 1.2.0
+printf '[project]\nname = "invoice-cli"\ndynamic = ["version"]\n' >"$repo/pyproject.toml"
+commit "$repo" "chore: add manifests"
+run plan "$repo"
+expect_match '^Last version  1\.2\.0  from package\.json \(no tags yet\)$' "$out" "dynamic: the last version is package.json's"
+expect_match '^  pyproject\.toml: version comes from the tag, not touched$' "$out" "dynamic: says so"
+expect_no_match '^  pyproject\.toml  ' "$out" "dynamic: not in the write list"
+
+# 21. Every kind at once, with a tag: the tag is the last version, and every
+# manifest is bumped from its own version.
+repo=$(fixture)
+package_json "$repo" 1.4.2
+pyproject "$repo" 1.4.2
+cargo "$repo" 1.4.2
+mkdir -p "$repo/.claude-plugin"
+printf '{ "name": "invoice-cli", "version": "1.4.2" }\n' >"$repo/.claude-plugin/plugin.json"
+marketplace "$repo" 1.4.2
+commit "$repo" "chore: add manifests"
+run plan "$repo"
+expect_match '^Last version  1\.4\.2  from tag v1\.4\.2$' "$out" "every kind: the tag wins"
+expected="Will write
+  CHANGELOG.md                              [Unreleased] → [1.5.0] - $today, links
+  package.json                              1.4.2 → 1.5.0
+  pyproject.toml                            1.4.2 → 1.5.0
+  Cargo.toml                                1.4.2 → 1.5.0
+  .claude-plugin/plugin.json                1.4.2 → 1.5.0
+  .claude-plugin/marketplace.json           1.4.2 → 1.5.0
+  plugins/zuko/.claude-plugin/plugin.json   1.4.2 → 1.5.0
+  OVERVIEW.md                               Release: v1.5.0 on the status line"
+[ "$(printf '%s\n' "$out" | sed -n '/^Will write$/,/^Then$/p' | sed '$d')" = "$expected" ]
+expect_exit 0 "$?" "every kind: listed in order, decoys left out"

@@ -12,9 +12,15 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          checks an override: refused when it is not a plain X.Y.Z above the
          last version, advised against when its size does not match the
          commits. The last line is always one "NEXT: " line saying what the
-         skill does: stop, ask X.Y.Z, confirm X.Y.Z or ask-version
+         skill does: stop, ask X.Y.Z, confirm X.Y.Z, ask-first or ask-version
 
-The last version is the newest plain semver tag on HEAD's history.
+The last version is the newest plain semver tag on HEAD's history; with no
+tag, the version the manifests share; with neither, plan asks for the first.
+The manifests are a closed list, each only when present: package.json,
+pyproject.toml's [project], Cargo.toml's [package], .claude-plugin/plugin.json,
+and in .claude-plugin/marketplace.json each plugin whose source is a path in
+the repo, with that plugin's own .claude-plugin/plugin.json. Manifests that
+disagree stop the release.
 
 Exit 0 the gates passed. Exit 1 a gate failed or the override was refused:
 "NEXT: stop". Exit 2 bad usage, a project folder that does not exist, or one
@@ -51,6 +57,14 @@ OWNER_REPO = re.compile(r"^[\w.-]+/[\w.-]+$")
 # anything else, including one still running, is not passing.
 PASSING_RUN = ("success", "neutral", "skipped")
 RANK = {None: 0, "patch": 1, "minor": 2, "major": 3}
+
+# The closed list of manifests, in the order the plan names them.
+KINDS = ("package.json", "pyproject.toml", "Cargo.toml", "plugin.json", "marketplace.json")
+PLAIN = re.compile(r"^\d+\.\d+\.\d+$")
+JSON_VERSION = re.compile(r'"version"\s*:\s*"([^"\\]*)"')
+TOML_VERSION = re.compile(r"""^\s*version\s*=\s*(["'])([^"']*)\1""")
+TOML_DYNAMIC = re.compile(r"^\s*dynamic\s*=")
+PROBE = "zuko-probe"
 
 
 class Gates:
@@ -207,8 +221,141 @@ def changelog_gate(project, gates):
     return len(lines)
 
 
+class Field:
+    """One version in one manifest, and the span of its characters: a bump
+    rewrites that span and every other byte stays."""
+
+    def __init__(self, path, kind, version, span):
+        self.path, self.kind, self.version, self.span = path, kind, version, span
+
+
+def read(project, path):
+    # newline="" keeps the file's own line endings, so spans are exact.
+    with open(os.path.join(project, path), encoding="utf-8", newline="") as handle:
+        return handle.read()
+
+
+def dig(data, keys):
+    for key in keys:
+        try:
+            data = data[key]
+        except (KeyError, IndexError, TypeError):
+            return None
+    return data
+
+
+def json_fields(path, kind, text, keyed, gates):
+    """A Field for each key path in keyed. A JSON dump would reorder and
+    reflow the file, so each "version" string is found in the text by trying
+    it: the one whose change shows up at that key path is the one."""
+    spans = {}
+    for match in JSON_VERSION.finditer(text):
+        try:
+            trial = json.loads(text[:match.start(1)] + PROBE + text[match.end(1):])
+        except ValueError:
+            continue
+        for keys in keyed:
+            if dig(trial, keys) == PROBE:
+                spans[keys] = match.span(1)
+    data = json.loads(text)
+    fields = []
+    for keys in keyed:
+        if keys not in spans:
+            gates.fail("manifests", "%s: cannot find its version to bump in place — bump it by hand"
+                       % path)
+        else:
+            fields.append(Field(path, kind, dig(data, keys), spans[keys]))
+    return fields
+
+
+def json_file(project, path, gates):
+    """(text, data), or (None, None) when the file is absent or not JSON."""
+    if not os.path.isfile(os.path.join(project, path)):
+        return None, None
+    text = read(project, path)
+    try:
+        return text, json.loads(text)
+    except ValueError:
+        gates.fail("manifests", "%s is not valid JSON" % path)
+        return None, None
+
+
+def toml_version(text, table):
+    """(version, span) of the version line in [table], ("dynamic", None) when
+    [table] lists version as dynamic, or (None, None)."""
+    current, offset, dynamic, in_dynamic = None, 0, False, False
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("[") and not in_dynamic:
+            header = re.match(r"\[([^\[\]]+)\]", stripped)
+            current = header.group(1).strip() if header else None
+        elif current == table:
+            match = TOML_VERSION.match(line)
+            if match:
+                return match.group(2), (offset + match.start(2), offset + match.end(2))
+            if TOML_DYNAMIC.match(line) or in_dynamic:
+                in_dynamic = "]" not in line
+                dynamic = dynamic or bool(re.search(r"""["']version["']""", line))
+        offset += len(line)
+    return ("dynamic", None) if dynamic else (None, None)
+
+
+def manifests(project, gates):
+    """(fields, notes): every version in the closed list of manifests, each
+    only when present, and a note for a version that comes from the tag."""
+    fields, notes = [], []
+
+    def plain_json(path, kind):
+        text, data = json_file(project, path, gates)
+        if isinstance(data, dict) and isinstance(data.get("version"), str):
+            return json_fields(path, kind, text, [("version",)], gates)
+        return []
+
+    fields += plain_json("package.json", "package.json")
+    for path, table in (("pyproject.toml", "project"), ("Cargo.toml", "package")):
+        if os.path.isfile(os.path.join(project, path)):
+            version, span = toml_version(read(project, path), table)
+            if version == "dynamic":
+                notes.append("%s: version comes from the tag, not touched" % path)
+            elif version is not None:
+                fields.append(Field(path, path, version, span))
+    fields += plain_json(".claude-plugin/plugin.json", "plugin.json")
+
+    # Each plugin whose source is a path in this repo: its entry's version,
+    # and its own plugin.json.
+    path = ".claude-plugin/marketplace.json"
+    text, data = json_file(project, path, gates)
+    plugins = data.get("plugins") if isinstance(data, dict) else None
+    keyed, nested = [], []
+    for i, entry in enumerate(plugins if isinstance(plugins, list) else []):
+        source = entry.get("source") if isinstance(entry, dict) else None
+        if not isinstance(source, str) or "://" in source:
+            continue
+        if isinstance(entry.get("version"), str):
+            keyed.append(("plugins", i, "version"))
+        inner = os.path.normpath(os.path.join(source, ".claude-plugin", "plugin.json"))
+        if not inner.startswith("..") and not os.path.isabs(inner) and inner not in nested:
+            nested.append(inner)
+    fields += json_fields(path, "marketplace.json", text, keyed, gates) if keyed else []
+    for inner in nested:
+        if inner != ".claude-plugin/plugin.json":
+            fields += plain_json(inner, "plugin.json")
+
+    bad = [field for field in fields if not PLAIN.match(field.version)]
+    for field in bad:
+        gates.fail("manifests", '%s version "%s" is not a plain X.Y.Z' % (field.path, field.version))
+    if not bad and len({field.version for field in fields}) > 1:
+        gates.fail("manifests", "versions disagree: " + " · ".join(
+            "%s %s" % (field.path, field.version) for field in fields))
+    return fields, notes
+
+
 def show(version):
     return "%d.%d.%d" % version
+
+
+def joined(words):
+    return words[0] if len(words) == 1 else "%s and %s" % (", ".join(words[:-1]), words[-1])
 
 
 def parse(text):
@@ -348,20 +495,23 @@ class Release:
         if repo:
             tests_gate(project, repo, gates)
         self.lines = changelog_gate(project, gates)
+        self.fields, self.notes = manifests(project, gates)
 
+        # The newest tag is the last version; with none, the manifests' shared one.
         tagged = last_tag(project)
         self.tag, self.last = tagged if tagged else (None, None)
+        if not tagged and self.fields and not gates.failed:
+            self.last = parse(self.fields[0].version)
         self.commits = commits_since(project, self.tag)
-        self.called, self.reason = called_for(self.last, self.commits)
+        self.called, self.reason = called_for(self.last, self.commits) if self.last else (None, None)
         self.proposed = bump(self.last, self.called) if self.called else None
 
-        self.override = override
         self.refused = self.advice = None
         self.version = self.proposed
         if override is not None:
             self.version = parse(override)
             self.refused = refusal(override, self.version, self.last, self.proposed)
-            if not self.refused and self.version != self.proposed:
+            if not self.refused and self.last and self.version != self.proposed:
                 self.advice = advice(self.version, self.last, self.called, self.proposed,
                                      self.commits)
         if self.version and not self.refused:
@@ -375,17 +525,24 @@ def print_plan(release, today):
         why = release.reason
     elif release.proposed:
         why = "your version; the commits call for %s" % show(release.proposed)
-    else:
+    elif release.last:
         why = "your version; nothing since %s calls for a release" % show(release.last)
+    else:
+        why = "the first release"
     print("Proposed      %s  — %s" % (v, why))
     print()
     writes = [(changelog.NAME, "[Unreleased] → [%s] - %s, links" % (v, today))]
+    for field in release.fields:
+        if field.path not in [path for path, _ in writes]:
+            writes.append((field.path, "%s → %s" % (field.version, v)))
     if release.overview:
         writes.append(("OVERVIEW.md", "Release: v%s on the status line" % v))
     width = max(len(path) for path, _ in writes) + 3
     print("Will write")
     for path, what in writes:
         print("  %s%s" % (path.ljust(width), what))
+    for note in release.notes:
+        print("  " + note)
     print("Then")
     print('  commit "chore(release): v%s" on main · annotated tag v%s' % (v, v))
     print("  push main and v%s to origin · GitHub release v%s" % (v, v))
@@ -399,8 +556,19 @@ def plan(project, override):
         print("NEXT: stop")
         return 1
     print()
+    if release.last is None and override is None:
+        print("No tags and no manifest version to start from.")
+        print("First version: 0.1.0 (still changing) or 1.0.0 (stable)?")
+        print("NEXT: ask-first")
+        return 0
     commits = release.commits
-    print("Last version  %s  from tag %s" % (show(release.last), release.tag))
+    if release.tag:
+        print("Last version  %s  from tag %s" % (show(release.last), release.tag))
+    elif release.last:
+        kinds = [kind for kind in KINDS if kind in {field.kind for field in release.fields}]
+        print("Last version  %s  from %s (no tags yet)" % (show(release.last), joined(kinds)))
+    else:
+        print("Last version  none — no tags and no manifest version")
     print("Since then    %s: %d feat · %d fix · %d breaking"
           % (plural(len(commits), "commit"), sum(c.kind == "feat" for c in commits),
              sum(c.kind == "fix" for c in commits), sum(c.breaking for c in commits)))
