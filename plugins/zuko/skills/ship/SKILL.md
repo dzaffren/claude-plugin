@@ -43,34 +43,47 @@ The gate below reads what this step writes, so it runs first.
 - `README.md` has no zuko block (the repo was onboarded before the block
   existed) → add one: plan it with step 4 of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md`, show the user the change, and
-  on approval write it as step 8's "Writing the README block" says.
+  on approval write it as step 9's "Writing the README block" says.
 - No `DECISIONS.md` at the repo root (the repo was onboarded before the file
   existed) → create it as the `DECISIONS.md` paragraph of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` says. The gate fails without
   it, and the render below adds it to the README's Docs list.
+- No `CHANGELOG.md` at the repo root (the repo was onboarded before the file
+  existed) → run
+  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/changelog.py" init <repo-root>`
+  and show the user the line it prints. `CHANGELOG.md` has no
+  `## [Unreleased]` heading → run `add-unreleased` the same way, show the user
+  its proposal, and run it again with `--write` on approval. The gate fails
+  without either.
+- Write this slice's lines under `## [Unreleased]` in `CHANGELOG.md`, per
+  `${CLAUDE_PLUGIN_ROOT}/references/changelog.md` — read it first. Work from
+  `git log {base}..HEAD`, where `{base}` is the branch this one merges into.
+  Only a branch with `feat`, `fix` or `!` commits, or a `BREAKING CHANGE:`
+  footer, gets lines; one of only `chore`, `docs`, `test` or `refactor`
+  commits adds none. Show the user the lines you wrote.
 - Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
   re-render the `README.md` block from the updated overview. It rewrites only
   the text between the zuko markers.
-- Commit these files, `README.md` and any new `DECISIONS.md` included, on the branch —
-  `docs(overview): mark {slice} built`. The gate fails on an uncommitted tree,
-  so this commit comes before it.
+- Commit these files, `README.md`, `CHANGELOG.md` and any new `DECISIONS.md`
+  included, on the branch — `docs(overview): mark {slice} built`. The gate
+  fails on an uncommitted tree, so this commit comes before it.
 
 ## The gates
 
 Run `${CLAUDE_PLUGIN_ROOT}/scripts/verify-ship-gates.sh`, then check by hand
 what a script cannot:
 
-| Gate                    | Check                                                                                                                                                                                                                                                                                                |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tests green             | Full suite run just now, not remembered from earlier                                                                                                                                                                                                                                                 |
-| E2E present and passing | The one test that walks the whole slice                                                                                                                                                                                                                                                              |
-| Migration reversible    | Forward and backward both tested                                                                                                                                                                                                                                                                     |
-| Flag and rollback       | The flag exists, defaults off, and turning it off removes the behaviour                                                                                                                                                                                                                              |
-| Review done             | `/review` ran on this diff and its findings are fixed                                                                                                                                                                                                                                                |
-| No secrets              | Nothing key-shaped in the diff                                                                                                                                                                                                                                                                       |
-| Open items              | Zero rows still `Open`                                                                                                                                                                                                                                                                               |
-| Spec matches code       | The plan describes what was actually built                                                                                                                                                                                                                                                           |
-| Scope                   | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, and in `README.md` the zuko block plus what onboarding's README step changed to place it (the marker pair, sections an approved merge replaced, or a new `README.md`) — are exempt |
+| Gate                    | Check                                                                                                                                                                                                                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tests green             | Full suite run just now, not remembered from earlier                                                                                                                                                                                                                                                                 |
+| E2E present and passing | The one test that walks the whole slice                                                                                                                                                                                                                                                                              |
+| Migration reversible    | Forward and backward both tested                                                                                                                                                                                                                                                                                     |
+| Flag and rollback       | The flag exists, defaults off, and turning it off removes the behaviour                                                                                                                                                                                                                                              |
+| Review done             | `/review` ran on this diff and its findings are fixed                                                                                                                                                                                                                                                                |
+| No secrets              | Nothing key-shaped in the diff                                                                                                                                                                                                                                                                                       |
+| Open items              | Zero rows still `Open`                                                                                                                                                                                                                                                                                               |
+| Spec matches code       | The plan describes what was actually built                                                                                                                                                                                                                                                                           |
+| Scope                   | No files changed that the plan did not name. The project docs zuko keeps — `OVERVIEW.md`, `docs/ARCHITECTURE.md`, `CHANGELOG.md`, and in `README.md` the zuko block plus what onboarding's README step changed to place it (the marker pair, sections an approved merge replaced, or a new `README.md`) — are exempt |
 
 The script also runs `render-readme-block.sh --check`. A stale block fails the
 gate, and the fix is `--write`. A missing block fails it too, and the fix is
@@ -81,7 +94,8 @@ proceed on a "probably fine".
 
 ## Tidy the branch
 
-- Squash noise commits. Keep commits that tell a real story.
+- Squash noise commits. Keep commits that tell a real story. A squash keeps
+  the `CHANGELOG.md` lines the refresh committed — the gate passed on them.
 - Commit messages: subject `{type}({scope}): {subject}`, body saying what
   changed and why, and nothing from the ban list in `references/git-naming.md`.
 - Rebase or merge the base branch per the repo's own convention.
