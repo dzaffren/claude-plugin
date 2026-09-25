@@ -17,6 +17,18 @@
           },
           {
             "type": "command",
+            "if": "Bash(git tag *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
+            "statusMessage": "Checking the tag message for attribution..."
+          },
+          {
+            "type": "command",
+            "if": "Bash(gh release *)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
+            "statusMessage": "Checking the release notes for attribution..."
+          },
+          {
+            "type": "command",
             "if": "Bash(git commit *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/secret-scan.sh",
             "statusMessage": "Scanning staged diff for secrets..."
