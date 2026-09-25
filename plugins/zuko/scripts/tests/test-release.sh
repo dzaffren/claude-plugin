@@ -92,17 +92,23 @@ bare_repo() {  # bare_repo <dir>: fresh, no manifests, no tags, origin on GitHub
 # The fixture every test starts from: invoice-cli on main, clean, tagged
 # v1.4.2, then a fix and a feat, two lines under [Unreleased], no CI, and a
 # test command that passes and leaves a mark outside the repo when it runs.
-fixture() {    # fixture; prints the repo path
-  local dir
+# Given a tag and subjects, it tags that and commits those instead.
+fixture() {    # fixture [<tag> <subject>...]; prints the repo path
+  local dir subject
   dir=$(mktemp -d -p "$work")
   bare_repo "$dir"
   overview "$dir" '`sh check.sh`'
   printf 'echo ran >>"%s.ran"\nexit 0\n' "$dir" >"$dir/check.sh"
   changelog "$dir"
   commit "$dir" "chore: start"
-  git -C "$dir" tag v1.4.2
-  commit "$dir" "fix(parsers): keep leading zeros"
-  commit "$dir" "feat(exporters): write ledger csv"
+  git -C "$dir" tag "${1:-v1.4.2}"
+  if [ $# -gt 1 ]; then
+    shift
+    for subject in "$@"; do commit "$dir" "$subject"; done
+  else
+    commit "$dir" "fix(parsers): keep leading zeros"
+    commit "$dir" "feat(exporters): write ledger csv"
+  fi
   gh_reset
   printf '%s' "$dir"
 }
@@ -300,3 +306,172 @@ expect_exit 2 "$status" "no args: exits 2"
 run plan "$(mktemp -d -p "$work")"
 expect_exit 2 "$status" "not a git repo: exits 2"
 expect_match 'not a git repository' "$out" "not a git repo: says so"
+
+# --- the version rule ---
+
+today=$(date +%F)
+feat_break="feat(config)!: read settings from invoice.toml"
+
+proposed() {   # proposed <text>: the Proposed line
+  printf '%s\n' "$1" | grep '^Proposed'
+}
+
+# 11. A fix and a feat since v1.4.2: minor, and the whole plan.
+repo=$(fixture)
+run plan "$repo"
+expect_exit 0 "$status" "rule feat: exits 0"
+expected="
+Last version  1.4.2  from tag v1.4.2
+Since then    2 commits: 1 feat · 1 fix · 0 breaking
+Proposed      1.5.0  — a feat since 1.4.2 bumps minor
+
+Will write
+  CHANGELOG.md   [Unreleased] → [1.5.0] - $today, links
+  OVERVIEW.md    Release: v1.5.0 on the status line
+Then
+  commit \"chore(release): v1.5.0\" on main · annotated tag v1.5.0
+  push main and v1.5.0 to origin · GitHub release v1.5.0
+
+Release 1.5.0? Say yes, or give another version.
+NEXT: ask 1.5.0"
+[ "$(printf '%s\n' "$out" | tail -n +7)" = "$expected" ]
+expect_exit 0 "$?" "rule feat: the plan and the question, line for line"
+
+# 12. The rest of the table.
+repo=$(fixture v1.4.2 "fix(parsers): keep leading zeros")
+run plan "$repo"
+expect_match '^Proposed      1\.4\.3  — a fix since 1\.4\.2 bumps patch$' "$(proposed "$out")" "rule fix: patch"
+expect_match '^NEXT: ask 1\.4\.3$' "$(last_line "$out")" "rule fix: NEXT: ask 1.4.3"
+
+repo=$(fixture v1.4.2 "fix(parsers): keep leading zeros" "feat(exporters): write ledger csv" "$feat_break")
+run plan "$repo"
+expect_match '^Since then    3 commits: 2 feat · 1 fix · 1 breaking$' "$out" "rule breaking: counted"
+expect_match '^Proposed      2\.0\.0  — a breaking change since 1\.4\.2 bumps major$' "$(proposed "$out")" "rule breaking: major"
+expect_match '^NEXT: ask 2\.0\.0$' "$(last_line "$out")" "rule breaking: NEXT: ask 2.0.0"
+
+repo=$(fixture v0.3.1 "$feat_break")
+run plan "$repo"
+expect_match '^Proposed      0\.4\.0  — a breaking change on 0\.x bumps minor \(semver §4\)$' "$(proposed "$out")" "rule 0.x breaking: minor"
+
+for footer in "BREAKING CHANGE" "BREAKING-CHANGE"; do
+  repo=$(fixture v1.4.2 "$(printf 'refactor(config): load settings once\n\n%s: settings.ini is no longer read.' "$footer")")
+  run plan "$repo"
+  expect_match '^Proposed      2\.0\.0  — a breaking change since 1\.4\.2 bumps major$' "$(proposed "$out")" "rule footer '$footer': major"
+done
+repo=$(fixture v1.4.2 "chore!: drop python 3.8")
+run plan "$repo"
+expect_match '^Proposed      2\.0\.0 ' "$(proposed "$out")" "rule chore!: major"
+repo=$(fixture v1.4.2 "feat(sc!ope): odd scope")
+run plan "$repo"
+expect_match '^Proposed      1\.5\.0 ' "$(proposed "$out")" "rule a ! inside the scope is not breaking"
+
+# 13. Nothing calls for a release.
+repo=$(fixture v1.4.2 "chore(deps): bump ruff" "docs: explain the exporter")
+run plan "$repo"
+expect_exit 0 "$status" "rule nothing: exits 0"
+expect_match '^Nothing since 1\.4\.2 calls for a release: 2 commits, none feat, fix or breaking\.$' "$out" "rule nothing: says why"
+expect_match '^\[Unreleased\] has 2 lines\. Give a version to release anyway, or stop here\.$' "$out" "rule nothing: names the lines"
+expect_no_match '^Proposed' "$out" "rule nothing: proposes nothing"
+expect_match '^NEXT: ask-version$' "$(last_line "$out")" "rule nothing: NEXT: ask-version"
+
+# 14. The last version is the newest semver tag on HEAD's history, in semver
+# order; pre-releases, other names and tags on other branches do not count.
+repo=$(fixture v1.9.0 "feat: nine")
+git -C "$repo" tag v1.10.0
+commit "$repo" "fix: ten"
+git -C "$repo" tag v2.0.0-rc.1
+git -C "$repo" tag nightly
+git -C "$repo" checkout -q -b side
+commit "$repo" "feat: side"
+git -C "$repo" tag v3.0.0
+git -C "$repo" checkout -q main
+run plan "$repo"
+expect_match '^Last version  1\.10\.0  from tag v1\.10\.0$' "$out" "last tag: semver order, reachable only"
+expect_match '^Proposed      1\.10\.1 ' "$(proposed "$out")" "last tag: one fix since v1.10.0"
+
+# --- overrides ---
+
+# 15. Refused: not a version, a pre-release, not above the last.
+repo=$(fixture)
+for pair in '1.4.2|"1.4.2" is not above 1.4.2.' \
+            '1.4.1|"1.4.1" is not above 1.4.2.' \
+            'banana|"banana" is not a version.' \
+            '1.5.0-rc.1|"1.5.0-rc.1" is a pre-release; those are not supported yet.'; do
+  before=$(snapshot "$repo")
+  run plan "$repo" --version "${pair%%|*}"
+  expect_exit 1 "$status" "override ${pair%%|*}: exits 1"
+  expect_match '^Release gates$' "$out" "override ${pair%%|*}: the gates passed"
+  [ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "${pair#*|} Give a plain X.Y.Z above 1.4.2, or yes for 1.5.0." ]
+  expect_exit 0 "$?" "override ${pair%%|*}: refused, naming the rule"
+  expect_match '^NEXT: stop$' "$(last_line "$out")" "override ${pair%%|*}: NEXT: stop"
+  expect_match "^$before\$" "$(snapshot "$repo")" "override ${pair%%|*}: nothing written"
+done
+
+# 16. Pushed back: a patch when a feat calls for a minor.
+run plan "$repo" --version 1.4.3
+expect_exit 0 "$status" "override 1.4.3: exits 0"
+expect_match '^Proposed      1\.4\.3  — your version; the commits call for 1\.5\.0$' "$(proposed "$out")" "override 1.4.3: shown as the user's"
+expect_match '^  CHANGELOG\.md   \[Unreleased\] → \[1\.4\.3\] - ' "$out" "override 1.4.3: the plan writes 1.4.3"
+[ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "1.4.3 is a patch, but a feat since 1.4.2 calls for a minor (1.5.0). Users read a patch as fixes only. Release 1.4.3 anyway? yes, or give another version." ]
+expect_exit 0 "$?" "override 1.4.3: the advice"
+expect_no_match '^Release 1\.4\.3\? Say yes' "$out" "override 1.4.3: the advice replaces the question"
+expect_match '^NEXT: confirm 1\.4\.3$' "$(last_line "$out")" "override 1.4.3: NEXT: confirm 1.4.3"
+
+# Matches the commits: asked plainly. A leading v is read as the version.
+run plan "$repo" --version 1.5.0
+expect_match '^NEXT: ask 1\.5\.0$' "$(last_line "$out")" "override 1.5.0: NEXT: ask"
+expect_match '^Proposed      1\.5\.0  — a feat since 1\.4\.2 bumps minor$' "$(proposed "$out")" "override 1.5.0: same as computed"
+run plan "$repo" --version v1.6.0
+expect_match '^Proposed      1\.6\.0  — your version; the commits call for 1\.5\.0$' "$(proposed "$out")" "override v1.6.0: a minor, read without the v"
+expect_match '^NEXT: ask 1\.6\.0$' "$(last_line "$out")" "override v1.6.0: NEXT: ask"
+
+# A major with nothing breaking.
+run plan "$repo" --version 3.0.0
+[ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "3.0.0 is a major, but nothing since 1.4.2 is marked breaking. Fine for a milestone; users may look for something they must change. Release 3.0.0? yes, or give another version." ]
+expect_exit 0 "$?" "override 3.0.0: the milestone advice"
+expect_match '^NEXT: confirm 3\.0\.0$' "$(last_line "$out")" "override 3.0.0: NEXT: confirm"
+
+# Too small for a breaking change.
+repo=$(fixture v1.4.2 "fix(parsers): keep leading zeros" "$feat_break")
+run plan "$repo" --version 1.5.0
+[ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "1.5.0 is a minor, but \"$feat_break\" is breaking, which calls for 2.0.0. Users pinned to ^1 get it without warning. Release 1.5.0 anyway? yes, or give another version." ]
+expect_exit 0 "$?" "override 1.5.0 over breaking: the advice"
+expect_match '^NEXT: confirm 1\.5\.0$' "$(last_line "$out")" "override 1.5.0 over breaking: NEXT: confirm"
+
+repo=$(fixture v0.3.1 "$feat_break")
+run plan "$repo" --version 0.3.2
+[ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "0.3.2 is a patch, but \"$feat_break\" is breaking, which calls for 0.4.0. Users pinned to ^0.3 get it without warning. Release 0.3.2 anyway? yes, or give another version." ]
+expect_exit 0 "$?" "override 0.3.2 over 0.x breaking: the advice pins ^0.3"
+run plan "$repo" --version 1.0.0
+expect_match '^NEXT: ask 1\.0\.0$' "$(last_line "$out")" "override 1.0.0 over 0.x breaking: a major is no smaller, asked plainly"
+
+# A minor when only fixes call for a patch.
+repo=$(fixture v1.4.2 "fix(parsers): keep leading zeros")
+run plan "$repo" --version 1.5.0
+[ "$(printf '%s\n' "$out" | tail -n 2 | head -n 1)" = "1.5.0 is a minor, but nothing since 1.4.2 is a feat; the fixes call for a patch (1.4.3). Users read a minor as new features. Release 1.5.0 anyway? yes, or give another version." ]
+expect_exit 0 "$?" "override 1.5.0 over fixes: the advice"
+
+# Nothing calls for a release, and the user names one.
+repo=$(fixture v1.4.2 "chore(deps): bump ruff")
+run plan "$repo" --version 1.4.3
+expect_match '^Proposed      1\.4\.3  — your version; nothing since 1\.4\.2 calls for a release$' "$(proposed "$out")" "override with nothing called: shown"
+expect_match '^NEXT: ask 1\.4\.3$' "$(last_line "$out")" "override with nothing called: NEXT: ask"
+run plan "$repo" --version banana
+expect_match '^"banana" is not a version\. Give a plain X\.Y\.Z above 1\.4\.2\.$' "$out" "override with nothing called: no yes offered"
+
+# 17. A tag for the version already exists elsewhere: zuko never moves it.
+repo=$(fixture)
+git -C "$repo" checkout -q -b side
+commit "$repo" "feat: side"
+side=$(short "$repo")
+git -C "$repo" tag -a v1.5.0 -m v1.5.0
+git -C "$repo" checkout -q main
+before=$(snapshot "$repo")
+run plan "$repo"
+expect_exit 1 "$status" "tag elsewhere: exits 1"
+expect_match '^Release gates FAILED$' "$out" "tag elsewhere: FAILED"
+expect_match "^  tag        v1\\.5\\.0 exists at $side, not HEAD — check it by hand; zuko never moves a tag\$" "$out" "tag elsewhere: names the tag and its commit"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "tag elsewhere: NEXT: stop"
+expect_match "^$before\$" "$(snapshot "$repo")" "tag elsewhere: nothing written"
+run plan "$repo" --version 1.6.0
+expect_match '^NEXT: ask 1\.6\.0$' "$(last_line "$out")" "tag elsewhere: another version is free"
