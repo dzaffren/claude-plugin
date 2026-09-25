@@ -173,6 +173,7 @@ projects.
 - An append-only DECISIONS.md, loaded every session and enforced by /review
 - Seeds DECISIONS.md from a repo's existing ADRs
 - /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate
+- /release cuts a version from the commits: changelog, tag, GitHub release
 
 ## Docs
 
