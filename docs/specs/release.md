@@ -1,6 +1,6 @@
 # Release
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 4
 **Depends on:** `changelog` — `/release` cuts versions from its `[Unreleased]` section
