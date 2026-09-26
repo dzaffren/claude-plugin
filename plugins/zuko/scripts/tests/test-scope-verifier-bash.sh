@@ -40,10 +40,12 @@ allows() {     # allows <command>: the verifier may run it
   expect_exit 0 "$hook_status" "verifier may run: $1"
 }
 
-blocks() {     # blocks <command> <regex the message must match>
+blocks() {     # blocks <command> <regex for what the Saw: line names>
   run_hook "$VERIFIER" "$1"
   expect_exit 2 "$hook_status" "verifier is blocked from: $1"
-  expect_match "$2" "$hook_err" "the block names what it saw in: $1"
+  # Only the Saw: line: the rest of the message is the same for every block,
+  # and a regex that matches it passes whatever the reason was.
+  expect_match "^Saw: .*$2" "$hook_err" "the block names what it saw in: $1"
   # Run 4: verifiers kept sending grep and find to Bash after being blocked.
   # Every block says which tool to use instead.
   expect_match 'To search or list files, use the Grep or Glob tool; to read a file, use Read\.' \
@@ -70,10 +72,10 @@ allows 'git diff --no-index /etc/hosts invoice_api/db.py'
 blocks 'ls /' 'ls'
 blocks 'cat invoice_api/auth.py' 'cat'
 blocks 'git log --oneline' 'git log'
-blocks 'git diff main; ls' "Saw: the character ';'"
+blocks 'git diff main; ls' "the character ';'"
 blocks 'sudo git diff main' 'sudo'
 blocks 'GIT_EXTERNAL_DIFF=x git diff main' 'GIT_EXTERNAL_DIFF'
-blocks 'git' 'git'
+blocks 'git' 'a bare `git`$'
 
 # --- git's own options before the subcommand ---
 blocks 'git -C /tmp diff' '\-C'
@@ -92,25 +94,25 @@ blocks 'git diff --output /tmp/x main' 'output'
 blocks 'git diff --out=/tmp/x main' '\-\-out'
 blocks 'git show --show-signature HEAD' 'show-signature'
 blocks 'git show --show-sig HEAD' 'show-sig'
-blocks 'git show --format=%G? HEAD' "Saw: the character '%'"
-blocks 'git show --pretty=format:%GG HEAD' "Saw: the character '%'"
+blocks 'git show --format=%G? HEAD' "the character '%'"
+blocks 'git show --pretty=format:%GG HEAD' "the character '%'"
 blocks 'git diff --help' 'help'
 
 # --- H1: a `#` comment swallows the newline, so shlex read the next line as
 # arguments and `ls /` ran. The raw command is allow-listed by character first.
-blocks $'git diff main #\nls /' "Saw: the character '#'"
-blocks $'git diff main#x\nls /' "Saw: the character '#'"
-blocks $'git diff main\nls /' "Saw: the character '\\\\n'"
-blocks 'git diff main -- a.py && git show main:a.py' "Saw: the character '&'"
-blocks $'git diff\tmain' "Saw: the character '\\\\t'"
-blocks 'git diff main\' "Saw: the character '\\\\\\\\'"
+blocks $'git diff main #\nls /' "the character '#'"
+blocks $'git diff main#x\nls /' "the character '#'"
+blocks $'git diff main\nls /' "the character '\\\\n'"
+blocks 'git diff main -- a.py && git show main:a.py' "the character '&'"
+blocks $'git diff\tmain' "the character '\\\\t'"
+blocks 'git diff main\' "the character '\\\\\\\\'"
 
 # --- H2: bash brace-expands these into refused options, which check_option
 # never saw because the word does not start with `--`.
-blocks 'git diff {--output=/tmp/x,main}' "Saw: the character '\\{'"
-blocks 'git diff {--ext-diff,HEAD}' "Saw: the character '\\{'"
-blocks 'git diff main -- *.py' "Saw: the character '\\*'"
-blocks 'git diff main -- [ab].py' "Saw: the character '\\['"
+blocks 'git diff {--output=/tmp/x,main}' "the character '\\{'"
+blocks 'git diff {--ext-diff,HEAD}' "the character '\\{'"
+blocks 'git diff main -- *.py' "the character '\\*'"
+blocks 'git diff main -- [ab].py' "the character '\\['"
 
 # --- shell that runs or writes something else ---
 blocks 'git diff main | sh' '\|'
@@ -118,7 +120,7 @@ blocks 'git diff main | cat' '\|'
 blocks 'git diff main > /tmp/x' '>'
 blocks 'git diff main 2>/tmp/err' '>'
 blocks 'git diff $(echo main)' '\$'
-blocks 'git diff `echo main`' '`'
+blocks 'git diff `echo main`' "the character '\`'"
 blocks 'git diff $HOME' '\$'
 blocks '(git diff main)' '\('
 blocks 'git diff main &' '&'
