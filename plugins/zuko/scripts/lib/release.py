@@ -734,6 +734,7 @@ def release_field(text, version):
 # else in it is copied as it is.
 REPORT_TITLE = re.compile(r"^# Pentest v(\S+)\s*$")
 RESULT = re.compile(r"^\*\*Result:\*\*\s*(\S*)\s*$")
+RANGE = re.compile(r"^\*\*Range:\*\*\s*\S")
 FINDING_COLUMNS = ("ID", "Severity", "Category", "Where", "Description")
 SEVERITIES = ("critical", "high", "medium", "low")
 BLOCKING = ("critical", "high")
@@ -857,7 +858,27 @@ def read_report(path, version):
         raise unreadable("**Result:** is blocked, but no finding is critical or high")
     if outcome != "pass":
         raise unreadable("**Result:** is %r, not pass or blocked" % outcome)
+    # A pass has to say what it looked at: a pentester that ran out of turns
+    # can leave a bare "pass" behind.
+    if not any(RANGE.match(line) for line in lines):
+        raise unreadable("no **Range:** line")
+    for heading, name in (("## Assessed", "Assessed"), ("## Not assessed", "Not assessed")):
+        if not listed(lines, heading):
+            raise unreadable("no %s list" % name)
     return text, findings
+
+
+def listed(lines, heading):
+    """True when a "- " item sits under heading, before the next "## "."""
+    at = next((i for i, line in enumerate(lines) if line.strip() == heading), None)
+    if at is None:
+        return False
+    for line in lines[at + 1:]:
+        if line.startswith("## "):
+            return False
+        if line.lstrip().startswith("- "):
+            return True
+    return False
 
 
 def plural_word(count, word):

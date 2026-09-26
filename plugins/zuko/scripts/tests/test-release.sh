@@ -1159,3 +1159,21 @@ expect_match '^Cannot write docs/security/v1\.5\.0/report\.md\.$' "$out" "docs i
 expect_no_match 'Traceback' "$out" "docs is a file: no traceback"
 expect_match '^Nothing written\.$' "$(last_line "$out")" "docs is a file: says nothing was written"
 expect_match "^$before\$" "$(snapshot "$repo")" "docs is a file: nothing written"
+
+# 41. A pass report must say what was checked: a Range, an Assessed list and a
+# Not assessed list. A bare "pass" is what a pentester that ran out of turns
+# could leave behind.
+for missing in range assessed notassessed; do
+  file=$(mktemp -p "$work")
+  case $missing in
+    range)       grep -v '^\*\*Range:\*\*' "$(report pass 1.5.0)" >"$file"; want='no \*\*Range:\*\* line' ;;
+    assessed)    sed '/^## Assessed$/,/^## Not assessed$/{/^## Not assessed$/!d;}' "$(report pass 1.5.0)" >"$file"; want='no Assessed list' ;;
+    notassessed) sed '/^## Not assessed$/,$d' "$(report pass 1.5.0)" >"$file"; want='no Not assessed list' ;;
+  esac
+  repo=$(fixture)
+  before=$(snapshot "$repo")
+  run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$file"
+  expect_exit 1 "$status" "a pass report with $missing missing: exits 1"
+  expect_match "^Pentest report unreadable: $want\$" "$out" "a pass report with $missing missing: names it"
+  expect_match "^$before\$" "$(snapshot "$repo")" "a pass report with $missing missing: nothing written"
+done
