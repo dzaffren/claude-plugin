@@ -14,7 +14,18 @@ set -uo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-ZUKO_PAYLOAD=$(cat) python3 - "$here" <<'PY'
+# The payload goes to python through a file, never an env var or argument: a
+# payload over ARG_MAX made the exec itself fail (exit 126), and that let the
+# call through. For the same reason every exit but 0 and 2 ends as a block.
+fail_closed() {
+  echo "Blocked: scope-verifier-bash.sh could not check this command ($1)." >&2
+  exit 2
+}
+payload_file=$(mktemp) || fail_closed "mktemp failed"
+trap 'rm -f "$payload_file"' EXIT
+cat >"$payload_file" || fail_closed "could not read the hook input"
+
+python3 - "$here" "$payload_file" <<'PY'
 import importlib.util
 import json
 import os
@@ -23,7 +34,8 @@ import sys
 VERIFIER = "zuko:finding-verifier"
 
 try:
-    payload = json.loads(os.environ["ZUKO_PAYLOAD"])
+    with open(sys.argv[2], encoding="utf-8", errors="replace") as handle:
+        payload = json.load(handle)
 except ValueError:
     sys.exit(0)                     # not a hook payload, so not the verifier's
 if not isinstance(payload, dict) or payload.get("agent_type") != VERIFIER:
@@ -143,3 +155,8 @@ for token in tokens:
 check(words)
 sys.exit(0)
 PY
+status=$?
+case $status in
+  0 | 2) exit "$status" ;;
+  *) fail_closed "the checker exited $status" ;;
+esac

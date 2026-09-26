@@ -127,6 +127,26 @@ expect_exit 0 "$hook_status" "the reviewer's ls is untouched"
 run_hook "zuko:chunk-builder" "rm -r build"
 expect_exit 0 "$hook_status" "a chunk-builder's command is untouched"
 
+# --- H3: a payload over ARG_MAX made the env-var handoff fail with
+# "python3: Argument list too long", exit 126, which let the call through.
+huge() {       # huge <agent_type or ""> <command prefix> <file>: a 1.1 MB payload
+  ZUKO_AGENT="$1" ZUKO_PREFIX="$2" python3 -c '
+import json, os
+event = {"tool_input": {"command": os.environ["ZUKO_PREFIX"] + "a" * 1100000}}
+if os.environ["ZUKO_AGENT"]:
+    event["agent_type"] = os.environ["ZUKO_AGENT"]
+print(json.dumps(event))' >"$3"
+}
+huge "$VERIFIER" "ls / ; " "$work/huge-ls.json"
+perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-ls.json" >/dev/null 2>"$work/huge.err"
+expect_exit 2 $? "a 1.1 MB verifier payload is blocked, not let through"
+huge "$VERIFIER" "git show main:" "$work/huge-git.json"
+perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-git.json" >/dev/null 2>&1
+expect_exit 0 $? "a 1.1 MB verifier git show is checked like any other"
+huge "" "ls / ; " "$work/huge-main.json"
+perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-main.json" >/dev/null 2>&1
+expect_exit 0 $? "a 1.1 MB main-thread payload is still untouched"
+
 # A payload that will not parse is not the verifier's, so it passes; Claude
 # Code always sends JSON, and failing open here cannot widen the verifier.
 printf 'not json' | bash "$guard" >/dev/null 2>&1
