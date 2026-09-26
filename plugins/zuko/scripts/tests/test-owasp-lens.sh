@@ -84,6 +84,12 @@ a09=$(printf '%s\n' "$ref" | awk '$0 == "## A09:2025 Security Logging and Alerti
 expect_match 'removed \(`-`\) lines of every changed function' "$a09" "owasp.md's A09 reads the removed lines of changed auth and security functions"
 expect_match 'even when nothing was added' "$a09" "owasp.md's A09 counts a deleted log call with nothing added"
 expect_match 'removed \(`-`\) lines' "$rv" "reviewer.md's context step points at removed lines"
+# /review F2: the verifier hard-coded `main`; the skill passes the branch point.
+expect_no_match 'main\.\.\.HEAD' "$fv" "finding-verifier.md has no literal main...HEAD"
+expect_no_match 'main:' "$fv" "finding-verifier.md has no literal main:"
+expect_match 'git diff <BASE>\.\.\.HEAD -- <file>' "$fv" "finding-verifier.md diffs against BASE"
+expect_match 'git show <BASE>:<file>' "$fv" "finding-verifier.md reads the base version at BASE"
+expect_match '`BASE: <ref or sha>`' "$(text "$skill")" "review/SKILL.md passes BASE to each verifier"
 # /review F1: "documentation files such as Markdown" hid permission changes in
 # agent and skill files, which are Markdown with frontmatter.
 section() {    # section <exact heading>: the lines under it in owasp.md

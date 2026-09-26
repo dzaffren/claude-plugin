@@ -102,6 +102,8 @@ Each finding goes to a `finding-verifier` agent that sees:
 
 - the bare claim, one sentence
 - its `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL` and `SNIPPET`
+- `BASE: <ref or sha>`, the branch point measured under "Size the effort", so
+  it runs `git diff <BASE>...HEAD -- <file>` and `git show <BASE>:<file>`
 - the code, plus `DECISIONS.md` for a Decisions finding
 - nothing else — never the `FAILING CASE`, never the scope block
 

@@ -62,6 +62,11 @@ allows 'git -P show main:uv.lock'
 allows 'git diff --text main'
 allows "git show 'main:docs/a file.md'"
 allows 'git show HEAD~1^:uv.lock'
+# /review F2: BASE is whatever branch point the skill measured, a ref or a sha.
+allows 'git diff origin/main...HEAD -- invoice_api/auth.py'
+allows 'git show origin/release-2.1:invoice_api/auth.py'
+allows 'git diff 3f2a9c1e8b7d4a6f0c5e2d1b9a8f7e6d5c4b3a21...HEAD'
+allows 'git show 3f2a9c1:invoice_api/auth.py'
 # H4: refusing --no-index did nothing, because git diff on two paths outside
 # the repo goes to no-index mode by itself. It reads files the Read tool can
 # already read, so neither form is blocked.
