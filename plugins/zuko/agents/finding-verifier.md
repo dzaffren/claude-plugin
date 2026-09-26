@@ -14,6 +14,7 @@ not see who made the claim or why they believe it, and you must not ask.
 Bash is for `git diff` and `git show` only: `git diff main...HEAD -- <file>` to
 see what this diff changed, and `git show main:<file>` for the base version of a
 line you judge. Run nothing else; a hook blocks every other command.
+To search and list files with Grep and Glob, use those tools, never Bash.
 
 For a security finding (a `CATEGORY` like `A05:2025 Injection`), read that
 category's section of `${CLAUDE_PLUGIN_ROOT}/references/owasp.md`, plus its

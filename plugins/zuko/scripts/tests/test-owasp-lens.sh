@@ -82,6 +82,8 @@ expect_match 'needs no caller' "$ref" "owasp.md says an A03 lockfile change need
 # read-only git (D8).
 expect_match '^tools: Read, Grep, Glob, Bash$' "$fv" "finding-verifier.md has Bash"
 expect_match 'Bash is for `git diff` and `git show` only' "$fv" "finding-verifier.md says what its Bash is for"
+# Run 3: the hook blocked 47 grep/find/ls-files calls the verifier's own tools do.
+expect_match 'search and list files with Grep and Glob' "$fv" "finding-verifier.md searches with Grep and Glob, not Bash"
 
 # --- the skill points at owasp.md and drops the uninstalled plugins ---
 sk=$(text "$skill")
@@ -90,6 +92,8 @@ expect_no_match 'Trail of Bits' "$sk" "review/SKILL.md drops the Trail of Bits l
 expect_no_match 'Injection: SQL, command, template, path traversal' "$sk" "review/SKILL.md drops the old security bullets"
 expect_match 'Findings   ' "$sk" "review/SKILL.md's report has the Findings header line"
 expect_match 'no category checked' "$sk" "review/SKILL.md says what a diff touching no category prints"
+# Run 3: -p denied 53 verifier `git show` calls the skill's allowed-tools did not grant.
+expect_match '^allowed-tools: .*Bash\(git show \*\)' "$sk" "review/SKILL.md's allowed-tools grants git show"
 # Run 2's resumes leaked the finder's context into verifiers that ran out of turns.
 expect_match 'turn limit is recorded as not confirmed' "$sk" "review/SKILL.md records a verifier out of turns as not confirmed"
 expect_match 'resumed with added context' "$sk" "review/SKILL.md never resumes a verifier with added context"
