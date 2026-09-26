@@ -30,6 +30,9 @@ you cannot trace a concrete failing path for is not a finding.**
 - Run its **Context first** step: find the repo's own access control,
   validation, parameterised queries and escaping, and list them in `DEFENCES:`.
   New code that bypasses one is a finding, and the claim names the defence.
+- Read the removed (`-`) lines of every changed auth, session, access-control
+  and security function too. A deleted check or log call is a change, even in a
+  function you would otherwise call unchanged.
 - The same step picks the categories this diff can touch. Check only those,
   against their **Check** and **Not a finding** lists. Put every other
   category in `NOT CHECKED:` with a one-line reason.

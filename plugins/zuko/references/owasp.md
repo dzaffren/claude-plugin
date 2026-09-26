@@ -260,6 +260,12 @@ or security event.
 
 **Check:**
 
+- Read the removed (`-`) lines of every changed function in auth, session,
+  access-control and security code, not only the added ones. A function whose
+  other lines are unchanged can still have lost its log call.
+- A deleted log or alert call on an auth or security event is a finding
+  even when nothing was added, e.g. `log.warning("login failed for %s", username)`
+  gone from `login()`.
 - A log line removed from a failed login, a permission denied, or a role change.
 - A new auth or security event with no log at all, where the repo logs its
   siblings.

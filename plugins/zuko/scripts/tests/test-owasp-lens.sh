@@ -79,6 +79,11 @@ expect_match '^maxTurns: 30$' "$fv" "finding-verifier.md allows 30 turns"
 expect_match 'exception to rule 1: an `A03:2025 Software Supply Chain Failures`' "$fv" "finding-verifier.md names A03 as the exception to the reachable-path rule"
 expect_match 'needs no caller' "$fv" "finding-verifier.md says an A03 lockfile finding needs no caller"
 expect_match 'needs no caller' "$ref" "owasp.md says an A03 lockfile change needs no caller"
+# Run 6: the reviewer wrote "login() unchanged" over a deleted failed-login log.
+a09=$(printf '%s\n' "$ref" | awk '$0 == "## A09:2025 Security Logging and Alerting Failures" { on = 1; next } on && /^## / { exit } on { print }')
+expect_match 'removed \(`-`\) lines of every changed function' "$a09" "owasp.md's A09 reads the removed lines of changed auth and security functions"
+expect_match 'even when nothing was added' "$a09" "owasp.md's A09 counts a deleted log call with nothing added"
+expect_match 'removed \(`-`\) lines' "$rv" "reviewer.md's context step points at removed lines"
 # The verifier sees the diff itself; scope-verifier-bash.sh holds it to
 # read-only git (D8).
 expect_match '^tools: Read, Grep, Glob, Bash$' "$fv" "finding-verifier.md has Bash"
