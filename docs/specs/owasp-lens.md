@@ -1,6 +1,6 @@
 # OWASP lens
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 7a
 **Depends on:** None
@@ -629,6 +629,31 @@ both exit 0. There were two reviewers and 21 verifier runs.
 | Top-level turn-limit events | 0 | 18 |
 | Verifier calls blocked by the hook | 50 | 71 (45 other git subcommands, 15 `find`, 6 `grep`, 3 `uv`, 2 `ls`) |
 | Verifier calls that errored | 38 | 65 |
+
+#### Run 8
+
+Run 2026-09-26 at `fddf7db`, after O17: the verifier may also run read-only
+`git log` and `git ls-files` (D9). Same command, fresh scratch repos, both exit 0.
+There were two reviewers and 18 verifier runs.
+
+**Verdict: every criterion passes.**
+
+| Criterion | Result | Evidence |
+| --- | --- | --- |
+| 1 | pass | Reviewer: `CATEGORY: A05:2025 Injection`, `SEVERITY: high`, `SYMBOL: export_ledger` |
+| 2 | pass | Both scope blocks name `invoice_api/db.py run(sql, params)`; the second reviewer's `CHECKED: A01, A03, A05` leaves seven under `NOT CHECKED` |
+| 3 | pass | No security finding on the four decoys |
+| 4 | pass | All three survived 3 of 3: `high · A10:2025 … invoice_api/auth.py:35 in is_admin`, `medium · A09:2025 … invoice_api/auth.py:25 in login`, `low · A03:2025 … uv.lock:19` |
+| 5 | pass | A05 was reported high and kept at medium, the lowest confirming tier. Header: `Findings   7 raw (2 were the same injection, merged), 6 survived`; security came first |
+| readme | pass | `Security   no category checked — the diff changes README.md only`, `Findings   0 raw, 0 survived — clean` |
+| resumes | pass | 0 `SendMessage` calls |
+| hook | pass | Verifier Bash that ran: 30 `git diff`, 31 `git show`, 14 `git log`, 20 `git ls-files`, nothing else |
+
+| Count | Run 7 | Run 8 |
+| --- | --- | --- |
+| Top-level turn-limit events | 18 | 0 |
+| Verifier calls blocked by the hook | 71 | 45 |
+| Verifier calls that errored | 65 | 14 |
 
 ### Chunks
 
