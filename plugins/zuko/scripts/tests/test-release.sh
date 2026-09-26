@@ -1105,3 +1105,44 @@ expect_match "^- Released without pentest: $reason\\.\$" "$(last_line "$out")" "
 expect_match '^\*\*Result:\*\* skipped$' "$(cat "$repo/docs/security/v1.5.0/report.md")" "a skip: the report reads skipped"
 expect_match "^\\*\\*Reason:\\*\\* $reason\$" "$(cat "$repo/docs/security/v1.5.0/report.md")" "a skip: the report gives the reason"
 expect_match '^CHANGELOG\.md DECISIONS\.md OVERVIEW\.md docs/ $' "$(changed "$repo")" "a skip: writes the D-entry, the report and the changelog"
+
+# 39. A high anywhere in the Findings section blocks: after a blank line, after
+# an HTML comment, in a second table, or on a row with no leading pipe.
+findings_report() {   # findings_report <findings section body>: a v1.5.0 report
+  local file
+  file=$(mktemp -p "$work")
+  {
+    printf '# Pentest v1.5.0\n\n**Result:** pass\n**Mode:** code-level\n'
+    printf '**Range:** v1.4.2..a1b2c3d (1 commit)\n**Date:** 2026-10-02\n\n## Findings\n\n'
+    printf '| ID | Severity | Category | Where | Description |\n| -- | -------- | -------- | ----- | ----------- |\n'
+    printf '%s\n' "$1"
+    printf '\n## Assessed\n\n- A05:2025 Injection — 1 call\n\n## Not assessed\n\n- A01:2025 Broken Access Control — needs a server\n'
+  } >"$file"
+  printf '%s' "$file"
+}
+row_low='| P1 | low | A03:2025 Software Supply Chain Failures | uv.lock | toolbelt added |'
+row_high='| P2 | high | A05:2025 Injection | importers/bank.py:22 | CSV field reaches a shell |'
+for shape in blank comment second nopipe extracell escapedpipe; do
+  case $shape in
+    blank)   body="$row_low
+
+$row_high" ;;
+    comment) body="<!-- $row_high -->
+$row_low" ;;
+    second)  body="$row_low
+
+| ID | Severity | Category | Where | Description |
+| -- | -------- | -------- | ----- | ----------- |
+$row_high" ;;
+    nopipe)  body="$row_low
+P2 | critical | A05:2025 Injection | b.py | y" ;;
+    extracell) body="| P1 | low | A05:2025 Injection | a.py | x | critical |" ;;
+    escapedpipe) body='| P1 | low | A05:2025 Injection | a.py | a \\| critical b |' ;;
+  esac
+  repo=$(fixture)
+  before=$(snapshot "$repo")
+  run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(findings_report "$body")"
+  expect_exit 1 "$status" "a hidden finding ($shape): exits 1"
+  expect_match '^Pentest (blocked v1\.5\.0: 1 (high|critical)|report unreadable: )' "$out" "a hidden finding ($shape): blocks or refuses"
+  expect_match "^$before\$" "$(snapshot "$repo")" "a hidden finding ($shape): nothing written"
+done

@@ -766,20 +766,40 @@ def cells(line):
 
 
 def findings_table(lines):
-    """(columns, rows) of the table under "## Findings"; None when there is none."""
+    """(columns, rows) of the whole "## Findings" section, up to the next "## "
+    heading; None when there is no section or no header row. Every line in the
+    section is read: a blank line, a comment or a second header row never ends
+    it, so a finding cannot hide after one. A line that names a severity but is
+    not a well-formed row raises Refused: cut fails closed on it."""
     at = next((i for i, line in enumerate(lines) if line.strip() == "## Findings"), None)
     if at is None:
         return None
-    table = []
+    body = []
     for line in lines[at + 1:]:
-        if line.strip().startswith("|"):
-            table.append(cells(line))
-        elif table or line.strip().startswith("#"):
+        if line.startswith("## "):
             break
-    if not table:
+        body.append(line)
+    columns, rows = None, []
+    for line in body:
+        text = line.strip()
+        if not text:
+            continue
+        severity = re.search(r"\b(%s)\b" % "|".join(SEVERITIES), text, re.I)
+        if not (text.startswith("|") and text.endswith("|")):
+            if severity or "|" in text:
+                raise unreadable("the Findings section has a line that is not a table row: %s"
+                                 % text[:80])
+            continue
+        row = cells(text)
+        if all(TABLE_RULE.match(cell) for cell in row):
+            continue
+        if columns is None or tuple(row) == tuple(columns):
+            columns = columns or row
+            continue
+        rows.append(row)
+    if columns is None:
         return None
-    rows = [row for row in table[1:] if not all(TABLE_RULE.match(cell) for cell in row)]
-    return table[0], rows
+    return columns, rows
 
 
 def unreadable(what):
@@ -815,7 +835,12 @@ def read_report(path, version):
         raise Refused("Pentest report is for v%s, not v%s" % (title.group(1), version))
     findings = []
     for row in rows:
-        finding = dict(zip(FINDING_COLUMNS, row + [""] * len(FINDING_COLUMNS)))
+        # A sixth cell, or a | inside a cell, is a row cut cannot read safely:
+        # a severity there could hide a critical behind a low.
+        if len(row) != len(FINDING_COLUMNS):
+            raise unreadable("a Findings row has %d cells, not %d: | %s |"
+                             % (len(row), len(FINDING_COLUMNS), " | ".join(row)))
+        finding = dict(zip(FINDING_COLUMNS, row))
         finding["Severity"] = finding["Severity"].lower()
         if finding["Severity"] not in SEVERITIES:
             raise unreadable("%s has severity %r" % (finding["ID"] or "a finding", finding["Severity"]))
