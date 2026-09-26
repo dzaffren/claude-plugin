@@ -96,3 +96,6 @@ One line per lesson. Loaded into every session in this repo.
 - A scratch copy is not a sandbox — the code under test still writes its tools'
   config under `HOME`; point `HOME` and the XDG dirs inside the copy.
   ([detail](scratch-copy-is-not-a-sandbox.md))
+- An agent's Bash calls start fresh and `VAR=x cmd` covers one command — put a
+  multi-step proof in one call, `cd <literal path> && export …`, joined by `&&`.
+  ([detail](agent-bash-calls-start-fresh.md))
