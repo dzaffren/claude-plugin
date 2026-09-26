@@ -84,6 +84,16 @@ a09=$(printf '%s\n' "$ref" | awk '$0 == "## A09:2025 Security Logging and Alerti
 expect_match 'removed \(`-`\) lines of every changed function' "$a09" "owasp.md's A09 reads the removed lines of changed auth and security functions"
 expect_match 'even when nothing was added' "$a09" "owasp.md's A09 counts a deleted log call with nothing added"
 expect_match 'removed \(`-`\) lines' "$rv" "reviewer.md's context step points at removed lines"
+# /review F1: "documentation files such as Markdown" hid permission changes in
+# agent and skill files, which are Markdown with frontmatter.
+section() {    # section <exact heading>: the lines under it in owasp.md
+  printf '%s\n' "$ref" | awk -v h="$1" '$0 == h { on = 1; next } on && /^## / { exit } on { print }'
+}
+wins=$(section "## Where OWASP wins")
+expect_match 'Documentation files \(exclusion 16\) → A02' "$wins" "Where OWASP wins brings permission frontmatter back under A02"
+expect_match 'frontmatter that grants tools or permissions' "$wins" "Where OWASP wins names frontmatter that grants tools or permissions"
+a02=$(section "## A02:2025 Security Misconfiguration")
+expect_match 'frontmatter' "$a02" "A02's check list covers widened permissions in Markdown frontmatter"
 # The verifier sees the diff itself; scope-verifier-bash.sh holds it to
 # read-only git (D8).
 expect_match '^tools: Read, Grep, Glob, Bash$' "$fv" "finding-verifier.md has Bash"

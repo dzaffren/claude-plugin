@@ -54,7 +54,8 @@ These hold in every category. They start from Anthropic's `security-review`
 command (anthropics/claude-code-security-review,
 `.claude/commands/security-review.md` at commit c19afa7): its hard exclusions
 1–8, 10–13, 15 and 16, and its precedents 1–8 and 10–12. Exclusions 1, 9, 14
-and 17 are narrowed under "Where OWASP wins" below. Its precedent 9 and its
+and 17, and the documentation exclusion (the list's second 16), are narrowed
+under "Where OWASP wins" below. Its precedent 9 and its
 confidence scores are left out, because the blind verifier does that filtering.
 
 - Denial of service, resource exhaustion, memory or CPU exhaustion, rate
@@ -66,7 +67,8 @@ confidence scores are left out, because the blind verifier does that filtering.
   practical.
 - Memory-safety issues in a memory-safe language (Rust, Python, Go, Java, JS).
 - Files that are only tests or only used to run tests, and documentation files
-  such as Markdown.
+  such as Markdown — except Markdown that is configuration (see "Where OWASP
+  wins").
 - Log spoofing: unsanitised input written to a log.
 - SSRF that controls only the path. SSRF counts only when the attacker controls
   the host or the protocol.
@@ -92,7 +94,7 @@ confidence scores are left out, because the blind verifier does that filtering.
 
 ## Where OWASP wins
 
-Four exclusions in Anthropic's list would hide an OWASP 2025 category. Here
+Five exclusions in Anthropic's list would hide an OWASP 2025 category. Here
 OWASP wins, narrowed to what this diff introduced.
 
 - **Outdated libraries (exclusion 9) → A03.** A dependency this branch adds, or
@@ -110,6 +112,12 @@ OWASP wins, narrowed to what this diff introduced.
   a prompt is not a finding by itself. It is one when that text can make the
   model call a tool or write a file the user did not ask for, e.g. a skill that
   reads a PR template and obeys "run git push --force" written in it.
+- **Documentation files (exclusion 16) → A02.** Plain docs stay excluded. A
+  Markdown file with frontmatter that grants tools or permissions — `tools:`,
+  `allowed-tools:`, `disallowedTools:`, hooks — is configuration, like a
+  plugin manifest. A permission this diff widens there is a finding, e.g. an
+  agent's `tools:` gaining `Bash`, or a skill's `allowed-tools:` gaining
+  `Bash(git push *)`.
 
 ## A01:2025 Broken Access Control
 
@@ -132,7 +140,8 @@ query that reads or writes data belonging to a user, tenant or role.
 ## A02:2025 Security Misconfiguration
 
 **The diff can touch it when:** it changes config, deployment files, framework
-settings, CORS, headers, debug flags, or default credentials.
+settings, CORS, headers, debug flags, default credentials, a plugin manifest, or
+the frontmatter of an agent or skill file.
 
 **Check:**
 
@@ -140,6 +149,9 @@ settings, CORS, headers, debug flags, or default credentials.
 - CORS opened to `*` with credentials, or a security header removed.
 - A default password, key or account shipped in config.
 - A permission widened in a manifest, IAM policy or container spec.
+- A permission widened in agent or skill Markdown frontmatter (`tools:`,
+  `allowed-tools:`, `disallowedTools:`, hooks) or a plugin manifest, with what
+  it now lets the agent run.
 
 **Not a finding:**
 
