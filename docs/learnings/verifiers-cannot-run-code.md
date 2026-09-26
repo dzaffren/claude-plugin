@@ -24,6 +24,10 @@ recalling documentation.
 Rejections that need no rerun are the ones the vote is good at: unreachable
 paths, pre-existing behaviour, style dressed up as a bug.
 
+Since the owasp-lens slice (2026-09-26, D8) the verifier has `Bash`, but a hook
+holds it to read-only `git diff` and `git show`, so this rule still stands: it can
+see the change and the base version, and it still cannot run code.
+
 Seen again in the changelog review (2026-09-25): three verifiers rejected
 "refname:short prints tags/v0.1.0 when a branch shares the name", two from
 memory of the docs and one because it could not check. A scratch repo showed

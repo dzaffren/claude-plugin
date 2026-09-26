@@ -78,3 +78,9 @@ One line per lesson. Loaded into every session in this repo.
 - A guard over a CLI reads every spelling that CLI's parser accepts —
   aliases, abbreviated long options, `-F=path` — and git and gh differ.
   ([detail](guard-every-spelling-the-parser-accepts.md))
+- An agent's `tools:` pattern like `Bash(git diff *)` grants the whole tool —
+  scope it with a PreToolUse hook on `agent_type`, and probe it headless.
+  ([detail](agent-tools-patterns-are-not-enforced.md))
+- A skill's `allowed-tools` must cover every command its subagents run, or
+  `-p` refuses them; a guard that blocks an agent says what to use instead.
+  ([detail](skill-allowed-tools-cover-its-subagents.md))
