@@ -101,3 +101,34 @@ enforced: a headless probe ran `ls /` through one).
 Supersedes: D8
 Source: specs/owasp-lens.md
 Status: active
+
+## D10 · 2026-09-27 · release.py cut enforces the pentest verdict
+
+Why: a release blocked on a proven critical or high has to stay blocked when a
+prompt drifts; cut already refuses and writes nothing on a failed gate, so the
+verdict joins that path.
+Rejected: a skill-only rule (prompt drift, and the ledger's grep-over-prose rule),
+a separate release.py pentest command (a step the skill could skip; cut cannot be
+skipped).
+Source: specs/pentest.md
+Status: active
+
+## D11 · 2026-09-27 · The first pentest is code-level for every project; live attacks follow in pentest-live
+
+Why: zuko itself and most of its projects have no server; a code-level pass with
+run proofs covers every release now, and live mode needs a target guard of its own.
+Rejected: live mode first (needs a running-server fixture and a guard, and protects
+no CLI project), both modes in one slice (about nine scenarios, over the size rule).
+Source: specs/pentest.md
+Status: active
+
+## D12 · 2026-09-27 · Release notes and the committed report name unfixed medium and low findings without the proving input
+
+Why: users should know a known issue ships; the notes and the committed report are
+public and permanent on a public repo, so each finding gets severity, category,
+file and a description, and the proving input prints in the terminal only.
+Rejected: leaving them out of the notes (the shape's Security section rule), the
+full proof in the notes (a working exploit in every release page), the proof in
+the committed report (the same exploit, one click from the repo page).
+Source: specs/pentest.md
+Status: active
