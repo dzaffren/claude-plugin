@@ -1002,7 +1002,7 @@ repo=$(fixture)
 before=$(snapshot "$repo")
 run cut "$repo" --version 1.5.0 --date 2026-09-25
 expect_exit 2 "$status" "cut without a pentest flag: exits 2"
-expect_match '--pentest <report>' "$out" "cut without a pentest flag: the usage names --pentest"
+expect_match '[-]-pentest <report>' "$out" "cut without a pentest flag: the usage names --pentest"
 run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)" --no-pentest "a reason"
 expect_exit 2 "$status" "cut with both pentest flags: exits 2"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut with a bad pentest flag: nothing written"

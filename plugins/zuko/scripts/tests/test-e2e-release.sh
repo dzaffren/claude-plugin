@@ -144,7 +144,7 @@ printf '{\n  "name": "invoice-cli",\n  "version": "1.5.0",\n  "bin": { "invoice"
 cmp -s "$repo/package.json" "$work/expected"
 expect_exit 0 "$?" "e2e: package.json bumped byte for byte"
 expect_match '^\*\*Status:\*\* Active · \*\*Release:\*\* v1\.5\.0 · ' "$(cat "$repo/OVERVIEW.md")" "e2e: the overview names the release"
-expect_match '^  OVERVIEW\.md    Release: v1\.5\.0 on the status line$' "$cut_out" "e2e: cut says what it wrote"
+expect_match '^  OVERVIEW\.md +Release: v1\.5\.0 on the status line$' "$cut_out" "e2e: cut says what it wrote"
 
 expect_match '^  docs/security/v1\.5\.0/report\.md +pentest report, Result pass$' "$cut_out" "e2e: cut writes the pentest report"
 
