@@ -72,3 +72,16 @@ Rejected: leaving low findings unfixed in the report (a confirmed bug left in by
 default).
 Source: specs/owasp-lens.md
 Status: active
+
+## D8 · 2026-09-26 · The finding-verifier's Bash is scoped by a hook on agent_type
+
+Why: without `git diff` the verifier burned its turns hunting base versions (17
+turn-limit events in the second seeded run), and the resumes that rescued it leaked
+the finder's context; a PreToolUse hook sees the caller's `agent_type` and can hold
+the verifier to read-only `git diff` and `git show`.
+Rejected: pasting diff hunks into the verifier prompt (the skill would slice a hunk
+per finding; the verifier seeing the diff itself was preferred), a prompt-only rule
+(nothing enforces it), scoped `tools:` patterns such as `Bash(git diff *)` (not
+enforced: the docs give no such form and a headless probe ran `ls /` through one).
+Source: specs/owasp-lens.md
+Status: active
