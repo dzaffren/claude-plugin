@@ -555,6 +555,13 @@ def resume_state(project, repo, gates):
         return None
     tag = max(at_head, key=lambda pair: pair[1])[0]
     short = git(project, "rev-parse", "--short", "HEAD").stdout.strip()
+    # Only the release's own commit resumes. A tag on any other commit is
+    # stray, and resuming from it would skip the pentest and the cut.
+    subject = git(project, "log", "-1", "--format=%s", "HEAD").stdout.strip()
+    if subject != "chore(release): %s" % tag:
+        gates.fail("release", '%s is tagged at HEAD, but HEAD is "%s", not "chore(release): %s"'
+                   % (tag, subject, tag))
+        return None
     remote = git(project, "ls-remote", "--tags", "origin", "refs/tags/" + tag)
     if remote.returncode != 0:
         gates.fail("remote", "could not reach origin: %s" % first_line(remote.stderr))

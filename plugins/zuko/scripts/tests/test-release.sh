@@ -1177,3 +1177,22 @@ for missing in range assessed notassessed; do
   expect_match "^Pentest report unreadable: $want\$" "$out" "a pass report with $missing missing: names it"
   expect_match "^$before\$" "$(snapshot "$repo")" "a pass report with $missing missing: nothing written"
 done
+
+# 42. A tag at HEAD resumes only when HEAD is that release's commit. A stray
+# tag, one a pentester or anyone could plant on a feature commit, must not
+# skip the pentest and the cut.
+repo=$(fixture v1.4.2 "feat(exporters): write ledger csv")
+bare=$(mktemp -d -p "$work")
+git init -q --bare "$bare"
+pushes_to "$repo" "$bare"
+git -C "$repo" push -q origin main v1.4.2
+git -C "$repo" tag -a v9.9.9 -m v9.9.9
+before=$(snapshot "$repo")
+run plan "$repo"
+expect_exit 1 "$status" "a stray tag at HEAD: exits 1"
+expect_match '^  release    v9\.9\.9 is tagged at HEAD, but HEAD is "feat\(exporters\): write ledger csv", not "chore\(release\): v9\.9\.9"$' "$out" "a stray tag at HEAD: names the tag and the commit"
+expect_no_match 'NEXT: resume' "$out" "a stray tag at HEAD: no resume"
+expect_match '^NEXT: stop$' "$(last_line "$out")" "a stray tag at HEAD: NEXT: stop"
+expect_match "^$before\$" "$(snapshot "$repo")" "a stray tag at HEAD: nothing written"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
+expect_exit 1 "$status" "a stray tag at HEAD: cut refuses too"
