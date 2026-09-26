@@ -39,7 +39,7 @@ projects.
 | changelog          | Shipped | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
 | release            | Shipped | /release cuts a version from the commits: changelog, tag, GitHub release | https://claude.ai/artifact/GWzbvfunoJvLFAsWrBkimp |
 | owasp-lens         | Shipped | /review judges security against OWASP Top 10:2025, with a category and severity on every finding | https://claude.ai/artifact/WGiEEvRnTmpzLGLUxtBTh2 |
-| run-helpers-long-text | Built | Test checks on text over 64 KB pass or fail for the right reason | — |
+| run-helpers-long-text | Shipped | Test checks on text over 64 KB pass or fail for the right reason | — |
 
 ## More
 
