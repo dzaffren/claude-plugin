@@ -100,6 +100,13 @@ blocks 'git diff main -- a.py && git show main:a.py' "Saw: the character '&'"
 blocks $'git diff\tmain' "Saw: the character '\\\\t'"
 blocks 'git diff main\' "Saw: the character '\\\\\\\\'"
 
+# --- H2: bash brace-expands these into refused options, which check_option
+# never saw because the word does not start with `--`.
+blocks 'git diff {--output=/tmp/x,main}' "Saw: the character '\\{'"
+blocks 'git diff {--ext-diff,HEAD}' "Saw: the character '\\{'"
+blocks 'git diff main -- *.py' "Saw: the character '\\*'"
+blocks 'git diff main -- [ab].py' "Saw: the character '\\['"
+
 # --- shell that runs or writes something else ---
 blocks 'git diff main | sh' '\|'
 blocks 'git diff main | cat' '\|'
