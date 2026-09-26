@@ -116,6 +116,12 @@ findings on lines the diff did not touch.
 Small diff: one verifier, must confirm. Large diff: three verifiers with the
 reachability / impact / defenses lenses, 2-of-3 to keep.
 
+A verifier that hits its turn limit is recorded as not confirmed. It is never
+resumed with added context — no hint about callers, no description of the
+change, nothing the finder knew. A message like that is the finder's reasoning
+by another route, and a verifier shown it agrees with it. The verifier runs
+`git diff` and `git show` itself to see the change.
+
 A confirmed security finding keeps the lowest `SEVERITY` a confirming verifier
 returned, capped at the reported tier. A verifier's tier above the reported
 one is ignored.

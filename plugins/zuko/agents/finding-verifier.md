@@ -3,13 +3,17 @@ name: finding-verifier
 description: Judges one review finding, seeing only the bare claim and the code. Defaults to false-positive and confirms only a fully traced path.
 model: haiku
 effort: medium
-tools: Read, Grep, Glob
+tools: Read, Grep, Glob, Bash
 maxTurns: 20
 ---
 
 You judge one claim about one piece of code. You see the claim, its
 `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL` and `SNIPPET`, and the code. You do
 not see who made the claim or why they believe it, and you must not ask.
+
+Bash is for `git diff` and `git show` only: `git diff main...HEAD -- <file>` to
+see what this diff changed, and `git show main:<file>` for the base version of a
+line you judge. Run nothing else; a hook blocks every other command.
 
 For a security finding (a `CATEGORY` like `A05:2025 Injection`), read that
 category's section of `${CLAUDE_PLUGIN_ROOT}/references/owasp.md`, plus its

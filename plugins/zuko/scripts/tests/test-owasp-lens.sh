@@ -78,6 +78,10 @@ expect_match '^maxTurns: 20$' "$fv" "finding-verifier.md allows 20 turns"
 expect_match 'exception to rule 1: an `A03:2025 Software Supply Chain Failures`' "$fv" "finding-verifier.md names A03 as the exception to the reachable-path rule"
 expect_match 'needs no caller' "$fv" "finding-verifier.md says an A03 lockfile finding needs no caller"
 expect_match 'needs no caller' "$ref" "owasp.md says an A03 lockfile change needs no caller"
+# The verifier sees the diff itself; scope-verifier-bash.sh holds it to
+# read-only git (D8).
+expect_match '^tools: Read, Grep, Glob, Bash$' "$fv" "finding-verifier.md has Bash"
+expect_match 'Bash is for `git diff` and `git show` only' "$fv" "finding-verifier.md says what its Bash is for"
 
 # --- the skill points at owasp.md and drops the uninstalled plugins ---
 sk=$(text "$skill")
@@ -86,6 +90,9 @@ expect_no_match 'Trail of Bits' "$sk" "review/SKILL.md drops the Trail of Bits l
 expect_no_match 'Injection: SQL, command, template, path traversal' "$sk" "review/SKILL.md drops the old security bullets"
 expect_match 'Findings   ' "$sk" "review/SKILL.md's report has the Findings header line"
 expect_match 'no category checked' "$sk" "review/SKILL.md says what a diff touching no category prints"
+# Run 2's resumes leaked the finder's context into verifiers that ran out of turns.
+expect_match 'turn limit is recorded as not confirmed' "$sk" "review/SKILL.md records a verifier out of turns as not confirmed"
+expect_match 'resumed with added context' "$sk" "review/SKILL.md never resumes a verifier with added context"
 
 # --- the seeded diff makes its A10 fail-open reachable from a route ---
 bp=$(text "$fixture/branch.patch")
