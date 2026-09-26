@@ -7,7 +7,7 @@ description: >
   release. Use when the user says
   "release it", "cut a version", "tag a release", or runs /release.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *) Bash(mktemp *)
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git archive *) Bash(tar *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *) Bash(mktemp *)
 ---
 
 # Release
@@ -54,7 +54,11 @@ its report is already in the release commit.
 
 ### 2. Pentest
 
-Attack the release range before anything is written. The range is the last
+Attack the release range before anything is written. The pentester runs the
+project's own code; a hook fences its Bash to read-only git and its scratch
+copy (D13). For untrusted code, run `/release` inside Claude Code's sandbox
+too: the fence holds the pentester's commands, not what the code under test
+does once it runs. The range is the last
 tag, from `plan`'s `Last version` line, to `HEAD`: `v1.4.2..HEAD`. With no tag
 yet, it is the whole tracked tree.
 
@@ -93,8 +97,13 @@ yet, it is the whole tracked tree.
    - A01:2025 Broken Access Control — needs a running server (slice 5b)
    ```
 
-   `**Result:**` is `blocked` when any confirmed finding is critical or high,
-   and `pass` otherwise. `Where` is `FILE` then `SYMBOL`, and `Description` is
+   A `LEAK:` line from the pentester (its proof changed something outside the
+   scratch copy) goes into the table as its own row, `| L1 | critical | leak |
+   <the path> | a pentest proof changed it outside the scratch copy |`, so
+   `cut` refuses the release. A leak is never re-judged; it is observed.
+
+   `**Result:**` is `blocked` when any row is critical or high, and `pass`
+   otherwise. `Where` is `FILE` then `SYMBOL`, and `Description` is
    the claim. The report never carries a `PROOF`: it is committed and public.
    Print each confirmed finding's `PROOF` to the terminal after the table, for
    the user to act on.
