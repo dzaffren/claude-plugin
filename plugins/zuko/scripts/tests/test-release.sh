@@ -718,10 +718,19 @@ changed() {    # changed <repo>: the paths git sees changed, one line
   git -C "$1" status --porcelain | awk '{ print $2 }' | sort | tr '\n' ' '
 }
 
+pentest_fixtures="$scripts/tests/fixtures/pentest"
+
+report() {     # report <fixture> <version>: the fixture for that version, outside any repo
+  local file
+  file=$(mktemp -p "$work")
+  sed "s/v1\.5\.0/v$2/g" "$pentest_fixtures/$1.md" >"$file"
+  printf '%s' "$file"
+}
+
 # 22. The feature release: [Unreleased] moves under 1.5.0, with compare links.
 repo=$(fixture)
 cp "$repo/OVERVIEW.md" "$work/overview-before"
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 0 "$status" "cut: exits 0"
 cat >"$work/expected" <<'LOG'
 # Changelog
@@ -753,10 +762,11 @@ LOG
 expect_exit 0 "$(same "$repo/CHANGELOG.md" "$work/expected")" "cut: CHANGELOG.md byte for byte"
 sed 's/^\*\*Status:\*\* Active · /**Status:** Active · **Release:** v1.5.0 · /' "$work/overview-before" >"$work/expected"
 expect_exit 0 "$(same "$repo/OVERVIEW.md" "$work/expected")" "cut: the overview's status line gains the release, nothing else"
-expect_match '^CHANGELOG\.md OVERVIEW\.md $' "$(changed "$repo")" "cut: writes only what the plan listed"
+expect_match '^CHANGELOG\.md OVERVIEW\.md docs/ $' "$(changed "$repo")" "cut: writes only what the plan listed, and the pentest report"
 expected="Wrote
-  CHANGELOG.md   [Unreleased] → [1.5.0] - 2026-09-25, links
-  OVERVIEW.md    Release: v1.5.0 on the status line"
+$(printf '  %-33s%s\n' CHANGELOG.md '[Unreleased] → [1.5.0] - 2026-09-25, links' \
+  OVERVIEW.md 'Release: v1.5.0 on the status line' \
+  docs/security/v1.5.0/report.md 'pentest report, Result pass')"
 [ "$(printf '%s\n' "$out" | sed -n '/^Wrote$/,$p')" = "$expected" ]
 expect_exit 0 "$?" "cut: says what it wrote"
 expect_match '^Project overview \(OVERVIEW\.md\):$' \
@@ -787,7 +797,7 @@ repo=$(untagged)
 marketplace "$repo" 2.1.0
 printf '# Changelog\n\n## [Unreleased]\n\n### Added\n\n- Export the ledger as one CSV file.\n' >"$repo/CHANGELOG.md"
 commit "$repo" "chore: add the marketplace"
-run cut "$repo" --version 2.2.0 --date 2026-09-25
+run cut "$repo" --version 2.2.0 --date 2026-09-25 --pentest "$(report pass 2.2.0)"
 expect_exit 0 "$status" "cut first: exits 0"
 printf '# Changelog\n\n## [Unreleased]\n\n## [2.2.0] - 2026-09-25\n\n### Added\n\n- Export the ledger as one CSV file.\n\n[unreleased]: https://github.com/acme/invoice-cli/compare/v2.2.0...HEAD\n[2.2.0]: https://github.com/acme/invoice-cli/releases/tag/v2.2.0\n' >"$work/expected"
 expect_exit 0 "$(same "$repo/CHANGELOG.md" "$work/expected")" "cut first: links added at the bottom, the release page for 2.2.0"
@@ -796,7 +806,7 @@ marketplace "$work/zuko" 2.2.0
 sed 's/"metadata": { "version": "2.2.0" }/"metadata": { "version": "2.1.0" }/' "$work/zuko/.claude-plugin/marketplace.json" >"$work/expected"
 expect_exit 0 "$(same "$repo/.claude-plugin/marketplace.json" "$work/expected")" "cut first: marketplace.json byte for byte"
 expect_exit 0 "$(same "$repo/plugins/zuko/.claude-plugin/plugin.json" "$work/zuko/plugins/zuko/.claude-plugin/plugin.json")" "cut first: plugin.json byte for byte"
-expect_match '^\.claude-plugin/marketplace\.json CHANGELOG\.md OVERVIEW\.md plugins/zuko/\.claude-plugin/plugin\.json $' \
+expect_match '^\.claude-plugin/marketplace\.json CHANGELOG\.md OVERVIEW\.md docs/ plugins/zuko/\.claude-plugin/plugin\.json $' \
   "$(changed "$repo")" "cut first: those files and no others"
 
 # 25. Every kind at once: the version line, and not the decoys.
@@ -805,7 +815,7 @@ package_json "$repo" 1.4.2
 pyproject "$repo" 1.4.2
 cargo "$repo" 1.4.2
 commit "$repo" "chore: add manifests"
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 0 "$status" "cut every kind: exits 0"
 mkdir -p "$work/kinds"
 package_json "$work/kinds" 1.5.0
@@ -819,7 +829,7 @@ done
 repo=$(fixture)
 sed -i.bak 's/^\*\*Status:\*\* Active · /**Status:** Active · **Release:** v1.4.2 · /' "$repo/OVERVIEW.md" && rm "$repo/OVERVIEW.md.bak"
 commit "$repo" "docs: record the last release"
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_match '^\*\*Status:\*\* Active · \*\*Release:\*\* v1\.5\.0 · \*\*Updated:\*\* 2026-09-25 by /ship export-csv$' \
   "$(cat "$repo/OVERVIEW.md")" "cut: the Release field replaced"
 
@@ -827,7 +837,7 @@ expect_match '^\*\*Status:\*\* Active · \*\*Release:\*\* v1\.5\.0 · \*\*Update
 repo=$(fixture)
 git -C "$repo" checkout -q -b feat/export-csv
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 1 "$status" "cut on a branch: exits 1"
 expect_match '^  branch     on feat/export-csv — release from main$' "$out" "cut on a branch: names the gate"
 expect_match '^Nothing written\.$' "$(last_line "$out")" "cut on a branch: says nothing was written"
@@ -835,7 +845,7 @@ expect_match "^$before\$" "$(snapshot "$repo")" "cut on a branch: nothing writte
 
 repo=$(fixture)
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.4.2 --date 2026-09-25
+run cut "$repo" --version 1.4.2 --date 2026-09-25 --pentest "$(report pass 1.4.2)"
 expect_exit 1 "$status" "cut a refused version: exits 1"
 expect_match '^"1\.4\.2" is not above 1\.4\.2\.' "$out" "cut a refused version: says why"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut a refused version: nothing written"
@@ -845,7 +855,7 @@ package_json "$repo" 1.2.0
 pyproject "$repo" 1.3.0
 commit "$repo" "chore: add manifests"
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.4.0 --date 2026-09-25
+run cut "$repo" --version 1.4.0 --date 2026-09-25 --pentest "$(report pass 1.4.0)"
 expect_exit 1 "$status" "cut disagreeing manifests: exits 1"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut disagreeing manifests: nothing written"
 
@@ -855,7 +865,7 @@ package_json "$repo" 1.4.2
 commit "$repo" "chore: add package.json"
 chmod a-w "$repo/package.json"
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 chmod u+w "$repo/package.json"
 expect_exit 1 "$status" "cut a read-only manifest: exits 1"
 expect_match '^Cannot write package\.json\.$' "$out" "cut a read-only manifest: names the file"
@@ -864,18 +874,18 @@ expect_match "^$before\$" "$(snapshot "$repo")" "cut a read-only manifest: nothi
 
 # A version the user confirmed despite the advice is cut.
 repo=$(fixture)
-run cut "$repo" --version 1.4.3 --date 2026-09-25
+run cut "$repo" --version 1.4.3 --date 2026-09-25 --pentest "$(report pass 1.4.3)"
 expect_exit 0 "$status" "cut a confirmed patch: exits 0"
 expect_match '^## \[1\.4\.3\] - 2026-09-25$' "$(cat "$repo/CHANGELOG.md")" "cut a confirmed patch: written"
 
 # 28. Bad input is exit 2, and writes nothing.
 repo=$(fixture)
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.5.0
+run cut "$repo" --version 1.5.0 --pentest "$(report pass 1.5.0)"
 expect_exit 2 "$status" "cut no date: exits 2"
-run cut "$repo" --version 1.5.0 --date 25-09-2026
+run cut "$repo" --version 1.5.0 --date 25-09-2026 --pentest "$(report pass 1.5.0)"
 expect_exit 2 "$status" "cut bad date: exits 2"
-run cut "$repo" --date 2026-09-25
+run cut "$repo" --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 2 "$status" "cut no version: exits 2"
 expect_match "^$before\$" "$(snapshot "$repo")" "cut bad input: nothing written"
 
@@ -893,7 +903,7 @@ tagged() {     # tagged; prints the repo path
   bare=$(mktemp -d -p "$work")
   git init -q --bare "$bare"
   pushes_to "$dir" "$bare"
-  python3 "$release" cut "$dir" --version 1.5.0 --date 2026-09-25 >/dev/null
+  python3 "$release" cut "$dir" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)" >/dev/null
   commit "$dir" "chore(release): v1.5.0"
   git -C "$dir" tag -a v1.5.0 -m v1.5.0
   : >"$dir.ran"
@@ -936,7 +946,7 @@ expect_match '^release view v1\.5\.0 --repo acme/invoice-cli$' "$(cat "$FAKE_GH/
 
 # cut refuses to cut again.
 before=$(snapshot "$repo")
-run cut "$repo" --version 1.5.0 --date 2026-09-25
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 1 "$status" "resume cut: exits 1"
 expect_match '^v1\.5\.0 is tagged at HEAD; resume the release instead of cutting again\.$' "$out" "resume cut: says why"
 expect_match '^Nothing written\.$' "$(last_line "$out")" "resume cut: nothing written"
@@ -974,3 +984,124 @@ git -C "$repo" checkout -q -b feat/export-csv
 run plan "$repo"
 expect_match '^  branch     on feat/export-csv — release from main$' "$out" "resume on a branch: the gate fails"
 expect_match '^NEXT: stop$' "$(last_line "$out")" "resume on a branch: NEXT: stop"
+
+# --- the pentest verdict: cut --pentest <report> or --no-pentest <reason> ---
+
+decisions_file() {   # decisions_file <repo>: D1 to D3, committed
+  {
+    printf '# Decisions\n\nAppend-only. A changed decision is a new entry that supersedes the old one; only an\nold entry'"'"'s Status line ever changes.\n'
+    for n in 1 2 3; do
+      printf '\n## D%s · 2026-09-24 · Choice %s\n\nWhy: reason %s.\nRejected: option-%s (costs more).\nSource: specs/slice-%s.md\nStatus: active\n' "$n" "$n" "$n" "$n" "$n"
+    done
+  } >"$1/DECISIONS.md"
+  commit "$1" "docs: record D1 to D3"
+}
+
+# 34. Exactly one of --pentest and --no-pentest.
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25
+expect_exit 2 "$status" "cut without a pentest flag: exits 2"
+expect_match '--pentest <report>' "$out" "cut without a pentest flag: the usage names --pentest"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)" --no-pentest "a reason"
+expect_exit 2 "$status" "cut with both pentest flags: exits 2"
+expect_match "^$before\$" "$(snapshot "$repo")" "cut with a bad pentest flag: nothing written"
+
+# 35. A report cut cannot read blocks, and writes nothing.
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$work/no-such-report.md"
+expect_exit 1 "$status" "missing report: exits 1"
+expect_match '^Pentest report unreadable: .*no-such-report\.md not found$' "$out" "missing report: says so"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "missing report: nothing written, it says"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report malformed 1.5.0)"
+expect_exit 1 "$status" "no Result line: exits 1"
+expect_match '^Pentest report unreadable: no \*\*Result:\*\* line$' "$out" "no Result line: says so"
+notable=$(mktemp -p "$work")
+sed '/^## Findings$/,/^## Assessed$/{/^## Assessed$/!d;}' "$(report pass 1.5.0)" >"$notable"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$notable"
+expect_exit 1 "$status" "no Findings table: exits 1"
+expect_match '^Pentest report unreadable: no Findings table$' "$out" "no Findings table: says so"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report proof 1.5.0)"
+expect_exit 1 "$status" "a Proof column: exits 1"
+expect_match '^Pentest report carries proving inputs — the report is public; print them instead \(O4\)$' "$out" "a Proof column: says why"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.4.9)"
+expect_exit 1 "$status" "a report for another version: exits 1"
+expect_match '^Pentest report is for v1\.4\.9, not v1\.5\.0$' "$out" "a report for another version: names both"
+expect_match "^$before\$" "$(snapshot "$repo")" "unreadable reports: nothing written"
+
+# 36. A critical or high finding blocks the release.
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report blocked 1.5.0)"
+expect_exit 1 "$status" "blocked: exits 1"
+expect_match '^Pentest blocked v1\.5\.0: 1 high$' "$out" "blocked: counts the high"
+expect_match '^  \| P1 \| high \| A05:2025 Injection \| importers/bank\.py:22 import_rows \|' "$out" "blocked: prints the row"
+expect_no_match 'requests-toolbelt' "$out" "blocked: the low row is not printed as blocking"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "blocked: says nothing was written"
+expect_match "^$before\$" "$(snapshot "$repo")" "blocked: nothing written"
+
+# 37. Medium and low findings ship, under Security, with no proving input.
+repo=$(fixture)
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report medium 1.5.0)"
+expect_exit 0 "$status" "medium and low: exits 0"
+run notes "$repo" --version 1.5.0
+expected='### Added
+
+- Export the ledger as one CSV file.
+
+### Fixed
+
+- Invoice numbers keep their leading zeros.
+
+### Security
+
+- Known medium issue: A05:2025 Injection in exporters/ledger.py; see docs/security/v1.5.0/report.md.
+- Known low issue: A03:2025 Software Supply Chain Failures in uv.lock; see docs/security/v1.5.0/report.md.'
+[ "$out" = "$expected" ]
+expect_exit 0 "$?" "medium and low: the notes end with the Security section, exactly"
+expect_exit 0 "$(same "$repo/docs/security/v1.5.0/report.md" "$(report medium 1.5.0)")" "medium and low: the report is committed as given"
+expect_no_match 'Proof' "$(cat "$repo/docs/security/v1.5.0/report.md")" "medium and low: the committed report has no Proof column"
+
+# An existing Security section gains the lines; there is never a second one.
+repo=$(fixture)
+awk '{ print } $0 == "- Invoice numbers keep their leading zeros." { print "\n### Security\n\n- Session tokens expire after 30 minutes." }' \
+  "$repo/CHANGELOG.md" >"$work/CHANGELOG.md" && mv "$work/CHANGELOG.md" "$repo/CHANGELOG.md"
+commit "$repo" "fix(auth): expire session tokens"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report medium 1.5.0)"
+expect_exit 0 "$status" "an existing Security section: exits 0"
+run notes "$repo" --version 1.5.0
+expect_match '^- Session tokens expire after 30 minutes\.$' "$out" "an existing Security section: its line stays"
+[ "$(printf '%s\n' "$out" | grep -c '^### Security$')" = 1 ]
+expect_exit 0 "$?" "an existing Security section: one heading"
+expect_match '^- Known low issue: A03:2025 Software Supply Chain Failures in uv\.lock; see docs/security/v1\.5\.0/report\.md\.$' \
+  "$(last_line "$out")" "an existing Security section: the known issues go after its lines"
+
+# 38. A skip needs a typed reason, and goes into DECISIONS.md and the notes.
+repo=$(fixture)
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --no-pentest ""
+expect_exit 1 "$status" "empty reason: exits 1"
+expect_match '^A skip needs a reason$' "$out" "empty reason: says so"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --no-pentest "skip"
+expect_exit 1 "$status" "reason skip: exits 1"
+expect_match '^A skip needs a reason$' "$out" "reason skip: says so"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --no-pentest "rounding hotfix"
+expect_exit 1 "$status" "skip with no DECISIONS.md: exits 1"
+expect_match '^DECISIONS\.md missing — /ship creates it$' "$out" "skip with no DECISIONS.md: says so"
+expect_match "^$before\$" "$(snapshot "$repo")" "refused skips: nothing written"
+
+decisions_file "$repo"
+reason="rounding hotfix for 3,000 invoices due 2026-10-02; pentester timed out twice"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --no-pentest "$reason"
+expect_exit 0 "$status" "a skip with a reason: exits 0"
+expect_match '^## D4 · 2026-09-25 · Release v1\.5\.0 ships without a pentest$' "$(cat "$repo/DECISIONS.md")" "a skip: D4 appended"
+expect_match "^Why: $reason\$" "$(cat "$repo/DECISIONS.md")" "a skip: the reason is the Why"
+expect_match '^Source: docs/security/v1\.5\.0/report\.md$' "$(cat "$repo/DECISIONS.md")" "a skip: the report is the Source"
+out_check=$(python3 "$scripts/lib/decisions.py" check "$repo" --base HEAD 2>&1)
+expect_exit 0 "$?" "a skip: decisions.py check passes on the appended entry"
+run notes "$repo" --version 1.5.0
+expect_match "^- Released without pentest: $reason\\.\$" "$(last_line "$out")" "a skip: the notes say so, under Security"
+expect_match '^\*\*Result:\*\* skipped$' "$(cat "$repo/docs/security/v1.5.0/report.md")" "a skip: the report reads skipped"
+expect_match "^\\*\\*Reason:\\*\\* $reason\$" "$(cat "$repo/docs/security/v1.5.0/report.md")" "a skip: the report gives the reason"
+expect_match '^CHANGELOG\.md DECISIONS\.md OVERVIEW\.md docs/ $' "$(changed "$repo")" "a skip: writes the D-entry, the report and the changelog"

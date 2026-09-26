@@ -108,7 +108,8 @@ expect_match '^  package\.json   1\.4\.2 → 1\.5\.0$' "$plan_out" "e2e: the pla
 expect_match '^NEXT: ask 1\.5\.0$' "$(printf '%s\n' "$plan_out" | tail -n 1)" "e2e: NEXT: ask 1.5.0"
 
 # 2. The user says yes: cut writes the changelog and package.json, byte for byte.
-cut_out=$(python3 "$release" cut "$repo" --version 1.5.0 --date 2026-09-25 2>&1)
+cut_out=$(python3 "$release" cut "$repo" --version 1.5.0 --date 2026-09-25 \
+  --pentest "$scripts/tests/fixtures/pentest/pass.md" 2>&1)
 expect_exit 0 "$?" "e2e: cut writes"
 cat >"$work/expected" <<'LOG'
 # Changelog
@@ -145,9 +146,11 @@ expect_exit 0 "$?" "e2e: package.json bumped byte for byte"
 expect_match '^\*\*Status:\*\* Active · \*\*Release:\*\* v1\.5\.0 · ' "$(cat "$repo/OVERVIEW.md")" "e2e: the overview names the release"
 expect_match '^  OVERVIEW\.md    Release: v1\.5\.0 on the status line$' "$cut_out" "e2e: cut says what it wrote"
 
+expect_match '^  docs/security/v1\.5\.0/report\.md +pentest report, Result pass$' "$cut_out" "e2e: cut writes the pentest report"
+
 # 3. Commit, annotated tag, one atomic push: origin holds both.
 git -C "$repo" add -A
-git -C "$repo" commit -q --no-verify -m "chore(release): v1.5.0" -m "Changes CHANGELOG.md, package.json and OVERVIEW.md."
+git -C "$repo" commit -q --no-verify -m "chore(release): v1.5.0" -m "Changes CHANGELOG.md, package.json, OVERVIEW.md and the pentest report."
 git -C "$repo" tag -a v1.5.0 -m v1.5.0
 git -C "$repo" push -q --atomic origin main v1.5.0
 expect_exit 0 "$?" "e2e: the push succeeds"
