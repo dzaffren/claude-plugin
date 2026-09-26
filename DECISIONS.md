@@ -132,3 +132,16 @@ full proof in the notes (a working exploit in every release page), the proof in
 the committed report (the same exploit, one click from the repo page).
 Source: specs/pentest.md
 Status: active
+
+## D13 · 2026-09-27 · The pentester's Bash is fenced by a hook on agent_type
+
+Why: the pentester runs the project's own code with Bash, so its commands cannot
+be listed in allowed-tools; /review proved that prompt rules alone let it run
+git push, git tag and curl. A PreToolUse hook sees the caller's agent_type and
+holds zuko:pentester to read-only git, mktemp -d, and commands inside its own
+scratch copy.
+Rejected: prompt-only rules (the review proved push, tag and curl allowed),
+requiring the OS sandbox (a user setting the plugin cannot turn on), deferring to
+pentest-live (its target hook never runs in code-level mode).
+Source: specs/pentest.md
+Status: active
