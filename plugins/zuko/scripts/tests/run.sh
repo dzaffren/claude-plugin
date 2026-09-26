@@ -19,13 +19,16 @@ expect_exit() {        # expect_exit <expected> <actual> <description>
   else record FAIL "$3" "expected exit $1, got $2"; fi
 }
 
+# grep reads a here-string, not a pipe: under pipefail, grep -q quitting at the
+# first match kills the writer with SIGPIPE on text over 64 KB, and the
+# pipeline then reports 141 instead of grep's answer.
 expect_match() {       # expect_match <regex> <text> <description>
-  if printf '%s\n' "$2" | grep -qE "$1"; then record PASS "$3"
+  if grep -qE "$1" <<<"$2"; then record PASS "$3"
   else record FAIL "$3" "nothing matched /$1/"; fi
 }
 
 expect_no_match() {    # expect_no_match <regex> <text> <description>
-  if printf '%s\n' "$2" | grep -qE "$1"; then record FAIL "$3" "matched /$1/ and should not have"
+  if grep -qE "$1" <<<"$2"; then record FAIL "$3" "matched /$1/ and should not have"
   else record PASS "$3"; fi
 }
 

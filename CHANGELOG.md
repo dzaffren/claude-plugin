@@ -14,3 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - /release turns what you have shipped into a numbered version: it works out the number from the commits, moves the changelog lines under it, bumps the manifest versions, and tags and publishes a GitHub release.
 - /review checks security against the OWASP Top 10:2025. Each security finding names its category and severity, and the report says which categories it checked and why it skipped the rest.
 - The review's blind checker reads the diff with git itself, and a hook holds it to read-only git commands.
+
+### Fixed
+
+- zuko's test helpers no longer misread text longer than 64 KB, so a check on long output passes or fails for the right reason.

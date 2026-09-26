@@ -174,6 +174,7 @@ projects.
 - Seeds DECISIONS.md from a repo's existing ADRs
 - /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate
 - /release cuts a version from the commits: changelog, tag, GitHub release
+- /review judges security against OWASP Top 10:2025, with a category and severity on every finding
 
 ## Docs
 
