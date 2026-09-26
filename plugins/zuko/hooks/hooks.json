@@ -11,6 +11,11 @@
           },
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/scope-verifier-bash.sh",
+            "statusMessage": "Holding the finding-verifier to git diff and git show..."
+          },
+          {
+            "type": "command",
             "if": "Bash(git commit *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
             "statusMessage": "Checking the commit message for attribution..."
