@@ -93,3 +93,6 @@ One line per lesson. Loaded into every session in this repo.
 - Never pipe into `grep -q` under `pipefail` — an early match SIGPIPEs the
   writer on text over 64 KB and the pipeline reads as a miss; use a here-string.
   ([detail](grep-q-under-pipefail.md))
+- A scratch copy is not a sandbox — the code under test still writes its tools'
+  config under `HOME`; point `HOME` and the XDG dirs inside the copy.
+  ([detail](scratch-copy-is-not-a-sandbox.md))
