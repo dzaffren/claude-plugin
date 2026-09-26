@@ -84,3 +84,9 @@ One line per lesson. Loaded into every session in this repo.
 - A skill's `allowed-tools` must cover every command its subagents run, or
   `-p` refuses them; a guard that blocks an agent says what to use instead.
   ([detail](skill-allowed-tools-cover-its-subagents.md))
+- A check that depends on something the diff removes says to read the removed
+  (`-`) lines, or the reviewer calls the function unchanged.
+  ([detail](reviewers-skim-deleted-lines.md))
+- A command guard allow-lists the raw text's characters before tokenising —
+  a `#` comment can swallow the newline between two commands.
+  ([detail](comments-can-swallow-the-separator.md))
