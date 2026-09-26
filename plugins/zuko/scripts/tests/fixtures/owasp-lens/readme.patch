@@ -1,0 +1,10 @@
+diff --git a/README.md b/README.md
+index e401361..3c3370d 100644
+--- a/README.md
++++ b/README.md
+@@ -3,3 +3,5 @@
+ Flask service that lets finance staff export customer invoices.
+ 
+ Run it with `uv run flask --app invoice_api run`.
++
++See OVERVIEW.md for how to run the tests.

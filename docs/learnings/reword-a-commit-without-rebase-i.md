@@ -40,3 +40,7 @@ SHA, so on a pushed branch this becomes a force-push, which is a different
 conversation and needs asking first.
 
 Keep `backup/{slice}` until the PR is merged, then delete it.
+
+**zsh:** the Bash tool runs zsh here, which does not word-split `$var`. A
+`for c in $after` over a list of SHAs runs once with all of them as one
+argument. Write the SHAs out, or use `${=after}`. (release ship, 2026-09-25)

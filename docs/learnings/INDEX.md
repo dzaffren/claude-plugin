@@ -78,3 +78,15 @@ One line per lesson. Loaded into every session in this repo.
 - A guard over a CLI reads every spelling that CLI's parser accepts —
   aliases, abbreviated long options, `-F=path` — and git and gh differ.
   ([detail](guard-every-spelling-the-parser-accepts.md))
+- An agent's `tools:` pattern like `Bash(git diff *)` grants the whole tool —
+  scope it with a PreToolUse hook on `agent_type`, and probe it headless.
+  ([detail](agent-tools-patterns-are-not-enforced.md))
+- A skill's `allowed-tools` must cover every command its subagents run, or
+  `-p` refuses them; a guard that blocks an agent says what to use instead.
+  ([detail](skill-allowed-tools-cover-its-subagents.md))
+- A check that depends on something the diff removes says to read the removed
+  (`-`) lines, or the reviewer calls the function unchanged.
+  ([detail](reviewers-skim-deleted-lines.md))
+- A command guard allow-lists the raw text's characters before tokenising —
+  a `#` comment can swallow the newline between two commands.
+  ([detail](comments-can-swallow-the-separator.md))
