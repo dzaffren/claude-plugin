@@ -56,9 +56,10 @@ its report is already in the release commit.
 
 Attack the release range before anything is written. The pentester runs the
 project's own code; a hook fences its Bash to read-only git and its scratch
-copy (D13). For untrusted code, run `/release` inside Claude Code's sandbox
-too: the fence holds the pentester's commands, not what the code under test
-does once it runs. The range is the last
+copy (D14). The fence stops direct commands, not code: a tracked program the
+pentester runs, or the project's code itself, can still reach the network or
+write anywhere. Run `/release` inside Claude Code's sandbox for untrusted code.
+The range is the last
 tag, from `plan`'s `Last version` line, to `HEAD`: `v1.4.2..HEAD`. With no tag
 yet, it is the whole tracked tree.
 
@@ -99,7 +100,7 @@ yet, it is the whole tracked tree.
 
    A `LEAK:` line from the pentester (its proof changed something outside the
    scratch copy) goes into the table as its own row, `| L1 | critical | leak |
-   <the path> | a pentest proof changed it outside the scratch copy |`, so
+<the path> | a pentest proof changed it outside the scratch copy |`, so
    `cut` refuses the release. A leak is never re-judged; it is observed.
 
    `**Result:**` is `blocked` when any row is critical or high, and `pass`
@@ -107,6 +108,7 @@ yet, it is the whole tracked tree.
    the claim. The report never carries a `PROOF`: it is committed and public.
    Print each confirmed finding's `PROOF` to the terminal after the table, for
    the user to act on.
+
 4. Print the summary, then go to step 3 with `--pentest <report-file>`:
 
    ```
