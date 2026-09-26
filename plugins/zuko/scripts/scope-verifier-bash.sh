@@ -49,7 +49,18 @@ def block(saw):
 if not isinstance(command, str) or not command.strip():
     block("an empty command")
 
-# Substitution and variables expand into commands the parser cannot see.
+# First layer: the characters a verifier's `git diff` or `git show` needs, and
+# nothing else. Newlines, `#` comments, braces, globs, joiners, pipes,
+# redirections, `$`, backticks and backslashes all change what the shell runs
+# in ways a tokeniser can misread; refusing the character settles it.
+ALLOWED_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "0123456789 ._/:@^~=,+-'\"")
+for char in command:
+    if char not in ALLOWED_CHARS:
+        block("the character %r" % char)
+
+# Second layer, kept: substitution and variables expand into commands the
+# parser cannot see.
 if "$" in command:
     block("`$` (a variable or command substitution)")
 if "`" in command:

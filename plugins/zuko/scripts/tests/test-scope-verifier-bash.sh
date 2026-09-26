@@ -57,13 +57,14 @@ allows 'git show HEAD --stat'
 allows 'git --no-pager diff main'
 allows 'git -P show main:uv.lock'
 allows 'git diff --text main'
-allows 'git diff main -- invoice_api/auth.py && git show main:invoice_api/auth.py'
+allows "git show 'main:docs/a file.md'"
+allows 'git show HEAD~1^:uv.lock'
 
 # --- another program, or another git subcommand ---
 blocks 'ls /' 'ls'
 blocks 'cat invoice_api/auth.py' 'cat'
 blocks 'git log --oneline' 'git log'
-blocks 'git diff main; ls' 'ls'
+blocks 'git diff main; ls' "Saw: the character ';'"
 blocks 'sudo git diff main' 'sudo'
 blocks 'GIT_EXTERNAL_DIFF=x git diff main' 'GIT_EXTERNAL_DIFF'
 blocks 'git' 'git'
@@ -85,10 +86,19 @@ blocks 'git diff --output /tmp/x main' 'output'
 blocks 'git diff --out=/tmp/x main' '\-\-out'
 blocks 'git show --show-signature HEAD' 'show-signature'
 blocks 'git show --show-sig HEAD' 'show-sig'
-blocks 'git show --format=%G? HEAD' '%G'
-blocks 'git show --pretty=format:%GG HEAD' '%G'
+blocks 'git show --format=%G? HEAD' "Saw: the character '%'"
+blocks 'git show --pretty=format:%GG HEAD' "Saw: the character '%'"
 blocks 'git diff --no-index /etc/hosts invoice_api/db.py' 'no-index'
 blocks 'git diff --help' 'help'
+
+# --- H1: a `#` comment swallows the newline, so shlex read the next line as
+# arguments and `ls /` ran. The raw command is allow-listed by character first.
+blocks $'git diff main #\nls /' "Saw: the character '#'"
+blocks $'git diff main#x\nls /' "Saw: the character '#'"
+blocks $'git diff main\nls /' "Saw: the character '\\\\n'"
+blocks 'git diff main -- a.py && git show main:a.py' "Saw: the character '&'"
+blocks $'git diff\tmain' "Saw: the character '\\\\t'"
+blocks 'git diff main\' "Saw: the character '\\\\\\\\'"
 
 # --- shell that runs or writes something else ---
 blocks 'git diff main | sh' '\|'
