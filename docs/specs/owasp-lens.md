@@ -604,6 +604,32 @@ The hook fixes did not break the verifiers' own git calls, and no verifier ran o
 of turns. Scenario 4 now depends on the reviewer spotting a deleted line: it did
 in runs 2 to 5, and missed it in run 6.
 
+#### Run 7
+
+Run 2026-09-26 at `4268122`, after O13 (the A09 check reads removed lines) and the
+/review fixes F1 to F3 (permission frontmatter is configuration, `BASE` passed to
+the verifier, examples matching the fixture). Same command, fresh scratch repos,
+both exit 0. There were two reviewers and 21 verifier runs.
+
+**Verdict: scenario 4 fails again, at the verifiers. Everything else passes.**
+
+| Criterion | Result | Evidence |
+| --- | --- | --- |
+| 1 | pass | Reviewer: `CATEGORY: A05:2025 Injection`, `SEVERITY: high`, `SYMBOL: export_ledger` |
+| 2 | pass | Both scope blocks name `invoice_api/db.py run(sql, params)`; the second reviewer's `CHECKED: A01, A03, A05` leaves seven under `NOT CHECKED` |
+| 3 | pass | No security finding on the four decoys |
+| 4 | **fail** | A09 was raised and survived (`medium · A09:2025 … invoice_api/auth.py:25 in login`), so the O13 fix held. A10 survived 3 of 3. A03 was raised (`low`) and dropped 1 of 3: "The other two verifiers hit their turn limit, which the rules count as 'not confirmed'" (O17) |
+| 5 | pass | A05 kept at high (3 of 3). Header: `Findings   8 raw, 4 survived`; security came first |
+| readme | pass | `Security   no category checked — the diff changes README.md only`, `Findings   0 raw, 0 survived — clean` |
+| resumes | pass | 0 `SendMessage` calls |
+| hook | pass | Verifier Bash that ran: 53 `git diff` and 109 `git show`, nothing else |
+
+| Count | Run 6 | Run 7 |
+| --- | --- | --- |
+| Top-level turn-limit events | 0 | 18 |
+| Verifier calls blocked by the hook | 50 | 71 (45 other git subcommands, 15 `find`, 6 `grep`, 3 `uv`, 2 `ls`) |
+| Verifier calls that errored | 38 | 65 |
+
 ### Chunks
 
 | Chunk | Scenarios  | Files owned                                                                                       |
@@ -652,6 +678,7 @@ Recorded as D4, D5, D6, D7, D8.
 | O14                                                                | /review F1: `owasp.md`'s "documentation files such as Markdown" exclusion hides permission changes in agent and skill files, which are Markdown with frontmatter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | flag     | /review       | user   | Resolved | Plain docs stay excluded; a Markdown file with frontmatter that grants tools or permissions (`tools:`, `allowed-tools:`, `disallowedTools:`, hooks, or a plugin manifest) is configuration, and a widened permission there is an A02 finding. In "Where OWASP wins" and in A02's check list (user, 2026-09-26)                                                                                                                                                                                                                                                                 |
 | O15 | /review F2: `finding-verifier.md` hard-codes `main` in `git diff main...HEAD` and `git show main:`, so a branch cut from anything else is judged against the wrong base | flag | /review | user | Resolved | The review skill passes the branch point it already measures (`SKILL.md` "Size the effort") to each verifier as `BASE: <ref or sha>`; the verifier runs `git diff <BASE>...HEAD -- <file>` and `git show <BASE>:<file>`. The hook accepts refs like `origin/main` and shas (user, 2026-09-26) |
 | O16 | /review F3: scenario 1 and the Interface examples cite line 31 of `exporters/ledger.py` and the bare `/export` route, but the fixture has `invoice_api/exporters/ledger.py` with the execute call at line 11, under `GET /export/ledger` | flag | /review | user | Resolved | Scenario 1 and the Interface examples now name `invoice_api/exporters/ledger.py:11`, `GET /export/ledger` and `invoice_api/routes/export.py:27`; the fixture is unchanged, and the contract test ties the spec to it (user, 2026-09-26) |
+| O17 | Run 7: scenario 4 fails at the verifiers again. A03 (the unused `requests-toolbelt` in `uv.lock`) was dropped 1 of 3, with two verifiers out of turns, and turn-limit events went from 0 in run 6 to 18 in run 7 with no change to the verifier or the hook. The hook blocked 71 verifier calls (45 other git subcommands such as `git ls-files` and `git log`, 15 `find`). The turn budget swings run to run; the same fixture has given 0, 4, 16 and 18 turn-limit events. Options: let the verifier run `git log` and `git ls-files` too; raise `maxTurns` above 30; or treat a verifier that ran out of turns as absent, not as a no, so 1 of 1 answering confirms | flag | build (run 7) | user | Open | — |
 | _Never delete this section or its rows. See references/ledger.md._ |
 
 ## Glossary
