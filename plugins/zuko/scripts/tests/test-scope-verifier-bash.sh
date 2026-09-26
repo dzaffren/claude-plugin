@@ -10,7 +10,8 @@
 #   --show-signature  "Check the validity of a signed commit object by passing the
 #                      signature to gpg --verify"
 #   %G? %GG ...  "raw verification message from GPG for a signed commit"
-#   --no-index  compares two paths on disk, outside the repo
+# --no-index is not refused: git diff on two paths outside the repo goes to
+# no-index mode by itself, and it only reads what Read can already read.
 # git 2.50.1 rejects abbreviated spellings of these (`git diff --out=x` and
 # `git show --show-sig` both exit 129 or 128), but other versions accept any
 # unambiguous prefix, so the guard refuses the prefixes too.
@@ -59,6 +60,11 @@ allows 'git -P show main:uv.lock'
 allows 'git diff --text main'
 allows "git show 'main:docs/a file.md'"
 allows 'git show HEAD~1^:uv.lock'
+# H4: refusing --no-index did nothing, because git diff on two paths outside
+# the repo goes to no-index mode by itself. It reads files the Read tool can
+# already read, so neither form is blocked.
+allows 'git diff /etc/hosts README.md'
+allows 'git diff --no-index /etc/hosts invoice_api/db.py'
 
 # --- another program, or another git subcommand ---
 blocks 'ls /' 'ls'
@@ -88,7 +94,6 @@ blocks 'git show --show-signature HEAD' 'show-signature'
 blocks 'git show --show-sig HEAD' 'show-sig'
 blocks 'git show --format=%G? HEAD' "Saw: the character '%'"
 blocks 'git show --pretty=format:%GG HEAD' "Saw: the character '%'"
-blocks 'git diff --no-index /etc/hosts invoice_api/db.py' 'no-index'
 blocks 'git diff --help' 'help'
 
 # --- H1: a `#` comment swallows the newline, so shlex read the next line as

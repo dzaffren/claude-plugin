@@ -88,10 +88,12 @@ except ValueError as problem:
 GLOBAL_ALLOWED = {"--no-pager", "-P"}
 SUBCOMMANDS = {"diff", "show"}
 
-# Options that run a program, write a file, or read outside the repo, from
-# `git help -m diff` and `git help -m show` (git 2.50.1).
+# Options that run a program or write a file, from `git help -m diff` and
+# `git help -m show` (git 2.50.1). --no-index is not here: git diff on two
+# paths outside the repo goes to no-index mode without it, and it only reads
+# files the Read tool can already read.
 REFUSED = ("--ext-diff", "--textconv", "--output", "--show-signature",
-           "--no-index", "--help")
+           "--help")
 # Real options that a prefix test would otherwise catch.
 SAFE = {"--text", "--no-ext-diff", "--no-textconv", "--no-show-signature",
         "--output-indicator-new", "--output-indicator-old",
@@ -107,7 +109,7 @@ def check_option(arg):
     if name in SAFE:
         return
     if name in REFUSED:
-        block("`%s` (runs a program, writes a file, or reads outside the repo)" % name)
+        block("`%s` (runs a program or writes a file)" % name)
     # Some git versions take any unambiguous prefix of a long option.
     if len(name) >= 5 and any(full.startswith(name) for full in REFUSED):
         block("`%s` (an abbreviation of a refused option)" % name)
