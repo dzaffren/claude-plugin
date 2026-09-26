@@ -6,7 +6,7 @@ description: >
   verifier before it reaches the user. Use after /build, or when the user says
   "review this", "check the code", "is this secure", "any bugs".
 disable-model-invocation: true
-allowed-tools: Bash(git diff *) Bash(git show *) Bash(git status *) Bash(git log *) Bash(git stash list)
+allowed-tools: Bash(git diff *) Bash(git show *) Bash(git status *) Bash(git log *) Bash(git ls-files *) Bash(git stash list)
 ---
 
 # Review
@@ -122,7 +122,7 @@ A verifier that hits its turn limit is recorded as not confirmed. It is never
 resumed with added context — no hint about callers, no description of the
 change, nothing the finder knew. A message like that is the finder's reasoning
 by another route, and a verifier shown it agrees with it. The verifier runs
-`git diff` and `git show` itself to see the change.
+`git diff`, `git show`, `git log` and `git ls-files` itself to see the change.
 
 A confirmed security finding keeps the lowest `SEVERITY` a confirming verifier
 returned, capped at the reported tier. A verifier's tier above the reported

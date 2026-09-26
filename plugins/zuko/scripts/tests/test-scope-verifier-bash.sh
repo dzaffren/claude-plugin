@@ -76,7 +76,27 @@ allows 'git diff --no-index /etc/hosts invoice_api/db.py'
 # --- another program, or another git subcommand ---
 blocks 'ls /' 'ls'
 blocks 'cat invoice_api/auth.py' 'cat'
-blocks 'git log --oneline' 'git log'
+blocks 'git status' '`git status`'
+blocks 'git grep is_admin' '`git grep`'
+blocks 'git blame invoice_api/auth.py' '`git blame`'
+
+# --- O17: run 7 lost turns to 45 blocked git log and ls-files calls. Both
+# read only; the same refused options apply. `git help -m ls-files` has nothing
+# that runs a program or writes (--exclude-from and --with-tree only read).
+allows 'git log --oneline -5'
+allows 'git log origin/main..HEAD -- invoice_api/auth.py'
+allows 'git log -p -1 -- invoice_api/auth.py'
+allows 'git ls-files'
+allows 'git ls-files invoice_api'
+allows 'git ls-files --with-tree=HEAD'
+blocks 'git log --output=/tmp/x' 'output'
+blocks 'git log -p --ext-diff' 'ext-diff'
+blocks 'git log -p --textconv' 'textconv'
+blocks 'git log --show-signature -1' 'show-signature'
+blocks 'git log --format=%G?' "the character '%'"
+blocks 'git -c core.pager=x log' '\-c'
+blocks 'git -C /tmp ls-files' '\-C'
+blocks 'git ls-files --output=/tmp/x' 'output'
 blocks 'git diff main; ls' "the character ';'"
 blocks 'sudo git diff main' 'sudo'
 blocks 'GIT_EXTERNAL_DIFF=x git diff main' 'GIT_EXTERNAL_DIFF'

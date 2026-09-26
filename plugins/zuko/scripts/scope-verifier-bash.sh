@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# PreToolUse[Bash] hook: hold zuko's finding-verifier to read-only `git diff` and
-# `git show`. The verifier has Bash so it can see the diff and the base version
+# PreToolUse[Bash] hook: hold zuko's finding-verifier to read-only `git diff`,
+# `git show`, `git log` and `git ls-files`. The verifier has Bash so it can see the diff and the base version
 # of the lines it judges; a `tools:` pattern like `Bash(git diff *)` is not
 # enforced (D8), so this hook is what scopes it.
 #
@@ -8,8 +8,9 @@
 # other caller, the main thread included, exits 0 untouched.
 #
 # An allow-list, never a deny-list: every command on the line must be `git`,
-# then at most `--no-pager` or `-P`, then `diff` or `show`, with no option that
-# runs a program or writes a file. Anything else blocks and names what it saw.
+# then at most `--no-pager` or `-P`, then `diff`, `show`, `log` or `ls-files`,
+# with no option that runs a program or writes a file. Anything else blocks and
+# names what it saw.
 set -uo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -51,8 +52,8 @@ command = (payload.get("tool_input") or {}).get("command")
 
 def block(saw):
     sys.stderr.write(
-        "Blocked: the finding-verifier may run only read-only `git diff` and "
-        "`git show`.\nSaw: %s\n"
+        "Blocked: the finding-verifier may run only read-only `git diff`, "
+        "`git show`, `git log` and `git ls-files`.\nSaw: %s\n"
         "To search or list files, use the Grep or Glob tool; to read a file, "
         "use Read.\n" % saw)
     sys.exit(2)
@@ -86,7 +87,8 @@ except ValueError as problem:
 # git's own options allowed before the subcommand. -C is refused: the verifier
 # reads the repo it runs in and nothing else.
 GLOBAL_ALLOWED = {"--no-pager", "-P"}
-SUBCOMMANDS = {"diff", "show"}
+# O17: log and ls-files read only; run 7 lost turns to 45 blocked calls.
+SUBCOMMANDS = {"diff", "show", "log", "ls-files"}
 
 # Options that run a program or write a file, from `git help -m diff` and
 # `git help -m show` (git 2.50.1). --no-index is not here: git diff on two

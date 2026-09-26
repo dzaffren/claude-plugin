@@ -84,4 +84,20 @@ per finding; the verifier seeing the diff itself was preferred), a prompt-only r
 (nothing enforces it), scoped `tools:` patterns such as `Bash(git diff *)` (not
 enforced: the docs give no such form and a headless probe ran `ls /` through one).
 Source: specs/owasp-lens.md
+Status: superseded by D9
+
+## D9 · 2026-09-26 · The finding-verifier's Bash is scoped by a hook on agent_type to read-only git diff, show, log and ls-files
+
+Why: the verifier needs the diff, the base version of a line, history and the file
+list; a PreToolUse hook sees the caller's `agent_type` and holds it to those four
+read-only commands, refusing options that run a program or write a file. The
+seventh seeded run lost turns to 45 blocked `git log` and `git ls-files` calls.
+Rejected: `git diff` and `git show` only (D8; verifiers ran out of turns on the
+blocked history and file-list calls), raising `maxTurns` above 30 (the turn budget
+swung from 0 to 18 across runs of one fixture), pasting diff hunks into the
+verifier prompt (the skill would slice a hunk per finding), a prompt-only rule
+(nothing enforces it), scoped `tools:` patterns such as `Bash(git diff *)` (not
+enforced: a headless probe ran `ls /` through one).
+Supersedes: D8
+Source: specs/owasp-lens.md
 Status: active

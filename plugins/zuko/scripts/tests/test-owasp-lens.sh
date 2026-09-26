@@ -103,7 +103,9 @@ expect_match 'frontmatter' "$a02" "A02's check list covers widened permissions i
 # The verifier sees the diff itself; scope-verifier-bash.sh holds it to
 # read-only git (D8).
 expect_match '^tools: Read, Grep, Glob, Bash$' "$fv" "finding-verifier.md has Bash"
-expect_match 'Bash is for `git diff` and `git show` only' "$fv" "finding-verifier.md says what its Bash is for"
+expect_match 'Bash is for `git diff`, `git show`, `git log` and `git ls-files` only' "$fv" "finding-verifier.md says what its Bash is for"
+# O17: the skill grants every command its verifier runs under -p.
+expect_match '^allowed-tools: .*Bash\(git log \*\).*Bash\(git ls-files \*\)|^allowed-tools: .*Bash\(git ls-files \*\).*Bash\(git log \*\)' "$(text "$skill")" "review/SKILL.md's allowed-tools grants git log and git ls-files"
 # Run 3: the hook blocked 47 grep/find/ls-files calls the verifier's own tools do.
 expect_match 'search and list files with Grep and Glob' "$fv" "finding-verifier.md searches with Grep and Glob, not Bash"
 
