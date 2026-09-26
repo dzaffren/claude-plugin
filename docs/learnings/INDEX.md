@@ -99,3 +99,6 @@ One line per lesson. Loaded into every session in this repo.
 - An agent's Bash calls start fresh and `VAR=x cmd` covers one command — put a
   multi-step proof in one call, `cd <literal path> && export …`, joined by `&&`.
   ([detail](agent-bash-calls-start-fresh.md))
+- A command-text hook fences commands, not code — it stops a nested shell or an
+  inline `-c`, not what a program it allows then does; say so and use a real sandbox.
+  ([detail](a-command-hook-fences-commands-not-code.md))
