@@ -72,8 +72,9 @@ expect_match '\$\{CLAUDE_PLUGIN_ROOT\}/references/owasp\.md' "$fv" "finding-veri
 expect_match 'SEVERITY:' "$fv" "finding-verifier.md's output carries SEVERITY"
 expect_match '[Nn]ever (raise|above)' "$fv" "finding-verifier.md says severity is never raised"
 # 13 of 18 verifier runs in the first seeded run stopped at 12 turns while
-# tracing code; the longest needed 17.
-expect_match '^maxTurns: 20$' "$fv" "finding-verifier.md allows 20 turns"
+# tracing code; the longest needed 17. Raised to 30 after run 4, where 16
+# turn-limit events remained (O12).
+expect_match '^maxTurns: 30$' "$fv" "finding-verifier.md allows 30 turns"
 # A lockfile change is an install-time risk: it needs no caller to count.
 expect_match 'exception to rule 1: an `A03:2025 Software Supply Chain Failures`' "$fv" "finding-verifier.md names A03 as the exception to the reachable-path rule"
 expect_match 'needs no caller' "$fv" "finding-verifier.md says an A03 lockfile finding needs no caller"

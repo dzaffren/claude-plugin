@@ -43,6 +43,10 @@ blocks() {     # blocks <command> <regex the message must match>
   run_hook "$VERIFIER" "$1"
   expect_exit 2 "$hook_status" "verifier is blocked from: $1"
   expect_match "$2" "$hook_err" "the block names what it saw in: $1"
+  # Run 4: verifiers kept sending grep and find to Bash after being blocked.
+  # Every block says which tool to use instead.
+  expect_match 'To search or list files, use the Grep or Glob tool; to read a file, use Read\.' \
+    "$hook_err" "the block points at Grep, Glob and Read for: $1"
 }
 
 # --- what the verifier needs: the diff and the base versions of lines ---

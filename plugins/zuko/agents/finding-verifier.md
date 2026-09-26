@@ -4,7 +4,7 @@ description: Judges one review finding, seeing only the bare claim and the code.
 model: haiku
 effort: medium
 tools: Read, Grep, Glob, Bash
-maxTurns: 20
+maxTurns: 30
 ---
 
 You judge one claim about one piece of code. You see the claim, its

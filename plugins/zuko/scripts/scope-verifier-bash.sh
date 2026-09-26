@@ -40,7 +40,9 @@ command = (payload.get("tool_input") or {}).get("command")
 def block(saw):
     sys.stderr.write(
         "Blocked: the finding-verifier may run only read-only `git diff` and "
-        "`git show`.\nSaw: %s\n" % saw)
+        "`git show`.\nSaw: %s\n"
+        "To search or list files, use the Grep or Glob tool; to read a file, "
+        "use Read.\n" % saw)
     sys.exit(2)
 
 
