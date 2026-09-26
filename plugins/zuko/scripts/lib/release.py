@@ -1039,14 +1039,17 @@ def cut(project, version, today, report=None, reason=None):
 
 
 def writable(path):
-    """A file cut may write: it exists and is writable, or the nearest folder
-    that exists above it is."""
-    if os.path.exists(path):
-        return os.access(path, os.W_OK)
+    """A file cut may write: it is a writable file, or it does not exist and
+    every folder above it that exists is a folder, and the nearest is
+    writable. A file where a folder should be is not writable: makedirs
+    would fail halfway through the writes."""
+    if os.path.lexists(path):
+        return os.path.isfile(path) and os.access(path, os.W_OK)
     parent = os.path.dirname(path)
-    while parent and not os.path.exists(parent):
+    while parent and not os.path.lexists(parent):
         parent = os.path.dirname(parent)
-    return os.access(parent or ".", os.W_OK)
+    parent = parent or "."
+    return os.path.isdir(parent) and os.access(parent, os.W_OK)
 
 
 def notes(project, version):

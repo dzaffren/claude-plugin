@@ -1146,3 +1146,16 @@ P2 | critical | A05:2025 Injection | b.py | y" ;;
   expect_match '^Pentest (blocked v1\.5\.0: 1 (high|critical)|report unreadable: )' "$out" "a hidden finding ($shape): blocks or refuses"
   expect_match "^$before\$" "$(snapshot "$repo")" "a hidden finding ($shape): nothing written"
 done
+
+# 40. A path cut cannot create writes nothing at all: a file where the report's
+# folder should be, found before the changelog is touched.
+repo=$(fixture)
+echo "not a folder" >"$repo/docs"
+commit "$repo" "docs: a file named docs"
+before=$(snapshot "$repo")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
+expect_exit 1 "$status" "docs is a file: exits 1"
+expect_match '^Cannot write docs/security/v1\.5\.0/report\.md\.$' "$out" "docs is a file: names the path"
+expect_no_match 'Traceback' "$out" "docs is a file: no traceback"
+expect_match '^Nothing written\.$' "$(last_line "$out")" "docs is a file: says nothing was written"
+expect_match "^$before\$" "$(snapshot "$repo")" "docs is a file: nothing written"
