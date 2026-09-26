@@ -124,6 +124,26 @@ expect_match 'resumed with added context' "$sk" "review/SKILL.md never resumes a
 bp=$(text "$fixture/branch.patch")
 expect_match '^\+.*if not is_admin\(' "$bp" "branch.patch calls is_admin() from a route"
 
+# --- /review F3: the spec's examples name the fixture's real path, line and route ---
+# The spec is over 64 KB, so these grep the file itself: piping that much text
+# into `grep -q` under run.sh's pipefail kills printf with SIGPIPE, and a match
+# reads as a miss (and a no-match check passes whatever the text says).
+spec_file="$(dirname "$(dirname "$zuko")")/docs/specs/owasp-lens.md"
+in_spec() {    # in_spec <regex> <description>: the spec matches
+  if grep -qE -- "$1" "$spec_file"; then record PASS "$2"; else record FAIL "$2" "nothing matched /$1/"; fi
+}
+not_in_spec() {  # not_in_spec <regex> <description>: the spec does not match
+  if [ ! -f "$spec_file" ]; then record FAIL "$2" "no spec at $spec_file"
+  elif grep -qE -- "$1" "$spec_file"; then record FAIL "$2" "matched /$1/ and should not have"
+  else record PASS "$2"; fi
+}
+not_in_spec '(^|[^/])exporters/ledger\.py:31' "the spec no longer cites exporters/ledger.py:31"
+not_in_spec 'GET /export\?customer' "the spec no longer sends the injection to GET /export"
+in_spec 'invoice_api/exporters/ledger\.py:11' "the spec cites the fixture's execute line"
+in_spec 'GET /export/ledger' "the spec names the fixture's ledger route"
+ledger_line=$(awk '/^\+\+\+ b\/invoice_api\/exporters\/ledger.py/ { on = 1; n = 0; next } on && /^\+/ { n++; if (n == 11) { print; exit } }' "$fixture/branch.patch")
+expect_match 'cursor\.execute\(' "$ledger_line" "line 11 of the fixture's ledger.py is the execute call"
+
 # --- the seeded-run fixture still applies to its base ---
 for patch in branch readme; do
   repo="$work/$patch"

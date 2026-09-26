@@ -60,14 +60,14 @@ it did not check.
 
 ```gherkin
 Scenario: an injection is reported with its category and severity
-  Given invoice-api's branch feat/ledger-export adds exporters/ledger.py with
+  Given invoice-api's branch feat/ledger-export adds invoice_api/exporters/ledger.py with
     cursor.execute("SELECT * FROM invoices WHERE customer = '" + customer + "' ORDER BY " + order)
-  And customer and order come from the query parameters of GET /export, which
+  And customer and order come from the query parameters of GET /export/ledger, which
     needs a logged-in user
   When the user runs /review
   Then the report has one finding with CATEGORY "A05:2025 Injection",
     SEVERITY high, SYMBOL "export_ledger", and a SNIPPET of that execute line
-  And it gives exporters/ledger.py:31 and the fix: pass customer as a parameter,
+  And it gives invoice_api/exporters/ledger.py:11 and the fix: pass customer as a parameter,
     and check order against the list of column names
 
 Scenario: context first, and only the categories the diff can touch
@@ -230,11 +230,12 @@ NOT CHECKED: A02 no config or deployment file changed
 CLAIM: The new query builds SQL by concatenating customer and order instead of calling db.run.
 CATEGORY: A05:2025 Injection
 SEVERITY: high
-FILE: exporters/ledger.py:31
+FILE: invoice_api/exporters/ledger.py:11
 SYMBOL: export_ledger
 SNIPPET: cursor.execute("SELECT * FROM invoices WHERE customer = '" + customer + "' ORDER BY " + order)
-FAILING CASE: a logged-in user sends GET /export?customer=x' OR '1'='1 and gets
-  every customer's invoices.
+FAILING CASE: a logged-in user sends GET /export/ledger?customer=ACME-01&order=CASE
+  WHEN (SELECT ...) THEN total ELSE issued_at END and reads another table one bit
+  per request.
 ```
 
 A correctness, quality or decisions finding has `CATEGORY: correctness` (or
@@ -252,7 +253,7 @@ failing case or the reviewer's scope block.
 ```
 VERDICT: CONFIRMED
 SEVERITY: medium
-PATH: customer is checked against ^[A-Z0-9-]{1,12}$ at routes/export.py:18, but
+PATH: customer is checked against ^[A-Z0-9-]{1,12}$ at invoice_api/routes/export.py:27, but
   order reaches ORDER BY unchecked; a CASE expression there leaks another table's
   values one bit per request.
 ```
@@ -268,17 +269,17 @@ Security   checked A01 Broken Access Control, A05 Injection,
            not checked: 7 categories, listed at the end
 Findings   7 raw, 3 survived
 
-medium · A05:2025 Injection · exporters/ledger.py:31 in export_ledger
+medium · A05:2025 Injection · invoice_api/exporters/ledger.py:11 in export_ledger
   The new query builds SQL from order instead of calling db.run.
-  Failing case: GET /export?customer=ACME-01&order=CASE WHEN (SELECT ...) THEN total
-    ELSE issued_at END sorts by a secret, one bit per request.
+  Failing case: GET /export/ledger?customer=ACME-01&order=CASE WHEN (SELECT ...)
+    THEN total ELSE issued_at END sorts by a secret, one bit per request.
   Fix: db.run with customer as a parameter, and order checked against
     ("issued_at", "total", "customer").
 
-low · A09:2025 Security Logging and Alerting Failures · auth.py:44 in login
+low · A09:2025 Security Logging and Alerting Failures · invoice_api/auth.py:25 in login
   ...
 
-correctness · exporters/ledger.py:52 in write_rows
+correctness · invoice_api/exporters/ledger.py:9 in export_ledger
   ...
 
 Not checked
@@ -340,10 +341,10 @@ sequenceDiagram
     R-->>S: SCOPE + A05 finding, SEVERITY high
     S->>V: claim, CATEGORY A05, SEVERITY high, FILE, SYMBOL, SNIPPET
     V->>O: read "## A05:2025 Injection"
-    V->>V: trace routes/export.py:18 regex, order unchecked
+    V->>V: trace invoice_api/routes/export.py:27 regex, order unchecked
     V-->>S: CONFIRMED, SEVERITY medium, PATH
     S->>S: keep min(high, medium) = medium
-    S-->>S: report "medium · A05:2025 Injection · exporters/ledger.py:31"
+    S-->>S: report "medium · A05:2025 Injection · invoice_api/exporters/ledger.py:11"
 ```
 
 For a large diff, three verifiers judge each finding and two must confirm it. The
@@ -650,6 +651,7 @@ Recorded as D4, D5, D6, D7, D8.
 | O13                                                                | Run 6: scenario 4 fails at the reviewer, not the verifier. The reviewer covering `auth.py` listed A09 as checked and wrote "login() and the session handling are unchanged", though the diff deletes the failed-login `log.warning` from `login()`. Runs 2 to 5 raised it every time; the seeded run is one sample (O2). Options: accept it as the variance O2 already accepted and mark the slice Built on runs 5 and 6 together; or make the reviewer's A09 check read the removed lines (`git diff` lines starting with `-`) of every auth function first, which 7b's regression-aware review also covers                                                                                                                                                                | flag     | build (run 6) | user   | Resolved | The A09 check reads every removed line in auth and security code; a removed log call on an auth or security event is a finding (run 6: the reviewer wrote 'login() unchanged' over a deleted failed-login log; user 2026-09-26)                                                                                                                                                                                                                                                                                                                                                |
 | O14                                                                | /review F1: `owasp.md`'s "documentation files such as Markdown" exclusion hides permission changes in agent and skill files, which are Markdown with frontmatter                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | flag     | /review       | user   | Resolved | Plain docs stay excluded; a Markdown file with frontmatter that grants tools or permissions (`tools:`, `allowed-tools:`, `disallowedTools:`, hooks, or a plugin manifest) is configuration, and a widened permission there is an A02 finding. In "Where OWASP wins" and in A02's check list (user, 2026-09-26)                                                                                                                                                                                                                                                                 |
 | O15 | /review F2: `finding-verifier.md` hard-codes `main` in `git diff main...HEAD` and `git show main:`, so a branch cut from anything else is judged against the wrong base | flag | /review | user | Resolved | The review skill passes the branch point it already measures (`SKILL.md` "Size the effort") to each verifier as `BASE: <ref or sha>`; the verifier runs `git diff <BASE>...HEAD -- <file>` and `git show <BASE>:<file>`. The hook accepts refs like `origin/main` and shas (user, 2026-09-26) |
+| O16 | /review F3: scenario 1 and the Interface examples cite line 31 of `exporters/ledger.py` and the bare `/export` route, but the fixture has `invoice_api/exporters/ledger.py` with the execute call at line 11, under `GET /export/ledger` | flag | /review | user | Resolved | Scenario 1 and the Interface examples now name `invoice_api/exporters/ledger.py:11`, `GET /export/ledger` and `invoice_api/routes/export.py:27`; the fixture is unchanged, and the contract test ties the spec to it (user, 2026-09-26) |
 | _Never delete this section or its rows. See references/ledger.md._ |
 
 ## Glossary
