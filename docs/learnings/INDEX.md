@@ -90,3 +90,6 @@ One line per lesson. Loaded into every session in this repo.
 - A command guard allow-lists the raw text's characters before tokenising —
   a `#` comment can swallow the newline between two commands.
   ([detail](comments-can-swallow-the-separator.md))
+- Never pipe into `grep -q` under `pipefail` — an early match SIGPIPEs the
+  writer on text over 64 KB and the pipeline reads as a miss; use a here-string.
+  ([detail](grep-q-under-pipefail.md))
