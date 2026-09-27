@@ -92,7 +92,9 @@ expect_match 'logs its final failure' "$a10" "owasp.md's A10 says a retry that l
 repo="$work/invoice-api"
 bash "$fixture/build.sh" "$repo" >"$work/build.out" 2>&1
 expect_exit 0 $? "build.sh builds the seeded repo"
-g() { git -C "$repo" "$@" 2>/dev/null; }
+# No global or system config, so colour or decoration on the machine cannot
+# change the output the checks match.
+g() { GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$repo" "$@" 2>/dev/null; }
 
 expect_match '^feat/public-export$' "$(g branch --show-current)" "the seeded repo is on feat/public-export"
 expect_match '^[0-9a-f]+ fix\(security\): require login on /export$' \
@@ -138,3 +140,6 @@ printf '[log]\n\tdecorate = short\n[color]\n\tui = always\n[core]\n\texcludesFil
 GIT_CONFIG_GLOBAL="$hostile" bash "$fixture/build.sh" "$work/hostile-repo" >"$work/hostile.out" 2>&1
 expect_exit 0 $? "build.sh builds under a global config with excludes, colour and decorate"
 expect_match '^OVERVIEW\.md$' "$(git -C "$work/hostile-repo" ls-files)" "build.sh commits OVERVIEW.md whatever the global excludes file says"
+expect_match '^[0-9a-f]+ fix\(security\): require login on /export$' \
+  "$(GIT_CONFIG_GLOBAL="$hostile" g log -S'@login_required' --oneline main -- routes/export.py)" \
+  "the test's git calls ignore a global log.decorate and color.ui"
