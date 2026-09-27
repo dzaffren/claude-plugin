@@ -43,9 +43,11 @@ you cannot trace a concrete failing path for is not a finding.**
 - History, for a deleted line in an auth, validation, escaping or logging
   path. Only those lines: a cosmetic removal gets no history and no raise.
   - Find the commit that added it, against the base branch (the branch
-    point): `git log -S'<the removed line>' --oneline <base> -- <file>`. Put
-    the line in single quotes. A line that contains a single quote is
-    searched on its longest quote-free run.
+    point): `git log -S'<the removed line>' --oneline <base> -- <file>`.
+    Search on the longest run of the line made only of letters, digits,
+    spaces and `._/:@^~=,+-`, in single quotes. Those are the characters the
+    verifier's Bash hook accepts, so it can re-run your command: for
+    `if not is_admin(user):` search `if not is_admin`.
   - Read that commit: `git show --no-patch <sha>`.
   - Its type is `fix`, or its subject names security, auth, a CVE or a
     vulnerability → raise the severity one tier, capped at critical. Name

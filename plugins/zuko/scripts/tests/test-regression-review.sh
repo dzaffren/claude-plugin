@@ -143,3 +143,18 @@ expect_match '^OVERVIEW\.md$' "$(git -C "$work/hostile-repo" ls-files)" "build.s
 expect_match '^[0-9a-f]+ fix\(security\): require login on /export$' \
   "$(GIT_CONFIG_GLOBAL="$hostile" g log -S'@login_required' --oneline main -- routes/export.py)" \
   "the test's git calls ignore a global log.decorate and color.ui"
+
+# --- /review: the verifier can re-run the reviewer's EVIDENCE commands ---
+hook="$scripts/scope-verifier-bash.sh"
+evidence=$(grep -E '^EVIDENCE: \$ ' "$reviewer" | sed 's/^EVIDENCE: \$ //')
+expect_match . "$evidence" "reviewer.md has an EVIDENCE command to check"
+while IFS= read -r cmd; do
+  [ -n "$cmd" ] || continue
+  python3 -c 'import json,sys; print(json.dumps({"agent_type":"zuko:finding-verifier","tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$cmd" \
+    | bash "$hook" >/dev/null 2>&1
+  expect_exit 0 $? "the verifier hook allows reviewer.md's EVIDENCE command: $cmd"
+done <<<"$evidence"
+# The characters the reviewer may search on are the hook's, minus the quotes.
+hook_punct=$(grep -A1 '^ALLOWED_CHARS' "$hook" | tail -1 | sed -E 's/^ *"0123456789 ([^"]*)'"'"'.*/\1/')
+expect_match "\`$(printf '%s' "$hook_punct" | sed 's/[][\\.^$*+?(){}|/]/\\&/g')\`" "$rv" \
+  "reviewer.md names the hook's punctuation, $hook_punct, as the searchable characters"
