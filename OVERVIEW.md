@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-09-26 by /ship run-helpers-long-text
+**Status:** Active · **Updated:** 2026-09-27 by /ship pentest
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -40,6 +40,7 @@ projects.
 | release            | Shipped | /release cuts a version from the commits: changelog, tag, GitHub release | https://claude.ai/artifact/GWzbvfunoJvLFAsWrBkimp |
 | owasp-lens         | Shipped | /review judges security against OWASP Top 10:2025, with a category and severity on every finding | https://claude.ai/artifact/WGiEEvRnTmpzLGLUxtBTh2 |
 | run-helpers-long-text | Shipped | Test checks on text over 64 KB pass or fail for the right reason | — |
+| pentest            | Built   | /release pentests the code since the last release; a proven critical or high blocks it | https://claude.ai/artifact/8ed6sqgcVTL6GzYmT3xkAS |
 
 ## More
 
