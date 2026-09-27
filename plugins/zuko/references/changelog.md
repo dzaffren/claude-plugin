@@ -51,6 +51,17 @@ Never cut a version, add a date, or write a compare link here.
 | `feat` that removes something                              | Removed  | what is gone and what to use instead                          |
 | `chore` `docs` `test` `refactor`                           | —        | no line                                                       |
 
+`/release` writes two more Security lines itself, from the pentest; `/ship`
+never writes these:
+
+| From the pentest                   | Line                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| an unfixed medium or low finding   | `- Known medium issue: A05:2025 Injection in exporters/ledger.py; see docs/security/v1.5.0/report.md.` |
+| a release the user shipped without | `- Released without pentest: rounding hotfix for 3,000 invoices due 2026-10-02.`                       |
+
+Neither ever carries the proving input: the line names the severity, category
+and file, and the report holds the description.
+
 ## How many lines
 
 One line per change a user would notice, usually 1 to 3 per slice. Never one

@@ -101,3 +101,63 @@ enforced: a headless probe ran `ls /` through one).
 Supersedes: D8
 Source: specs/owasp-lens.md
 Status: active
+
+## D10 · 2026-09-27 · release.py cut enforces the pentest verdict
+
+Why: a release blocked on a proven critical or high has to stay blocked when a
+prompt drifts; cut already refuses and writes nothing on a failed gate, so the
+verdict joins that path.
+Rejected: a skill-only rule (prompt drift, and the ledger's grep-over-prose rule),
+a separate release.py pentest command (a step the skill could skip; cut cannot be
+skipped).
+Source: specs/pentest.md
+Status: active
+
+## D11 · 2026-09-27 · The first pentest is code-level for every project; live attacks follow in pentest-live
+
+Why: zuko itself and most of its projects have no server; a code-level pass with
+run proofs covers every release now, and live mode needs a target guard of its own.
+Rejected: live mode first (needs a running-server fixture and a guard, and protects
+no CLI project), both modes in one slice (about nine scenarios, over the size rule).
+Source: specs/pentest.md
+Status: active
+
+## D12 · 2026-09-27 · Release notes and the committed report name unfixed medium and low findings without the proving input
+
+Why: users should know a known issue ships; the notes and the committed report are
+public and permanent on a public repo, so each finding gets severity, category,
+file and a description, and the proving input prints in the terminal only.
+Rejected: leaving them out of the notes (the shape's Security section rule), the
+full proof in the notes (a working exploit in every release page), the proof in
+the committed report (the same exploit, one click from the repo page).
+Source: specs/pentest.md
+Status: active
+
+## D13 · 2026-09-27 · The pentester's Bash is fenced by a hook on agent_type
+
+Why: the pentester runs the project's own code with Bash, so its commands cannot
+be listed in allowed-tools; /review proved that prompt rules alone let it run
+git push, git tag and curl. A PreToolUse hook sees the caller's agent_type and
+holds zuko:pentester to read-only git, mktemp -d, and commands inside its own
+scratch copy.
+Rejected: prompt-only rules (the review proved push, tag and curl allowed),
+requiring the OS sandbox (a user setting the plugin cannot turn on), deferring to
+pentest-live (its target hook never runs in code-level mode).
+Source: specs/pentest.md
+Status: superseded by D14
+
+## D14 · 2026-09-27 · The pentester fence stops commands, not code
+
+Why: review 2 showed the hook fences the pentester's direct commands, but code
+it or the project runs escapes — a pipe into a shell, an interpreter's inline-code
+flag, an untracked script, tar reaching outside. The hook is tightened to block
+those cheap holes (shells, inline flags, untracked modules and scripts, tar -P),
+but a tracked program that opens a socket or writes outside the copy still can.
+The fence is a guard against the pentester being steered into an obvious escape,
+not a sandbox; untrusted code needs Claude Code's sandbox.
+Rejected: claiming the hook confines the pentester (D13's wording; false once
+code runs), a full syscall sandbox in the hook (a user setting the plugin cannot
+turn on), dropping the hook (the cheap holes are worth closing).
+Supersedes: D13
+Source: specs/pentest.md
+Status: active

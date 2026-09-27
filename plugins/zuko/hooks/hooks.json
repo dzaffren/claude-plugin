@@ -16,6 +16,11 @@
           },
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/scope-pentester-bash.sh",
+            "statusMessage": "Fencing the pentester to read-only git and its scratch copy..."
+          },
+          {
+            "type": "command",
             "if": "Bash(git commit *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
             "statusMessage": "Checking the commit message for attribution..."

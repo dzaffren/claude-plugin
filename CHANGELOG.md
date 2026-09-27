@@ -14,6 +14,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - /release turns what you have shipped into a numbered version: it works out the number from the commits, moves the changelog lines under it, bumps the manifest versions, and tags and publishes a GitHub release.
 - /review checks security against the OWASP Top 10:2025. Each security finding names its category and severity, and the report says which categories it checked and why it skipped the rest.
 - The review's blind checker reads the diff with git itself, and a hook holds it to read-only git commands.
+- /release pentests the code shipped since the last release before it cuts the version. A proven critical or high blocks the release, medium and low findings go in the release notes by severity, category and file, and skipping the pentest needs a typed reason.
+- A hook holds the pentester's shell to its scratch copy: it cannot push, tag, reach the network with a command, or write outside the copy. For untrusted code, run Claude Code's sandbox as well.
 
 ### Fixed
 

@@ -5,6 +5,7 @@ manifest versions. Commits, tags, pushes and the GitHub release are the
 
 Usage: release.py plan  <project-dir> [--version X.Y.Z]
        release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD
+                        (--pentest <report> | --no-pentest <reason>)
        release.py notes <project-dir> --version X.Y.Z
 
   plan   run the gates and print the report; every failing gate is listed.
@@ -23,7 +24,14 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          empty, and its lines move under "## [X.Y.Z] - date", with compare
          links at the bottom; each manifest's version characters, and no
          other byte; the overview's status line gains **Release:** vX.Y.Z.
-         On any failure it writes nothing
+         It needs exactly one pentest verdict. --pentest names the report the
+         /release skill wrote: it is refused when it cannot be read, is for
+         another version, carries a Proof column, or holds a critical or high
+         finding; otherwise it is copied to docs/security/vX.Y.Z/report.md and
+         each medium or low finding gets a line under the version's Security
+         section. --no-pentest takes the reason the user typed ("skip" or
+         nothing is refused): it writes a skipped report, a Security line, and
+         a D-entry in DECISIONS.md. On any failure it writes nothing
   notes  print the lines under "## [X.Y.Z]", without the heading or the blank
          lines around them: the GitHub release's notes
 
@@ -60,11 +68,13 @@ def load(name):
 
 
 changelog = load("changelog")
+decisions = load("decisions")
 readme_block = load("readme_block")
 git = changelog.git
 
 USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
          "       release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD\n"
+         "                        (--pentest <report> | --no-pentest <reason>)\n"
          "       release.py notes <project-dir> --version X.Y.Z")
 
 # host, then owner/repo, from https, ssh:// and scp-style git@host:path URLs.
@@ -545,6 +555,13 @@ def resume_state(project, repo, gates):
         return None
     tag = max(at_head, key=lambda pair: pair[1])[0]
     short = git(project, "rev-parse", "--short", "HEAD").stdout.strip()
+    # Only the release's own commit resumes. A tag on any other commit is
+    # stray, and resuming from it would skip the pentest and the cut.
+    subject = git(project, "log", "-1", "--format=%s", "HEAD").stdout.strip()
+    if subject != "chore(release): %s" % tag:
+        gates.fail("release", '%s is tagged at HEAD, but HEAD is "%s", not "chore(release): %s"'
+                   % (tag, subject, tag))
+        return None
     remote = git(project, "ls-remote", "--tags", "origin", "refs/tags/" + tag)
     if remote.returncode != 0:
         gates.fail("remote", "could not reach origin: %s" % first_line(remote.stderr))
@@ -617,6 +634,11 @@ def writes(release, today):
             found.append((field.path, "%s → %s" % (field.version, v)))
     if release.overview:
         found.append(("OVERVIEW.md", "Release: v%s on the status line" % v))
+    verdict = getattr(release, "pentest", None)
+    if verdict is not None:
+        found.append((report_path(v), "pentest report, Result %s" % verdict.result))
+        if verdict.entry:
+            found.append((decisions.NAME, verdict.entry))
     return found
 
 
@@ -658,14 +680,29 @@ def trimmed(lines):
     return lines
 
 
-def cut_changelog(text, version, today, repo, last_tag):
-    """[Unreleased] stays, empty; its lines move under the new version, and the
-    links at the bottom point at the new tag."""
+def with_security(moved, security):
+    """moved, with the pentest's lines at the end of its Security section,
+    which is added last when there is none (Keep a Changelog's order)."""
+    if not security:
+        return moved
+    at = next((i for i, line in enumerate(moved) if line.strip() == "### Security"), None)
+    if at is None:
+        return moved + ["\n", "### Security\n", "\n"] + security
+    end = next((i for i in range(at + 1, len(moved)) if moved[i].startswith("### ")), len(moved))
+    while end > at + 1 and not moved[end - 1].strip():
+        end -= 1
+    return moved[:end] + security + moved[end:]
+
+
+def cut_changelog(text, version, today, repo, last_tag, security=()):
+    """[Unreleased] stays, empty; its lines move under the new version, with
+    the pentest's Security lines, and the links at the bottom point at the
+    new tag."""
     lines = text.splitlines(keepends=True)
     if lines and not lines[-1].endswith("\n"):
         lines[-1] += "\n"
     start, end = section(lines, changelog.UNRELEASED)
-    moved = trimmed(lines[start + 1:end])
+    moved = with_security(trimmed(lines[start + 1:end]), list(security))
     body, links = lines[:link_start(lines)], lines[link_start(lines):]
     after = ["\n"] + body[end:] if end < len(body) else []
     body = body[:start + 1] + ["\n", "## [%s] - %s\n" % (version, today), "\n"] + moved + after
@@ -699,11 +736,203 @@ def release_field(text, version):
     return "".join(lines)
 
 
+# The pentest report the /release skill writes to its scratchpad, and cut reads.
+# Its title, **Result:** line and Findings table are the contract; everything
+# else in it is copied as it is.
+REPORT_TITLE = re.compile(r"^# Pentest v(\S+)\s*$")
+RESULT = re.compile(r"^\*\*Result:\*\*\s*(\S*)\s*$")
+RANGE = re.compile(r"^\*\*Range:\*\*\s*\S")
+FINDING_COLUMNS = ("ID", "Severity", "Category", "Where", "Description")
+SEVERITIES = ("critical", "high", "medium", "low")
+BLOCKING = ("critical", "high")
+TABLE_RULE = re.compile(r"^:?-+:?$")
+
+
+class Refused(Exception):
+    """The lines cut prints instead of writing, before "Nothing written."."""
+
+    def __init__(self, *lines):
+        super().__init__(lines[0])
+        self.lines = lines
+
+
+class Verdict:
+    """What the pentest adds to a cut: the report to commit, the Security
+    lines, and on a skip the DECISIONS.md text with its new entry's number."""
+
+    def __init__(self, result, report, security, decisions_text=None, entry=None):
+        self.result, self.report, self.security = result, report, security
+        self.decisions_text, self.entry = decisions_text, entry
+
+
+def report_path(version):
+    return "docs/security/v%s/report.md" % version
+
+
+def cells(line):
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def findings_table(lines):
+    """(columns, rows) of the whole "## Findings" section, up to the next "## "
+    heading; None when there is no section or no header row. Every line in the
+    section is read: a blank line, a comment or a second header row never ends
+    it, so a finding cannot hide after one. A line that names a severity but is
+    not a well-formed row raises Refused: cut fails closed on it."""
+    at = next((i for i, line in enumerate(lines) if line.strip() == "## Findings"), None)
+    if at is None:
+        return None
+    body = []
+    for line in lines[at + 1:]:
+        if line.startswith("## "):
+            break
+        body.append(line)
+    columns, rows = None, []
+    for line in body:
+        text = line.strip()
+        if not text:
+            continue
+        severity = re.search(r"\b(%s)\b" % "|".join(SEVERITIES), text, re.I)
+        if not (text.startswith("|") and text.endswith("|")):
+            if severity or "|" in text:
+                raise unreadable("the Findings section has a line that is not a table row: %s"
+                                 % text[:80])
+            continue
+        row = cells(text)
+        if all(TABLE_RULE.match(cell) for cell in row):
+            continue
+        if columns is None or tuple(row) == tuple(columns):
+            columns = columns or row
+            continue
+        rows.append(row)
+    if columns is None:
+        return None
+    return columns, rows
+
+
+def unreadable(what):
+    return Refused("Pentest report unreadable: %s" % what)
+
+
+def read_report(path, version):
+    """The report's text and its findings, one dict per row; Refused when cut
+    must not take it."""
+    if not os.path.isfile(path):
+        raise unreadable("%s not found" % path)
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        text = handle.read()
+    lines = text.splitlines()
+    title = next((REPORT_TITLE.match(line) for line in lines if line.startswith("# ")), None)
+    if title is None:
+        raise unreadable('no "# Pentest vX.Y.Z" title')
+    result = next((RESULT.match(line) for line in lines if RESULT.match(line)), None)
+    if result is None:
+        raise unreadable("no **Result:** line")
+    table = findings_table(lines)
+    if table is None:
+        raise unreadable("no Findings table")
+    columns, rows = table
+    # O4: the committed report is public, so a proving input never goes in it.
+    if any(column.lower() == "proof" for column in columns):
+        raise Refused("Pentest report carries proving inputs — the report is public; "
+                      "print them instead (O4)")
+    if tuple(columns) != FINDING_COLUMNS:
+        raise unreadable("the Findings columns are %s, not %s"
+                         % (", ".join(columns), ", ".join(FINDING_COLUMNS)))
+    if title.group(1) != version:
+        raise Refused("Pentest report is for v%s, not v%s" % (title.group(1), version))
+    findings = []
+    for row in rows:
+        # A sixth cell, or a | inside a cell, is a row cut cannot read safely:
+        # a severity there could hide a critical behind a low.
+        if len(row) != len(FINDING_COLUMNS):
+            raise unreadable("a Findings row has %d cells, not %d: | %s |"
+                             % (len(row), len(FINDING_COLUMNS), " | ".join(row)))
+        finding = dict(zip(FINDING_COLUMNS, row))
+        finding["Severity"] = finding["Severity"].lower()
+        if finding["Severity"] not in SEVERITIES:
+            raise unreadable("%s has severity %r" % (finding["ID"] or "a finding", finding["Severity"]))
+        findings.append(finding)
+    outcome = result.group(1)
+    blocking = [finding for finding in findings if finding["Severity"] in BLOCKING]
+    if blocking:
+        counts = [plural_word(sum(f["Severity"] == level for f in blocking), level)
+                  for level in BLOCKING if any(f["Severity"] == level for f in blocking)]
+        raise Refused("Pentest blocked v%s: %s" % (version, ", ".join(counts)),
+                      *["  | %s |" % " | ".join(finding[column] for column in FINDING_COLUMNS)
+                        for finding in blocking])
+    if outcome == "blocked":
+        raise unreadable("**Result:** is blocked, but no finding is critical or high")
+    if outcome != "pass":
+        raise unreadable("**Result:** is %r, not pass or blocked" % outcome)
+    # A pass has to say what it looked at: a pentester that ran out of turns
+    # can leave a bare "pass" behind.
+    if not any(RANGE.match(line) for line in lines):
+        raise unreadable("no **Range:** line")
+    for heading, name in (("## Assessed", "Assessed"), ("## Not assessed", "Not assessed")):
+        if not listed(lines, heading):
+            raise unreadable("no %s list" % name)
+    return text, findings
+
+
+def listed(lines, heading):
+    """True when a "- " item sits under heading, before the next "## "."""
+    at = next((i for i, line in enumerate(lines) if line.strip() == heading), None)
+    if at is None:
+        return False
+    for line in lines[at + 1:]:
+        if line.startswith("## "):
+            return False
+        if line.lstrip().startswith("- "):
+            return True
+    return False
+
+
+def plural_word(count, word):
+    """"1 high", "2 critical": severities are not counted nouns."""
+    return "%d %s" % (count, word)
+
+
+def known_issue(finding, version):
+    where = finding["Where"].split()[0].split(":")[0] if finding["Where"] else "the release"
+    return ("- Known %s issue: %s in %s; see %s.\n"
+            % (finding["Severity"], finding["Category"], where, report_path(version)))
+
+
+def sentence(text):
+    return text if text.endswith((".", "!", "?")) else text + "."
+
+
+def pentest_verdict(project, version, today, report, reason):
+    """The Verdict for this cut; Refused when there is nothing cut may write."""
+    if reason is None:
+        text, findings = read_report(report, version)
+        return Verdict("pass", text, [known_issue(finding, version) for finding in findings
+                                      if finding["Severity"] not in BLOCKING])
+    reason = " ".join(reason.split())
+    if not reason or reason.lower() == "skip":
+        raise Refused("A skip needs a reason")
+    if not os.path.isfile(os.path.join(project, decisions.NAME)):
+        raise Refused("%s missing — /ship creates it" % decisions.NAME)
+    current = read(project, decisions.NAME)
+    entries, _ = decisions.parse(current)
+    entry = max([e.n for e in entries], default=0) + 1
+    title = "Release v%s ships without a pentest" % version
+    added = ("\n## D%d · %s · %s\n\nWhy: %s\nRejected: running the pentest before v%s (%s)\n"
+             "Source: %s\nStatus: active\n"
+             % (entry, today, title, reason, version, reason, report_path(version)))
+    report_text = ("# Pentest v%s\n\n**Result:** skipped\n**Mode:** none\n**Reason:** %s\n"
+                   "**Date:** %s\n" % (version, reason, today))
+    return Verdict("skipped", report_text, ["- Released without pentest: %s\n" % sentence(reason)],
+                   current.rstrip("\n") + "\n" + added, "D%d · %s" % (entry, title))
+
+
 def rewritten(release, today):
     """{path: new text} for every file cut writes, worked out before any is written."""
     v, project = show(release.version), release.project
+    verdict = release.pentest
     files = {changelog.NAME: cut_changelog(read(project, changelog.NAME), v, today,
-                                           release.repo, release.tag)}
+                                           release.repo, release.tag, verdict.security)}
     for field in release.fields:
         files.setdefault(field.path, read(project, field.path))
     # Spans are offsets into the file as read: replace from the end backwards.
@@ -712,6 +941,9 @@ def rewritten(release, today):
         files[field.path] = text[:field.span[0]] + v + text[field.span[1]:]
     if release.overview:
         files["OVERVIEW.md"] = release_field(read(project, "OVERVIEW.md"), v)
+    files[report_path(v)] = verdict.report
+    if verdict.decisions_text is not None:
+        files[decisions.NAME] = verdict.decisions_text
     return files
 
 
@@ -795,7 +1027,7 @@ def plan(project, override):
     return 0
 
 
-def cut(project, version, today):
+def cut(project, version, today, report=None, reason=None):
     release = Release(project, version)
     release.gates.show()
     if release.gates.failed or release.resume or release.refused:
@@ -808,21 +1040,44 @@ def cut(project, version, today):
             print(release.refused)
         print("Nothing written.")
         return 1
+    try:
+        release.pentest = pentest_verdict(project, show(release.version), today, report, reason)
+    except Refused as refused:
+        print()
+        for line in refused.lines:
+            print(line)
+        print("Nothing written.")
+        return 1
     files = rewritten(release, today)
     # Checked before the first write: a read-only manifest found halfway
     # would leave the changelog cut and the versions not bumped.
-    locked = [path for path in files if not os.access(os.path.join(project, path), os.W_OK)]
+    locked = [path for path in files if not writable(os.path.join(project, path))]
     if locked:
         print()
         print("Cannot write %s." % ", ".join(locked))
         print("Nothing written.")
         return 1
     for path, text in files.items():
+        os.makedirs(os.path.dirname(os.path.join(project, path)), exist_ok=True)
         with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
     print()
     print_writes("Wrote", writes(release, today))
     return 0
+
+
+def writable(path):
+    """A file cut may write: it is a writable file, or it does not exist and
+    every folder above it that exists is a folder, and the nearest is
+    writable. A file where a folder should be is not writable: makedirs
+    would fail halfway through the writes."""
+    if os.path.lexists(path):
+        return os.path.isfile(path) and os.access(path, os.W_OK)
+    parent = os.path.dirname(path)
+    while parent and not os.path.lexists(parent):
+        parent = os.path.dirname(parent)
+    parent = parent or "."
+    return os.path.isdir(parent) and os.access(parent, os.W_OK)
 
 
 def notes(project, version):
@@ -854,8 +1109,11 @@ def main(argv):
     command, project = (argv[0], argv[1]) if given is not None else (None, None)
     if command == "plan" and given in ([], ["--version"]):
         run = lambda: plan(project, options.get("--version"))
-    elif command == "cut" and given == ["--date", "--version"] and is_date(options["--date"]):
-        run = lambda: cut(project, options["--version"], options["--date"])
+    elif (command == "cut" and given in (["--date", "--pentest", "--version"],
+                                         ["--date", "--no-pentest", "--version"])
+          and is_date(options["--date"])):
+        run = lambda: cut(project, options["--version"], options["--date"],
+                          options.get("--pentest"), options.get("--no-pentest"))
     elif command == "notes" and given == ["--version"] and parse(options["--version"]):
         run = lambda: notes(project, show(parse(options["--version"])))
     else:

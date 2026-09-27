@@ -93,3 +93,12 @@ One line per lesson. Loaded into every session in this repo.
 - Never pipe into `grep -q` under `pipefail` — an early match SIGPIPEs the
   writer on text over 64 KB and the pipeline reads as a miss; use a here-string.
   ([detail](grep-q-under-pipefail.md))
+- A scratch copy is not a sandbox — the code under test still writes its tools'
+  config under `HOME`; point `HOME` and the XDG dirs inside the copy.
+  ([detail](scratch-copy-is-not-a-sandbox.md))
+- An agent's Bash calls start fresh and `VAR=x cmd` covers one command — put a
+  multi-step proof in one call, `cd <literal path> && export …`, joined by `&&`.
+  ([detail](agent-bash-calls-start-fresh.md))
+- A command-text hook fences commands, not code — it stops a nested shell or an
+  inline `-c`, not what a program it allows then does; say so and use a real sandbox.
+  ([detail](a-command-hook-fences-commands-not-code.md))
