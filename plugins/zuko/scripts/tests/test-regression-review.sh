@@ -160,3 +160,7 @@ done <<<"$evidence"
 hook_punct=$(grep -A1 '^ALLOWED_CHARS' "$hook" | tail -1 | sed -E 's/^ *"0123456789 ([^"]*)'"'"'.*/\1/')
 expect_match "\`$(printf '%s' "$hook_punct" | sed 's/[][\\.^$*+?(){}|/]/\\&/g')\`" "$rv" \
   "reviewer.md names the hook's punctuation, $hook_punct, as the searchable characters"
+
+# /review: "reject it when a test calls it" read as covering both coverage
+# cases, so an old test calling a changed is_admin rejected the finding.
+expect_match 'existing test that calls it does not count' "$fv" "finding-verifier.md says an unchanged test does not answer a changed auth function"

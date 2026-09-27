@@ -58,11 +58,16 @@ already have it at that version. Every other category, A10 included, still
 needs a reachable path.
 
 A second exception to rule 1: a `coverage` finding needs no failing input
-path. Confirm it when the diff changed the named auth or validation function
-and no test file changed (`git diff <BASE>...HEAD --name-only`), or when the
-named new function is reachable from a route, command or public export and
-Grep finds no test that calls it. Reject it when a test calls it, or when it
-is a private helper called only from a tested function.
+path. It is one of two cases, each judged on its own:
+
+- **Changed auth or validation function.** Confirm when the diff changed it
+  and no test file changed (`git diff <BASE>...HEAD --name-only`). An
+  existing test that calls it does not count: it tests the old behaviour.
+  Reject when the diff also changed a test file that calls it.
+- **New function.** Confirm when it is reachable from a route, command or
+  public export and Grep finds no test that calls it. Reject when a test
+  calls it, or when it is a private helper called only from a tested
+  function.
 
 ## Reject on a defence only when you read it
 
