@@ -41,7 +41,9 @@ expect_match 'changed caller' "$fv" "finding-verifier.md says a changed caller q
 expect_match 'changed caller' "$rv" "reviewer.md reports a changed caller"
 
 # --- history for removed security code, and the raise ---
-expect_match 'git log -S' "$rv" "reviewer.md runs git log -S on a removed security line"
+expect_match 'git log (--follow )?-S' "$rv" "reviewer.md runs git log -S on a removed security line"
+# /review: a path-limited pickaxe stops at a rename and returns the rename commit.
+expect_match 'git log --follow -S' "$rv" "reviewer.md's history follows renames"
 expect_match 'git show --no-patch' "$rv" "reviewer.md reads the adding commit with git show --no-patch"
 expect_match 'one tier' "$rv" "reviewer.md raises the severity one tier"
 expect_match 'capped at critical' "$rv" "reviewer.md caps the raise at critical"

@@ -43,7 +43,9 @@ you cannot trace a concrete failing path for is not a finding.**
 - History, for a deleted line in an auth, validation, escaping or logging
   path. Only those lines: a cosmetic removal gets no history and no raise.
   - Find the commit that added it, against the base branch (the branch
-    point): `git log -S'<the removed line>' --oneline <base> -- <file>`.
+    point): `git log --follow -S'<the removed line>' --oneline <base> -- <file>`.
+    `--follow` keeps the search going past a rename, which would otherwise
+    return the rename commit.
     Search on the longest run of the line made only of letters, digits,
     spaces and `._/:@^~=,+-`, in single quotes. Those are the characters the
     verifier's Bash hook accepts, so it can re-run your command: for
@@ -166,7 +168,7 @@ FILE: routes/export.py:14
 SYMBOL: export_ledger
 SNIPPET: @login_required
 CHANGE: deleted
-EVIDENCE: $ git log -S'@login_required' --oneline main -- routes/export.py
+EVIDENCE: $ git log --follow -S'@login_required' --oneline main -- routes/export.py
           4e1f9a2 fix(security): require login on /export
 FAILING CASE: GET /export?customer=ACME-01 with no cookie returns ACME-01's invoices.
 ```
