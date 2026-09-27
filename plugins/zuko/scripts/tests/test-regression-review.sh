@@ -100,9 +100,14 @@ expect_match '^[0-9a-f]+ fix\(security\): require login on /export$' \
   "git log -S'@login_required' on main prints the fix(security) commit"
 
 expect_match '^@login_required$' "$(g show main:routes/export.py | sed -n 14p)" "routes/export.py:14 on main is @login_required"
-export_diff=$(g diff main...HEAD -- routes/export.py | grep -E '^[-+][^-+]' || true)
-expect_match '^-@login_required$' "$export_diff" "the branch deletes @login_required from routes/export.py"
-expect_no_match '^\+|^-[^@]' "$export_diff" "the branch changes nothing else in routes/export.py"
+# Every changed line, blank ones included; only the file headers are dropped.
+export_changes=$(g diff --unified=0 main...HEAD -- routes/export.py | grep -E '^[-+]' | grep -vE '^(---|\+\+\+) ' || true)
+if [ "$export_changes" = "-@login_required" ]; then
+  record PASS "the branch's only change to routes/export.py deletes @login_required"
+else
+  record FAIL "the branch's only change to routes/export.py deletes @login_required" \
+    "changed lines: $(printf '%s' "$export_changes" | tr '\n' '|')"
+fi
 
 expect_match 'db\.raw\("SELECT \* FROM reports WHERE id = " \+ report_id\)' "$(sed -n 40p "$repo/reports.py")" "reports.py:40 on the branch is the string-built db.raw call"
 expect_match '# input is sanitised upstream' "$(sed -n 39p "$repo/reports.py")" "reports.py:39 carries the misleading comment"
