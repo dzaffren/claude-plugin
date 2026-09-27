@@ -14,8 +14,10 @@ if [ -e "$dest" ]; then
 fi
 mkdir -p "$dest"
 
-# A fixed identity, no signing and no hooks, so the machine's git config
-# cannot change what gets committed.
+# No global or system config, so an excludes file, a template or an alias on
+# the machine cannot change what gets committed. The identity, signing and
+# hooks are pinned too, and init takes no template.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 g() {
   git -C "$dest" -c user.name=Tester -c user.email=t@example.com \
     -c commit.gpgsign=false -c core.hooksPath=/dev/null "$@"
@@ -26,7 +28,7 @@ layer() {    # layer <folder> <commit subject>
   g commit -q -m "$2"
 }
 
-g init -q -b main
+g init -q -b main --template=
 layer base "feat: invoice api with reports and refunds"
 layer fix "fix(security): require login on /export"
 g switch -q -c feat/public-export

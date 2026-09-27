@@ -129,3 +129,12 @@ expect_match '^\+ +raise$' "$payments" "the branch adds a log-and-re-raise"
 expect_match '^\+def refund_invoice\(' "$(g diff main...HEAD -- routes/payments.py)" "the branch adds the refund_invoice route"
 expect_match '^\+def _format_cents\(' "$(g diff main...HEAD -- reports.py)" "the branch adds _format_cents"
 expect_match 'format_total' "$(g show main:tests/test_reports.py)" "format_total, _format_cents' only caller, is tested on main"
+
+# --- /review: the machine's git config cannot change the fixture or its checks ---
+hostile="$work/hostile.gitconfig"
+printf '*.md\n' >"$work/hostile.ignore"
+printf '[log]\n\tdecorate = short\n[color]\n\tui = always\n[core]\n\texcludesFile = %s\n' \
+  "$work/hostile.ignore" >"$hostile"
+GIT_CONFIG_GLOBAL="$hostile" bash "$fixture/build.sh" "$work/hostile-repo" >"$work/hostile.out" 2>&1
+expect_exit 0 $? "build.sh builds under a global config with excludes, colour and decorate"
+expect_match '^OVERVIEW\.md$' "$(git -C "$work/hostile-repo" ls-files)" "build.sh commits OVERVIEW.md whatever the global excludes file says"
