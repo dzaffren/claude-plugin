@@ -11,8 +11,8 @@ allowed-tools: Bash(git diff *) Bash(git show *) Bash(git status *) Bash(git log
 
 # Review
 
-One pass over the diff covering correctness, security, quality, and the
-active decisions. Nothing reaches the user unverified.
+One pass over the diff covering correctness, security, quality, the active
+decisions and test coverage. Nothing reaches the user unverified.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
 
@@ -25,21 +25,22 @@ Measure the diff first: `git diff --stat` against the branch point.
 
 | Diff                    | Shape                                                                                                                            |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| ≤5 files and ≤300 lines | One `reviewer` agent across all four lenses. One `finding-verifier` per finding.                                                 |
-| Larger                  | One `reviewer` per chunk, each running all four lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
+| ≤5 files and ≤300 lines | One `reviewer` agent across all five lenses. One `finding-verifier` per finding.                                                 |
+| Larger                  | One `reviewer` per chunk, each running all five lenses. Three `finding-verifier` agents per finding, 2-of-3 majority to keep it. |
 
 Breadth scales with the diff. The verification bar never does.
 
-## The four lenses
+## The five lenses
 
-Every reviewer runs all four. They are questions, not agents.
+Every reviewer runs all five. They are questions, not agents.
 
 **Correctness** — does it do what the acceptance criteria say?
 
 - Every scenario actually covered, including the error ones.
 - Off-by-one, null and empty handling, boundary values.
 - Concurrency: two of these at once, retries, partial failure.
-- What does this catch-block hide? A swallowed error is a silent failure.
+- What does this catch-block hide? A swallowed error is a silent failure —
+  checked as A10 in `owasp.md`.
 - Does the test actually test the thing, or does it pass vacuously?
 
 **Security** — what can an attacker do? Judged against OWASP Top 10:2025 in
@@ -50,6 +51,10 @@ Every reviewer runs all four. They are questions, not agents.
   checked. The rest are named in the scope block with a reason.
 - Each security finding carries a `CATEGORY` and a `SEVERITY` from the grid.
 - **Never a finding** and **Where OWASP wins** hold in every category.
+- A deleted line in an auth, validation, escaping or logging path gets its
+  history: `git log -S` finds the commit that added it, and `git show` reads
+  it. Added by a `fix` or security commit → the severity rises one tier,
+  capped at critical, and the finding names that commit in `RAISED`.
 
 **Quality** — is this the simple version?
 
@@ -70,6 +75,14 @@ Every reviewer runs all four. They are questions, not agents.
   only in a test fixture or a comment → not a finding.
 - A superseded entry binds nothing.
 
+**Coverage** — is the changed behaviour tested?
+
+- Auth or validation code changed, and no test file changed in the diff.
+- A new function reachable from a route, command or public export, with no
+  test that calls it.
+- A new private helper called only from a tested function → not a finding.
+- A coverage finding has `CATEGORY: coverage` and no `SEVERITY`.
+
 ## UI slices — mechanical checks
 
 For a slice with a web interface, run these as checks, not opinions:
@@ -88,7 +101,7 @@ For a slice with a web interface, run these as checks, not opinions:
 
 Put this in every reviewer prompt, verbatim:
 
-> Report correctness, security, and simplification gaps, and code that
+> Report correctness, security, coverage and simplification gaps, and code that
 > contradicts an active decision — not style, not preference, not "consider
 > extracting this". Flag anything changed outside the spec's named files. You
 > will over-report if you are not careful: a finding you cannot trace a
@@ -101,7 +114,9 @@ No raw finding reaches the user or gets fixed.
 Each finding goes to a `finding-verifier` agent that sees:
 
 - the bare claim, one sentence
-- its `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL` and `SNIPPET`
+- its `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL`, `SNIPPET`, `CHANGE` and
+  `EVIDENCE` — the command output the finder observed, which the verifier
+  reads as data
 - `BASE: <ref or sha>`, the branch point measured under "Size the effort", so
   it runs `git diff <BASE>...HEAD -- <file>` and `git show <BASE>:<file>`
 - the code, plus `DECISIONS.md` for a Decisions finding
@@ -111,9 +126,15 @@ It never sees the finder's reasoning — a verifier shown the reasoning agrees
 with it. It defaults to false-positive and confirms only when it has traced a
 complete path from an actual input to an actual wrong outcome.
 
-Rejected by default: pre-existing issues the diff did not introduce, anything
-a linter would catch, style, hypotheticals with no reachable path, and
-findings on lines the diff did not touch.
+Rejected by default: problems the diff did not introduce — not added, not
+deleted, not newly reached by a changed caller. Also anything a linter would
+catch, style, and hypotheticals with no reachable path.
+
+A `REJECTED` whose reason is a defence — validation, a guard, a check upstream
+— must cite it as `DEFENCE: file:line`. Without the citation it does not drop
+the finding: keep it, and note `verifier cited no defence`. On a large diff,
+such a vote counts as not-rejected. A rejection for "unreachable",
+"pre-existing" or "could not find the code" needs no citation.
 
 Small diff: one verifier, must confirm. Large diff: three verifiers with the
 reachability / impact / defenses lenses, 2-of-3 to keep.
@@ -139,7 +160,13 @@ Report only what survived, in this layout:
 Security   checked A01 Broken Access Control, A05 Injection,
            A10 Mishandling of Exceptional Conditions
            not checked: 7 categories, listed at the end
-Findings   7 raw, 3 survived
+Findings   7 raw, 4 survived
+
+critical · A01:2025 Broken Access Control · routes/export.py:14 in export_ledger (deleted)
+  The diff removes @login_required from export_ledger.
+  raised: removes a guard added by 4e1f9a2 fix(security): require login on /export
+  Failing case: GET /export?customer=ACME-01 with no cookie returns ACME-01's invoices.
+  Fix: restore @login_required.
 
 medium · A05:2025 Injection · exporters/ledger.py:31 in export_ledger
   The new query builds SQL from order instead of calling db.run.
@@ -151,14 +178,21 @@ medium · A05:2025 Injection · exporters/ledger.py:31 in export_ledger
 correctness · exporters/ledger.py:52 in write_rows
   ...
 
+coverage · invoice_api/auth.py:22 in is_admin
+  is_admin() changed and no test changed.
+  Fix: a test for the new roles-lookup-fails path.
+
 Not checked
   A02 no config or deployment file changed
   ...
 ```
 
 Each finding gives what is wrong in one sentence, the concrete failing case,
-`file:line` with its symbol, and the fix. Security findings come first,
-critical to low. Then correctness, decisions and quality, in that order.
+`file:line` with its symbol, and the fix. `(deleted)` or `(caller)` goes after
+the symbol when `CHANGE` is deleted or caller. A raised severity adds a
+`raised:` line naming the commit and its subject. Security findings come first,
+critical to low. Then correctness, coverage, decisions and quality, in that
+order.
 
 The `Findings` line says how many raw findings there were and how many
 survived — that number is how the user knows the filter is working.
@@ -173,7 +207,8 @@ already confirmed it, and severity sets the order, not whether it is fixed. One
 exception: a fix that changes something the user approved in the spec (an
 interface, a message, the scope) is proposed first and waits for a yes. Fix
 each finding test-first where a test can catch it, one commit per finding,
-then re-run the full suite and the e2e test, and confirm green.
+then re-run the full suite and the e2e test, and confirm green. A coverage
+finding is fixed like any other: its fix is a test.
 
 A Decisions finding is never fixed without asking. Offer exactly two fixes —
 change the code, or supersede the entry through `/spec` — and wait for the
