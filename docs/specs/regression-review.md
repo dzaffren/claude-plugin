@@ -1,6 +1,6 @@
 # Regression-aware review
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 7b
 **Depends on:** `owasp-lens` — this plan edits the files as 7a leaves them: its finding format (`CATEGORY`, `SEVERITY`, `SNIPPET`, `SYMBOL`), its `references/owasp.md` with an A10 section, and the verifier's `SEVERITY` output
@@ -126,8 +126,8 @@ Scenario: auth or validation changed with no test change is a coverage finding
 --no-patch` on the commit that added it. If that commit's type is `fix`, or its
   subject names security, auth, a CVE or a vulnerability, severity rises one tier,
   capped at critical. The reviewer pastes the command output as `EVIDENCE`.
-- `/review`'s `allowed-tools` gains `Bash(git blame *)` and `Bash(git show *)`
-  (`git log` is already there, `SKILL.md:9`).
+- `/review`'s `allowed-tools` keeps `Bash(git log *)` and `Bash(git show *)`, both
+  already granted by 7a (`SKILL.md:9`); `Bash(git blame *)` is left out (O4).
 - The verifier refutes a finding by citing a defence only if it read that defence,
   at a `file:line`. A comment that claims safety is not a defence. A confirmed
   security finding names `ATTACKER` and `GAIN`.
@@ -265,7 +265,7 @@ sequenceDiagram
 
 | File                                                                   | What changes                                                                                                                                                                                                                          | Why            |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `plugins/zuko/skills/review/SKILL.md:9`                                | `allowed-tools` gains `Bash(git blame *) Bash(git show *)`                                                                                                                                                                            | scenario 1     |
+| `plugins/zuko/skills/review/SKILL.md:9`                                | none: `Bash(git show *)` and `Bash(git log *)` are already granted by 7a; `git blame` is cut (O4)                                                                                                                                                                            | scenario 1     |
 | `plugins/zuko/skills/review/SKILL.md:42`                               | Silent-failure bullet points to `owasp.md` A10                                                                                                                                                                                        | scenario 4     |
 | `plugins/zuko/skills/review/SKILL.md:115`                              | Rejected-by-default list: "lines the diff did not touch" becomes "problems the diff did not introduce: not added, not deleted, not newly reached by a changed caller"                                                                 | scenario 2     |
 | `plugins/zuko/skills/review/SKILL.md` Verification                     | A `REJECTED` that relies on a defence without `DEFENCE: file:line` keeps the finding, noted "verifier cited no defence". On a large diff, such a vote counts as not-rejected                                                          | scenario 3     |
@@ -320,11 +320,32 @@ carry an `OVERVIEW.md`, or `/review` goes into onboarding first. It passes when:
 
 - the deleted `@login_required` is reported critical, with `RAISED` naming 4e1f9a2 (scenario 1);
 - the `reports.py:40` caller is reported and `legacy/import.py` is not (scenario 2);
-- the seeded `# input is sanitised upstream` comment does not get the A05 finding dropped, and the regex-guarded twin in `routes/reports.py` is dropped with a `DEFENCE` (scenario 3);
+- the seeded `# input is sanitised upstream` comment does not get the A05 finding dropped, and the regex-guarded twin reached through `routes/reports.py` is dropped with its defence named, by the reviewer or by a verifier's `DEFENCE` (scenario 3; O8);
 - the three `payments.py` shapes are A10 findings and the log-and-re-raise is not (scenario 4);
 - `is_admin` and `refund_invoice` are coverage findings and `_format_cents` is not (scenario 5).
 
 The output goes into this spec under `### Seeded run`.
+
+### Seeded run
+
+Run 2026-09-27 at `2e357d0`, in a scratch repo from `fixtures/regression-review/build.sh`
+(the `fix(security)` commit came out as `c2503b5`), with 7a's E2E command. Exit 0,
+$1.91. The diff has 5 files, so the skill took the small-diff path: one reviewer,
+one verifier per finding. Writes and `uv run pytest` are denied in `-p`, so no fix
+was applied. `Findings   10 raw, 10 survived`.
+
+| Scenario | Result | Evidence |
+| -------- | ------ | -------- |
+| 1 | pass | `critical · A01:2025 Broken Access Control · routes/export.py:14 in export_ledger (deleted)`, `raised: removes a guard added by c2503b5 fix(security): require login on /export`. Reviewer: `CHANGE: deleted`, `EVIDENCE: $ git log -S'@login_required' --oneline c2503b5 -- routes/export.py`. It also ran history on the deleted `load_report`, `load_rows` and `is_admin` lines, found a `feat:` commit, and raised none |
+| 2 | pass | `high · A05:2025 Injection · reports.py:40 in load_report`; nothing on `legacy/import.py`. A `CHANGE: caller` finding also appeared (`routes/payments.py:21 in refund_invoice (caller)`) |
+| 3 | pass (O8) | The `# input is sanitised upstream` comment did not drop the A05 finding; its verifier confirmed with `ATTACKER: any logged-in user · GAIN: read all reports via SQL injection`. Every confirmed security verdict carried `ATTACKER` and `GAIN`. The regex-guarded twin (`load_rows`) never reached a verifier: the reviewer named `checked_id` itself and left it out. A separate headless probe sent that claim to one `zuko:finding-verifier`; it read `routes/reports.py:29` and `:11-14` and returned `VERDICT: REJECTED`, `DEFENCE: routes/reports.py:12` (O8) |
+| 4 | pass | Three `low · A10:2025` findings: `payments.py:16 in fetch_rate` (1.0 on error), `:30 in refund` (fee logged at info, carries on), `:39 in refund` (None after 3 retries, no log). The `void` log-and-re-raise was not reported |
+| 5 | pass | `coverage · routes/payments.py:18 in refund_invoice` and `coverage · invoice_api/auth.py:22 in is_admin`, no tier. `_format_cents` named by the reviewer as not a finding |
+
+Also seen: two real findings outside the scenarios (a refund retried without an
+idempotency key, and `rows[0]` on an unknown invoice giving a 500), both confirmed
+as correctness. Three verifiers put a `SEVERITY` on a correctness or coverage
+finding, against their instructions; the skill left it out of the report.
 
 ### Chunks
 
@@ -362,6 +383,7 @@ Recorded as D15, D16, D17, D18.
 | O5  | Assuming a defence-based rejection without `DEFENCE: file:line` keeps the finding, while "unreachable" or "pre-existing" rejections need no citation (default chosen autonomously; alternative: every rejection needs a file:line)                                                                                                                                                                                                                                                                                                                  | assumption | spec p3   | user  | Resolved | Default accepted by the user, 2026-09-25                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | O6  | `--allowedTools "Bash(git log *)" "Bash(git show *)"` on `claude -p` lets the reviewer subagent run them headless (7a's O7 spike saw a subagent's `python3` blocked pending approval)                                                                                                                                                                                                                                                                                                                                                               | unproven   | spec p3   | poc   | Resolved | Yes, and the flag isn't needed. Spiked 2026-09-25 on a marked zuko copy with 7a's headless command. The `zuko:reviewer` subagent ran `git log -S subprocess --oneline` and `git show --stat HEAD` itself, and both returned real output (`02d11e4 fix(security): pass archive args as a list`), with and without `--allowedTools`. Read-only git needs no approval, unlike 7a's `python3`. The E2E command now drops the flag. Found on the way: a fixture without `OVERVIEW.md` sends `/review` into onboarding before any review |
 | O7  | The plan says the verifier has no Bash (Approach, drafted D14 "the verifier stays without Bash"). 7a's build later gave it hook-scoped read-only git (D9, `DECISIONS.md:89`), and `scope-verifier-bash.sh` allows `git log -S'…' -- file` and `git show --no-patch <sha>` (exit 0, 2026-09-27). Recording D14 as drafted contradicts D9. Options: keep `EVIDENCE`, and rewrite D14 so the verifier may re-run the pasted command with its read-only git, never judge it from memory; or drop `EVIDENCE` and let the verifier run the history itself | question   | build     | user  | Resolved     | Keep `EVIDENCE`; the verifier reads it as data and may re-run the command with its read-only git (D9), never judges it from memory. D14 rewritten to match (user, 2026-09-27) |
+| O8  | Seeded run, scenario 3: the regex-guarded twin (`load_rows`) never reached a verifier, because the reviewer named `checked_id` and left it out itself, so the E2E bullet "dropped with a `DEFENCE`" was not exercised through `/review`. A headless probe of one verifier on that claim returned `REJECTED`, `DEFENCE: routes/reports.py:12` | flag       | build     | user  | Resolved | Accept on the run plus the probe: the reviewer dropping a defended path is the right outcome, and the probe proves the verifier's rule on the same claim. The E2E bullet now allows either to drop it (user, 2026-09-27) |
 
 _Never delete this section or its rows. See references/ledger.md._
 
