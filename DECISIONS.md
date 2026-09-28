@@ -202,6 +202,17 @@ Rejected: a coverage tool and threshold (a per-stack dependency), every new func
 Source: specs/regression-review.md
 Status: active
 
+## D19 · 2026-09-25 · Shaped and Refined need zero Open rows; a shape hands a later slice's question forward instead
+
+Why: the approval at the end of /shape and /spec is the user's review gate, and an
+Open row there is a guess the user is approving without seeing; /build already
+refuses them, but only after the approval.
+Rejected: allowing Refined with Open assumption rows (the question surfaces only
+at /build), resolving a later slice's question in the shape (a false answer written
+down as true).
+Source: specs/ledger-handoff.md
+Status: active
+
 ## D20 · 2026-09-25 · The attribution hook reads gh pr create bodies and titles from the command line only
 
 Why: /ship opens PRs with gh, and every body it writes arrives as -b, -F or a file

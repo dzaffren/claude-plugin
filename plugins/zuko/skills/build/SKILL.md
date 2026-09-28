@@ -30,9 +30,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-open-items.sh" docs/specs/{slice}.md
 ```
 
 The path is not optional. Called with no argument the script runs in Stop-hook
-mode, which only inspects specs already marked `Built` or `Shipped` — it would
-sail straight past the `Refined` spec you are about to build. Exit 1 means the
-build does not start.
+mode, which checks the whole repo and only specs at `Refined`, `Built` or
+`Shipped` and shapes at `Shaped` — it would pass a spec at any other status and
+never list this spec's rows. Exit 1 means the build does not start.
 
 Print the open rows, then work through them with the user one at a time. Each
 becomes:
@@ -152,7 +152,8 @@ You will sometimes discover mid-build that a scenario is impossible, a
 constraint is different, or the whole slice is shaped wrong. Do not improvise
 around it.
 
-Stop. Add a ledger row saying what you found. Report to the user with a
-proposal, and route back to `/spec` — which bumps the version and records what
+Stop. Set the spec's Status back to `Draft` — the Stop hook fails a `Refined`
+spec with an Open row — then add a ledger row saying what you found. Report
+to the user with a proposal, and route back to `/spec` — which bumps the version and records what
 was learned. Building something the spec does not describe is worse than
 stopping.
