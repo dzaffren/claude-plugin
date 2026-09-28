@@ -40,6 +40,7 @@ Every spec carries this section. It is never deleted, even when empty.
 | `Open` | Blocks `/build`. |
 | `Resolved` | Answered. The answer is in the row, and the spec reflects it. |
 | `Accepted risk` | Knowingly proceeding without an answer. Needs a reason and a date in the Answer column. Does not block. |
+| `Handed to SLICE` | Shape only. The question belongs to a later slice. Does not block the shape. `/spec SLICE` copies it in as `Open`, naming the shape row. |
 
 ## Rules
 
@@ -56,21 +57,25 @@ per `decisions.md`, shown and approved in the same pause.
 first and works through them. Resolved rows stay resolved and are not
 reopened unless the user reopens them.
 
-**4. `/build` refuses to start with any Open row.** It prints them, and walks
-through each one with the user. Each becomes `Resolved` or `Accepted risk`
-before a line of code is written.
+**4. Nothing is approved with an Open row.** A shape is not `Shaped`, and a
+spec is not `Refined`, while any row is `Open`: each is answered, accepted, or
+— in a shape only — handed to the later slice it belongs to. `/build` still
+refuses to start with any Open row. It prints them, and walks through each one
+with the user. Each becomes `Resolved` or `Accepted risk` before a line of code
+is written.
 
 **5. `Accepted risk` is a real answer, not a failure.** Some things genuinely
 don't need resolving before building. It needs a stated reason, which is what
 separates a decision from a shrug.
 
 **6. New items can appear at any stage.** `/build` discovering a bad
-assumption adds a row and routes back. `/review` finding an unconsidered case
+assumption sets the spec back to `Draft`, adds a row and routes back. `/review` finding an unconsidered case
 adds a row.
 
 **7. A script enforces it.** `check-open-items.sh` runs on the Stop hook: a
-spec at Status `Built` or `Shipped` with any `Open` row fails the turn. Prompt
-rules drift; grep does not.
+shape at Status `Shaped`, or a spec at `Refined`, `Built` or `Shipped`, with
+any `Open` row fails the turn. `Accepted risk` and `Handed to SLICE` rows never
+count. Prompt rules drift; grep does not.
 
 ## What qualifies
 

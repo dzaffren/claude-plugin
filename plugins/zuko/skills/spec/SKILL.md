@@ -30,7 +30,10 @@ as an assumption. Never a silent guess.
 ## Before pause 1 — orient
 
 - Read the shape doc in `docs/specs/{idea}/shape.md` if there is one, and
-  carry its problem, project type, and ledger forward.
+  carry its problem, project type, and ledger forward. Every shape row at
+  `Handed to {slice}` for this slice becomes a new `Open` row in the spec,
+  its What ending "(from shape O4)" with the shape row's ID. List these first
+  when you print the open items.
 - Read `CLAUDE.md`, `docs/learnings/`, and the related code.
 - Check for an existing spec of this name and apply the versioning rules
   (bottom of this file).
@@ -207,6 +210,11 @@ gets none.
 
 **Publish the visual page** per
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`.
+
+**`Refined` needs zero `Open` rows.** Work each one with the user first:
+`Resolved` with the answer in the row, or `Accepted risk` with a reason and a
+date. A row that stays Open → Status stays `Draft`; say which rows block it
+and stop there. The Stop hook fails a `Refined` spec with an Open row.
 
 **Then stop.** Set Status to `Refined`. Give the spec path, the page link, and
 the plan's riskiest choice in one line. Print the ledger, then the drafted

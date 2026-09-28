@@ -132,7 +132,7 @@ Larger diffs get a reviewer per chunk and three verifiers per finding with a
 | secret-scan | commits whose staged diff contains key, token, or password patterns |
 | auto-format | nothing — runs the repo's own formatter after edits, only if configured |
 | verify-gates | turns ending with an invalid spec status, a versioned spec outside `archive/`, or a missing ledger |
-| check-open-items | turns ending with a spec marked Built or Shipped while an item is still Open |
+| check-open-items | turns ending with a shape marked Shaped, or a spec marked Refined, Built or Shipped, while an item is still Open |
 
 ## Voice
 

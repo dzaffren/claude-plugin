@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Gate: no spec may be Built or Shipped while a ledger row is still Open.
+# Gate: no shape may be Shaped, and no spec Refined, Built or Shipped, while a
+# ledger row is still Open. A shape's 'Handed to SLICE' row is not Open.
 # Used two ways:
-#   - Stop hook, no args: checks every live spec, blocks the turn on a breach.
+#   - Stop hook, no args: checks every live spec and shape, blocks the turn on a breach.
 #   - With a spec path: prints that spec's open rows, exit 1 if any (for /build).
 set -uo pipefail
 
@@ -47,24 +48,28 @@ specs="$dir/docs/specs"
 problems=""
 while IFS= read -r md; do
   status=$(spec_status "$md")
-  case "${status:-}" in
-    Built|Shipped)
-      rows=$(open_rows "$md")
-      if [ -n "$rows" ]; then
-        problems="$problems
+  case "$(basename "$md"):${status:-}" in
+    shape.md:Shaped) ;;
+    shape.md:*) continue ;;
+    *:Refined|*:Built|*:Shipped) ;;
+    *) continue ;;
+  esac
+  rows=$(open_rows "$md")
+  if [ -n "$rows" ]; then
+    problems="$problems
 - $md is '$status' but still has open ledger items:
 $rows"
-      fi
-      ;;
-  esac
+  fi
 done < <(find "$specs" -maxdepth 2 -name '*.md' ! -path '*/archive/*' 2>/dev/null)
 
 if [ -n "$problems" ]; then
   {
-    echo "Open-items gate failed. A spec cannot be Built or Shipped with unresolved items."
+    echo "Open-items gate failed. A shape cannot be Shaped, and a spec cannot be Refined,"
+    echo "Built or Shipped, with unresolved items."
     echo "$problems"
     echo ""
-    echo "Resolve each row (write the answer into the row), or mark it 'Accepted risk' with a reason and a date. Never delete a row."
+    echo "Resolve each row (write the answer into the row), mark it 'Accepted risk' with a"
+    echo "reason and a date, or in a shape hand it to a later slice. Never delete a row."
   } >&2
   exit 2
 fi

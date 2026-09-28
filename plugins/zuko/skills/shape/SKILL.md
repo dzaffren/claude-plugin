@@ -119,6 +119,13 @@ Write `docs/specs/{idea}/shape.md`:
 {the ledger table}
 ```
 
+`Shaped` needs zero `Open` rows. Before writing it, take each Open row to the
+user: answer it (`Resolved`), accept it with a reason and a date
+(`Accepted risk`), or, when it belongs to a later slice, set it to
+`Handed to {slice}`, naming a slice from the table. A row that stays Open →
+write Status `Draft` instead and name the rows that block it. The Stop hook
+fails a `Shaped` shape with an Open row.
+
 Then, in the terminal:
 
 - The problem, in two sentences.
