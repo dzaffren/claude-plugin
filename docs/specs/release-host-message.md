@@ -12,9 +12,9 @@ promising "GitLab releases come in slice 6". Slice 6 was dropped on 2026-09-25
 
 ## Problem
 
-`release.py:165` has a branch for `gitlab.com` that fails the remote gate with
+`release.py:175` has a branch for `gitlab.com` that fails the remote gate with
 "origin is gitlab.com — GitLab releases come in slice 6". Every other host gets
-"origin is HOST — /release supports GitHub only" at `release.py:168`. Slice 6 is in
+"origin is HOST — /release supports GitHub only" at `release.py:178`. Slice 6 is in
 the shape's Not doing list, so a GitLab user is told to wait for something that is
 not coming.
 
@@ -54,7 +54,7 @@ Scenario: a GitLab origin is told the truth
 
 ## Scope
 
-**In:** delete the `gitlab.com` branch at `release.py:165`–`:166`; update the
+**In:** delete the `gitlab.com` branch at `release.py:175`–`:176`; update the
 GitLab expectation in `test-release.sh:294`.
 
 **Out:** the old text in `docs/specs/release.md:142` and `:274` — that spec is
@@ -84,10 +84,10 @@ sequenceDiagram
 
 | File                                             | What changes                                            | Why        |
 | ------------------------------------------------ | ------------------------------------------------------- | ---------- |
-| `plugins/zuko/scripts/lib/release.py:165`        | Delete the `gitlab.com` branch and its message          | scenario 1 |
+| `plugins/zuko/scripts/lib/release.py:175`        | Delete the `gitlab.com` branch and its message          | scenario 1 |
 | `plugins/zuko/scripts/tests/test-release.sh:294` | The GitLab pair expects "/release supports GitHub only" | scenario 1 |
 
-Reusing: the generic message at `release.py:168` and the section 8 loop.
+Reusing: the generic message at `release.py:178` and the section 8 loop.
 
 ### Non-functionals
 
