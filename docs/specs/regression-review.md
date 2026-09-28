@@ -347,6 +347,21 @@ idempotency key, and `rows[0]` on an unknown invoice giving a 500), both confirm
 as correctness. Three verifiers put a `SEVERITY` on a correctness or coverage
 finding, against their instructions; the skill left it out of the report.
 
+#### Run 2
+
+Run 2026-09-28 at `6db6494`, after the /review fixes (history searched with
+`--follow` on the verifier hook's characters, the coverage cases judged apart, the
+fixture built without the machine's git config). Exit 0, $2.26.
+`Findings   11 raw, 10 survived`. All five scenarios pass:
+
+| Scenario | Evidence |
+| -------- | -------- |
+| 1 | `critical · A01:2025 … routes/export.py:14 in export_ledger (deleted)`, `raised: removes a guard added by 463a9c7 fix(security): require login on /export`; `EVIDENCE: $ git log --follow -S'@login_required' --oneline 463a9c7 -- routes/export.py` |
+| 2 | `high · A05:2025 Injection · reports.py:40 in load_report`; `legacy/import.py` appears only in file listings |
+| 3 | The A05 finding survived the false comment, which the report calls false. `load_rows` was again named safe by the reviewer (`checked_id` at `routes/reports.py:29`) and never raised |
+| 4 | Three `low · A10:2025` findings at `payments.py:16`, `:30`, `:39`; the void log-and-re-raise called "fine" |
+| 5 | `coverage` on `is_admin` and `refund_invoice`, plus one on `export_ledger` (access control changed, no test calls /export), which the rule covers. `_format_cents` not reported; one coverage finding on `refund()`'s error paths was rejected, since it is neither new nor auth |
+
 ### Chunks
 
 | Chunk | Scenarios  | Files owned                                                                            |
