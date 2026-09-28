@@ -97,9 +97,13 @@ specs (they pass either way); fence awareness for other checks — no slice.
 ### Approach
 
 Before the grep, an `awk` pass over the spec tracks ` ```mermaid ` … ` ``` ` fences
-and, only inside one, deletes tokens matching `[A-Za-z0-9_]+\{[^{}]*\}`. It prints
-`NR:line` so the output keeps `grep -n`'s shape for the existing message. The rest
-of the pipeline (`:105`–`:110`) is unchanged.
+and, only inside one, deletes decision-node tokens (an id, then its label in braces)
+from a copy of the line. An id counts only where a node id can stand: the start of the
+line, after an edge arrow (`-->`, `---`, `-.->`, `==>`, `~~~`, `--x`), a `|label|`, or
+`&`, so a blank glued to a word inside a box label is kept. Awk runs the placeholder
+match on that copy and prints the spec's own line as `NR:line`, keeping `grep -n`'s
+shape for the existing message. A closing fence of three or more backticks ends the
+diagram. The exclusion list and `head -5` are unchanged.
 
 Relies on: D20 (drafted below)
 
@@ -118,7 +122,7 @@ sequenceDiagram
 
 | File                                                       | What changes                                                                                                         | Why           |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `plugins/zuko/scripts/verify-ship-gates.sh:105`            | `grep -nE … "$spec"` becomes `awk` (fence pass, `NR:line`) piped into `grep -E` with the same pattern and exclusions | scenarios 1–3 |
+| `plugins/zuko/scripts/verify-ship-gates.sh:105`            | `grep -nE … "$spec"` becomes one `awk` pass (fence tracking, decision nodes dropped from a copy, same pattern, original line printed as `NR:line`), piped into the same exclusions | scenarios 1–3 |
 | `plugins/zuko/scripts/tests/test-verify-ship-gates.sh:208` | Section 11 gains the three scenarios; the existing documented-placeholder and prose cases stay                       | scenarios 1–3 |
 
 Reusing: section 11's `new_repo` and `gate` helpers.
@@ -177,6 +181,8 @@ Status: active
 | O1  | Ship gate flags Mermaid decision nodes as unfilled placeholders (shape O12) | flag | spec p3 (auto-onboard) | user  | Resolved | This spec: decision nodes inside a Mermaid fence are exempt (D20) |
 | O2  | The drafted decision was numbered D16, but D16 to D18 were recorded by regression-review and D19 is taken by ledger-handoff (in flight) | flag | build | build | Resolved | Renumbered D20 (build, 2026-09-28). If this ships before ledger-handoff, /ship takes the next free number |
 | O3  | Scenario 1 names `origin host` as a node in release.md; it is in release-host-message.md:37 | flag | build | build | Resolved | The fixture is release.md's flowchart with its decision label unquoted, plus that `origin host` node (build, 2026-09-28) |
+| O4  | Review: the id-brace deletion had no left anchor, so a blank glued to a word in a box label (a tag label reading v, then a lowercase word in braces) passed, and a four-backtick closer left the fence open to the end of the file | flag | review | build | Resolved | An id counts only at line start, after an edge arrow, a `|label|` or `&`; three or more backticks close the fence (review, 2026-09-28) |
+| O5  | Review: the gate printed the awk-rewritten line, so a flagged line holding a decision node showed text not in the spec | flag | review | build | Resolved | Awk matches on the rewritten copy and prints the original line (review, 2026-09-28) |
 
 _Never delete this section or its rows. See references/ledger.md._
 

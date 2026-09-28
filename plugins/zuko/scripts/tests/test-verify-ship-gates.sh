@@ -268,14 +268,34 @@ expect_exit 0 "$gate_status" "decision nodes with lowercase labels are not blank
 expect_no_match 'Placeholders left in the spec' "$gate_out" "the placeholder check stays quiet on decision nodes"
 
 repo=$(new_repo feat/ship-naming)
-decision_flowchart "$repo" '    OK --> A[{component}]'
+decision_flowchart "$repo" '    OK --> D{choice} --> A[{component}]'
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "docs(spec): leave a blank in a diagram"
 gate "$repo"
 expect_exit 1 "$gate_status" "a blank in a box node inside a diagram still fails the gate"
 expect_match 'Placeholders left in the spec' "$gate_out" "the diagram blank is named as a placeholder"
-expect_match '^[0-9]+:    OK --> A\[\{component\}\]$' "$gate_out" "the gate names the line holding the blank"
-expect_no_match 'gates: on main|origin host' "$gate_out" "the decision nodes beside it are not named"
+expect_match '^[0-9]+:    OK --> D\{choice\} --> A\[\{component\}\]$' "$gate_out" "the gate names the spec's own line, decision node included"
+expect_no_match 'gates: on main|origin host' "$gate_out" "the decision nodes on other lines are not named"
+
+# Only a node id is exempt. A blank glued to a word inside a box label is
+# still a blank.
+repo=$(new_repo feat/ship-naming)
+decision_flowchart "$repo" '    OK --> T[push tag v{version}] --> W[write report_{date}.csv]'
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave glued blanks in a diagram"
+gate "$repo"
+expect_exit 1 "$gate_status" "a blank glued to a word in a box label still fails the gate"
+expect_match 'v\{version\}' "$gate_out" "the glued blank is named"
+
+# A fence closed with four backticks is closed; a prose blank after it,
+# glued to a word, still fails.
+repo=$(new_repo feat/ship-naming)
+printf '\n```mermaid\nflowchart LR\n    A --> G{origin host}\n````\n\nv{version} is the tag.\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave a blank after a long fence"
+gate "$repo"
+expect_exit 1 "$gate_status" "a longer closing fence ends the diagram"
+expect_match '^[0-9]+:v\{version\} is the tag\.$' "$gate_out" "the prose blank after it is named"
 
 repo=$(new_repo feat/ship-naming)
 decision_flowchart "$repo"
