@@ -23,3 +23,4 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - zuko's test helpers no longer misread text longer than 64 KB, so a check on long output passes or fails for the right reason.
+- /release on a GitLab repo now says plainly that it supports GitHub only, instead of promising GitLab releases in a later slice.
