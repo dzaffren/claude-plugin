@@ -101,8 +101,25 @@ grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 # Placeholders left in the spec. The exclusion list names the tokens this
 # workflow writes down on purpose -- the convention's own {type}/{slice}, and
 # mermaid's {{node}} syntax -- because a documented format and an unfilled
-# blank are the same text, and only the list can tell them apart.
-ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null \
+# blank are the same text, and only the list can tell them apart. Inside a
+# mermaid fence a decision node, an id then its label in braces, is dropped
+# before the match. An id stands at the start of a line, after an edge arrow,
+# a |label| or &; a word{blank} inside a box label is not one. The line
+# printed is the spec's own.
+ph=$(awk 'function drop(s,   out, t, at, len, i) {
+    s = "\001" s
+    while (match(s, /(\001[[:space:]]*|([-=.~][->=~]|--[xo]|[|&])[[:space:]]*)[A-Za-z0-9_]+\{[^{}]*\}/)) {
+      at = RSTART; len = RLENGTH; t = substr(s, at, len)
+      i = match(t, /[A-Za-z0-9_]+\{[^{}]*\}$/)
+      out = out substr(s, 1, at - 1) substr(t, 1, i - 1)
+      s = substr(s, at + len)
+    }
+    return out s
+  }
+  /^[[:space:]]*```mermaid/ { m = 1 }
+  m && /^[[:space:]]*````*[[:space:]]*$/ { m = 0 }
+  { line = m ? drop($0) : $0 }
+  line ~ /\{[a-z][^}]*\}|\[TBD\]|TODO/ { print NR ":" $0 }' "$spec" 2>/dev/null \
   | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}' \
   | head -5 || true)
 [ -n "$ph" ] && problems="$problems

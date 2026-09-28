@@ -222,3 +222,14 @@ by then), guarding the GitHub MCP tool in the same slice (not connected here, an
 its payload shape is unverified — O2).
 Source: specs/pr-attribution.md
 Status: active
+
+## D21 · 2026-09-25 · Inside a Mermaid fence, only decision-node braces are exempt from the placeholder check
+
+Why: a decision node (an id, then its label in braces) is Mermaid syntax, not a
+blank; any other brace in the fence, such as a blank in a box label, is still one
+someone forgot.
+Rejected: skipping every line inside a Mermaid fence (turns false blocks into false
+allows for blanks in node labels), keeping the quote-the-label workaround (every
+spec author has to know an undocumented rule).
+Source: specs/mermaid-placeholder.md
+Status: active
