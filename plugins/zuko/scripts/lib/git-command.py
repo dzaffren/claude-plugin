@@ -7,9 +7,17 @@ dropped so the subcommand comes first. A preceding word does not hide it:
 `sudo git commit` and `VAR=x git commit` both count. A `git commit` inside a
 quoted argument or a heredoc body is text, not a command, so it is not printed.
 
+With `--dir <base>`, each line is prefixed with the directory that invocation
+runs in and a tab: `<base>` moved by any earlier `cd` or `pushd` in the same
+command (undone at the close of a `( … )`), then by git's own `-C`. The prefix
+is empty when the directory cannot be known from the text — a `$` or backtick
+in the path, a path that is not a directory, `--git-dir`, `--work-tree`, or a
+`GIT_DIR=`/`GIT_WORK_TREE=` prefix — and the caller falls back to `<base>`.
+
 Exit 0 with or without output. Exit 3 when the command cannot be parsed, which
 tells the caller to fall back to matching the raw text and block.
 """
+import os
 import re
 import shlex
 import sys
@@ -133,6 +141,76 @@ def subcommand_args(args):
     return rest
 
 
+def resolve(current, path):
+    """`current` moved to `path`, or None when the text cannot say where."""
+    if current is None or not path or any(ch in path for ch in "$`"):
+        return None
+    moved = os.path.normpath(os.path.join(current, os.path.expanduser(path)))
+    return moved if os.path.isdir(moved) else None
+
+
+def git_dir(args, current):
+    """Where git runs once its own options before the subcommand are applied."""
+    rest = list(args)
+    while rest and rest[0].startswith("-"):
+        option = rest.pop(0)
+        if option.startswith(("--git-dir", "--work-tree")):
+            return None
+        if option == "-C" and rest:
+            current = resolve(current, rest.pop(0))
+        elif option in GLOBAL_OPTIONS_WITH_VALUE and rest:
+            rest.pop(0)
+    return current
+
+
+def invocations_with_dirs(tokens, base):
+    """(directory, arguments) for every bare `git` token.
+
+    A `cd` or `pushd` that starts a command moves every later git invocation in
+    the same command; a `(` saves the directory and its `)` restores it, so a
+    subshell's `cd` does not leak past it. Anything the walk cannot follow
+    turns the directory to None, never to a guess.
+    """
+    found = []
+    current = base
+    saved = []
+    at_start = True
+    moving = False          # the last token was `cd` or `pushd`
+    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= prefix on this command
+    args = None
+    for token in tokens:
+        if is_separator(token):
+            if moving:
+                current = None                    # a bare `cd` goes home
+            if args is not None:
+                where = None if overridden else git_dir(args, current)
+                found.append((where, subcommand_args(args)))
+                args = None
+            for ch in token:
+                if ch == "(":
+                    saved.append(current)
+                elif ch == ")" and saved:
+                    current = saved.pop()
+            at_start, moving, overridden = True, False, False
+            continue
+        if args is not None:
+            args.append(token)
+        elif moving:
+            current = resolve(current, token)
+            moving = False
+        elif at_start and token in ("cd", "pushd"):
+            moving = True
+        elif token == "git":
+            args = []
+        elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
+            overridden = True
+        at_start = False
+    if args is not None:
+        where = None if overridden else git_dir(args, current)
+        found.append((where, subcommand_args(args)))
+    return found
+
+
 def invocations(tokens, program="git"):
     """The arguments of every bare `program` token, `git` unless told otherwise.
 
@@ -171,6 +249,10 @@ def main():
     except ValueError as err:
         sys.stderr.write("git-command.py: cannot parse the command: %s\n" % err)
         return 3
+    if len(sys.argv) == 3 and sys.argv[1] == "--dir":
+        for where, args in invocations_with_dirs(tokens, sys.argv[2]):
+            print("%s\t%s" % (where or "", " ".join(args)))
+        return 0
     for args in invocations(tokens):
         print(" ".join(args))
     return 0

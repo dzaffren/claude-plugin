@@ -2,8 +2,13 @@
 # PreToolUse[Bash] hook: block destructive git/file commands.
 set -uo pipefail
 
-cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || exit 0
+input=$(cat)
+cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || exit 0
 [ -z "$cmd" ] && exit 0
+
+# Where the command starts: the hook's cwd, which follows the session's cd.
+base=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
+[ -n "$base" ] || base="${CLAUDE_PROJECT_DIR:-$PWD}"
 
 deny() { echo "$1" >&2; exit 2; }
 
@@ -30,11 +35,29 @@ if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a
   deny "Blocked: recursive delete of a top-level or home path."
 fi
 
-if printf '%s\n' "$subject" | grep -qE "$commit_re"; then
-  branch=$(git -C "${CLAUDE_PROJECT_DIR:-$PWD}" symbolic-ref --short HEAD 2>/dev/null || true)
+deny_commit_on_main() {   # deny_commit_on_main <dir>
+  local branch
+  branch=$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null || true)
   case "$branch" in
     main|master) deny "Blocked: committing directly on $branch. Create a branch first." ;;
   esac
+}
+
+# A commit lands on the branch of the directory it runs in: the start moved by
+# any cd before it and by git's -C. A directory the parser cannot know comes
+# back empty and is checked as the start, as is every commit in a command that
+# will not parse.
+if printf '%s\n' "$subject" | grep -qE "$commit_re"; then
+  if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --dir "$base" 2>/dev/null); then
+    # Split on the first tab by hand: read with IFS=tab strips a leading one,
+    # and an empty directory would shift the arguments into it.
+    while IFS= read -r line; do
+      dir=${line%%$'\t'*}
+      printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" && deny_commit_on_main "${dir:-$base}"
+    done <<<"$dirs"
+  else
+    deny_commit_on_main "$base"
+  fi
 fi
 
 exit 0

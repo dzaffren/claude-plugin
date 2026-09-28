@@ -12,9 +12,12 @@ echo one >"$repo/a.txt"
 git -C "$repo" add a.txt
 git -C "$repo" commit -q --no-verify -m "chore(repo): first commit"
 
-run_hook() {   # run_hook <shell command>; sets $hook_status
+run_hook() {   # run_hook <shell command> [<cwd>]; sets $hook_status
   local payload
-  payload=$(ZUKO_CMD="$1" python3 -c 'import json,os; print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]}}))')
+  payload=$(ZUKO_CMD="$1" ZUKO_CWD="${2:-}" python3 -c 'import json,os
+p={"tool_input":{"command":os.environ["ZUKO_CMD"]}}
+if os.environ["ZUKO_CWD"]: p["cwd"]=os.environ["ZUKO_CWD"]
+print(json.dumps(p))')
   printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
   hook_status=$?
 }
@@ -42,6 +45,41 @@ expect_exit 2 "$hook_status" "a force push wrapped over two lines is still a for
 run_hook "git pu\\
 sh --force origin main"
 expect_exit 2 "$hook_status" "a continuation splitting the subcommand is still a force push"
+
+# The commit lands in the directory it runs in, not the session's. A worktree
+# on a feature branch sits beside a session on main, and the reverse.
+wt="$work/wt"
+git -C "$repo" worktree add -q -b feat/wt "$wt"
+
+run_hook "cd $wt && git commit -m x"
+expect_exit 0 "$hook_status" "a commit after cd into a feature worktree is allowed"
+
+run_hook "git -C $wt commit -m x"
+expect_exit 0 "$hook_status" "a commit with -C pointing at a feature worktree is allowed"
+
+run_hook "git -C ../wt commit -m x"
+expect_exit 0 "$hook_status" "a relative -C resolves from the session directory"
+
+run_hook 'git commit -m x' "$wt"
+expect_exit 0 "$hook_status" "the hook's cwd, not the project dir, decides the branch"
+
+run_hook "cd $repo && git commit -m x" "$wt"
+expect_exit 2 "$hook_status" "a commit after cd from a feature worktree onto main is blocked"
+
+run_hook "git -C $repo commit -m x" "$wt"
+expect_exit 2 "$hook_status" "a commit with -C pointing at main is blocked"
+
+run_hook "(cd $wt && git commit -m x); git commit -m x"
+expect_exit 2 "$hook_status" "a cd inside a subshell does not carry past it"
+
+run_hook 'cd "$TARGET" && git commit -m x'
+expect_exit 2 "$hook_status" "a cd the hook cannot resolve falls back to the session branch"
+
+run_hook "cd $work/missing; git commit -m x"
+expect_exit 2 "$hook_status" "a cd into a missing directory leaves the commit on the session branch"
+
+run_hook "GIT_DIR=$wt/.git git commit -m x"
+expect_exit 2 "$hook_status" "a GIT_DIR override falls back to the session branch"
 
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
