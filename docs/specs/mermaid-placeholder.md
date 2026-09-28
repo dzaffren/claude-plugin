@@ -105,7 +105,7 @@ match on that copy and prints the spec's own line as `NR:line`, keeping `grep -n
 shape for the existing message. A closing fence of three or more backticks ends the
 diagram. The exclusion list and `head -5` are unchanged.
 
-Relies on: D20 (drafted below)
+Relies on: D21 (drafted below)
 
 ```mermaid
 sequenceDiagram
@@ -162,7 +162,7 @@ Single chunk.
 ### Decisions to record
 
 ```text
-## D20 · 2026-09-25 · Inside a Mermaid fence, only decision-node braces are exempt from the placeholder check
+## D21 · 2026-09-25 · Inside a Mermaid fence, only decision-node braces are exempt from the placeholder check
 
 Why: a decision node (an id, then its label in braces) is Mermaid syntax, not a
 blank; any other brace in the fence, such as a blank in a box label, is still one
@@ -178,8 +178,8 @@ Status: active
 
 | ID  | What                                                                        | Type | Raised at              | Owner | Status   | Answer                                                            |
 | --- | --------------------------------------------------------------------------- | ---- | ---------------------- | ----- | -------- | ----------------------------------------------------------------- |
-| O1  | Ship gate flags Mermaid decision nodes as unfilled placeholders (shape O12) | flag | spec p3 (auto-onboard) | user  | Resolved | This spec: decision nodes inside a Mermaid fence are exempt (D20) |
-| O2  | The drafted decision was numbered D16, but D16 to D18 were recorded by regression-review and D19 is taken by ledger-handoff (in flight) | flag | build | build | Resolved | Renumbered D20 (build, 2026-09-28). If this ships before ledger-handoff, /ship takes the next free number |
+| O1  | Ship gate flags Mermaid decision nodes as unfilled placeholders (shape O12) | flag | spec p3 (auto-onboard) | user  | Resolved | This spec: decision nodes inside a Mermaid fence are exempt (D21) |
+| O2  | The drafted decision was numbered D16, but D16 to D18 were recorded by regression-review and D19 is taken by ledger-handoff (in flight) | flag | build | build | Resolved | D21: ledger-handoff (PR #52) and pr-attribution (PR #53) merged first with D19 and D20, so this entry is one more than the highest, as decisions.py requires (ship, 2026-09-28) |
 | O3  | Scenario 1 names `origin host` as a node in release.md; it is in release-host-message.md:37 | flag | build | build | Resolved | The fixture is release.md's flowchart with its decision label unquoted, plus that `origin host` node (build, 2026-09-28) |
 | O4  | Review: the id-brace deletion had no left anchor, so a blank glued to a word in a box label (a tag label reading v, then a lowercase word in braces) passed, and a four-backtick closer left the fence open to the end of the file | flag | review | build | Resolved | An id counts only at line start, after an edge arrow, a `|label|` or `&`; three or more backticks close the fence (review, 2026-09-28) |
 | O5  | Review: the gate printed the awk-rewritten line, so a flagged line holding a decision node showed text not in the spec | flag | review | build | Resolved | Awk matches on the rewritten copy and prints the original line (review, 2026-09-28) |

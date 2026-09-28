@@ -24,5 +24,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The ship gate no longer mistakes a Mermaid decision node, such as a diamond labelled origin host, for an unfilled placeholder, so specs can write diagram labels without quoting them.
 - zuko's test helpers no longer misread text longer than 64 KB, so a check on long output passes or fails for the right reason.
 - /release on a GitLab repo now says plainly that it supports GitHub only, instead of promising GitLab releases in a later slice.
