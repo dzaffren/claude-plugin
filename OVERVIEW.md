@@ -44,7 +44,7 @@ projects.
 | regression-review  | Shipped | /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage | https://claude.ai/artifact/2TQDxfubLjL9nQftBH3uDQ |
 | release-host-message | Shipped | /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped | https://claude.ai/artifact/MvZ3Vm4192KiSyEyU5o4Hh |
 | ledger-handoff     | Shipped | A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward | https://claude.ai/artifact/QzLUTiLTrGLMbzcLefV8P8 |
-| pr-attribution | Built | The attribution hook blocks a gh pr create whose body or title signs Claude's name | https://claude.ai/artifact/5e7QMLTaHEKMdAijQ1W6JC |
+| pr-attribution | Shipped | The attribution hook blocks a gh pr create whose body or title signs Claude's name | https://claude.ai/artifact/5e7QMLTaHEKMdAijQ1W6JC |
 
 ## More
 
