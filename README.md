@@ -180,6 +180,7 @@ projects.
 - /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage
 - /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped
 - A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward
+- The attribution hook blocks a gh pr create whose body or title signs Claude's name
 - The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder
 
 ## Docs
