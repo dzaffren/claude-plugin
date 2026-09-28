@@ -122,7 +122,7 @@ Scenario: auth or validation changed with no test change is a coverage finding
   diff". That means added lines, deleted lines, and a changed caller that sends new
   input into an untouched function. It changes in all three places:
   `SKILL.md:115-117`, `reviewer.md:56-58`, `finding-verifier.md:22` and `:30`.
-- History for removed security code: `git log -S` on the removed line, and `git show
+- History for removed security code: `git log --follow -S` on the removed line, and `git show
 --no-patch` on the commit that added it. If that commit's type is `fix`, or its
   subject names security, auth, a CVE or a vulnerability, severity rises one tier,
   capped at critical. The reviewer pastes the command output as `EVIDENCE`.
@@ -271,7 +271,7 @@ sequenceDiagram
 | `plugins/zuko/skills/review/SKILL.md` Verification                     | A `REJECTED` that relies on a defence without `DEFENCE: file:line` keeps the finding, noted "verifier cited no defence". On a large diff, such a vote counts as not-rejected                                                          | scenario 3     |
 | `plugins/zuko/skills/review/SKILL.md` Report                           | `(deleted)` and `(caller)` after the symbol; the `raised:` line; the `coverage` category between correctness and decisions                                                                                                            | scenarios 1, 5 |
 | `plugins/zuko/agents/reviewer.md:23`                                   | Silent-failure bullet points to A10                                                                                                                                                                                                   | scenario 4     |
-| `plugins/zuko/agents/reviewer.md:56`                                   | Out-of-scope rule rewritten to "introduced by"; a History step: for a deleted line in an auth, validation, escaping or logging path, run `git log -S` on it against the base, and `git show --no-patch` on the commit; the raise rule | scenarios 1, 2 |
+| `plugins/zuko/agents/reviewer.md:56`                                   | Out-of-scope rule rewritten to "introduced by"; a History step: for a deleted line in an auth, validation, escaping or logging path, run `git log --follow -S` on it against the base, and `git show --no-patch` on the commit; the raise rule | scenarios 1, 2 |
 | `plugins/zuko/agents/reviewer.md` Coverage                             | A fifth lens, **Coverage**: changed auth or validation with no test file changed; a new function reachable from a route, command or public export with no test that calls it                                                          | scenario 5     |
 | `plugins/zuko/agents/reviewer.md` Report format                        | `CHANGE`, `EVIDENCE`, `RAISED` fields; the `coverage` category                                                                                                                                                                        | scenarios 1–5  |
 | `plugins/zuko/agents/finding-verifier.md:22`, `:30`                    | "a line this diff actually changed" becomes "a problem this diff introduced"; a deleted line and a changed caller qualify                                                                                                             | scenarios 1, 2 |
@@ -301,7 +301,7 @@ Reusing: 7a's `run.sh` contract-test pattern and `$work` temp dir; 7a's E2E comm
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Load**             | One `git log -S` per deleted security line; a typical branch has zero to three. Each runs in under a second on a repo this size                                                                                                    |
 | **Breaks first**     | `git log -S` on a 100k-commit repo can take tens of seconds per line. Scoping it to the file (`-- routes/export.py`) keeps it to that file's history                                                                               |
-| **Security surface** | New: the reviewer runs `git log`, `git show` with arguments built from diff text. Both are read-only; the snippet goes in single quotes, and a snippet containing a single quote is searched on its longest quote-free run instead |
+| **Security surface** | New: the reviewer runs `git log`, `git show` with arguments built from diff text. Both are read-only; the search string goes in single quotes and is the longest run of the line made of the verifier hook's characters (`._/:@^~=,+-`, letters, digits, spaces), so the verifier can re-run it (/review fix) |
 | **Proof it works**   | The next real `/review` whose diff deletes a line prints `(deleted)` on a finding, or reports zero findings with deleted lines in scope                                                                                            |
 | **Rollout**          | No flag, as in 7a: prompt changes ship by version. Rollback is `git revert` of the slice, then `/release` a patch                                                                                                                  |
 
