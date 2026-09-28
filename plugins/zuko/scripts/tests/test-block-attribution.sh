@@ -262,6 +262,17 @@ expect_exit 0 "$hook_status" "allows a quoted git tag inside a git log search"
 run_hook 'git commit -m "docs(release): explain git tag -m and gh release create -n"'
 expect_exit 0 "$hook_status" "allows a commit message that names the tag and release commands"
 
+# PR bodies and titles: the harness adds a Claude Code line to PR bodies by
+# default, and /ship opens every PR through gh pr create.
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b "Adds the ledger exporter.
+
+Generated with [Claude Code](https://claude.com/claude-code)"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create -b body"
+expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "a blocked PR names the PR body"
+expect_match 'Generated with \[Claude Code\]' "$hook_err" "a blocked PR quotes the offending line"
+expect_match 'commit messages, PR$' "$hook_err" "a blocked PR cites the ban on PR bodies"
+expect_no_match 'settings\.json' "$hook_err" "a blocked PR does not offer the commit settings fix"
+
 # The hook only sees what hooks.json routes to it. `if` takes one permission
 # rule, so each command it guards is its own entry.
 routed=$(python3 -c '
