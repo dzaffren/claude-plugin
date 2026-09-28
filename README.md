@@ -176,6 +176,8 @@ projects.
 - /release cuts a version from the commits: changelog, tag, GitHub release
 - /review judges security against OWASP Top 10:2025, with a category and severity on every finding
 - Test checks on text over 64 KB pass or fail for the right reason
+- /release pentests the code since the last release; a proven critical or high blocks it
+- /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage
 
 ## Docs
 

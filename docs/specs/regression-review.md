@@ -1,6 +1,6 @@
 # Regression-aware review
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 7b
 **Depends on:** `owasp-lens` — this plan edits the files as 7a leaves them: its finding format (`CATEGORY`, `SEVERITY`, `SNIPPET`, `SYMBOL`), its `references/owasp.md` with an A10 section, and the verifier's `SEVERITY` output
