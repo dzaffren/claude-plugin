@@ -69,7 +69,7 @@ don't need resolving before building. It needs a stated reason, which is what
 separates a decision from a shrug.
 
 **6. New items can appear at any stage.** `/build` discovering a bad
-assumption adds a row and routes back. `/review` finding an unconsidered case
+assumption sets the spec back to `Draft`, adds a row and routes back. `/review` finding an unconsidered case
 adds a row.
 
 **7. A script enforces it.** `check-open-items.sh` runs on the Stop hook: a

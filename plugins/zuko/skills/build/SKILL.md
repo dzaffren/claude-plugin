@@ -152,7 +152,8 @@ You will sometimes discover mid-build that a scenario is impossible, a
 constraint is different, or the whole slice is shaped wrong. Do not improvise
 around it.
 
-Stop. Add a ledger row saying what you found. Report to the user with a
-proposal, and route back to `/spec` — which bumps the version and records what
+Stop. Set the spec's Status back to `Draft` — the Stop hook fails a `Refined`
+spec with an Open row — then add a ledger row saying what you found. Report
+to the user with a proposal, and route back to `/spec` — which bumps the version and records what
 was learned. Building something the spec does not describe is worse than
 stopping.
