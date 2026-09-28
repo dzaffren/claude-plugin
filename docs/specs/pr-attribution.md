@@ -123,7 +123,8 @@ A title hit reads `Blocked: the PR title carries Claude attribution.` The
 A third invocation loop in the hook's embedded Python, beside the `gh release`
 loop at `block-attribution.sh:130`, reads `gh pr create|new` with the same
 `read_options` helper and `drop_equals=True`, so `-F=path` reads `path` as gh does.
-One new `if` entry in `hooks.json` routes `Bash(gh pr *)` to the script. The label
+`after_repo` first drops gh pr's own `-R`/`--repo` flag, which gh accepts before
+the subcommand (`gh pr --help`; added by `/review`). One new `if` entry in `hooks.json` routes `Bash(gh pr *)` to the script. The label
 switch at `:143` gains the two new labels.
 
 Relies on: D20
