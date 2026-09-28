@@ -115,5 +115,6 @@ One line per lesson. Loaded into every session in this repo.
   unpiped and check its exit code before committing.
   ([detail](a-pipe-hides-the-test-exit-code.md))
 - Branch a slice from `main` by name, never a bare `switch -c` — another
-  session can move a shared checkout's HEAD under you.
+  session can move a shared checkout's HEAD under you; while it is live, build
+  in your own worktree.
   ([detail](branch-from-main-by-name.md))

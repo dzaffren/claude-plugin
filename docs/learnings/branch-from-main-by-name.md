@@ -16,3 +16,11 @@ Name the base: `git switch -c {type}/{slice} main`, never a bare `-c` off
 whatever HEAD is. Before the first commit, check `git log main..HEAD` is empty.
 When `git status` shows changes your plan never named, another session shares
 the checkout. Stage your own files by path, and never commit or stash theirs.
+
+Naming the base is not enough while the other session is live. In the
+release-host-message build the same day, it switched the checkout to
+`feat/pr-attribution` between the edit and the commit. The uncommitted edit
+travelled with the tree, and the commit landed on its branch. When `git status`
+shows another session's files, move your build into its own worktree:
+`git worktree add -B {type}/{slice} <scratch path> main`. Run
+`git branch --show-current` in the same call as `git commit`.
