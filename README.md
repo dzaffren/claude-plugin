@@ -178,6 +178,7 @@ projects.
 - Test checks on text over 64 KB pass or fail for the right reason
 - /release pentests the code since the last release; a proven critical or high blocks it
 - /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage
+- /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped
 
 ## Docs
 
