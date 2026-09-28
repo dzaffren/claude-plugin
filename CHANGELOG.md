@@ -19,6 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - /review reports what a branch introduces, not only the lines it touches: a deleted check or a changed call is a finding, and removing a guard that a security fix added raises its severity one tier.
 - /review treats silent failures as A10 findings, such as a swallowed error, a default returned on error, or retries that give up quietly, and flags auth or validation changed without a test change.
 - The review's blind checker drops a finding for a defence only when it cites the file and line it read, and a confirmed security finding names who can exploit it and what they gain.
+- A hook blocks gh pr create when the PR body or title carries Claude attribution, as it already did for commits, tags and releases.
 
 ### Fixed
 
