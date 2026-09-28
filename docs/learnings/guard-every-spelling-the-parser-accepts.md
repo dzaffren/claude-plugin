@@ -16,3 +16,8 @@ Before writing a guard over a CLI's options, check how that CLI parses them:
 its aliases (`--help` lists them), whether it abbreviates long options, and
 what it does with `=` after a short flag. git and gh differ on the last two,
 so each needs its own answer. Test each spelling against the real tool first.
+
+Position counts too. `pr-attribution` (2026-09-28) read every spelling of
+`-b` and `-F`, then missed `gh pr -R o/r create`: the command group's own
+flag (`gh pr --help`, `-R/--repo`) sits before the subcommand. Read the
+group's `--help`, not only the subcommand's.
