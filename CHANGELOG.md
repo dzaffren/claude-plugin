@@ -27,3 +27,5 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The ship gate no longer mistakes a Mermaid decision node, such as a diamond labelled origin host, for an unfilled placeholder, so specs can write diagram labels without quoting them.
 - zuko's test helpers no longer misread text longer than 64 KB, so a check on long output passes or fails for the right reason.
 - /release on a GitLab repo now says plainly that it supports GitHub only, instead of promising GitLab releases in a later slice.
+- A commit made in another worktree is now checked on that worktree's branch, so zuko no longer blocks it as a commit on main, and a commit from a worktree onto main is blocked.
+- The secret scan now reads the staged changes of the repo a commit runs in, so a secret staged in another worktree is caught.
