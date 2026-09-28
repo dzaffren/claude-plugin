@@ -291,7 +291,7 @@ run plan "$repo"
 expect_match '^  changelog  CHANGELOG\.md missing — /ship creates it$' "$out" "changelog missing: says /ship creates it"
 
 # 8. The remote: GitLab, another host, a near miss, no origin, and ssh GitHub.
-for pair in "https://gitlab.com/acme/invoice-cli.git|origin is gitlab.com — GitLab releases come in slice 6" \
+for pair in "https://gitlab.com/acme/invoice-cli.git|origin is gitlab.com — /release supports GitHub only" \
             "git@bitbucket.org:acme/invoice-cli.git|origin is bitbucket.org — /release supports GitHub only" \
             "https://github.com.example.org/acme/invoice-cli.git|origin is github.com.example.org — /release supports GitHub only"; do
   repo=$(fixture)
