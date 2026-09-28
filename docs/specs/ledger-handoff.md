@@ -1,6 +1,6 @@
 # Ledger handoff
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 4 of 9
 **Depends on:** None
@@ -232,6 +232,7 @@ Recorded as D19.
 | O2  | Assuming `Handed to` is valid in shapes only (default chosen autonomously; alternative: allow it in specs too)                                                                             | assumption | spec p1   | user  | Resolved | Default accepted by the user, 2026-09-25 |
 | O3  | The stricter gate will fail every live spec at Refined with Open rows, including this batch of autonomously written slice 8 specs                                                          | flag       | spec p3   | user  | Resolved | Backfill in the same build: a commit before the gate fixes every live doc it would fail (user, 2026-09-25). Run by hand on 2026-09-25: with this row and glossary-gate O3 resolved, only `owasp-lens.md` fails (Refined on `feat/owasp-lens` with O8 and O9 Open) |
 | O4  | The Changes table missed two lines the stricter gate makes false: `skills/build/SKILL.md:33` says hook mode only inspects `Built` or `Shipped`, and `README.md:135` says the same | flag | build | build | Resolved | Both updated in chunk B's commit (build, 2026-09-28); prose only, no behaviour change |
+| O5  | `scope-verifier-bash` fails its 1.1 MB case with exit 142 (its 20 s alarm) on this branch and on `main`, while three other sessions ran the suite in parallel (load average 15.7). Neither the guard nor its test changed here | flag | build | user | Accepted risk | Not this slice: the same failure on `main` before any change here. Rerun `run.sh scope-verifier-bash` on an idle machine before /ship (build, 2026-09-28) |
 
 _Never delete this section or its rows. See references/ledger.md._
 
