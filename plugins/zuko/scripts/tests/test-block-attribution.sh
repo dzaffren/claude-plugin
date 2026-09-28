@@ -312,6 +312,20 @@ expect_exit 2 "$hook_status" "blocks attribution in a gh pr -F=path body file"
 run_hook 'gh pr new -t "feat(export): write ledger csv" -b "Generated with Claude Code"'
 expect_exit 2 "$hook_status" "blocks attribution in gh pr new, the alias for create"
 
+# gh pr takes one flag of its own before the subcommand (gh pr --help):
+#   -R, --repo [HOST/]OWNER/REPO   Select another repository using the [HOST/]OWNER/REPO format
+run_hook 'gh pr -R o/r create -t "feat(export): write ledger csv" -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr -R before create"
+
+run_hook 'gh pr -Ro/r create -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind an attached gh pr -R value"
+
+run_hook 'gh pr --repo o/r create -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr --repo before create"
+
+run_hook 'gh pr --repo=o/r new -t "feat(export): write ledger csv" --body "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr --repo= before new"
+
 run_hook 'gh pr create -t "Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
 expect_exit 2 "$hook_status" "blocks attribution in a gh pr -t title"
 expect_match 'Blocked: the PR title carries Claude attribution\.' "$hook_err" "a blocked title names the PR title"

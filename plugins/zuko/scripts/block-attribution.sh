@@ -128,11 +128,29 @@ BODY = ("PR body", "text")
 BODY_FILE = ("PR body", "file")
 PR_TITLE = ("PR title", "text")
 
+
+def after_repo(args):
+    """gh pr takes -R/--repo before its subcommand (gh pr --help), so
+    `gh pr -R o/r create` is a create too. Drop it and its value."""
+    while args:
+        name, equals, _ = args[0].partition("=")
+        if name == "--repo" or args[0] == "-R":
+            args = args[1 if equals else 2:]
+        elif args[0].startswith("-R"):
+            args = args[1:]
+        else:
+            break
+    return args
+
+
 # "new" is gh's own alias for "create" (gh pr create --help).
 for args in git_command.invocations(tokens, program="gh"):
-    if args[:1] == ["pr"] and args[1:2] in (["create"], ["new"]):
+    if args[:1] != ["pr"]:
+        continue
+    args = after_repo(args[1:])
+    if args[:1] in (["create"], ["new"]):
         read_options(
-            args[2:],
+            args[1:],
             {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE},
             {"b": BODY, "F": BODY_FILE, "t": PR_TITLE}, drop_equals=True)
 PY
