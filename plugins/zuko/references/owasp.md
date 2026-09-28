@@ -292,17 +292,36 @@ or security event.
 ## A10:2025 Mishandling of Exceptional Conditions
 
 **The diff can touch it when:** it adds or changes error handling around auth,
-validation, payments, or any check that decides whether to allow something.
+validation, payments, or any check that decides whether to allow something. Or
+it adds or changes error handling around any external call (payment, network,
+database) where a swallowed error changes what the caller or the user sees.
 
 **Check:**
 
-- A check that allows the request when it raises: `except: return True`, a
-  default of "allowed" on error.
+- An empty catch: `except Exception: pass`, `catch (e) {}`.
+- Log and continue: a catch whose only body is `log.info(...)`, and the code
+  carries on as if the call succeeded.
+- A default returned on error: `fetch_rate()` returning `1.0` when the
+  currency API raises.
+- Optional chaining that skips a failed or missing call:
+  `await client?.charge(...)`, or `result?.ok` read as success.
+- Retries exhausted silently: a retry loop that gives up after N attempts and
+  returns `None` without logging or raising.
+- Auth or validation failing open: a check that allows the request when it
+  raises, `except: return True`, a default of "allowed" on error.
 - An error swallowed on a security path so the caller carries on as if it
   passed.
 - A retry or fallback that skips a check.
 
+Each of these takes its severity from the grid under "Severity", like any other
+finding.
+
 **Not a finding:**
 
 - Error handling that fails closed (deny, abort, re-raise).
+- Log and re-raise: a catch that logs and then re-raises, or raises a wrapped
+  error.
+- A default returned from a function whose docstring or contract says it
+  returns that default on error.
+- A retry that logs its final failure, or raises it.
 - Resource exhaustion or crashes; those are excluded as DoS.

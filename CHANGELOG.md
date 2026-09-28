@@ -16,6 +16,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The review's blind checker reads the diff with git itself, and a hook holds it to read-only git commands.
 - /release pentests the code shipped since the last release before it cuts the version. A proven critical or high blocks the release, medium and low findings go in the release notes by severity, category and file, and skipping the pentest needs a typed reason.
 - A hook holds the pentester's shell to its scratch copy: it cannot push, tag, reach the network with a command, or write outside the copy. For untrusted code, run Claude Code's sandbox as well.
+- /review reports what a branch introduces, not only the lines it touches: a deleted check or a changed call is a finding, and removing a guard that a security fix added raises its severity one tier.
+- /review treats silent failures as A10 findings, such as a swallowed error, a default returned on error, or retries that give up quietly, and flags auth or validation changed without a test change.
+- The review's blind checker drops a finding for a defence only when it cites the file and line it read, and a confirmed security finding names who can exploit it and what they gain.
 
 ### Fixed
 

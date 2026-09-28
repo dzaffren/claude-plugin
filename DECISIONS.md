@@ -161,3 +161,43 @@ turn on), dropping the hook (the cheap holes are worth closing).
 Supersedes: D13
 Source: specs/pentest.md
 Status: active
+
+## D15 · 2026-09-25 · A review finding is anything the diff introduced, deleted lines and changed callers included
+
+Why: the regressions that do the most damage are removed checks, and a deleted line
+leaves no touched line to report on; the old rule threw all of them away.
+Rejected: touched lines only (misses every deleted guard), the whole file or repo
+(reports pre-existing issues the branch did not cause).
+Source: specs/regression-review.md
+Status: active
+
+## D16 · 2026-09-25 · Removing a guard that a fix or security commit added raises its severity one tier
+
+Why: that line was put there to close a known hole, so deleting it reopens one; the
+reviewer applies the raise from history, so the verifier's lower-never-raise rule
+still holds.
+Rejected: no history lookup (loses the strongest signal a deletion has), letting the
+verifier raise (contradicts the lower-never-raise rule).
+Source: specs/regression-review.md
+Status: active
+
+## D17 · 2026-09-25 · The reviewer pastes command output as EVIDENCE; the verifier checks it with its read-only git
+
+Why: the verifier judged git and library behaviour from memory and got it wrong twice
+(docs/learnings/verifiers-cannot-run-code.md); pasted output is data it can read
+without spending turns, and D9's read-only git lets it re-run the command when it
+doubts the output.
+Rejected: dropping EVIDENCE so the verifier runs the history itself (costs turns on
+every history finding; run 7 of owasp-lens lost turns to history calls), leaving it
+to recall (proven wrong twice).
+Source: specs/regression-review.md
+Status: active
+
+## D18 · 2026-09-25 · Coverage findings are two concrete cases, not a coverage number
+
+Why: a changed auth or validation path with no changed test, and a new reachable
+function with no calling test, each name a test to write; a percentage names none.
+Rejected: a coverage tool and threshold (a per-stack dependency), every new function
+(private helpers tested through their caller would all be reported).
+Source: specs/regression-review.md
+Status: active

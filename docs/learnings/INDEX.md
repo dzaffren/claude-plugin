@@ -102,3 +102,9 @@ One line per lesson. Loaded into every session in this repo.
 - A command-text hook fences commands, not code — it stops a nested shell or an
   inline `-c`, not what a program it allows then does; say so and use a real sandbox.
   ([detail](a-command-hook-fences-commands-not-code.md))
+- Before recording a spec's drafted decisions, check them against active entries
+  added since it was written — a dependency's build can change its premises.
+  ([detail](check-a-spec-against-decisions-made-since.md))
+- A verifier rule the reviewer pre-empts never fires in the seeded run — prove it
+  with a one-verifier headless probe on the same claim.
+  ([detail](probe-a-rule-the-pipeline-never-reached.md))
