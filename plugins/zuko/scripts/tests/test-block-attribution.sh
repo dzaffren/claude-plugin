@@ -323,6 +323,33 @@ expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title"
 run_hook 'gh pr create --title="Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
 expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title="
 
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b "Adds the ledger exporter."'
+expect_exit 0 "$hook_status" "allows a clean gh pr create"
+expect_no_match '.' "$hook_out$hook_err" "a clean gh pr create prints nothing"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-clean.md"
+expect_exit 0 "$hook_status" "allows a clean gh pr -F body file"
+
+# No body text on the command line: --fill reuses commits the commit hook
+# checked, and stdin, the editor and the browser are never read.
+run_hook 'gh pr create --fill'
+expect_exit 0 "$hook_status" "allows gh pr create --fill"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" -F -'
+expect_exit 0 "$hook_status" "a gh pr -F - reads stdin and is skipped"
+
+run_hook 'gh pr create --web'
+expect_exit 0 "$hook_status" "allows gh pr create --web"
+
+run_hook 'gh pr create --editor'
+expect_exit 0 "$hook_status" "allows gh pr create --editor"
+
+run_hook 'gh pr view 41 --json body'
+expect_exit 0 "$hook_status" "allows gh pr view, which writes no body"
+
+run_hook 'gh pr list'
+expect_exit 0 "$hook_status" "allows gh pr list, which writes no body"
+
 # The hook only sees what hooks.json routes to it. `if` takes one permission
 # rule, so each command it guards is its own entry.
 routed=$(python3 -c '
