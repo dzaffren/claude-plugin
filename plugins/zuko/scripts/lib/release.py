@@ -172,10 +172,7 @@ def remote_gate(project, gates):
     if host == "github.com" and OWNER_REPO.match(match.group(2)):
         gates.ok("remote", "github.com/" + match.group(2))
         return match.group(2)
-    if host == "gitlab.com":
-        gates.fail("remote", "origin is gitlab.com — GitLab releases come in slice 6")
-    else:
-        gates.fail("remote", "origin is %s — /release supports GitHub only" % host)
+    gates.fail("remote", "origin is %s — /release supports GitHub only" % host)
     return None
 
 
