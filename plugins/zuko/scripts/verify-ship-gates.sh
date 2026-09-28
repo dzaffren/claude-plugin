@@ -101,8 +101,13 @@ grep -qiE '\*\*E2E:\*\*|e2e' "$spec" || problems="$problems
 # Placeholders left in the spec. The exclusion list names the tokens this
 # workflow writes down on purpose -- the convention's own {type}/{slice}, and
 # mermaid's {{node}} syntax -- because a documented format and an unfilled
-# blank are the same text, and only the list can tell them apart.
-ph=$(grep -nE '\{[a-z][^}]*\}|\[TBD\]|TODO' "$spec" 2>/dev/null \
+# blank are the same text, and only the list can tell them apart. Inside a
+# mermaid fence a decision node, an id then its label in braces, is dropped
+# first; any other brace on that line is still checked.
+ph=$(awk '/^[[:space:]]*```mermaid/ { m = 1 }
+  m && /^[[:space:]]*```[[:space:]]*$/ { m = 0 }
+  { line = $0; if (m) gsub(/[A-Za-z0-9_]+\{[^{}]*\}/, "", line); print NR ":" line }' "$spec" 2>/dev/null \
+  | grep -E '\{[a-z][^}]*\}|\[TBD\]|TODO' \
   | grep -vE '/s/\{token\}|\{N\}|GET /|POST /|\{\{|\{type\}|\{scope\}|\{subject\}|\{slice\}|\{question\}' \
   | head -5 || true)
 [ -n "$ph" ] && problems="$problems

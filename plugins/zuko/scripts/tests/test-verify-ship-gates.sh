@@ -242,6 +242,51 @@ git -C "$repo" commit -q --no-verify -m "docs(spec): leave a TODO in a fence"
 gate "$repo"
 expect_exit 1 "$gate_status" "a TODO inside a fenced block still fails the gate"
 
+# A decision node -- an id, then its label in braces -- is Mermaid syntax,
+# whatever case the label starts with. The flowchart is release.md's, with its
+# decision label unquoted, plus release-host-message.md's origin host node.
+decision_flowchart() {
+  cat >>"$1/docs/specs/fixture.md" <<'FLOWCHART'
+
+```mermaid
+flowchart LR
+    U((user)) -- "/release" --> G{gates: on main, clean,<br/>tests green, [Unreleased] has lines}
+    G -- fail --> X[stop, name the gate]
+    G -- pass --> R["release.py plan"] --> H{origin host}
+    H -- github --> OK[create the release]
+FLOWCHART
+  [ -n "${2:-}" ] && printf '%s\n' "$2" >>"$1/docs/specs/fixture.md"
+  printf '```\n' >>"$1/docs/specs/fixture.md"
+}
+
+repo=$(new_repo feat/ship-naming)
+decision_flowchart "$repo"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): draw the release flow"
+gate "$repo"
+expect_exit 0 "$gate_status" "decision nodes with lowercase labels are not blanks"
+expect_no_match 'Placeholders left in the spec' "$gate_out" "the placeholder check stays quiet on decision nodes"
+
+repo=$(new_repo feat/ship-naming)
+decision_flowchart "$repo" '    OK --> A[{component}]'
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave a blank in a diagram"
+gate "$repo"
+expect_exit 1 "$gate_status" "a blank in a box node inside a diagram still fails the gate"
+expect_match 'Placeholders left in the spec' "$gate_out" "the diagram blank is named as a placeholder"
+expect_match '^[0-9]+:    OK --> A\[\{component\}\]$' "$gate_out" "the gate names the line holding the blank"
+expect_no_match 'gates: on main|origin host' "$gate_out" "the decision nodes beside it are not named"
+
+repo=$(new_repo feat/ship-naming)
+decision_flowchart "$repo"
+printf '\nThe owner is {owner}.\n\n```gherkin\n  Then the export holds {row count} rows\n```\n' >>"$repo/docs/specs/fixture.md"
+git -C "$repo" add -A
+git -C "$repo" commit -q --no-verify -m "docs(spec): leave blanks after a diagram"
+gate "$repo"
+expect_exit 1 "$gate_status" "blanks in prose and gherkin after a diagram still fail the gate"
+expect_match '^[0-9]+:The owner is \{owner\}\.$' "$gate_out" "the prose blank is named"
+expect_match '^[0-9]+:  Then the export holds \{row count\} rows$' "$gate_out" "the gherkin blank is named"
+
 # 12. The overview. The slice is the spec's basename, "fixture"; each case
 # commits its overview so the tree stays clean and only this check talks.
 commit_overview() {   # commit_overview <repo>
