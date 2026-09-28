@@ -273,6 +273,56 @@ expect_match 'Generated with \[Claude Code\]' "$hook_err" "a blocked PR quotes t
 expect_match 'commit messages, PR$' "$hook_err" "a blocked PR cites the ban on PR bodies"
 expect_no_match 'settings\.json' "$hook_err" "a blocked PR does not offer the commit settings fix"
 
+# Every spelling below is read from gh 2.92.0's own help, pasted verbatim:
+#   -b, --body string          Body for the pull request
+#   -F, --body-file file       Read body text from file (use "-" to read from standard input)
+#   -t, --title string         Title for the pull request
+#   ALIASES
+#     gh pr new
+printf 'Adds the ledger exporter.\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' >"$work/pr-signed.md"
+printf 'Adds the ledger exporter.\n' >"$work/pr-clean.md"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" --body "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create --body"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" --body="Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create --body="
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b"Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in an attached gh pr -b value"
+
+# -d is --draft, a flag; the b after it takes the value (gh pr create --help).
+run_hook 'gh pr create -t "feat(export): write ledger csv" -db "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in -b bundled after the -d flag"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -F body file"
+expect_match 'the PR body carries' "$hook_err" "a blocked body file names the PR body"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' --body-file $work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --body-file file"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' --body-file=$work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --body-file= file"
+
+# gh's flag parser drops the = in -F=path and reads path.
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F=$work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -F=path body file"
+
+run_hook 'gh pr new -t "feat(export): write ledger csv" -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr new, the alias for create"
+
+run_hook 'gh pr create -t "Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -t title"
+expect_match 'Blocked: the PR title carries Claude attribution\.' "$hook_err" "a blocked title names the PR title"
+expect_no_match 'the PR body carries' "$hook_err" "a blocked title does not blame the clean body"
+
+run_hook 'gh pr create --title "Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title"
+
+run_hook 'gh pr create --title="Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title="
+
 # The hook only sees what hooks.json routes to it. `if` takes one permission
 # rule, so each command it guards is its own entry.
 routed=$(python3 -c '
