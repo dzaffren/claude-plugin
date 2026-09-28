@@ -121,3 +121,6 @@ One line per lesson. Loaded into every session in this repo.
   session can move a shared checkout's HEAD under you; while it is live, build
   in your own worktree.
   ([detail](branch-from-main-by-name.md))
+- When `main` moves under an open PR, merge it in with a conforming
+  subject — a rebase needs a force push the hook blocks.
+  ([detail](merge-main-when-it-moves-during-ship.md))
