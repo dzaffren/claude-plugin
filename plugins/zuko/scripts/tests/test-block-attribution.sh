@@ -358,8 +358,14 @@ hooks = json.load(open(sys.argv[1]))["hooks"]["PreToolUse"]
 print(" ".join(sorted(h.get("if", "") for g in hooks for h in g["hooks"]
                       if "block-attribution.sh" in h["command"])))
 ' "$scripts/../hooks/hooks.json" 2>&1)
-expect_exit 'Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
-  "hooks.json routes git commit, git tag and gh release to the attribution hook"
+expect_exit 'Bash(gh pr *) Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
+  "hooks.json routes git commit, git tag, gh release and gh pr to the attribution hook"
+
+# The ban text names every command the hook blocks, so the rule and the route
+# cannot drift apart unseen.
+naming=$(tr '\n' ' ' <"$scripts/../references/git-naming.md")
+expect_match 'blocks the first +three at .*`gh pr create`' "$naming" \
+  "git-naming.md names gh pr create among the commands the hook blocks"
 
 # The CLI keeps printing git invocations only; gh is opt-in for callers.
 cli_out=$(printf '%s' 'gh release create v2.2.0 -n "notes" && git tag -a v2.2.0 -m v2.2.0' | python3 "$scripts/lib/git-command.py")
