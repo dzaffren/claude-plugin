@@ -117,3 +117,7 @@ One line per lesson. Loaded into every session in this repo.
 - Parallel sessions in one checkout switch each other's HEAD — build in your
   own `git worktree`, and read exit 142 under load as a timeout, not a verdict.
   ([detail](parallel-sessions-share-one-head.md))
+- Branch a slice from `main` by name, never a bare `switch -c` — another
+  session can move a shared checkout's HEAD under you; while it is live, build
+  in your own worktree.
+  ([detail](branch-from-main-by-name.md))

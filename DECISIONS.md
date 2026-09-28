@@ -212,3 +212,13 @@ at /build), resolving a later slice's question in the shape (a false answer writ
 down as true).
 Source: specs/ledger-handoff.md
 Status: active
+
+## D20 · 2026-09-25 · The attribution hook reads gh pr create bodies and titles from the command line only
+
+Why: /ship opens PRs with gh, and every body it writes arrives as -b, -F or a file
+the command names; --fill reuses commit text the commit hook already checked.
+Rejected: a PostToolUse check of the opened PR through gh pr view (the PR is public
+by then), guarding the GitHub MCP tool in the same slice (not connected here, and
+its payload shape is unverified — O2).
+Source: specs/pr-attribution.md
+Status: active

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# PreToolUse[Bash] hook: block a commit message, tag message, or release notes
-# or title that signs Claude's name. Judges the message text only. Subject
-# format is verify-ship-gates.sh's job, so this stays safe in repos that do not
-# use Conventional Commits.
+# PreToolUse[Bash] hook: block a commit message, tag message, release notes or
+# title, or PR body or title that signs Claude's name. Judges the message text
+# only. Subject format is verify-ship-gates.sh's job, so this stays safe in
+# repos that do not use Conventional Commits.
 set -uo pipefail
 
 cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || exit 0
@@ -10,10 +10,11 @@ cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# The text of every commit message, tag message, and release notes and title on
-# the command line, via lib/git-command.py so that a trailer inside a quoted
-# argument to some other command is text, not a message. Each line comes out
-# as "<what it is><tab><line>" so the block can say which one carried it.
+# The text of every commit message, tag message, release notes and title, and
+# PR body and title on the command line, via lib/git-command.py so that a
+# trailer inside a quoted argument to some other command is text, not a
+# message. Each line comes out as "<what it is><tab><line>" so the block can
+# say which one carried it.
 # Exit 3 means the command would not parse; matching the raw text then
 # over-blocks rather than under-blocks.
 messages=$(ZUKO_COMMAND="$cmd" python3 - "$here" <<'PY' 2>/dev/null
@@ -122,6 +123,36 @@ for args in git_command.invocations(tokens, program="gh"):
             args[2:],
             {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE},
             {"n": NOTES, "F": NOTES_FILE, "t": TITLE}, drop_equals=True)
+
+BODY = ("PR body", "text")
+BODY_FILE = ("PR body", "file")
+PR_TITLE = ("PR title", "text")
+
+
+def after_repo(args):
+    """gh pr takes -R/--repo before its subcommand (gh pr --help), so
+    `gh pr -R o/r create` is a create too. Drop it and its value."""
+    while args:
+        name, equals, _ = args[0].partition("=")
+        if name == "--repo" or args[0] == "-R":
+            args = args[1 if equals else 2:]
+        elif args[0].startswith("-R"):
+            args = args[1:]
+        else:
+            break
+    return args
+
+
+# "new" is gh's own alias for "create" (gh pr create --help).
+for args in git_command.invocations(tokens, program="gh"):
+    if args[:1] != ["pr"]:
+        continue
+    args = after_repo(args[1:])
+    if args[:1] in (["create"], ["new"]):
+        read_options(
+            args[1:],
+            {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE},
+            {"b": BODY, "F": BODY_FILE, "t": PR_TITLE}, drop_equals=True)
 PY
 )
 case $? in
@@ -148,8 +179,8 @@ labels=$(printf '%s\n' "$offending" | cut -f1 | awk '!seen[$0]++')
   echo ""
   printf '%s\n' "$offending" | cut -f2- | sed 's/^/  /'
   echo ""
-  echo "references/git-naming.md bans model attribution in commit messages, tag"
-  echo "messages and release notes. Remove those lines and run it again."
+  echo "references/git-naming.md bans model attribution in commit messages, PR"
+  echo "bodies, tag messages and release notes. Remove those lines and run it again."
   # Only commits get the harness's injected attribution, so only they get the
   # settings fix. An unparsed command might be a commit.
   case $labels in

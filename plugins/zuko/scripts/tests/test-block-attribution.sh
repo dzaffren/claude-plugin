@@ -262,6 +262,108 @@ expect_exit 0 "$hook_status" "allows a quoted git tag inside a git log search"
 run_hook 'git commit -m "docs(release): explain git tag -m and gh release create -n"'
 expect_exit 0 "$hook_status" "allows a commit message that names the tag and release commands"
 
+# PR bodies and titles: the harness adds a Claude Code line to PR bodies by
+# default, and /ship opens every PR through gh pr create.
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b "Adds the ledger exporter.
+
+Generated with [Claude Code](https://claude.com/claude-code)"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create -b body"
+expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "a blocked PR names the PR body"
+expect_match 'Generated with \[Claude Code\]' "$hook_err" "a blocked PR quotes the offending line"
+expect_match 'commit messages, PR$' "$hook_err" "a blocked PR cites the ban on PR bodies"
+expect_no_match 'settings\.json' "$hook_err" "a blocked PR does not offer the commit settings fix"
+
+# Every spelling below is read from gh 2.92.0's own help, pasted verbatim:
+#   -b, --body string          Body for the pull request
+#   -F, --body-file file       Read body text from file (use "-" to read from standard input)
+#   -t, --title string         Title for the pull request
+#   ALIASES
+#     gh pr new
+printf 'Adds the ledger exporter.\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' >"$work/pr-signed.md"
+printf 'Adds the ledger exporter.\n' >"$work/pr-clean.md"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" --body "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create --body"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" --body="Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr create --body="
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b"Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in an attached gh pr -b value"
+
+# -d is --draft, a flag; the b after it takes the value (gh pr create --help).
+run_hook 'gh pr create -t "feat(export): write ledger csv" -db "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in -b bundled after the -d flag"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -F body file"
+expect_match 'the PR body carries' "$hook_err" "a blocked body file names the PR body"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' --body-file $work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --body-file file"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' --body-file=$work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --body-file= file"
+
+# gh's flag parser drops the = in -F=path and reads path.
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F=$work/pr-signed.md"
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -F=path body file"
+
+run_hook 'gh pr new -t "feat(export): write ledger csv" -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution in gh pr new, the alias for create"
+
+# gh pr takes one flag of its own before the subcommand (gh pr --help):
+#   -R, --repo [HOST/]OWNER/REPO   Select another repository using the [HOST/]OWNER/REPO format
+run_hook 'gh pr -R o/r create -t "feat(export): write ledger csv" -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr -R before create"
+
+run_hook 'gh pr -Ro/r create -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind an attached gh pr -R value"
+
+run_hook 'gh pr --repo o/r create -b "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr --repo before create"
+
+run_hook 'gh pr --repo=o/r new -t "feat(export): write ledger csv" --body "Generated with Claude Code"'
+expect_exit 2 "$hook_status" "blocks attribution behind gh pr --repo= before new"
+
+run_hook 'gh pr create -t "Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr -t title"
+expect_match 'Blocked: the PR title carries Claude attribution\.' "$hook_err" "a blocked title names the PR title"
+expect_no_match 'the PR body carries' "$hook_err" "a blocked title does not blame the clean body"
+
+run_hook 'gh pr create --title "Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title"
+
+run_hook 'gh pr create --title="Co-Authored-By: Claude <noreply@anthropic.com>" -b "Adds the ledger exporter."'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr --title="
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" -b "Adds the ledger exporter."'
+expect_exit 0 "$hook_status" "allows a clean gh pr create"
+expect_no_match '.' "$hook_out$hook_err" "a clean gh pr create prints nothing"
+
+run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-clean.md"
+expect_exit 0 "$hook_status" "allows a clean gh pr -F body file"
+
+# No body text on the command line: --fill reuses commits the commit hook
+# checked, and stdin, the editor and the browser are never read.
+run_hook 'gh pr create --fill'
+expect_exit 0 "$hook_status" "allows gh pr create --fill"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" -F -'
+expect_exit 0 "$hook_status" "a gh pr -F - reads stdin and is skipped"
+
+run_hook 'gh pr create --web'
+expect_exit 0 "$hook_status" "allows gh pr create --web"
+
+run_hook 'gh pr create --editor'
+expect_exit 0 "$hook_status" "allows gh pr create --editor"
+
+run_hook 'gh pr view 41 --json body'
+expect_exit 0 "$hook_status" "allows gh pr view, which writes no body"
+
+run_hook 'gh pr list'
+expect_exit 0 "$hook_status" "allows gh pr list, which writes no body"
+
 # The hook only sees what hooks.json routes to it. `if` takes one permission
 # rule, so each command it guards is its own entry.
 routed=$(python3 -c '
@@ -270,8 +372,14 @@ hooks = json.load(open(sys.argv[1]))["hooks"]["PreToolUse"]
 print(" ".join(sorted(h.get("if", "") for g in hooks for h in g["hooks"]
                       if "block-attribution.sh" in h["command"])))
 ' "$scripts/../hooks/hooks.json" 2>&1)
-expect_exit 'Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
-  "hooks.json routes git commit, git tag and gh release to the attribution hook"
+expect_exit 'Bash(gh pr *) Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
+  "hooks.json routes git commit, git tag, gh release and gh pr to the attribution hook"
+
+# The ban text names every command the hook blocks, so the rule and the route
+# cannot drift apart unseen.
+naming=$(tr '\n' ' ' <"$scripts/../references/git-naming.md")
+expect_match 'blocks the first +three at .*`gh pr create`' "$naming" \
+  "git-naming.md names gh pr create among the commands the hook blocks"
 
 # The CLI keeps printing git invocations only; gh is opt-in for callers.
 cli_out=$(printf '%s' 'gh release create v2.2.0 -n "notes" && git tag -a v2.2.0 -m v2.2.0' | python3 "$scripts/lib/git-command.py")
