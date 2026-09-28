@@ -114,3 +114,6 @@ One line per lesson. Loaded into every session in this repo.
 - `run.sh | tail -1 && git commit` gates on tail, not the tests — run the suite
   unpiped and check its exit code before committing.
   ([detail](a-pipe-hides-the-test-exit-code.md))
+- Branch a slice from `main` by name, never a bare `switch -c` — another
+  session can move a shared checkout's HEAD under you.
+  ([detail](branch-from-main-by-name.md))
