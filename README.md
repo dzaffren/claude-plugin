@@ -179,6 +179,7 @@ projects.
 - /release pentests the code since the last release; a proven critical or high blocks it
 - /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage
 - /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped
+- A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward
 
 ## Docs
 
