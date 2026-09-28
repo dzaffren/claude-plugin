@@ -108,3 +108,9 @@ One line per lesson. Loaded into every session in this repo.
 - A verifier rule the reviewer pre-empts never fires in the seeded run — prove it
   with a one-verifier headless probe on the same claim.
   ([detail](probe-a-rule-the-pipeline-never-reached.md))
+- zsh does not word-split `for c in $list` — replay git history from a script
+  file run with bash, behind a backup branch.
+  ([detail](zsh-does-not-split-a-for-list.md))
+- `run.sh | tail -1 && git commit` gates on tail, not the tests — run the suite
+  unpiped and check its exit code before committing.
+  ([detail](a-pipe-hides-the-test-exit-code.md))
