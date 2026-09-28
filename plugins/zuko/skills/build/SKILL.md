@@ -30,9 +30,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-open-items.sh" docs/specs/{slice}.md
 ```
 
 The path is not optional. Called with no argument the script runs in Stop-hook
-mode, which only inspects specs already marked `Built` or `Shipped` — it would
-sail straight past the `Refined` spec you are about to build. Exit 1 means the
-build does not start.
+mode, which checks the whole repo and only specs at `Refined`, `Built` or
+`Shipped` and shapes at `Shaped` — it would pass a spec at any other status and
+never list this spec's rows. Exit 1 means the build does not start.
 
 Print the open rows, then work through them with the user one at a time. Each
 becomes:

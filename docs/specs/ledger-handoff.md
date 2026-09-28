@@ -231,6 +231,7 @@ Recorded as D19.
 | O1  | Assuming the copy of handed rows into a spec is a `/spec` prose rule with no script check (default chosen autonomously; alternative: a gate that matches handed rows to spec rows by text) | assumption | spec p1   | user  | Resolved | Default accepted by the user, 2026-09-25 |
 | O2  | Assuming `Handed to` is valid in shapes only (default chosen autonomously; alternative: allow it in specs too)                                                                             | assumption | spec p1   | user  | Resolved | Default accepted by the user, 2026-09-25 |
 | O3  | The stricter gate will fail every live spec at Refined with Open rows, including this batch of autonomously written slice 8 specs                                                          | flag       | spec p3   | user  | Resolved | Backfill in the same build: a commit before the gate fixes every live doc it would fail (user, 2026-09-25). Run by hand on 2026-09-25: with this row and glossary-gate O3 resolved, only `owasp-lens.md` fails (Refined on `feat/owasp-lens` with O8 and O9 Open) |
+| O4  | The Changes table missed two lines the stricter gate makes false: `skills/build/SKILL.md:33` says hook mode only inspects `Built` or `Shipped`, and `README.md:135` says the same | flag | build | build | Resolved | Both updated in chunk B's commit (build, 2026-09-28); prose only, no behaviour change |
 
 _Never delete this section or its rows. See references/ledger.md._
 
