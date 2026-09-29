@@ -7,9 +7,15 @@ dropped so the subcommand comes first. A preceding word does not hide it:
 `sudo git commit` and `VAR=x git commit` both count. A `git commit` inside a
 quoted argument or a heredoc body is text, not a command, so it is not printed.
 
+With `--dir <base>`, each line is prefixed with the directory that invocation
+runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
+chain, then by git's own `-C`. The prefix is empty when the text cannot say
+where git runs, and the caller must then judge every directory it could be.
+
 Exit 0 with or without output. Exit 3 when the command cannot be parsed, which
 tells the caller to fall back to matching the raw text and block.
 """
+import os
 import re
 import shlex
 import sys
@@ -133,6 +139,88 @@ def subcommand_args(args):
     return rest
 
 
+def resolve(current, path):
+    """`current` moved to `path`, or None when the text cannot say where.
+
+    An absolute path needs no `current`: `git -C /repo` is known even after a
+    move the walk lost track of.
+    """
+    if not path or any(ch in path for ch in "$`"):
+        return None
+    path = os.path.expanduser(path)
+    if not os.path.isabs(path):
+        if current is None:
+            return None
+        path = os.path.join(current, path)
+    moved = os.path.normpath(path)
+    return moved if os.path.isdir(moved) else None
+
+
+def git_dir(args, current):
+    """Where git runs once its own options before the subcommand are applied."""
+    rest = list(args)
+    while rest and rest[0].startswith("-"):
+        option = rest.pop(0)
+        if option.startswith(("--git-dir", "--work-tree")):
+            return None
+        if option == "-C" and rest:
+            current = resolve(current, rest.pop(0))
+        elif option in GLOBAL_OPTIONS_WITH_VALUE and rest:
+            rest.pop(0)
+    return current
+
+
+def invocations_with_dirs(tokens, base):
+    """(directory, arguments) for every bare `git` token.
+
+    A move is trusted only where the shell is sure to keep it for the git call:
+    a `cd` or `pushd` that starts a command in a plain `&&` chain from the start
+    of the text. After a move, any other separator — `;`, `|`, `&`, `||`, a
+    newline, a paren, a backtick — may mean the cd did not run, ran in a
+    subshell, or was undone, so the directory turns to None. So does a `popd`,
+    and a `cd` or `pushd` anywhere the walk does not track, such as after `{`
+    or `then`. None is never a guess: the caller checks every candidate.
+    """
+    found = []
+    current = base
+    moved = False
+    at_start = True
+    moving = False          # the last token was a tracked `cd` or `pushd`
+    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= prefix on this command
+    args = None
+    for token in tokens:
+        if is_separator(token):
+            if moving:
+                current = None                    # a bare `cd` goes home
+            if args is not None:
+                where = None if overridden else git_dir(args, current)
+                found.append((where, subcommand_args(args)))
+                args = None
+            if moved and token != "&&":
+                current = None
+            at_start, moving, overridden = True, False, False
+            continue
+        if args is not None:
+            args.append(token)
+        elif moving:
+            current = resolve(current, token)
+            moving = False
+        elif token in ("cd", "pushd", "popd"):
+            if at_start and token != "popd":
+                moving = moved = True
+            else:
+                current, moved = None, True
+        elif token == "git":
+            args = []
+        elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
+            overridden = True
+        at_start = False
+    if args is not None:
+        where = None if overridden else git_dir(args, current)
+        found.append((where, subcommand_args(args)))
+    return found
+
+
 def invocations(tokens, program="git"):
     """The arguments of every bare `program` token, `git` unless told otherwise.
 
@@ -171,6 +259,10 @@ def main():
     except ValueError as err:
         sys.stderr.write("git-command.py: cannot parse the command: %s\n" % err)
         return 3
+    if len(sys.argv) == 3 and sys.argv[1] == "--dir":
+        for where, args in invocations_with_dirs(tokens, sys.argv[2]):
+            print("%s\t%s" % (where or "", " ".join(args)))
+        return 0
     for args in invocations(tokens):
         print(" ".join(args))
     return 0

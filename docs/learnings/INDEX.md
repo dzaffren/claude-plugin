@@ -124,3 +124,6 @@ One line per lesson. Loaded into every session in this repo.
 - When `main` moves under an open PR, merge it in with a conforming
   subject — a rebase needs a force push the hook blocks.
   ([detail](merge-main-when-it-moves-during-ship.md))
+- A guard reads the branch or staged diff where the command runs, trusting a
+  `cd` only in an `&&` chain; an unknown dir checks the cwd and the project dir.
+  ([detail](read-state-where-the-command-runs.md))
