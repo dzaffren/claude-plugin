@@ -7,7 +7,8 @@ cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.st
 
 # Where the command starts: the hook's cwd, which follows the session's cd.
 base=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
-[ -n "$base" ] || base="${CLAUDE_PROJECT_DIR:-$PWD}"
+project="${CLAUDE_PROJECT_DIR:-$PWD}"
+[ -n "$base" ] || base="$project"
 
 # Same matcher as block-dangerous.sh: the git invocations actually being run,
 # falling back to the raw text when the command cannot be parsed.
@@ -22,15 +23,17 @@ fi
 printf '%s\n' "$subject" | grep -qE "$commit_re" || exit 0
 
 # Scan the staged diff each commit takes: the directory it runs in, as
-# block-dangerous.sh works it out. Unknown or unparsed falls back to the start.
-commit_dirs="$base"
+# block-dangerous.sh works it out. Unknown or unparsed scans both the start and
+# the project dir — never less than the project dir alone.
+anywhere="$base"$'\n'"$project"
+commit_dirs="$anywhere"
 if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --dir "$base" 2>/dev/null); then
   commit_dirs=""
   while IFS= read -r line; do
     dir=${line%%$'\t'*}
-    printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" && commit_dirs+="${dir:-$base}"$'\n'
+    printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" && commit_dirs+="${dir:-$anywhere}"$'\n'
   done <<<"$dirs"
-  [ -n "$commit_dirs" ] || commit_dirs="$base"
+  [ -n "$commit_dirs" ] || commit_dirs="$anywhere"
 fi
 
 added=""

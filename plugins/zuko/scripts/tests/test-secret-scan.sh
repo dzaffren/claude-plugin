@@ -42,3 +42,18 @@ expect_exit 0 "$scan_status" "a clean staged diff in the session's own repo pass
 
 scan "git -C $repo commit -m x" "$wt"
 expect_exit 0 "$scan_status" "a commit pointed away from the secret's worktree passes"
+
+# Move the secret into the project repo. A commit that reaches it through a
+# move the walk cannot follow must still have it scanned.
+git -C "$wt" reset -q
+echo "aws=$key" >"$repo/creds.txt"
+git -C "$repo" add creds.txt
+
+scan "cd -- $repo && git commit -m x" "$wt"
+expect_exit 2 "$scan_status" "a secret reached by cd -- is scanned"
+
+scan 'cd "$R" && git commit -m x' "$wt"
+expect_exit 2 "$scan_status" "a secret reached by an unresolvable cd is scanned"
+
+scan "pushd $wt && popd && git commit -m x" "$repo"
+expect_exit 2 "$scan_status" "a secret left behind by pushd and popd is scanned"
