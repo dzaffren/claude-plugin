@@ -81,6 +81,45 @@ expect_exit 2 "$hook_status" "a cd into a missing directory leaves the commit on
 run_hook "GIT_DIR=$wt/.git git commit -m x"
 expect_exit 2 "$hook_status" "a GIT_DIR override falls back to the session branch"
 
+# A cd the shell does not keep for the commit: the commit still lands on main.
+run_hook "pushd $wt && popd && git commit -m x"
+expect_exit 2 "$hook_status" "a popd back to main is not read as staying in the worktree"
+
+run_hook "cd $wt | true; git commit -m x"
+expect_exit 2 "$hook_status" "a cd inside a pipeline does not move the next command"
+
+run_hook "cd $wt & git commit -m x"
+expect_exit 2 "$hook_status" "a backgrounded cd does not move the next command"
+
+run_hook "false && cd $wt; git commit -m x"
+expect_exit 2 "$hook_status" "a cd that did not run does not move the next command"
+
+run_hook "echo \`cd $wt\`; git commit -m x"
+expect_exit 2 "$hook_status" "a cd inside backticks does not move the next command"
+
+run_hook "cd $wt && git add . && git commit -m x"
+expect_exit 0 "$hook_status" "a plain && chain into a feature worktree is still allowed"
+
+# From the worktree, with the project dir on main: a move the walk cannot
+# follow must not be judged in the worktree.
+run_hook "{ cd $repo && git commit -m x; }" "$wt"
+expect_exit 2 "$hook_status" "a cd inside braces onto main is blocked"
+
+run_hook "if true; then cd $repo; fi; git commit -m x" "$wt"
+expect_exit 2 "$hook_status" "a cd inside an if onto main is blocked"
+
+run_hook 'cd "$R" && git commit -m x' "$wt"
+expect_exit 2 "$hook_status" "an unresolvable cd is also judged on the project dir"
+
+run_hook "cd -- $repo && git commit -m x" "$wt"
+expect_exit 2 "$hook_status" "cd -- onto main is blocked"
+
+run_hook "GIT_DIR=$repo/.git git commit -m x" "$wt"
+expect_exit 2 "$hook_status" "a GIT_DIR pointing at main is blocked from a worktree"
+
+run_hook "git --git-dir=$repo/.git commit -m x" "$wt"
+expect_exit 2 "$hook_status" "a --git-dir pointing at main is blocked from a worktree"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
