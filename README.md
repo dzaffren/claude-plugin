@@ -182,6 +182,7 @@ projects.
 - A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward
 - The attribution hook blocks a gh pr create whose body or title signs Claude's name
 - The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder
+- A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned
 
 ## Docs
 
