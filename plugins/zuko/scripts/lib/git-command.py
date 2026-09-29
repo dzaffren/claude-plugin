@@ -8,11 +8,9 @@ dropped so the subcommand comes first. A preceding word does not hide it:
 quoted argument or a heredoc body is text, not a command, so it is not printed.
 
 With `--dir <base>`, each line is prefixed with the directory that invocation
-runs in and a tab: `<base>` moved by any earlier `cd` or `pushd` in the same
-command (undone at the close of a `( … )`), then by git's own `-C`. The prefix
-is empty when the directory cannot be known from the text — a `$` or backtick
-in the path, a path that is not a directory, `--git-dir`, `--work-tree`, or a
-`GIT_DIR=`/`GIT_WORK_TREE=` prefix — and the caller falls back to `<base>`.
+runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
+chain, then by git's own `-C`. The prefix is empty when the text cannot say
+where git runs, and the caller must then judge every directory it could be.
 
 Exit 0 with or without output. Exit 3 when the command cannot be parsed, which
 tells the caller to fall back to matching the raw text and block.
@@ -142,10 +140,19 @@ def subcommand_args(args):
 
 
 def resolve(current, path):
-    """`current` moved to `path`, or None when the text cannot say where."""
-    if current is None or not path or any(ch in path for ch in "$`"):
+    """`current` moved to `path`, or None when the text cannot say where.
+
+    An absolute path needs no `current`: `git -C /repo` is known even after a
+    move the walk lost track of.
+    """
+    if not path or any(ch in path for ch in "$`"):
         return None
-    moved = os.path.normpath(os.path.join(current, os.path.expanduser(path)))
+    path = os.path.expanduser(path)
+    if not os.path.isabs(path):
+        if current is None:
+            return None
+        path = os.path.join(current, path)
+    moved = os.path.normpath(path)
     return moved if os.path.isdir(moved) else None
 
 
@@ -166,16 +173,19 @@ def git_dir(args, current):
 def invocations_with_dirs(tokens, base):
     """(directory, arguments) for every bare `git` token.
 
-    A `cd` or `pushd` that starts a command moves every later git invocation in
-    the same command; a `(` saves the directory and its `)` restores it, so a
-    subshell's `cd` does not leak past it. Anything the walk cannot follow
-    turns the directory to None, never to a guess.
+    A move is trusted only where the shell is sure to keep it for the git call:
+    a `cd` or `pushd` that starts a command in a plain `&&` chain from the start
+    of the text. After a move, any other separator — `;`, `|`, `&`, `||`, a
+    newline, a paren, a backtick — may mean the cd did not run, ran in a
+    subshell, or was undone, so the directory turns to None. So does a `popd`,
+    and a `cd` or `pushd` anywhere the walk does not track, such as after `{`
+    or `then`. None is never a guess: the caller checks every candidate.
     """
     found = []
     current = base
-    saved = []
+    moved = False
     at_start = True
-    moving = False          # the last token was `cd` or `pushd`
+    moving = False          # the last token was a tracked `cd` or `pushd`
     overridden = False      # a GIT_DIR= or GIT_WORK_TREE= prefix on this command
     args = None
     for token in tokens:
@@ -186,11 +196,8 @@ def invocations_with_dirs(tokens, base):
                 where = None if overridden else git_dir(args, current)
                 found.append((where, subcommand_args(args)))
                 args = None
-            for ch in token:
-                if ch == "(":
-                    saved.append(current)
-                elif ch == ")" and saved:
-                    current = saved.pop()
+            if moved and token != "&&":
+                current = None
             at_start, moving, overridden = True, False, False
             continue
         if args is not None:
@@ -198,8 +205,11 @@ def invocations_with_dirs(tokens, base):
         elif moving:
             current = resolve(current, token)
             moving = False
-        elif at_start and token in ("cd", "pushd"):
-            moving = True
+        elif token in ("cd", "pushd", "popd"):
+            if at_start and token != "popd":
+                moving = moved = True
+            else:
+                current, moved = None, True
         elif token == "git":
             args = []
         elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
