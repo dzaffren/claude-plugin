@@ -51,11 +51,13 @@ Scenario: a commit is judged on the branch it lands on
   And from the worktree, "cd <main> && git commit" or "git -C <main> commit"
     is blocked
 
-Scenario: a directory the text cannot say falls back to the session's
-  Given the session on main
-  When the commit follows cd "$VAR", a cd into a missing directory,
-    a cd inside ( … ), or a GIT_DIR= prefix
-  Then the commit is judged on main and blocked, as before
+Scenario: a move the text cannot prove is judged everywhere it could land
+  Given the project dir on main, and the hook's cwd on main or in the worktree
+  When the commit follows a cd the shell may not keep for it (popd, a pipe,
+    &, backticks, a failed &&, braces, an if), cd "$VAR", cd --,
+    a missing directory, GIT_DIR= or --git-dir
+  Then both the cwd and the project dir are checked, and the commit is
+    blocked, never looser than the old project-dir check
 
 Scenario: the secret scan reads the diff the commit takes
   Given a key-shaped value staged in the worktree
@@ -68,38 +70,40 @@ Scenario: the secret scan reads the diff the commit takes
 
 ### Changes
 
-| File                                                   | What changes                                                                                                                                                  |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plugins/zuko/scripts/lib/git-command.py`              | opt-in `--dir <base>`: each line is `<dir>\t<args>`, dir from earlier `cd`/`pushd` (scoped to `( … )`) and `-C`; empty when unknown. Default output unchanged |
-| `plugins/zuko/scripts/block-dangerous.sh`              | start from the payload `cwd`; check the branch of each commit's own directory, empty falling back to the start                                                |
-| `plugins/zuko/scripts/secret-scan.sh`                  | same start; scan the staged diff in each commit's directory                                                                                                   |
-| `plugins/zuko/scripts/tests/test-block-dangerous.sh`   | a worktree beside `main`; 10 cases both ways and the fall-backs                                                                                               |
-| `plugins/zuko/scripts/tests/test-secret-scan.sh` (new) | 5 cases: a secret staged in the worktree, reached by cwd, `cd` and `-C`, and the clean repo                                                                   |
+| File                                                   | What changes                                                                                                                                                                                                                             |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plugins/zuko/scripts/lib/git-command.py`              | opt-in `--dir <base>`: each line is `<dir>\t<args>`, dir from a `cd`/`pushd` in a plain `&&` chain from the start, then `-C`; empty after any other separator following a move, a `popd`, or an untracked `cd`. Default output unchanged |
+| `plugins/zuko/scripts/block-dangerous.sh`              | start from the payload `cwd`; check the branch of each commit's own directory; an empty one checks both the `cwd` and the project dir                                                                                                    |
+| `plugins/zuko/scripts/secret-scan.sh`                  | same start; scan the staged diff in each commit's directory; an empty one scans both                                                                                                                                                     |
+| `plugins/zuko/scripts/tests/test-block-dangerous.sh`   | a worktree beside `main`; 22 cases both ways, the moves the shell does not keep, and the fall-backs                                                                                                                                      |
+| `plugins/zuko/scripts/tests/test-secret-scan.sh` (new) | 8 cases: a secret staged in the worktree reached by cwd, `cd` and `-C`; one staged in the project repo reached by `cd --`, `cd "$R"` and `pushd`/`popd`                                                                                  |
 
 ### Non-functionals
 
-|                      |                                                                                                                 |
-| -------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Load**             | one more `python3` parse per Bash call that contains a commit                                                   |
-| **Breaks first**     | a `GIT_DIR=` override still falls back to the start, so from a worktree it can reach `main` unjudged, as before |
-| **Security surface** | two guards; the change closes a false allow in each and the old-versus-new diff found no new one                |
-| **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` prints `17 passed`; `secret-scan` prints `5 passed`    |
-| **Rollout**          | no flag: hook scripts. Rollback is `git revert` of the two fix commits                                          |
+|                      |                                                                                                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Load**             | one more `python3` parse per Bash call that contains a commit                                                                                              |
+| **Breaks first**     | a `GIT_DIR=` override into a third repo on `main`, from a session whose cwd and project dir are both off `main`: neither candidate is on `main`, as before |
+| **Security surface** | two guards; the change closes a false allow in each. An unknown directory checks the cwd and the project dir, so no verdict is looser than the old one     |
+| **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` prints `29 passed`; `secret-scan` prints `8 passed`                                               |
+| **Rollout**          | no flag: hook scripts. Rollback is `git revert` of the five fix commits                                                                                    |
 
 ### Test plan
 
 **E2E:** `bash plugins/zuko/scripts/tests/run.sh block-dangerous` and
-`... secret-scan`. Before the fix they failed 4 of 17 and 3 of 5; after, both
-pass in full. The full suite gives 1731 passed, 0 failed. The old and new
-`block-dangerous.sh` were run on the same 30 commands from both `main` and the
-worktree: 9 verdicts moved from block to allow, every one a commit landing off
-`main`, and 4 from allow to block, every one a commit landing on `main`.
+`... secret-scan`. Before the first fix they failed 4 of 17 and 3 of 5. The
+review's 14 cases then failed against that fix and pass after the second. Both
+now pass in full, and the full suite gives 1746 passed, 0 failed. The old
+(`8d2d6b4`) and new `block-dangerous.sh` were run on the same 41 commands, with
+the project dir on `main` and the cwd on `main` and in the worktree: 16
+verdicts moved from block to allow, every one a commit that lands in the
+worktree or outside a repo, and none that lands on `main`.
 
 ## Open items
 
-| ID  | What                                                     | Type     | Raised at | Owner  | Status   | Answer                                                                                  |
-| --- | -------------------------------------------------------- | -------- | --------- | ------ | -------- | --------------------------------------------------------------------------------------- |
-| O1  | Does the narrower check let through anything it blocked? | question | /debug    | claude | Resolved | No: the 30-command diff moved only commits that land off `main` to allow (2026-09-28)   |
-| O2  | Should a `GIT_DIR=` override be blocked outright?        | question | /debug    | claude | Resolved | No: it falls back to the start as before, not a regression; recorded under Breaks first |
+| ID  | What                                                     | Type     | Raised at | Owner  | Status   | Answer                                                                                                                                                                                                                               |
+| --- | -------------------------------------------------------- | -------- | --------- | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| O1  | Does the narrower check let through anything it blocked? | question | /debug    | claude | Resolved | First answer was wrong: /review found popd, pipes, `&`, backticks, braces and a cwd-only fall-back let commits onto `main` through. After the fix, the 41-command diff moves only commits that land off `main` to allow (2026-09-29) |
+| O2  | Should a `GIT_DIR=` override be blocked outright?        | question | /debug    | claude | Resolved | No: an unknown directory now checks the cwd and the project dir, which blocks it whenever either is on `main`; the rest is under Breaks first                                                                                        |
 
 _Never delete this section or its rows. See references/ledger.md._

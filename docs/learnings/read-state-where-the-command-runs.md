@@ -11,8 +11,12 @@ staged diff, so a secret staged in a worktree went through unscanned.
 ## The rule
 
 A guard that judges repo state — the branch, the staged diff — reads it in
-the directory the command runs in: the hook payload's `cwd`, moved by any
-`cd` or `pushd` before the git call and by git's `-C`
-(`lib/git-command.py --dir <base>`). A directory the text cannot say falls
-back to the start, never to a guess. Test it with a worktree beside `main`,
-in both directions.
+the directory the command runs in: the hook payload's `cwd`, moved by git's
+`-C` and by a `cd` or `pushd` only where the shell is sure to keep it, a plain
+`&&` chain (`lib/git-command.py --dir <base>`). A pipe, `&`, `;`, backticks,
+`popd`, braces or an `if` after a move make the directory unknown, and an
+unknown one is judged in every place it could be — the `cwd` and the project
+dir — so the new check is never looser than the old. The first version
+trusted every `cd` and fell back to the `cwd` alone; /review found 14 ways
+onto `main` through it. Diff old against new with the project dir and the
+`cwd` set apart, not equal, or half the cases never run.
