@@ -148,3 +148,8 @@ expect_match '^## Glossary$' "$(last_heading "$scripts/../skills/spec/references
 expect_match '^## Glossary$' "$(awk '/^```markdown$/ { inside = 1; next } inside && /^```$/ { exit } inside' \
   "$scripts/../skills/shape/SKILL.md" | grep '^## ' | tail -1)" \
   "templates: the shape template ends with ## Glossary"
+
+# A spec copied from the template, its fixed text kept, defines every listed
+# term that text uses.
+template_missing=$(python3 "$scripts/lib/glossary.py" missing "$scripts/../skills/spec/references/spec-template.md")
+expect_match '^$' "$template_missing" "templates: the spec template's own text uses no undefined term"
