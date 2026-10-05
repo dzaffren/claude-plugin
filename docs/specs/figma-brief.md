@@ -190,6 +190,20 @@ Reusing: Pause A's trace block and its "extract, do not interview" rule.
 frame link (with `node-id`) from a file they own, and the brief's trace lines go into
 this spec.
 
+**Build result (2026-10-05):** `run.sh figma-brief` 12 passed, 0 failed;
+`run.sh design-system` 22 passed, 0 failed. Headless runs from a scratch
+product whose `src/styles.css` holds four tokens:
+
+- `/zuko:design-system` (scenario 3): Pause A extracted the four values
+  and asked the brief questions; the word "Figma" appears nowhere in the
+  output. Pass.
+- `/zuko:design-system https://www.figma.com/design/AbC123/Invoice-Web?node-id=12-34`
+  (scenario 4): the reply opened with the disconnected line word for word
+  and built the brief from the repo, with no Figma call. Pass.
+- The connected run on a real Figma file (scenarios 1, 2, 5; O3) has not
+  happened: headless, the Figma server reports `needs-auth` and lists no
+  tools. The slice stays Refined until it runs.
+
 ### Chunks
 
 Single chunk.
