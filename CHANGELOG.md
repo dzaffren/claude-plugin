@@ -25,6 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Diagrams in zuko's terminal replies are drawn in ASCII so they read in the terminal; specs and pages keep Mermaid.
 - /shape NOV-125 starts the shape from that Jira ticket when Jira is connected: it reads the summary and description and asks only what the ticket leaves open.
 - New specs and shapes end with a Glossary, and a turn that leaves a Draft or Refined spec, or a shape, using a listed term such as semver or SSRF without a glossary entry fails with the doc and the term named.
+- /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles, each token traced to its Figma variable.
 
 ### Fixed
 

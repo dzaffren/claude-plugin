@@ -274,3 +274,13 @@ separate config file for the list (one list, one reader), checking Built and Shi
 specs (they are records, and every old spec would fail).
 Source: specs/glossary-gate.md
 Status: active
+
+## D26 · 2026-09-25 · /design-system reads a Figma file only when Figma is already connected, and only reads
+
+Why: a team's Figma variables are the brief's answers already; connecting Figma is
+the user's own setup, and zuko's rule is to use an integration only when it is there.
+Rejected: asking for an exported tokens JSON (a manual step the MCP removes), prompting
+the user to connect Figma when no link was given (mentions a tool they may not use),
+writing tokens back to Figma (a setup flow, out per the shape).
+Source: specs/figma-brief.md
+Status: active
