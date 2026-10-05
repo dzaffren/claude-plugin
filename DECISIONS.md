@@ -284,3 +284,36 @@ the user to connect Figma when no link was given (mentions a tool they may not u
 writing tokens back to Figma (a setup flow, out per the shape).
 Source: specs/figma-brief.md
 Status: active
+
+## D27 · 2026-10-05 · The release step sends the live requests; the pentester's fence stays untouched
+
+Why: the pentester's Bash is fenced by scope-pentester-bash.sh (D14), which blocks
+curl. Rather than carve a hole in a boundary reviewed twice, the fenced pentester
+reads the code and names the A01/A07 requests, and the release step sends them with
+curl from its own main-thread context and feeds the responses back to judge. D14 is
+left exactly as it shipped.
+Rejected: loosening the fence to let the pentester curl the target host while the
+target file exists (reopens the fence, and one mistake there is an attack on a third
+party); a second fenced sub-agent allowed to curl (two boundaries to keep in step).
+Source: specs/pentest-live.md
+Status: active
+
+## D28 · 2026-10-05 · A hook, not the prompt, holds the live pentest to its one target
+
+Why: a request to a host the user did not name attacks a third party; the guard
+reads one file the skill writes, the way block-dangerous.sh guards destructive
+commands. It guards the release step's main-thread curls (D27).
+Rejected: a prompt rule alone (drifts, and one miss is an attack on someone else), a
+network sandbox (sandbox-exec is deprecated on macOS; Docker is a dependency most
+projects lack).
+Source: specs/pentest-live.md
+Status: active
+
+## D29 · 2026-10-05 · Live proofs read, and change only data the run created
+
+Why: staging often holds shared or real data; a proof that deletes another user's
+invoice is damage, not evidence, and reading it proves the same hole.
+Rejected: any request that proves the hole (destroys staging data), no write
+requests at all (cannot test create or delete routes).
+Source: specs/pentest-live.md
+Status: active
