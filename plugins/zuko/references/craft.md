@@ -142,7 +142,7 @@ no new token, no one-off value.
 Needs something the system doesn't have → stop and ask:
 
 - **add it to the system** — a deliberate decision, goes through
-  `/design system`, and every slice inherits it, or
+  `/design-system`, and every slice inherits it, or
 - **rework the screen** with what exists.
 
 Never invent silently. `check-design-drift.sh` enforces this on the code side;

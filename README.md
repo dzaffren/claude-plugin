@@ -17,7 +17,7 @@ flowchart LR
     S -. "next slice" .-> SP
 ```
 
-Five stages in the line, five helpers reached whenever needed.
+Five stages in the line, six helpers reached whenever needed.
 
 | Command | What it does |
 | ------- | ------------ |
@@ -26,7 +26,8 @@ Five stages in the line, five helpers reached whenever needed.
 | `/build` | Test-first, scenario by scenario, parallel chunks in isolated worktrees, ends with the slice's e2e test green |
 | `/review` | Correctness, security, and quality in one pass. Every finding re-judged blind. |
 | `/ship` | Checks the gates, opens the PR, watches CI to green, confirms the signal that proves it works |
-| `/design` | `system` builds the product's one design system through Claude Design; `{thing}` designs a screen from it, no spec needed |
+| `/design-system` | Builds or extends the product's one design system through Claude Design: brief, direction, primitives, push |
+| `/design` | Designs one screen or component from the design system, no spec needed |
 | `/poc` | A timeboxed spike answering one risky question. Code dies, answer stays. |
 | `/debug` | Reproduce, find the root cause, fix it if small or route to `/spec` if it is design |
 | `/status` | Where every slice sits: version, status, open items, next command |
@@ -83,7 +84,7 @@ has its own.
 ```mermaid
 flowchart TB
     subgraph once["once per product"]
-        A["/design system"] --> B[("claude.ai/design<br/>tokens + primitives")]
+        A["/design-system"] --> B[("claude.ai/design<br/>tokens + primitives")]
     end
     subgraph each["every slice"]
         C["/spec pause 2"] --> D["assemble from primitives"] --> E{"drift check"}
@@ -94,7 +95,7 @@ flowchart TB
     F -. "shipped, reused twice" .-> B
 ```
 
-`/design system` starts with a brief, because a system built without one fills
+`/design-system` starts with a brief, because a system built without one fills
 its gaps with the model's defaults, and those defaults are the slop. Every
 token traces back to an answer in the brief.
 
