@@ -233,3 +233,13 @@ allows for blanks in node labels), keeping the quote-the-label workaround (every
 spec author has to know an undocumented rule).
 Source: specs/mermaid-placeholder.md
 Status: active
+
+## D22 · 2026-09-25 · /design-system is its own skill; /design system prints the new name
+
+Why: one skill with two modes chosen by the word "system" cannot design a screen
+called system, and figma-brief extends only the design-system half.
+Rejected: keeping both modes in one skill (the ambiguity stays), dropping the old
+spelling silently (old specs and habits hit an unknown-mode error), a permanent
+alias that runs the system mode (two names for one thing).
+Source: specs/design-system.md
+Status: active
