@@ -1,6 +1,6 @@
 # Jira shape
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 9 of 9
 **Depends on:** None
@@ -172,6 +172,26 @@ unsure is asked or written as an assumption.
 first reply must quote NOV-125's summary, not the disconnected line. A reply with the
 disconnected line on a machine where `mcp-atlassian` is configured is a failure of
 the retry rule, not a pass of scenario 3.
+
+**E2E result (2026-10-05):** headless runs with `--plugin-dir`/`--add-dir`
+on the build worktree's `plugins/zuko`, `--allowedTools
+mcp__mcp-atlassian__jira_get_issue`, and every mcp-atlassian write tool
+under `--disallowedTools`.
+
+- `/zuko:shape NOV-125` (scenario 1): called `jira_get_issue`; the first
+  reply opened with the summary "Inconsistent Analyst Name Extraction in
+  Earnings Report Module" and its browse URL, then asked only what the
+  ticket leaves open. Pass.
+- `/zuko:shape NOV-9999` (scenario 4): quoted Jira's "Issue NOV-9999 not
+  found" error and fell back to step 1's questions. Pass.
+- `/zuko:shape invoice exports are slow` (scenario 2): step 1 as before,
+  no Jira search, no mention of Jira. Pass.
+- A first attempt ran the three at once; `mcp-atlassian` timed out
+  connecting in both key runs and the skill printed the disconnected line
+  after 5 searches. Per the E2E rule above that is a failure, so the key
+  runs were repeated one at a time and passed.
+
+`run.sh jira-shape`: 10 passed, 0 failed.
 
 ### Chunks
 
