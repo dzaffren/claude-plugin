@@ -24,6 +24,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - /design-system is its own command for building or extending the product's design system; /design now designs screens only, and /design system tells you the new name.
 - Diagrams in zuko's terminal replies are drawn in ASCII so they read in the terminal; specs and pages keep Mermaid.
 - /shape NOV-125 starts the shape from that Jira ticket when Jira is connected: it reads the summary and description and asks only what the ticket leaves open.
+- New specs and shapes end with a Glossary, and a turn that leaves a Draft or Refined spec, or a shape, using a listed term such as semver or SSRF without a glossary entry fails with the doc and the term named.
 
 ### Fixed
 
