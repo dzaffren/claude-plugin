@@ -188,6 +188,7 @@ projects.
 - /design-system builds the product's design system as its own command; /design is for screens and points its old system form at the new name
 - Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages
 - /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira
+- Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it
 
 ## Docs
 
