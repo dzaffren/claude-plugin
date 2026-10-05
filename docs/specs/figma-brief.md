@@ -203,7 +203,10 @@ product whose `src/styles.css` holds four tokens:
 - The connected run on a real Figma file (scenarios 1, 2, 5; O3) has not
   happened: headless, the Figma server reports `needs-auth` and lists no
   tools. Not run: accepted as a risk on 2026-10-05 (O4), and the slice is
-  marked Built on the contract tests and the two headless runs.
+  marked Built on the contract tests and the two headless runs. Shipped in
+  PR #66 on 2026-10-05 with that run still not done; O4 holds the reason.
+  PR #66 review added URL-decoding of the node-id, and `run.sh
+  figma-brief` then passed 13, 0 failed.
 
 ### Chunks
 
