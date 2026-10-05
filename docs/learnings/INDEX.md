@@ -127,3 +127,6 @@ One line per lesson. Loaded into every session in this repo.
 - A guard reads the branch or staged diff where the command runs, trusting a
   `cd` only in an `&&` chain; an unknown dir checks the cwd and the project dir.
   ([detail](read-state-where-the-command-runs.md))
+- An Edit or Write on a Markdown file here gets reformatted by an outside
+  hook — check `git diff` and restore what you did not mean to change.
+  ([detail](markdown-edits-get-reformatted.md))

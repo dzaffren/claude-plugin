@@ -21,6 +21,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The review's blind checker drops a finding for a defence only when it cites the file and line it read, and a confirmed security finding names who can exploit it and what they gain.
 - A shape cannot be marked Shaped, or a spec Refined, while its ledger still has an Open question. A shape can hand a question to a later slice instead, and that slice's /spec picks it up as open.
 - A hook blocks gh pr create when the PR body or title carries Claude attribution, as it already did for commits, tags and releases.
+- /design-system is its own command for building or extending the product's design system; /design now designs screens only, and /design system tells you the new name.
 
 ### Fixed
 
