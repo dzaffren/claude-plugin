@@ -143,6 +143,8 @@ the ship gate checks the `[Unreleased]` diff for it.
 
 ## Glossary
 
+- **ADR** — Architecture Decision Record: a short file that records one design
+  choice and why it was made.
 - **Brownfield / greenfield** — an existing codebase / a brand-new one.
 - **Hub page** — the one project-level web page; each slice's page hangs off it.
 - **Keep a Changelog** — a common changelog format: newest version first, an

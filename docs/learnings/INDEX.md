@@ -136,3 +136,6 @@ One line per lesson. Loaded into every session in this repo.
 - With several slices Built, pass the spec path to `verify-ship-gates.sh` and
   read its `Spec:` line — with no argument it gates the first Built spec.
   ([detail](name-the-spec-when-several-are-built.md))
+- A spec's backfill list goes stale before build — run the built check over
+  the live docs, untracked ones included, and backfill what it prints.
+  ([detail](recompute-a-backfill-list-at-build.md))

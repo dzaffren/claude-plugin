@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-10-05 by /ship jira-shape
+**Status:** Active · **Updated:** 2026-10-05 by /ship glossary-gate
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -47,9 +47,10 @@ projects.
 | pr-attribution | Shipped | The attribution hook blocks a gh pr create whose body or title signs Claude's name | https://claude.ai/artifact/5e7QMLTaHEKMdAijQ1W6JC |
 | mermaid-placeholder | Shipped | The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder | https://claude.ai/artifact/AnCszTToZDaHLDVcsyevpu |
 | guard-worktree-dir | Shipped | A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned | — |
-| design-system | Shipped | /design-system builds the product's design system as its own command; /design is for screens, and /design system prints the new name | https://claude.ai/artifact/M3tjreL4wLrQ1qxyWzEPCA |
+| design-system | Shipped | /design-system builds the product's design system as its own command; /design is for screens and points its old system form at the new name | https://claude.ai/artifact/M3tjreL4wLrQ1qxyWzEPCA |
 | ascii-terminal | Shipped | Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages | https://claude.ai/artifact/TNetgs99avn7udEDAXJxhA |
 | jira-shape | Shipped | /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira | https://claude.ai/artifact/RvxWtxemNhGHe3catVwNKC |
+| glossary-gate | Built | Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it | https://claude.ai/artifact/LN5TASnzHBzZak1Ge8CvwK |
 
 ## More
 

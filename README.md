@@ -185,7 +185,7 @@ projects.
 - The attribution hook blocks a gh pr create whose body or title signs Claude's name
 - The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder
 - A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned
-- /design-system builds the product's design system as its own command; /design is for screens, and /design system prints the new name
+- /design-system builds the product's design system as its own command; /design is for screens and points its old system form at the new name
 - Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages
 - /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira
 
