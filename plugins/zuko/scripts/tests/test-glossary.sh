@@ -58,6 +58,22 @@ semver: MAJOR.MINOR.PATCH
 gate
 expect_exit 0 "$gate_status" "code and paths: inline code, a fence and a path pass"
 
+# A fence closes only on its own character, at least as long: an inner fence
+# inside a longer one, or a ~~~ line inside a ``` block, is still code.
+spec refunds.md Draft '````markdown
+```bash
+npx semver 1.2.3
+```
+semver stays inside the outer fence
+````
+
+```text
+~~~
+semver after a tilde line is still code
+```'
+gate
+expect_exit 0 "$gate_status" "nested fences: code inside an outer fence passes"
+
 # A plural is still a use of the term; a term inside a longer word is not.
 spec refunds.md Refined "Earlier ADRs chose the processor, and the steps are retried idempotently."
 gate

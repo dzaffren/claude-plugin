@@ -44,12 +44,17 @@ def split(text):
     """(prose, glossary lines): prose has code removed; the glossary is the
     lines under "## Glossary" up to the next "## " heading."""
     prose, glossary = [], []
-    fenced = in_glossary = False
+    fence = ""    # the open fence's marker; it closes on the same character, at least as long
+    in_glossary = False
     for line in text.splitlines():
-        if FENCE.match(line):
-            fenced = not fenced
+        marker = FENCE.match(line)
+        if fence:
+            if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence) \
+                    and not line[marker.end():].strip():
+                fence = ""
             continue
-        if fenced:
+        if marker:
+            fence = marker.group(1)
             continue
         if line.startswith("## "):
             in_glossary = bool(GLOSSARY.match(line))
