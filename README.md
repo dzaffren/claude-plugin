@@ -190,6 +190,7 @@ projects.
 - /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira
 - Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it
 - /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles
+- /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named
 
 ## Docs
 
