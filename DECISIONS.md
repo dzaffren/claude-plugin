@@ -264,3 +264,13 @@ ticket (the MCP is already connected), matching a key anywhere in the argument (
 idea that mentions a ticket is still an idea).
 Source: specs/jira-shape.md
 Status: active
+
+## D25 · 2026-09-25 · The glossary gate checks a closed term list, in live docs only
+
+Why: a named list of 17 terms can be read and argued with; live docs (Draft and
+Refined specs, and shapes) are the ones still being read to make decisions.
+Rejected: detecting jargon by heuristic (false positives with no way to argue), a
+separate config file for the list (one list, one reader), checking Built and Shipped
+specs (they are records, and every old spec would fail).
+Source: specs/glossary-gate.md
+Status: active
