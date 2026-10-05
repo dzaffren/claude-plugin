@@ -143,6 +143,9 @@ Write `docs/specs/{idea}/shape.md`:
 
 ## Open items
 {the ledger table}
+
+## Glossary
+{each term a reader may not know, as `- **Term** — meaning`}
 ```
 
 Write the `**Source:**` line only when step 1 read a Jira ticket.

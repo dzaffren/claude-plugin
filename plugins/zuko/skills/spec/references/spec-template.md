@@ -187,3 +187,9 @@ DECISIONS.md and replaces them with "Recorded as D7, D8."}
 | O1  | {…}  | question | shape     | user  | Open   | —      |
 
 _Never delete this section or its rows. See references/ledger.md._
+
+## Glossary
+
+_(one entry per term a reader may not know; the spec gate checks the terms on its list)_
+
+- **e2e** — end-to-end: one test that walks the whole slice as a user would
