@@ -110,10 +110,10 @@ setup or login — the user's `/mcp`; FigJam and Slides links — no slice; Jira
 **Connected** means the session lists Figma's `get_variable_defs` tool under the
 Figma server. Only an `authenticate` tool listed means not connected.
 
-**The node** comes from the link's `node-id` query parameter, with its `-` turned
-into `:` (`node-id=12-34` → `12:34`), because `get_variable_defs` returns "the
-variables and styles used in your Figma selection" (Figma MCP docs, O2), not a whole
-file's. A link with no `node-id` gets the whole-file line from the scenarios.
+**The node** comes from the link's `node-id` query parameter, URL-decoded, with any
+`-` turned into `:` (`node-id=12-34` → `12:34`; an older link's `node-id=12%3A34` →
+`12:34`), because `get_variable_defs` returns "the variables and styles used in your
+Figma selection" (Figma MCP docs, O2), not a whole file's. A link with no `node-id` gets the whole-file line from the scenarios.
 
 The brief's trace, one line per token, in the existing trace block
 (`design/SKILL.md:52`):

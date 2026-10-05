@@ -33,6 +33,7 @@ expect_no_match 'get_design_context' "$pause_a" "Pause A does not call get_desig
 
 # --- scenario 2: the node-id rule and the whole-file line ---
 expect_flat '`node-id=12-34` → `12:34`' "Pause A turns the link's node-id dashes into colons"
+expect_flat '`node-id=12%3A34` → `12:34`' "Pause A URL-decodes an older link's encoded node-id"
 expect_flat "That link opens the whole file, and Figma's tools read one frame. Open the frame that holds your tokens, copy its link (it has node-id= in it), and paste it here, or say skip and I'll build the brief from the repo." \
   "Pause A asks for a frame link when the link has no node-id"
 expect_flat 'skip → continue from the repo, reading nothing from Figma' "Pause A's skip continues from the repo without reading Figma"

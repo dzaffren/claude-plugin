@@ -32,8 +32,9 @@ tool. Only an `authenticate` tool listed means not connected.
 - Not connected → say "The Figma tools are not connected, so I can't read
   that file. Run /mcp to connect Figma, or I'll build the brief from the
   repo." and continue from the repo.
-- The node is the link's `node-id` query parameter with its `-` turned into
-  `:` (`node-id=12-34` → `12:34`). `get_variable_defs` reads the variables
+- The node is the link's `node-id` query parameter, URL-decoded, with any
+  `-` turned into `:` (`node-id=12-34` → `12:34`; an older link's
+  `node-id=12%3A34` → `12:34`). `get_variable_defs` reads the variables
   and styles one frame uses, not a whole file. No `node-id` → say "That link
   opens the whole file, and Figma's tools read one frame. Open the frame that
   holds your tokens, copy its link (it has node-id= in it), and paste it
