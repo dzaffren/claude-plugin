@@ -5,7 +5,7 @@ is how the user looks at it.
 
 ## Why both
 
-The terminal is where the work happens, and Mermaid renders there fine. But a
+The terminal is where the work happens, and it shows Mermaid as source. But a
 spec is also something you read on a phone, hand to someone, or come back to
 in three months. That wants a real page.
 

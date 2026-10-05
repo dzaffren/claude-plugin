@@ -244,7 +244,38 @@ alias that runs the system mode (two names for one thing).
 Source: specs/design-system.md
 Status: active
 
-## D25 · 2026-09-25 · /design-system reads a Figma file only when Figma is already connected, and only reads
+## D23 · 2026-09-25 · Terminal replies draw diagrams in ASCII; Mermaid stays the source in files and pages
+
+Why: Claude Code's terminal prints Mermaid as source, and the user already asked
+for ASCII there; files and pages render Mermaid and diff cleanly in git.
+Rejected: Mermaid everywhere (unreadable in the terminal), ASCII in the files too
+(pages lose rendered diagrams, and ASCII diffs badly), a Mermaid-to-ASCII converter
+(a dependency for what the model can draw directly).
+Source: specs/ascii-terminal.md
+Status: active
+
+## D24 · 2026-09-25 · /shape reads a Jira ticket when the whole argument is a key and Jira is connected, and never writes to Jira
+
+Why: a ticket already holds the problem statement; reading it saves the retyping,
+and zuko uses an integration only when it is already there (shape O7).
+Rejected: commenting or transitioning the ticket from /shape (a write the user did
+not ask for, and a setup flow the shape ruled out), asking the user to paste the
+ticket (the MCP is already connected), matching a key anywhere in the argument (an
+idea that mentions a ticket is still an idea).
+Source: specs/jira-shape.md
+Status: active
+
+## D25 · 2026-09-25 · The glossary gate checks a closed term list, in live docs only
+
+Why: a named list of 17 terms can be read and argued with; live docs (Draft and
+Refined specs, and shapes) are the ones still being read to make decisions.
+Rejected: detecting jargon by heuristic (false positives with no way to argue), a
+separate config file for the list (one list, one reader), checking Built and Shipped
+specs (they are records, and every old spec would fail).
+Source: specs/glossary-gate.md
+Status: active
+
+## D26 · 2026-09-25 · /design-system reads a Figma file only when Figma is already connected, and only reads
 
 Why: a team's Figma variables are the brief's answers already; connecting Figma is
 the user's own setup, and zuko's rule is to use an integration only when it is there.

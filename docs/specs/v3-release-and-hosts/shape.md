@@ -170,9 +170,19 @@ report        → docs/security/vX.Y.Z/report.md
 - **Blind verifier** — a second agent that re-judges a finding without seeing why the
   first agent thought it was a bug.
 - **Fail-open** — on error, the code lets the request through instead of refusing it.
+- **Lockfile** — the file that pins every dependency's exact version, such as
+  `package-lock.json`.
+- **OWASP** — the Open Worldwide Application Security Project, which publishes the
+  OWASP Top 10 below.
 - **OWASP Top 10** — the standard list of the ten most serious web-app security risk
   categories; the 2025 edition is current.
 - **Pentest** — penetration test: attacking your own app on purpose to find holes
   before someone else does.
+- **SARIF** — a standard JSON format for static-analysis findings, which code hosts
+  can show inline on a pull request.
 - **Semver** — `MAJOR.MINOR.PATCH` version numbers; MAJOR changes break existing users.
 - **Silent failure** — an error the code swallows, so nobody learns it happened.
+- **SSRF** — server-side request forgery: tricking a server into fetching a URL the
+  attacker chose.
+- **XSS** — cross-site scripting: getting a page to run an attacker's script in
+  another user's browser.

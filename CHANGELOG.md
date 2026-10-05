@@ -21,6 +21,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The review's blind checker drops a finding for a defence only when it cites the file and line it read, and a confirmed security finding names who can exploit it and what they gain.
 - A shape cannot be marked Shaped, or a spec Refined, while its ledger still has an Open question. A shape can hand a question to a later slice instead, and that slice's /spec picks it up as open.
 - A hook blocks gh pr create when the PR body or title carries Claude attribution, as it already did for commits, tags and releases.
+- /design-system is its own command for building or extending the product's design system; /design now designs screens only, and /design system tells you the new name.
+- Diagrams in zuko's terminal replies are drawn in ASCII so they read in the terminal; specs and pages keep Mermaid.
+- /shape NOV-125 starts the shape from that Jira ticket when Jira is connected: it reads the summary and description and asks only what the ticket leaves open.
+- New specs and shapes end with a Glossary, and a turn that leaves a Draft or Refined spec, or a shape, using a listed term such as semver or SSRF without a glossary entry fails with the doc and the term named.
 
 ### Fixed
 

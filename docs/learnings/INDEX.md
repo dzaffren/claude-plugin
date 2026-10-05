@@ -127,3 +127,15 @@ One line per lesson. Loaded into every session in this repo.
 - A guard reads the branch or staged diff where the command runs, trusting a
   `cd` only in an `&&` chain; an unknown dir checks the cwd and the project dir.
   ([detail](read-state-where-the-command-runs.md))
+- An Edit or Write on a Markdown file here gets reformatted by an outside
+  hook — check `git diff` and restore what you did not mean to change.
+  ([detail](markdown-edits-get-reformatted.md))
+- Resolve a `DECISIONS.md` merge conflict by rebuilding it — base file plus
+  the branch's new entries — then run `decisions.py check`.
+  ([detail](rebuild-decisions-on-a-merge.md))
+- With several slices Built, pass the spec path to `verify-ship-gates.sh` and
+  read its `Spec:` line — with no argument it gates the first Built spec.
+  ([detail](name-the-spec-when-several-are-built.md))
+- A spec's backfill list goes stale before build — run the built check over
+  the live docs, untracked ones included, and backfill what it prints.
+  ([detail](recompute-a-backfill-list-at-build.md))
