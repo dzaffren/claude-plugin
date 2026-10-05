@@ -130,7 +130,7 @@ sequenceDiagram
     V->>G: missing docs/specs/refunds.md
     G->>G: drop fences, inline code; find TERMS as whole words
     G->>G: read "- **Term**" lines under ## Glossary
-    G-->>V: "semver"
+    G-->>V: "docs/specs/refunds.md<TAB>semver"
     V-->>V: problem line, exit 2
 ```
 
@@ -138,9 +138,9 @@ sequenceDiagram
 
 | File                                                   | What changes                                                                                                         | Why            |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `plugins/zuko/scripts/lib/glossary.py` (new)           | `TERMS`, the closed list; `missing PATH` prints each undefined term                                                  | scenarios 1, 2 |
+| `plugins/zuko/scripts/lib/glossary.py` (new)           | `TERMS`, the closed list; `missing PATH...` prints `path<TAB>term` for each undefined term, one call for every live doc                                                  | scenarios 1, 2 |
 | `plugins/zuko/scripts/verify-gates.sh:14`              | For a spec at `Draft` or `Refined`, and for `shape.md` (skipped today at `:16`), add a problem line per missing term | scenarios 1, 3 |
-| `plugins/zuko/skills/spec/references/spec-template.md` | `## Glossary` after `## Open items`, with `- **e2e** — end-to-end: one test that walks the whole slice as a user would` as its entry, since the template's Slice test row uses the term in every spec | scenario 4, O3 |
+| `plugins/zuko/skills/spec/references/spec-template.md` | `## Glossary` after `## Open items`, with entries for e2e, backfill and lockfile, since the template's own fixed text (the Slice test row, the Migration line, the Chunks note) uses each of them | scenario 4, O3 |
 | `plugins/zuko/skills/shape/SKILL.md:97`                | The shape template gains `## Glossary` as its last section                                                           | scenario 4     |
 | `plugins/zuko/scripts/tests/test-glossary.sh` (new)    | Scenarios 1–3 through the real `verify-gates.sh` on a scratch tree under `$work`; scenario 4 greps both templates    | all            |
 | Live docs the new check fails (backfill) | One commit before the gate commit adds the missing `- **Term**` entries under `## Glossary`. Hand run on 2026-09-25: `ascii-terminal`, `design-system`, `figma-brief`, `jira-shape`, `mermaid-placeholder`, `pr-attribution`, `release-host-message` (e2e); `ledger-handoff` (e2e, backfill); `glossary-gate` (e2e, fail-open, SSRF, CVE, ADR, backfill); `owasp-lens` (e2e, pentest, OWASP, SSRF, XSS, SARIF); `pentest` (e2e, lockfile, OWASP); `pentest-live` (e2e, pentest, XSS); `regression-review` (e2e, pentest, CVE); `v3-project-memory/shape.md` (ADR); `v3-release-and-hosts/shape.md` (lockfile, SSRF, XSS, SARIF). `/build` reruns the check first, since specs move to Built in between | O3; the `a-new-gate-check-breaks-every-fixture` lesson |
