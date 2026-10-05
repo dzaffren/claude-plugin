@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-05
+
 ### Added
 
 - /ship writes plain-language lines to CHANGELOG.md for every feature or fix, and the ship gate refuses a feature or fix branch that adds none.
@@ -35,3 +37,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - /release on a GitLab repo now says plainly that it supports GitHub only, instead of promising GitLab releases in a later slice.
 - A commit made in another worktree is now checked on that worktree's branch, so zuko no longer blocks it as a commit on main, and a commit from a worktree onto main is blocked.
 - The secret scan now reads the staged changes of the repo a commit runs in, so a secret staged in another worktree is caught.
+
+### Security
+
+- Known medium issue: A06:2025 Insecure Design in plugins/zuko/scripts/scope-pentester-bash.sh; see docs/security/v2.2.0/report.md.
+- Known low issue: A05:2025 Injection in plugins/zuko/scripts/check-design-drift.sh; see docs/security/v2.2.0/report.md.
+- Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
+- Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
+
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
