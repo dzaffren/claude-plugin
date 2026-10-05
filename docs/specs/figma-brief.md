@@ -1,6 +1,6 @@
 # Figma brief
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 8 of 9
 **Depends on:** `design-system` — this extends that skill's Pause A
@@ -138,7 +138,7 @@ Cut: `get_design_context`. The O2 spike found it returns code for a layer (React
 and Tailwind by default), not a component list, so it adds nothing the brief uses;
 dropping it also drops the `figma:figma-design-to-code` skill it needs loaded first.
 
-Relies on: D25
+Relies on: D26
 
 ```mermaid
 sequenceDiagram
@@ -202,7 +202,8 @@ product whose `src/styles.css` holds four tokens:
   and built the brief from the repo, with no Figma call. Pass.
 - The connected run on a real Figma file (scenarios 1, 2, 5; O3) has not
   happened: headless, the Figma server reports `needs-auth` and lists no
-  tools. The slice stays Refined until it runs.
+  tools. Not run: accepted as a risk on 2026-10-05 (O4), and the slice is
+  marked Built on the contract tests and the two headless runs.
 
 ### Chunks
 
@@ -217,7 +218,7 @@ Single chunk.
 
 ### Decisions to record
 
-Recorded as D25.
+Recorded as D26.
 
 ## Open items
 
@@ -226,6 +227,7 @@ Recorded as D25.
 | O1  | Assuming "connected" means Figma's read tools are listed, not just its `authenticate` tool (default chosen autonomously; alternative: try a read and treat a failure as disconnected) | assumption | spec p2   | user  | Resolved | Default accepted by the user, 2026-09-25 |
 | O2  | `get_variable_defs` and `get_design_context` exist under the Figma plugin's server and return variables and components for a file link                                                | unproven   | spec p3   | poc   | Resolved | Names confirmed 2026-09-25. developers.figma.com/docs/figma-mcp-server/tools-and-prompts lists both as read tools. `get_variable_defs` "returns the variables and styles used in your Figma selection, such as colors, spacing, and typography". `get_design_context` gives the design context for a layer or selection, by default as React plus Tailwind code, not a component list. The installed plugin agrees (`figma/2.2.120/.mcp.json:20,25`, `README.md:252-253`; server `https://mcp.figma.com/mcp`). Both are scoped to a selection or node, so the plan reads a node from the link rather than a whole file. Call not exercised: Figma is not authenticated in this session |
 | O3  | Assuming a hand-recorded run on a real Figma file is the e2e (default chosen autonomously; alternative: a fixture file checked into Figma for tests)                                  | assumption | spec p3   | user  | Resolved | Default accepted by the user, 2026-09-25 |
+| O4  | The recorded run on a real Figma frame (O3's e2e) has not happened, so scenarios 1, 2 and 5 are unproven against a live Figma server | flag | build | user | Accepted risk | Accepted by the user, 2026-10-05. Reason: Figma is not authenticated on this machine; the branch only acts when a frame link is given and Figma is connected, so an untested path cannot change any run without Figma, and scenarios 3 and 4 passed headless |
 
 _Never delete this section or its rows. See references/ledger.md._
 
