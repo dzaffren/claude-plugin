@@ -132,7 +132,7 @@ Then, in the terminal:
 - The slice list with the diagram.
 - Open items, if any.
 - **If the project type is web UI and no design system exists** — say so:
-  `/design system` should run once, before the first UI slice, and takes
+  `/design-system` should run once, before the first UI slice, and takes
   roughly half an hour. Do not start it.
 - Ask which slice to spec first. Recommend one and say why.
 

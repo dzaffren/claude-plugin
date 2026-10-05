@@ -98,7 +98,7 @@ the project type — see the table in `slicing.md`:
    DesignSync `list_projects`, then `components.json`, a tokens or theme file,
    `tailwind.config`. `list_projects` answering that it needs authorization is
    not "found nothing" — ask the user to run `/design-login` and look again.
-   Found nothing → **stop and send the user to `/design system`.** No system,
+   Found nothing → **stop and send the user to `/design-system`.** No system,
    no screens. This gate is what keeps every component standardised.
 
 3. **Compose only.** Assemble screens from the system's existing primitives

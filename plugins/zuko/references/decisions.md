@@ -1,7 +1,7 @@
 # Decisions
 
 Every real choice zuko makes with the user lands in one `DECISIONS.md` at the
-repo root. One copy of the rules — `/spec`, `/poc`, `/design system`, and the
+repo root. One copy of the rules — `/spec`, `/poc`, `/design-system`, and the
 ledger all draft entries from this file, and `/review` holds the code to it.
 
 ## The file
