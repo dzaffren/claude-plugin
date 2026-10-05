@@ -1,6 +1,6 @@
 # Design system command
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 7 of 9
 **Depends on:** None
@@ -185,6 +185,21 @@ Reusing: Mode 1's text unchanged; `run.sh`'s helpers.
 flags are the ones `owasp-lens` O7 proved. A skill edited in a session only takes
 effect in a new one (the `skills-load-at-session-start` lesson), which the headless
 run gives for free.
+
+**E2E result (2026-10-05):** headless runs in a scratch repo (one Active
+`OVERVIEW.md`, no design system), flags as above with
+`--plugin-dir`/`--add-dir` on the build worktree's `plugins/zuko`.
+
+- `/zuko:design system` (scenario 2): the whole reply was
+  `/design system is renamed to /design-system. Run /design-system.`
+- `/zuko:design-system` (scenario 1): opened Pause A, found nothing to
+  extract, asked the brief questions and the confirms, and said it would
+  write `docs/design/system-brief.md` and stop for approval.
+- `/zuko:design settings page` (scenario 3): said no design system exists
+  and recommended running `/design-system` first, offering a one-off page
+  as the alternative.
+
+`run.sh design-system`: 22 passed, 0 failed.
 
 ### Chunks
 
