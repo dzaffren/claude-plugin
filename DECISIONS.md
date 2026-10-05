@@ -243,3 +243,13 @@ spelling silently (old specs and habits hit an unknown-mode error), a permanent
 alias that runs the system mode (two names for one thing).
 Source: specs/design-system.md
 Status: active
+
+## D25 · 2026-09-25 · /design-system reads a Figma file only when Figma is already connected, and only reads
+
+Why: a team's Figma variables are the brief's answers already; connecting Figma is
+the user's own setup, and zuko's rule is to use an integration only when it is there.
+Rejected: asking for an exported tokens JSON (a manual step the MCP removes), prompting
+the user to connect Figma when no link was given (mentions a tool they may not use),
+writing tokens back to Figma (a setup flow, out per the shape).
+Source: specs/figma-brief.md
+Status: active
