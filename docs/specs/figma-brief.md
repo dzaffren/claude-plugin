@@ -1,6 +1,6 @@
 # Figma brief
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 8 of 9
 **Depends on:** `design-system` — this extends that skill's Pause A
