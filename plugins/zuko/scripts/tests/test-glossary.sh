@@ -103,6 +103,13 @@ expect_exit 2 "$gate_status" "shape: an undefined term fails"
 expect_match "$(problem refund-idea/shape.md lockfile)" "$gate_out" "shape: names the shape and the term"
 expect_no_match "has Status|no '## Open items'" "$gate_out" "shape: still skips the spec-only checks"
 
+# A doc the helper cannot read fails the gate; it never passes unchecked.
+printf '\n## Glossary\n\n- **Lockfile** — caf\351\n' >>"$proj/docs/specs/refund-idea/shape.md"
+gate
+expect_exit 2 "$gate_status" "unreadable: the gate fails"
+expect_match '^- the glossary check could not run: glossary\.py: cannot read .*refund-idea/shape\.md' \
+  "$gate_out" "unreadable: says the check could not run, and on which doc"
+
 # --- Scenario 4: the templates carry the section ---
 
 last_heading() {   # last_heading <file>: the last "## " heading in it
