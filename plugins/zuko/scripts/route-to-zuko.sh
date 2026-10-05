@@ -15,7 +15,8 @@ anything else:
   "review this", code quality, security, "any bugs"         -> zuko:review
   "ship it", PR prep, "are we done"                         -> zuko:ship
   "release it", "cut a version", "tag a release"            -> zuko:release
-  design system setup, "design the UI", "make this nicer"   -> zuko:design
+  design system setup, "design tokens"                      -> zuko:design-system
+  "design the UI", "make this nicer"                        -> zuko:design
   "can we even", "will this be fast enough", prove a claim  -> zuko:poc
   a bug, a failing test, wrong behaviour                    -> zuko:debug
   "where are we", "what's next"                             -> zuko:status
@@ -23,7 +24,8 @@ anything else:
 
 The pipeline is shape -> spec -> build -> review -> ship, one vertical slice
 at a time. release comes after ship, whenever the user wants a version.
-design, poc, debug, status and learn are reached whenever needed.
+design-system, design, poc, debug, status and learn are reached whenever
+needed.
 
 Three rules that hold everywhere in this session:
 

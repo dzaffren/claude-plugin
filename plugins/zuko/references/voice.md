@@ -71,6 +71,11 @@ or a sequence is the point, draw it. See `diagram-set.md` for which diagram
 belongs where. A table beats a bulleted list whenever the items share
 dimensions.
 
+Diagrams printed to the terminal are ASCII: boxes, arrows and labels in plain
+characters, in a code block. The terminal shows Mermaid as source. Mermaid stays
+the source of truth in specs, shapes and published pages, and the ASCII in the
+reply draws the same diagram.
+
 ## Before you send
 
 Reread the draft once against this file. The three most common failures:
