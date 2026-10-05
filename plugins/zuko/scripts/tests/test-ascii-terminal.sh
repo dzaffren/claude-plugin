@@ -21,3 +21,15 @@ expect_match 'Mermaid stays the source of truth in specs, shapes and published p
   "voice.md 'Visuals over prose': Mermaid lives in files and pages"
 expect_match 'the ASCII in the reply draws the same diagram' "$visuals" \
   "voice.md 'Visuals over prose': the ASCII draws the same diagram"
+
+# --- scenario 2: no reference claims Mermaid renders in the terminal ---
+whole() { [ -f "$1" ] && tr '\n' ' ' <"$1" | tr -s ' ' || echo "(missing: $1)"; }
+claim='renders in the terminal|renders there'
+for file in "$zuko/../../README.md" "$zuko/references/visual-page.md" "$zuko/references/diagram-set.md"; do
+  expect_no_match "$claim" "$(whole "$file")" "$(basename "$file"): no claim that Mermaid renders in the terminal"
+done
+
+expect_match 'ASCII in terminal replies' "$(section "$zuko/references/diagram-set.md" "Where they live")" \
+  "diagram-set.md 'Where they live': the terminal gets ASCII"
+expect_match 'terminal replies draw (it|them|the same diagrams?) in ASCII' "$(whole "$zuko/../../README.md")" \
+  "README.md: terminal replies draw ASCII"

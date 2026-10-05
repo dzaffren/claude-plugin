@@ -70,9 +70,10 @@ Stop hook enforces it, because prompt rules drift and grep does not.
 | `/spec` pause 3 | architecture, one runtime sequence; plus data flow, ER, or deployment when they apply |
 | `/debug` | the traced path from symptom to root cause |
 
-Mermaid in the Markdown is the source of truth — it renders in the terminal
-and diffs in git. Each spec also publishes one page with the same diagrams
-rendered properly, for reading away from the terminal.
+Mermaid in the Markdown is the source of truth — it diffs in git, and terminal
+replies draw the same diagrams in ASCII, since the terminal shows Mermaid as
+source. Each spec also publishes one page with the same diagrams rendered
+properly, for reading away from the terminal.
 
 ## One design system per product
 
