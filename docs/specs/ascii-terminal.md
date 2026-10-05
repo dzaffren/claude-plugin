@@ -175,7 +175,7 @@ _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary
 
-- **ASCII diagram** — boxes and arrows drawn with plain characters (`─ │ ▶`), which
+- **ASCII diagram** — boxes and arrows drawn with plain characters (`+ - | ->`), which
   any terminal shows as intended.
 - **Mermaid** — a text format for diagrams that renders on pages and in GitHub, but
   shows as source in a terminal.
