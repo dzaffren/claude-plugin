@@ -1,6 +1,6 @@
 # ASCII terminal
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 6 of 9
 **Depends on:** None
@@ -146,6 +146,9 @@ Reusing: `run.sh`'s `expect_match` and `expect_no_match`.
 
 **E2E:** none that runs the model. The contract test proves the text; scenario 1 is
 checked on the next `/spec` stop (O1).
+
+**Build result (2026-10-05):** `run.sh ascii-terminal`: 9 passed, 0 failed.
+Scenario 1 stays with the next real `/spec` stop (O1).
 
 ### Chunks
 
