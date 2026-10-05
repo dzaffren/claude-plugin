@@ -51,7 +51,7 @@ projects.
 | ascii-terminal | Shipped | Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages | https://claude.ai/artifact/TNetgs99avn7udEDAXJxhA |
 | jira-shape | Shipped | /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira | https://claude.ai/artifact/RvxWtxemNhGHe3catVwNKC |
 | glossary-gate | Shipped | Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it | https://claude.ai/artifact/LN5TASnzHBzZak1Ge8CvwK |
-| figma-brief | Built | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles | https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9 |
+| figma-brief | Shipped | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles | https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9 |
 
 ## More
 
