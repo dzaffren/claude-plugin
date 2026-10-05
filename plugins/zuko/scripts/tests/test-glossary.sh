@@ -74,6 +74,18 @@ semver after a tilde line is still code
 gate
 expect_exit 0 "$gate_status" "nested fences: code inside an outer fence passes"
 
+# Inline code can wrap across lines within a paragraph, as Markdown allows.
+spec refunds.md Draft 'The bump runs `release.py --scheme
+semver` first.'
+gate
+expect_exit 0 "$gate_status" "wrapped code: a term inside a span that wraps a line passes"
+
+spec refunds.md Draft 'The check runs `decisions.py
+check`, so the SSRF risk is `low` here.'
+gate
+expect_exit 2 "$gate_status" "wrapped code: prose after a wrapped span is still read"
+expect_match "$(problem refunds.md SSRF)" "$gate_out" "wrapped code: names the term in that prose"
+
 # A plural is still a use of the term; a term inside a longer word is not.
 spec refunds.md Refined "Earlier ADRs chose the processor, and the steps are retried idempotently."
 gate
