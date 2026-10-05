@@ -208,8 +208,27 @@ _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary
 
+- **ADR** — Architecture Decision Record: a short file that records one design
+  choice and why it was made.
+- **Backfill** — adding what older docs are missing so they pass a new check.
+- **CVE** — Common Vulnerabilities and Exposures: the public ID, such as
+  CVE-2025-1234, given to a known security hole.
+- **e2e** — end-to-end: one test that walks the whole slice as a user would.
+- **Fail-open** — on error, the code lets the request through instead of refusing it.
 - **Jargon list** — the fixed set of terms the gate checks, kept in `glossary.py`.
 - **Live doc** — a spec at Draft or Refined, or a shape; the ones still read to
   decide what to build.
+- **Lockfile** — the file that pins every dependency's exact version, such as
+  `package-lock.json`.
+- **OWASP** — the Open Worldwide Application Security Project, which publishes the
+  OWASP Top 10 list of web-app security risks.
+- **Pentest** — penetration test: attacking your own app on purpose to find holes
+  before someone else does.
+- **SARIF** — a standard JSON format for static-analysis findings, which code hosts
+  can show inline on a pull request.
 - **Semver** — `MAJOR.MINOR.PATCH` version numbers; MAJOR changes break existing
   users.
+- **SSRF** — server-side request forgery: tricking a server into fetching a URL the
+  attacker chose.
+- **XSS** — cross-site scripting: getting a page to run an attacker's script in
+  another user's browser.
