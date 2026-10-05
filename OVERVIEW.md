@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-10-05 by /ship design-system
+**Status:** Active · **Updated:** 2026-10-05 by /ship ascii-terminal
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -48,6 +48,7 @@ projects.
 | mermaid-placeholder | Shipped | The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder | https://claude.ai/artifact/AnCszTToZDaHLDVcsyevpu |
 | guard-worktree-dir | Shipped | A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned | — |
 | design-system | Built | /design-system builds the product's design system as its own command; /design is for screens, and /design system prints the new name | https://claude.ai/artifact/M3tjreL4wLrQ1qxyWzEPCA |
+| ascii-terminal | Built | Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages | https://claude.ai/artifact/TNetgs99avn7udEDAXJxhA |
 
 ## More
 

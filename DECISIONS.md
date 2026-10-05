@@ -243,3 +243,13 @@ spelling silently (old specs and habits hit an unknown-mode error), a permanent
 alias that runs the system mode (two names for one thing).
 Source: specs/design-system.md
 Status: active
+
+## D23 · 2026-09-25 · Terminal replies draw diagrams in ASCII; Mermaid stays the source in files and pages
+
+Why: Claude Code's terminal prints Mermaid as source, and the user already asked
+for ASCII there; files and pages render Mermaid and diff cleanly in git.
+Rejected: Mermaid everywhere (unreadable in the terminal), ASCII in the files too
+(pages lose rendered diagrams, and ASCII diffs badly), a Mermaid-to-ASCII converter
+(a dependency for what the model can draw directly).
+Source: specs/ascii-terminal.md
+Status: active
