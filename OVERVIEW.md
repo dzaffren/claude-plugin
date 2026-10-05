@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Updated:** 2026-10-05 by /ship figma-brief
+**Status:** Active · **Updated:** 2026-10-05 by /ship pentest-live
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -52,6 +52,7 @@ projects.
 | jira-shape | Shipped | /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira | https://claude.ai/artifact/RvxWtxemNhGHe3catVwNKC |
 | glossary-gate | Shipped | Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it | https://claude.ai/artifact/LN5TASnzHBzZak1Ge8CvwK |
 | figma-brief | Shipped | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles | https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9 |
+| pentest-live | Built | /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named | https://claude.ai/artifact/9ncMJwsS8wJtRzdfWxrv4j |
 
 ## More
 
