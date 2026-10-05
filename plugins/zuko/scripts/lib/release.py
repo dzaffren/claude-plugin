@@ -739,6 +739,7 @@ def release_field(text, version):
 REPORT_TITLE = re.compile(r"^# Pentest v(\S+)\s*$")
 RESULT = re.compile(r"^\*\*Result:\*\*\s*(\S*)\s*$")
 RANGE = re.compile(r"^\*\*Range:\*\*\s*\S")
+MODE = re.compile(r"^\*\*Mode:\*\*\s*(.+?)\s*$")
 FINDING_COLUMNS = ("ID", "Severity", "Category", "Where", "Description")
 SEVERITIES = ("critical", "high", "medium", "low")
 BLOCKING = ("critical", "high")
@@ -825,6 +826,14 @@ def read_report(path, version):
     result = next((RESULT.match(line) for line in lines if RESULT.match(line)), None)
     if result is None:
         raise unreadable("no **Result:** line")
+    mode = next((MODE.match(line) for line in lines if MODE.match(line)), None)
+    if mode is None:
+        raise unreadable("no **Mode:** line")
+    mode_value = mode.group(1)
+    # 5a writes "code-level"; 5b (pentest-live) writes "live · <target>". Any
+    # other value is a report cut does not know how to trust.
+    if mode_value != "code-level" and not re.match(r"^live\b", mode_value):
+        raise unreadable("**Mode:** is %r, not code-level or live · <target>" % mode_value)
     table = findings_table(lines)
     if table is None:
         raise unreadable("no Findings table")

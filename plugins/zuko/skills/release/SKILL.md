@@ -7,7 +7,7 @@ description: >
   release. Use when the user says
   "release it", "cut a version", "tag a release", or runs /release.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git archive *) Bash(tar *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *) Bash(mktemp *)
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git diff *) Bash(git show *) Bash(git ls-files *) Bash(git archive *) Bash(tar *) Bash(git rev-parse *) Bash(git add *) Bash(git commit *) Bash(git tag *) Bash(git push *) Bash(gh release *) Bash(python3 *) Bash(date *) Bash(mktemp *) Bash(curl *) Bash(kill *) Bash(bash *)
 ---
 
 # Release
@@ -63,7 +63,48 @@ The range is the last
 tag, from `plan`'s `Last version` line, to `HEAD`: `v1.4.2..HEAD`. With no tag
 yet, it is the whole tracked tree.
 
-1. Dispatch the `zuko:pentester` agent with `RANGE`, `VERSION` and the repo.
+**Pick the target, with the version yes.** The project's `OVERVIEW.md` "Run it"
+table names a server in its `run` row -> offer it. No run row -> there is
+nothing to ask and the pentest is code-level.
+
+```
+Pentest target: localhost (starts "<the run command>"), a staging URL, or code-level?
+```
+
+- **code-level** (the default, and the only option with no run row): just the
+  range checks below, nothing started. The report reads `**Mode:** code-level`.
+- **localhost**: start the `run` row in the background and keep its output. Poll
+  the port once a second for up to 60 s with `curl -sf http://127.0.0.1:5000/health`
+  (or the app's root). If it does not answer in 60 s, stop with the last 20 lines
+  of the app's output and this message, then go to the reason question below
+  (nothing is written without a reason):
+
+  ```
+  Pentest cannot run: invoice-api did not answer on 127.0.0.1:5000 in 60 s
+  ```
+
+  When it answers, write the host and port to `.git/zuko-pentest-target`, e.g.
+  `127.0.0.1:5000`.
+- **a staging URL**: write that host to `.git/zuko-pentest-target`. Start nothing.
+
+The `block-pentest-target.sh` guard reads that file and blocks every request to
+any host but the one it names, so a live request can only reach the target.
+
+**Run the live checks (localhost or staging).** The pentester is fenced and
+never curls (D14, D27). It names the A01 and A07 requests to try; the release
+step, not the pentester, sends each one with `curl` to the target host and hands
+the response back for the pentester to judge. The pentester reads, and changes
+only objects the run created (D29).
+
+**Tear down on every path** -- passed, blocked, or the app never started: stop
+the app with `kill` on its pid, and remove the target file
+`.git/zuko-pentest-target`, before step 3.
+
+In live mode the report reads `**Mode:** live · <target>`, and A01 and A07
+move from `NOT ASSESSED:` to `ASSESSED:`.
+
+1. Dispatch the `zuko:pentester` agent with `RANGE`, `VERSION`, the repo,
+   and the target when the release runs live.
    It returns a scope block and findings, each with a `PROOF` it ran.
 2. Send each finding to a `finding-verifier` agent, blind, exactly as
    `/review` does: the claim, `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL`,

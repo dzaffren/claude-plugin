@@ -21,6 +21,11 @@
           },
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-pentest-target.sh",
+            "statusMessage": "Holding a live pentest to its one target host..."
+          },
+          {
+            "type": "command",
             "if": "Bash(git commit *)",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/block-attribution.sh",
             "statusMessage": "Checking the commit message for attribution..."

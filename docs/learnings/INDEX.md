@@ -139,3 +139,6 @@ One line per lesson. Loaded into every session in this repo.
 - A spec's backfill list goes stale before build — run the built check over
   the live docs, untracked ones included, and backfill what it prints.
   ([detail](recompute-a-backfill-list-at-build.md))
+- An e2e that needs code from more than one chunk cannot be built in
+  parallel — build the harness first, then those chunks serially.
+  ([detail](e2e-spanning-two-chunks-builds-serially.md))
