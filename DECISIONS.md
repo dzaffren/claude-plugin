@@ -253,3 +253,14 @@ Rejected: Mermaid everywhere (unreadable in the terminal), ASCII in the files to
 (a dependency for what the model can draw directly).
 Source: specs/ascii-terminal.md
 Status: active
+
+## D24 · 2026-09-25 · /shape reads a Jira ticket when the whole argument is a key and Jira is connected, and never writes to Jira
+
+Why: a ticket already holds the problem statement; reading it saves the retyping,
+and zuko uses an integration only when it is already there (shape O7).
+Rejected: commenting or transitioning the ticket from /shape (a write the user did
+not ask for, and a setup flow the shape ruled out), asking the user to paste the
+ticket (the MCP is already connected), matching a key anywhere in the argument (an
+idea that mentions a ticket is still an idea).
+Source: specs/jira-shape.md
+Status: active

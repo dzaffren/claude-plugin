@@ -23,6 +23,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A hook blocks gh pr create when the PR body or title carries Claude attribution, as it already did for commits, tags and releases.
 - /design-system is its own command for building or extending the product's design system; /design now designs screens only, and /design system tells you the new name.
 - Diagrams in zuko's terminal replies are drawn in ASCII so they read in the terminal; specs and pages keep Mermaid.
+- /shape NOV-125 starts the shape from that Jira ticket when Jira is connected: it reads the summary and description and asks only what the ticket leaves open.
 
 ### Fixed
 
