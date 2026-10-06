@@ -193,6 +193,7 @@ projects.
 - /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named
 - /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read
 - The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file
+- The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw
 
 ## Docs
 
