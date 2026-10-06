@@ -342,3 +342,17 @@ Rejected: failing open (proven bypass), failing open with a warning (the command
 still runs unchecked).
 Source: specs/release-commit-guard.md
 Status: active
+
+## D32 · 2026-10-06 · The pentester fence drops tools whose arguments are code or an output file
+
+Why: awk's program and sed's script run commands and write files the fence
+never sees, the same hole as `python3 -c`; `sort -o`, `uniq`'s second argument
+and `file -C` overwrite files in the real repo. The v2.2.0 pentest proved awk
+(P1), and a probe on 2026-10-06 proved the other four through the live hook.
+Rejected: parsing awk and sed programs for `system`, pipes, redirects, `w` and
+`e` (a parser that infers misses spellings), blocking only sort's `-o`,
+`--output` and `--compress-program` (every bundled and abbreviated spelling to
+guard), keeping sort and its siblings for a later slice (one of them writes the
+real repo today).
+Source: specs/pentester-fence-awk.md
+Status: active
