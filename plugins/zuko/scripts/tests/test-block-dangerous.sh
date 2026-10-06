@@ -120,6 +120,13 @@ expect_exit 2 "$hook_status" "a GIT_DIR pointing at main is blocked from a workt
 run_hook "git --git-dir=$repo/.git commit -m x" "$wt"
 expect_exit 2 "$hook_status" "a --git-dir pointing at main is blocked from a worktree"
 
+# A lone surrogate is valid JSON, but Python cannot print it as UTF-8. The
+# parse used to end in `|| exit 0`, so the push ran unchecked (pentest P3).
+surrogate_err=$(printf '%s' '{"tool_input":{"command":"git push --force origin feature-x \ud800"}}' \
+  | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" 2>&1 >/dev/null)
+expect_exit 2 "$?" "a payload that will not decode blocks instead of passing"
+expect_match '^Blocked: could not read the hook payload' "$surrogate_err" "the unreadable-payload block says why"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"

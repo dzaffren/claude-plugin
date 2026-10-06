@@ -5,7 +5,7 @@
 # repos that do not use Conventional Commits.
 set -uo pipefail
 
-cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || exit 0
+cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
 [ -z "$cmd" ] && exit 0
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)

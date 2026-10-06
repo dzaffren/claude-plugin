@@ -31,6 +31,13 @@ print(json.dumps(p))')
 scan 'git commit -m x' "$wt"
 expect_exit 2 "$scan_status" "a secret staged where the session sits is blocked"
 
+# A lone surrogate the payload parse cannot print used to end in `|| exit 0`
+# before the staged diff was read (pentest P4).
+surrogate_err=$(printf '{"tool_input":{"command":"git commit -m x \\ud800"},"cwd":"%s"}' "$wt" \
+  | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/secret-scan.sh" 2>&1 >/dev/null)
+expect_exit 2 "$?" "a payload that will not decode blocks instead of skipping the scan"
+expect_match '^Blocked: could not read the hook payload' "$surrogate_err" "the unreadable-payload block says why"
+
 scan "cd $wt && git commit -m x"
 expect_exit 2 "$scan_status" "a secret staged in the worktree a cd moves to is blocked"
 
