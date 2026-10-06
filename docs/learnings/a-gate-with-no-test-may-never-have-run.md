@@ -11,8 +11,9 @@ its `PATH`.
 
 ## The rule
 
-Every gate script gets a `tests/test-<name>.sh`, and `run.sh` runs it with the
-`bash` the stages use, so a parse failure is a red test, not a silent exit 2.
-Before trusting a script, parse it with `/bin/bash -n`. In a `case` inside
+Every gate script gets a `tests/test-<name>.sh` that runs it with
+`/bin/bash` where that exists, and parses it with `/bin/bash -n`. `run.sh`
+alone is not enough: its shebang is `#!/usr/bin/env bash`, so with Homebrew's
+bash first on `PATH` a script bash 3.2 cannot parse still tests green. In a `case` inside
 `$( )`, write the pattern with its leading paren: `(*.css) …`. See
 [[gate-scanned-nothing-is-not-a-pass]].
