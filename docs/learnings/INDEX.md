@@ -142,3 +142,6 @@ One line per lesson. Loaded into every session in this repo.
 - An e2e that needs code from more than one chunk cannot be built in
   parallel — build the harness first, then those chunks serially.
   ([detail](e2e-spanning-two-chunks-builds-serially.md))
+- A skill's e2e that runs git itself never meets the hooks the skill will —
+  feed each guarded step's command to its hooks, in the state it runs in.
+  ([detail](run-a-skill-step-through-its-guards.md))
