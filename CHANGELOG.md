@@ -6,6 +6,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- /release makes its own release commit on main again. The main-branch guard lets through exactly the commit release.py cut prepared, staged in the call before it, and still blocks every other commit on main.
+
+### Security
+
+- The guards on git commit, the force-push and secret checks among them, now block a command whose hook input they cannot read, instead of letting it run unchecked.
+
 ## [2.2.0] - 2026-10-05
 
 ### Added
