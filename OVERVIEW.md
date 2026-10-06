@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship design-drift-filename
+**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship pentester-fence-awk
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
