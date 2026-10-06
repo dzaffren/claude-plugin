@@ -5,9 +5,14 @@ Usage: release-commit.py <dir>    (the shell command on stdin)
 
 block-dangerous.sh asks this before it blocks a commit on main (D30). `cut`
 leaves a marker at git's `zuko-release` path naming the version, HEAD, and
-every file it wrote. The commit passes only when it is one plain
-`git commit -m ... [-m ...]`, its subject is `chore(release): v<version>`,
+every file it wrote. The commit passes only when the whole Bash call is one
+plain `git commit -m ... [-m ...]`, its subject is `chore(release): v<version>`,
 HEAD is still the marker's, and the staged files are exactly the marker's.
+
+The whole call, because this runs before the call does: a `git add` before
+the commit, an env prefix such as GIT_INDEX_FILE, a git option such as -c, or
+a `$(...)` the shell splits into more arguments would each change what the
+commit takes after the check has passed.
 
 Exit 0  it is that commit
 Exit 1  it tries to be a release commit and something does not match; the
@@ -18,6 +23,7 @@ Exit 5  it tries to be one, but there is no marker for the current HEAD
 """
 import importlib.util
 import os
+import shlex
 import subprocess
 import sys
 
@@ -42,10 +48,26 @@ def subject_of(args):
     return None
 
 
-def plain_form(args):
-    """True when everything after `commit` is -m <message> pairs."""
-    rest = args[1:]
-    return bool(rest) and len(rest) % 2 == 0 and all(token == "-m" for token in rest[::2])
+def whole_call(command):
+    """True when the command is `git commit -m <message> [-m <message> ...]`
+    and nothing else. One line, no comment, and no token the shell would
+    expand or treat as an operator: `$`, a backtick, or punctuation."""
+    if "\n" in command or "\r" in command:
+        return False
+    lex = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lex.whitespace_split = True
+    lex.commenters = ""
+    try:
+        tokens = list(lex)
+    except ValueError:
+        return False
+    if any("$" in token or "`" in token or token.startswith("#") for token in tokens):
+        return False
+    if any(token and all(ch in lex.punctuation_chars for ch in token) for token in tokens):
+        return False
+    rest = tokens[2:]
+    return (tokens[:2] == ["git", "commit"] and bool(rest) and len(rest) % 2 == 0
+            and all(token == "-m" for token in rest[::2]))
 
 
 def read_marker(where):
@@ -69,8 +91,9 @@ def main():
         sys.stderr.write("usage: release-commit.py <dir>\n")
         return 2
     where = sys.argv[1]
+    command = sys.stdin.read()
     try:
-        tokens = git_command.tokenise(git_command.strip_heredocs(sys.stdin.read()))
+        tokens = git_command.tokenise(git_command.strip_heredocs(command))
     except ValueError:
         return 3
     commits = [args for args in git_command.invocations(tokens) if args[:1] == ["commit"]]
@@ -85,11 +108,9 @@ def main():
         return 5
 
     reasons = []
-    if len(commits) != 1:
-        reasons.append("the command runs %d git commits, not one" % len(commits))
-    elif not plain_form(commits[0]):
-        reasons.append("it runs as `git %s`; the release commit is git commit -m only"
-                       % " ".join(commits[0]))
+    if not whole_call(command):
+        reasons.append("the release commit is the whole Bash call: one plain "
+                       "git commit -m, staged in an earlier call")
     wanted = "%s v%s" % (PREFIX, version)
     if subject != wanted:
         reasons.append('subject is "%s", not "%s"' % (subject, wanted))

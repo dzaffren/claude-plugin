@@ -183,10 +183,21 @@ for form in 'git commit -a -m "chore(release): v2.3.0"' \
   'git commit -m "chore(release): v2.3.0" OVERVIEW.md' \
   'git commit -F msg.txt' \
   'git commit --no-verify -m "chore(release): v2.3.0"' \
-  'git commit -m "chore(release): v2.3.0" && git commit -m "chore(release): v2.3.0"'; do
+  'git commit -m "chore(release): v2.3.0" && git commit -m "chore(release): v2.3.0"' \
+  'git add src/app.py && git commit -m "chore(release): v2.3.0"' \
+  'git commit -m "chore(release): v2.3.0" -m $(echo body --all)' \
+  'git commit -m "chore(release): v2.3.0" -m `echo body --all`' \
+  'GIT_INDEX_FILE=.git/alt git commit -m "chore(release): v2.3.0"' \
+  'git -c core.hooksPath=/dev/null commit -m "chore(release): v2.3.0"' \
+  'git commit -m "chore(release): v2.3.0" -m body # note' \
+  "$(printf 'git commit -m "chore(release): v2.3.0"\ngit add src/app.py')"; do
   run_rel "$form"
   expect_exit 2 "$hook_status" "release: blocked: $form"
 done
+# The guard reads the index before the call runs, so anything else in the call
+# could change what the commit takes: the release commit is the whole call.
+run_rel 'git add CHANGELOG.md OVERVIEW.md && git commit -m "chore(release): v2.3.0"'
+expect_match 'the release commit is the whole Bash call' "$hook_err" "release: a staging step in the same call is named as the reason"
 run_rel 'cd "$REPO" && git commit -m "chore(release): v2.3.0"'
 expect_exit 2 "$hook_status" "release: a commit whose directory the text cannot say gets no exception"
 
