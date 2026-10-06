@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship design-drift-filename
+**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship pentester-fence-awk
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -55,6 +55,7 @@ projects.
 | pentest-live | Shipped | /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named | https://claude.ai/artifact/9ncMJwsS8wJtRzdfWxrv4j |
 | release-commit-guard | Shipped | /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read | https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w |
 | design-drift-filename | Shipped | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file | — |
+| pentester-fence-awk | Built | The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw | — |
 
 ## More
 

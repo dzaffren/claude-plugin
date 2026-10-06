@@ -15,6 +15,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The guards on git commit, the force-push and secret checks among them, now block a command whose hook input they cannot read, instead of letting it run unchecked.
 - The design drift check reports a scanned file's name as text; a crafted name could make it write a file.
+- The pentester's shell fence no longer allows awk, sed, sort, uniq or file; through them the pentester could run a shell or overwrite files in your repo.
 
 ## [2.2.0] - 2026-10-05
 
