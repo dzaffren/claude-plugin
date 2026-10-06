@@ -120,6 +120,86 @@ expect_exit 2 "$hook_status" "a GIT_DIR pointing at main is blocked from a workt
 run_hook "git --git-dir=$repo/.git commit -m x" "$wt"
 expect_exit 2 "$hook_status" "a --git-dir pointing at main is blocked from a worktree"
 
+# The release commit (D30): cut leaves a marker naming the version, HEAD and
+# the files it wrote, and only the commit that matches all of it may land on
+# main. A repo of its own, on main, so the branch check fires.
+rel="$work/release-repo"
+mkdir -p "$rel"
+git -C "$rel" init -q -b main
+git -C "$rel" config user.email t@example.com
+git -C "$rel" config user.name Tester
+printf '# Changelog\n' >"$rel/CHANGELOG.md"
+printf '# invoice-cli\n' >"$rel/OVERVIEW.md"
+git -C "$rel" add -A
+git -C "$rel" commit -q --no-verify -m "chore(repo): first commit"
+printf '# Changelog\n\n## [2.3.0] - 2026-10-06\n' >"$rel/CHANGELOG.md"
+printf '# invoice-cli\n\n**Release:** v2.3.0\n' >"$rel/OVERVIEW.md"
+git -C "$rel" add CHANGELOG.md OVERVIEW.md
+mark() {       # mark: the marker cut writes for v2.3.0 at the current HEAD
+  printf 'version 2.3.0\nhead %s\nCHANGELOG.md\nOVERVIEW.md\n' "$(git -C "$rel" rev-parse HEAD)" >"$rel/.git/zuko-release"
+}
+run_rel() {    # run_rel <shell command>; sets $hook_status $hook_err
+  local payload
+  payload=$(ZUKO_CMD="$1" ZUKO_CWD="$rel" python3 -c 'import json,os
+print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]},"cwd":os.environ["ZUKO_CWD"]}))')
+  hook_err=$(printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$rel" bash "$scripts/block-dangerous.sh" 2>&1 >/dev/null)
+  hook_status=$?
+}
+release_commit='git commit -m "chore(release): v2.3.0" -m "CHANGELOG.md: cut 2.3.0. OVERVIEW.md: Release v2.3.0."'
+
+# Scenario 2: no marker, so a release subject is still a commit on main.
+run_rel "$release_commit"
+expect_exit 2 "$hook_status" "release: a release subject with no marker is blocked"
+expect_match 'A release commit needs the marker' "$hook_err" "release: the block names the missing marker"
+
+# Scenario 1: the commit cut prepared passes; a reworded line is the same file.
+mark
+printf '# Changelog\n\n## [2.3.0] - 2026-10-06\n\n- Reworded.\n' >"$rel/CHANGELOG.md"
+git -C "$rel" add CHANGELOG.md
+run_rel "$release_commit"
+expect_exit 0 "$hook_status" "release: the commit cut prepared passes on main"
+
+# Scenario 3: the marker covers only what cut wrote, in the form step 4 writes.
+mkdir -p "$rel/src"
+printf 'print(1)\n' >"$rel/src/app.py"
+git -C "$rel" add src/app.py
+run_rel "$release_commit"
+expect_exit 2 "$hook_status" "release: an extra staged file is blocked"
+expect_match 'staged src/app\.py, which cut did not write' "$hook_err" "release: the block names the extra file"
+git -C "$rel" rm -q --cached src/app.py
+git -C "$rel" restore -q --staged OVERVIEW.md
+run_rel "$release_commit"
+expect_exit 2 "$hook_status" "release: a file cut wrote and is not staged is blocked"
+expect_match 'cut wrote OVERVIEW\.md, which is not staged' "$hook_err" "release: the block names the missing file"
+git -C "$rel" add OVERVIEW.md
+run_rel 'git commit -m "chore(release): v2.4.0"'
+expect_exit 2 "$hook_status" "release: another version's subject is blocked"
+expect_match 'subject is "chore\(release\): v2\.4\.0", not "chore\(release\): v2\.3\.0"' "$hook_err" "release: the block names both subjects"
+run_rel 'git commit -m "fix: tidy changelog"'
+expect_exit 2 "$hook_status" "release: a non-release subject is blocked"
+expect_match 'Create a branch first\.$' "$hook_err" "release: a non-release subject gets the ordinary block"
+for form in 'git commit -a -m "chore(release): v2.3.0"' \
+  'git commit --amend -m "chore(release): v2.3.0"' \
+  'git commit -m "chore(release): v2.3.0" OVERVIEW.md' \
+  'git commit -F msg.txt' \
+  'git commit --no-verify -m "chore(release): v2.3.0"' \
+  'git commit -m "chore(release): v2.3.0" && git commit -m "chore(release): v2.3.0"'; do
+  run_rel "$form"
+  expect_exit 2 "$hook_status" "release: blocked: $form"
+done
+run_rel 'cd "$REPO" && git commit -m "chore(release): v2.3.0"'
+expect_exit 2 "$hook_status" "release: a commit whose directory the text cannot say gets no exception"
+
+# Scenario 5: once the commit lands HEAD moves, and the marker matches nothing.
+git -C "$rel" commit -q --no-verify -m "chore(release): v2.3.0"
+printf 'typo\n' >>"$rel/OVERVIEW.md"
+git -C "$rel" add OVERVIEW.md
+run_rel "$release_commit"
+expect_exit 2 "$hook_status" "release: the same commit after the release landed is blocked"
+expect_match 'A release commit needs the marker' "$hook_err" "release: a marker for an old HEAD is no marker"
+run_rel 'git commit -m "docs: fix a typo"'
+expect_exit 2 "$hook_status" "release: an ordinary commit after an abandoned release is blocked"
+
 # A lone surrogate is valid JSON, but Python cannot print it as UTF-8. The
 # parse used to end in `|| exit 0`, so the push ran unchecked (pentest P3).
 surrogate_err=$(printf '%s' '{"tool_input":{"command":"git push --force origin feature-x \ud800"}}' \

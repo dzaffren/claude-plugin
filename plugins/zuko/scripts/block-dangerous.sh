@@ -36,11 +36,24 @@ if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a
   deny "Blocked: recursive delete of a top-level or home path."
 fi
 
-deny_commit_on_main() {   # deny_commit_on_main <dir>
-  local branch
+# release-ok: the commit's own directory is known, so it may be the release
+# commit release.py cut prepared, the one commit allowed on main (D30).
+deny_commit_on_main() {   # deny_commit_on_main <dir> [release-ok]
+  local branch out
   branch=$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null || true)
   case "$branch" in
-    main|master) deny "Blocked: committing directly on $branch. Create a branch first." ;;
+    main|master)
+      if [ "${2:-}" = release-ok ]; then
+        out=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/release-commit.py" "$1" 2>/dev/null)
+        case $? in
+          0) return 0 ;;
+          1) deny "Blocked: committing directly on $branch. $out" ;;
+          4) ;;
+          *) deny "Blocked: committing directly on $branch. A release commit needs the marker
+release.py cut writes; run /release." ;;
+        esac
+      fi
+      deny "Blocked: committing directly on $branch. Create a branch first." ;;
   esac
 }
 
@@ -61,7 +74,7 @@ if printf '%s\n' "$subject" | grep -qE "$commit_re"; then
     while IFS= read -r line; do
       dir=${line%%$'\t'*}
       printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" || continue
-      if [ -n "$dir" ]; then deny_commit_on_main "$dir"; else deny_commit_anywhere; fi
+      if [ -n "$dir" ]; then deny_commit_on_main "$dir" release-ok; else deny_commit_anywhere; fi
     done <<<"$dirs"
   else
     deny_commit_anywhere
