@@ -88,6 +88,7 @@ Scenario: the marker covers only what cut wrote
   When the commit also stages src/app.py
     or its subject is "chore(release): v2.4.0"
     or it runs as git commit -a -m "chore(release): v2.3.0"
+    or the same call also runs git add src/app.py before the commit
   Then block-dangerous.sh exits 2 and names what did not match
   And a commit with the subject "fix: tidy changelog" gets the unchanged
     "Create a branch first" block
@@ -163,11 +164,15 @@ All of these, or it blocks:
 | Subject              | the first `-m` is exactly `chore(release): v<version>`                                                             |
 | Staged files         | `git diff --cached --name-only` equals the marker's list, as a set                                                 |
 | Commit form          | one plain `git commit -m … [-m …]`: no `-a`/`--all`, `--amend`, pathspec, `-F`/`--file`, `-C`/`-c`, or `--no-verify` |
-| One commit           | the Bash call holds no other `git commit`                                                                           |
+| Whole call           | the Bash call is that commit and nothing else: one line, first token `git`, then `commit`; no env prefix, git option, `$`, backtick, comment or operator |
 
 The commit-form row closes the ways a commit could take more than the staged
-set, or a message the guard did not read. `/release` step 4 already writes
-the commit in the allowed form, so the skill text does not change.
+set, or a message the guard did not read. The whole-call row exists because
+the guard reads `HEAD` and the index before the call runs: a `git add` before
+the commit, `GIT_INDEX_FILE=`, `git -c core.hooksPath=…`, or a `$(…)` the
+shell splits into `--all` would each change the commit after the check passed
+(found in /review, 2026-10-06). So `/release` step 4 stages in one Bash call
+and commits alone in the next; the skill says so.
 
 ### Messages
 
@@ -287,13 +292,14 @@ blocked on `main`, as today.
 | `plugins/zuko/scripts/tests/test-block-attribution.sh`             | the surrogate commit                                                                                                                                                                                                                                                        | scenario 4                             |
 | `plugins/zuko/scripts/tests/test-release.sh:733`                   | `cut` writes the marker, `head` equal to `HEAD`, the file list equal to the `Wrote` paths; a second `cut` overwrites it                                                                                                                                                     | scenarios 1, 5                         |
 | `plugins/zuko/scripts/tests/test-e2e-release.sh:152`               | step 3 feeds its commit, as the skill writes it, to the three hooks `hooks.json` binds to `git commit`, with `cwd` and `CLAUDE_PROJECT_DIR` set to the scratch repo; each must exit 0 before the commit runs. The same commit fed again after it must exit 2                | scenario 1, the e2e                    |
+| `plugins/zuko/skills/release/SKILL.md` step 4 | one paragraph: each line is its own Bash call, and the commit is the whole call | the guard reads the index before the call; found in /review |
 
 Reusing: `git-command.py`'s `tokenise`, `strip_heredocs` and
 `invocations_with_dirs`, loaded with `importlib` the way
 `block-attribution.sh:22` loads them. `changelog.git` for the two `rev-parse`
 calls in `cut`. `run.sh`'s `expect_exit` and `expect_match`, and `run_hook` in
-`test-block-dangerous.sh`. The skill text does not change: step 4 already
-commits in the allowed form.
+`test-block-dangerous.sh`. Step 4's text gains one paragraph: each line is its
+own Bash call, so the commit is the whole call (found in /review).
 
 ### Earn-it
 
@@ -359,6 +365,7 @@ Recorded as D30, D31.
 | O4  | Who removes the marker after the release commit?                                | question | spec p2   | claude| Resolved | Nobody: the marker records `HEAD`, so it stops matching once the commit lands; the next `cut` overwrites it |
 | O5  | Anything that can write `.git/zuko-release` can mark a commit for `main` | flag | spec p3 | user | Accepted risk | The guard catches accidents, not an adversary; the marker must name the exact HEAD, version and staged files. Agreed with pause 3, 2026-10-06 |
 | O6  | Fail `block-attribution.sh` closed too? It has the same `exit 0` on a parse failure as P3 and P4 | question | spec p3 | user | Resolved | Yes: all three guards bound to `git commit` fail closed |
+| O7  | The guard checks before the call runs, so anything else in the call can change the commit, and step 4 run as `git add && git commit` is blocked | flag | /review | user | Resolved | The release commit must be the whole Bash call; step 4 stages in its own call. Approved 2026-10-06 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

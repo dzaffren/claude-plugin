@@ -152,10 +152,19 @@ expect_match '^  docs/security/v1\.5\.0/report\.md +pentest report, Result pass$
 # the skill's step 4, made by Claude on main, so every hook hooks.json binds
 # to git commit sees it first, as it will in a session; a plain git commit
 # here never meets them.
-git -C "$repo" add -A
+hook_payload() {   # hook_payload <shell command>: the PreToolUse JSON for it, run in $repo
+  ZUKO_CMD="$1" ZUKO_CWD="$repo" python3 -c 'import json,os
+print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]},"cwd":os.environ["ZUKO_CWD"]}))'
+}
 step4='git commit -m "chore(release): v1.5.0" -m "Changes CHANGELOG.md, package.json, OVERVIEW.md and the pentest report."'
-step4_payload=$(ZUKO_CMD="$step4" ZUKO_CWD="$repo" python3 -c 'import json,os
-print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]},"cwd":os.environ["ZUKO_CWD"]}))')
+# Staging and committing in one call is blocked: the guard reads the index
+# before the call runs, so it would see nothing staged.
+hook_payload "git add -A && $step4" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
+expect_exit 2 "$?" "e2e: git add and the release commit in one call is blocked"
+hook_payload 'git add -A' | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
+expect_exit 0 "$?" "e2e: step 4's staging call passes block-dangerous.sh"
+git -C "$repo" add -A
+step4_payload=$(hook_payload "$step4")
 for hook in block-dangerous.sh secret-scan.sh block-attribution.sh; do
   printf '%s' "$step4_payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/$hook" >/dev/null 2>&1
   expect_exit 0 "$?" "e2e: the release commit passes $hook"
