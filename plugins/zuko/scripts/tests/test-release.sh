@@ -730,6 +730,7 @@ report() {     # report <fixture> <version>: the fixture for that version, outsi
 # 22. The feature release: [Unreleased] moves under 1.5.0, with compare links.
 repo=$(fixture)
 cp "$repo/OVERVIEW.md" "$work/overview-before"
+head_before=$(git -C "$repo" rev-parse HEAD)
 run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 0 "$status" "cut: exits 0"
 cat >"$work/expected" <<'LOG'
@@ -766,12 +767,23 @@ expect_match '^CHANGELOG\.md OVERVIEW\.md docs/ $' "$(changed "$repo")" "cut: wr
 expected="Wrote
 $(printf '  %-33s%s\n' CHANGELOG.md '[Unreleased] → [1.5.0] - 2026-09-25, links' \
   OVERVIEW.md 'Release: v1.5.0 on the status line' \
-  docs/security/v1.5.0/report.md 'pentest report, Result pass')"
+  docs/security/v1.5.0/report.md 'pentest report, Result pass' \
+  .git/zuko-release 'marks the v1.5.0 commit for the main-branch guard')"
 [ "$(printf '%s\n' "$out" | sed -n '/^Wrote$/,$p')" = "$expected" ]
 expect_exit 0 "$?" "cut: says what it wrote"
+printf 'version 1.5.0\nhead %s\nCHANGELOG.md\nOVERVIEW.md\ndocs/security/v1.5.0/report.md\n' "$head_before" >"$work/expected"
+expect_exit 0 "$(same "$repo/.git/zuko-release" "$work/expected")" "cut: the marker names the version, HEAD and every file it wrote"
 expect_match '^Project overview \(OVERVIEW\.md\):$' \
   "$(CLAUDE_PROJECT_DIR="$repo" bash "$scripts/load-overview.sh" | head -n 1)" "cut: the session loader still reads the status as Active"
 expect_no_match '^Proposed' "$(python3 "$release" plan "$repo" 2>&1)" "cut: a dirty tree after it, as the skill commits next"
+
+# 22b. A marker left by an abandoned cut is replaced whole by the next one.
+repo=$(fixture)
+printf 'version 1.4.9\nhead 0000000000000000000000000000000000000000\nsrc/app.py\n' >"$repo/.git/zuko-release"
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
+expect_exit 0 "$status" "cut over a stale marker: exits 0"
+printf 'version 1.5.0\nhead %s\nCHANGELOG.md\nOVERVIEW.md\ndocs/security/v1.5.0/report.md\n' "$(git -C "$repo" rev-parse HEAD)" >"$work/expected"
+expect_exit 0 "$(same "$repo/.git/zuko-release" "$work/expected")" "cut over a stale marker: the old marker is replaced whole"
 
 # 23. notes: the lines under a version, exactly, without the heading.
 run notes "$repo" --version 1.5.0

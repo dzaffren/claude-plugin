@@ -199,6 +199,11 @@ changed; `git status --short` lists them.
 
 ### 4. Commit, tag, push
 
+Each line is its own Bash call. The commit goes to `main` past
+`block-dangerous.sh` only as the whole call: one plain `git commit -m`, with
+the files already staged by the call before it and nothing chained to it
+(D30). `cut` left the marker that lets exactly this commit through.
+
 ```
 git add <the files cut changed>
 git commit -m "chore(release): vX.Y.Z" -m "<body naming each file and what changed in it>"

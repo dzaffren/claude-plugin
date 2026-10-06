@@ -381,6 +381,13 @@ naming=$(tr '\n' ' ' <"$scripts/../references/git-naming.md")
 expect_match 'blocks the first +three at .*`gh pr create`' "$naming" \
   "git-naming.md names gh pr create among the commands the hook blocks"
 
+# A lone surrogate the payload parse cannot print used to end in `|| exit 0`,
+# so the message went unread (spec O6).
+surrogate_err=$(printf '%s' '{"tool_input":{"command":"git commit -m x \ud800"}}' \
+  | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-attribution.sh" 2>&1 >/dev/null)
+expect_exit 2 "$?" "a payload that will not decode blocks instead of passing"
+expect_match '^Blocked: could not read the hook payload' "$surrogate_err" "the unreadable-payload block says why"
+
 # The CLI keeps printing git invocations only; gh is opt-in for callers.
 cli_out=$(printf '%s' 'gh release create v2.2.0 -n "notes" && git tag -a v2.2.0 -m v2.2.0' | python3 "$scripts/lib/git-command.py")
 expect_exit 'tag -a v2.2.0 -m v2.2.0' "$cli_out" "git-command.py on stdin still prints only the git invocation"

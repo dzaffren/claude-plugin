@@ -148,9 +148,30 @@ expect_match '^  OVERVIEW\.md +Release: v1\.5\.0 on the status line$' "$cut_out"
 
 expect_match '^  docs/security/v1\.5\.0/report\.md +pentest report, Result pass$' "$cut_out" "e2e: cut writes the pentest report"
 
-# 3. Commit, annotated tag, one atomic push: origin holds both.
+# 3. Commit, annotated tag, one atomic push: origin holds both. The commit is
+# the skill's step 4, made by Claude on main, so every hook hooks.json binds
+# to git commit sees it first, as it will in a session; a plain git commit
+# here never meets them.
+hook_payload() {   # hook_payload <shell command>: the PreToolUse JSON for it, run in $repo
+  ZUKO_CMD="$1" ZUKO_CWD="$repo" python3 -c 'import json,os
+print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]},"cwd":os.environ["ZUKO_CWD"]}))'
+}
+step4='git commit -m "chore(release): v1.5.0" -m "Changes CHANGELOG.md, package.json, OVERVIEW.md and the pentest report."'
+# Staging and committing in one call is blocked: the guard reads the index
+# before the call runs, so it would see nothing staged.
+hook_payload "git add -A && $step4" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
+expect_exit 2 "$?" "e2e: git add and the release commit in one call is blocked"
+hook_payload 'git add -A' | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
+expect_exit 0 "$?" "e2e: step 4's staging call passes block-dangerous.sh"
 git -C "$repo" add -A
+step4_payload=$(hook_payload "$step4")
+for hook in block-dangerous.sh secret-scan.sh block-attribution.sh; do
+  printf '%s' "$step4_payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/$hook" >/dev/null 2>&1
+  expect_exit 0 "$?" "e2e: the release commit passes $hook"
+done
 git -C "$repo" commit -q --no-verify -m "chore(release): v1.5.0" -m "Changes CHANGELOG.md, package.json, OVERVIEW.md and the pentest report."
+printf '%s' "$step4_payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" >/dev/null 2>&1
+expect_exit 2 "$?" "e2e: the same commit again, once the release landed, is blocked"
 git -C "$repo" tag -a v1.5.0 -m v1.5.0
 git -C "$repo" push -q --atomic origin main v1.5.0
 expect_exit 0 "$?" "e2e: the push succeeds"

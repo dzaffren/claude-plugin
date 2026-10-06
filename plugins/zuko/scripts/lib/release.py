@@ -31,7 +31,10 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          each medium or low finding gets a line under the version's Security
          section. --no-pentest takes the reason the user typed ("skip" or
          nothing is refused): it writes a skipped report, a Security line, and
-         a D-entry in DECISIONS.md. On any failure it writes nothing
+         a D-entry in DECISIONS.md. Last, it writes the release marker
+         block-dangerous.sh reads (D30): the version, HEAD, and every path
+         it wrote, at git's zuko-release path, replacing any older one.
+         On any failure it writes nothing
   notes  print the lines under "## [X.Y.Z]", without the heading or the blank
          lines around them: the GitHub release's notes
 
@@ -639,6 +642,23 @@ def writes(release, today):
     return found
 
 
+# The release marker block-dangerous.sh reads to let exactly this commit onto
+# main (D30). It names HEAD, so it matches nothing once the commit lands.
+MARKER = "zuko-release"
+
+
+def write_marker(project, version, found):
+    """Write the marker for the files in found; return its path for the
+    Wrote list, relative to the project."""
+    where = git(project, "rev-parse", "--git-path", MARKER).stdout.strip()
+    path = where if os.path.isabs(where) else os.path.join(project, where)
+    head = git(project, "rev-parse", "HEAD").stdout.strip()
+    lines = ["version " + version, "head " + head] + [name for name, _ in found]
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write("\n".join(lines) + "\n")
+    return os.path.relpath(path, project)
+
+
 def print_writes(heading, found, notes=()):
     width = max(len(path) for path, _ in found) + 3
     print(heading)
@@ -1067,8 +1087,11 @@ def cut(project, version, today, report=None, reason=None):
         os.makedirs(os.path.dirname(os.path.join(project, path)), exist_ok=True)
         with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
             handle.write(text)
+    found = writes(release, today)
+    v = show(release.version)
+    marker = write_marker(project, v, found)
     print()
-    print_writes("Wrote", writes(release, today))
+    print_writes("Wrote", found + [(marker, "marks the v%s commit for the main-branch guard" % v)])
     return 0
 
 
