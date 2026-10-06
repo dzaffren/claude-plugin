@@ -317,3 +317,28 @@ Rejected: any request that proves the hole (destroys staging data), no write
 requests at all (cannot test create or delete routes).
 Source: specs/pentest-live.md
 Status: active
+
+## D30 · 2026-10-06 · The main-branch guard lets through only the release commit cut prepared
+
+Why: D1 sends the release commit straight to main, and block-dangerous.sh blocked
+every commit on main, so v2.2.0 stopped at step 4 and needed the user's `!`. cut
+writes .git/zuko-release with the version, HEAD and the files it wrote; the guard
+allows a commit on main only when all three match a plain `git commit -m`. Binding
+HEAD retires the marker once the commit lands, with no cleanup step.
+Rejected: any `chore(release):` subject (any commit can claim it), keeping the block
+and handing the commit to the user (stops /release halfway, against D1), deleting
+the marker after the commit (a step every exit path must reach), comparing file
+content (the user chose to allow edits to the same files).
+Source: specs/release-commit-guard.md
+Status: active
+
+## D31 · 2026-10-06 · The guards on git commit fail closed on a payload they cannot read
+
+Why: the v2.2.0 pentest proved P3 and P4: a lone surrogate made the payload parse
+raise, the exit 0 after it passed the command, and a force push and a staged secret
+went through. block-dangerous.sh, secret-scan.sh and block-attribution.sh now block
+with a reason instead.
+Rejected: failing open (proven bypass), failing open with a warning (the command
+still runs unchecked).
+Source: specs/release-commit-guard.md
+Status: active
