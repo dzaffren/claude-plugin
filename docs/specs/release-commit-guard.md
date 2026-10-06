@@ -1,6 +1,6 @@
 # Release commit guard
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** `release` — the commit this slice lets through is its step 4
 **Page:** https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w
