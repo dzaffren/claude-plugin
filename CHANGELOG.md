@@ -9,10 +9,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - /release makes its own release commit on main again. The main-branch guard lets through exactly the commit release.py cut prepared, staged in the call before it, and still blocks every other commit on main.
+- The design drift check that /spec, /design and /review run now works with macOS's default bash; before, it stopped with a syntax error and checked nothing.
 
 ### Security
 
 - The guards on git commit, the force-push and secret checks among them, now block a command whose hook input they cannot read, instead of letting it run unchecked.
+- The design drift check reports a scanned file's name as text; a crafted name could make it write a file.
 
 ## [2.2.0] - 2026-10-05
 

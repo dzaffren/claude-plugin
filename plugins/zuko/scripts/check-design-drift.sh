@@ -40,7 +40,9 @@ scan=$(printf '%s\n' "${targets[@]}" | while read -r t; do
   [ -e "$t" ] || continue
   if [ -f "$t" ]; then
     case "$t" in
-      *.html|*.css|*.scss|*.tsx|*.jsx|*.ts|*.js|*.vue|*.svelte) echo "$t" ;;
+      # The leading paren is not optional: bash 3.2, macOS's /bin/bash, reads
+      # a bare pattern's ")" inside $( ) as the end of the substitution.
+      (*.html|*.css|*.scss|*.tsx|*.jsx|*.ts|*.js|*.vue|*.svelte) echo "$t" ;;
     esac
   else
     find "$t" -type f \
@@ -68,9 +70,17 @@ fi
 
 problems=""
 
+# Put the file's name in front of each line of a hit. The name is printed as
+# data: built into a sed program, a name holding "|w <path>" made sed write
+# a file (pentest P2, v2.2.0).
+prefix() {   # prefix <file>
+  local line
+  while IFS= read -r line; do printf '%s:%s\n' "$1" "$line"; done
+}
+
 # 1. Raw hex colours.
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  grep -nE '#[0-9a-fA-F]{3,8}\b' "$f" 2>/dev/null | grep -vE '(--[a-zA-Z0-9_-]+[[:space:]]*:|@dsCard|currentColor)' | sed "s|^|$f:|" | head -5
+  grep -nE '#[0-9a-fA-F]{3,8}\b' "$f" 2>/dev/null | grep -vE '(--[a-zA-Z0-9_-]+[[:space:]]*:|@dsCard|currentColor)' | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 
@@ -79,7 +89,7 @@ $hits"
 
 # 2. Tailwind arbitrary values.
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  grep -nE '\b(w|h|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|text|leading|rounded|top|left|right|bottom)-\[[^]]+\]' "$f" 2>/dev/null | sed "s|^|$f:|" | head -5
+  grep -nE '\b(w|h|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|gap|text|leading|rounded|top|left|right|bottom)-\[[^]]+\]' "$f" 2>/dev/null | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 
@@ -88,7 +98,7 @@ $hits"
 
 # 3. Animating layout properties.
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  grep -nE 'transition[^;]*:[^;]*(width|height|top|left|right|bottom|margin|padding)' "$f" 2>/dev/null | sed "s|^|$f:|" | head -5
+  grep -nE 'transition[^;]*:[^;]*(width|height|top|left|right|bottom|margin|padding)' "$f" 2>/dev/null | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 
@@ -99,7 +109,7 @@ $hits"
 # above U+FFFF, byte matching does not.
 emoji_bytes=$'\xF0\x9F[\x80-\xBF][\x80-\xBF]|\xE2[\x98-\x9E][\x80-\xBF]|\xEF\xB8\x8F|\xE2\xAD\x90|\xE2\x9C\x85|\xE2\x9D\x8C'
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  LC_ALL=C grep -nE "$emoji_bytes" "$f" 2>/dev/null | sed "s|^|$f:|" | head -5
+  LC_ALL=C grep -nE "$emoji_bytes" "$f" 2>/dev/null | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 
@@ -108,7 +118,7 @@ $hits"
 
 # 5. Placeholder content.
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  grep -niE 'lorem ipsum|\[placeholder\]|your (product|company) (name|here)|TODO: copy' "$f" 2>/dev/null | sed "s|^|$f:|" | head -5
+  grep -niE 'lorem ipsum|\[placeholder\]|your (product|company) (name|here)|TODO: copy' "$f" 2>/dev/null | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 
@@ -117,7 +127,7 @@ $hits"
 
 # 6. Generated-UI copy tells.
 hits=$(printf '%s\n' "$scan" | while read -r f; do
-  grep -niE 'elevate your|supercharge your|unlock the power|take your .* to the next level|seamlessly (integrate|connect)|best-in-class|game-chang' "$f" 2>/dev/null | sed "s|^|$f:|" | head -5
+  grep -niE 'elevate your|supercharge your|unlock the power|take your .* to the next level|seamlessly (integrate|connect)|best-in-class|game-chang' "$f" 2>/dev/null | prefix "$f" | head -5
 done)
 [ -n "$hits" ] && problems="$problems
 

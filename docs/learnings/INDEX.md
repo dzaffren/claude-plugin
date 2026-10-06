@@ -145,3 +145,6 @@ One line per lesson. Loaded into every session in this repo.
 - A skill's e2e that runs git itself never meets the hooks the skill will —
   feed each guarded step's command to its hooks, in the state it runs in.
   ([detail](run-a-skill-step-through-its-guards.md))
+- A gate with no test of its own may never have run — give every gate script
+  a test, and parse it with macOS's /bin/bash -n before trusting it.
+  ([detail](a-gate-with-no-test-may-never-have-run.md))

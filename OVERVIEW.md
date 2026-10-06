@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship release-commit-guard
+**Status:** Active · **Release:** v2.2.0 · **Updated:** 2026-10-06 by /ship design-drift-filename
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -54,6 +54,7 @@ projects.
 | figma-brief | Shipped | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles | https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9 |
 | pentest-live | Shipped | /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named | https://claude.ai/artifact/9ncMJwsS8wJtRzdfWxrv4j |
 | release-commit-guard | Shipped | /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read | https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w |
+| design-drift-filename | Built | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file | — |
 
 ## More
 
