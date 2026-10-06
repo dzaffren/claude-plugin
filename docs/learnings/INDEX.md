@@ -148,3 +148,6 @@ One line per lesson. Loaded into every session in this repo.
 - A gate with no test of its own may never have run — give every gate script
   a test, and parse it with macOS's /bin/bash -n before trusting it.
   ([detail](a-gate-with-no-test-may-never-have-run.md))
+- An edit holding attack strings for a guard test can get no verdict from auto
+  mode — ask the user, then splice it in from a scratchpad heredoc.
+  ([detail](attack-strings-stall-the-edit-check.md))
