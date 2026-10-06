@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-06
+
 ### Fixed
 
 - /release makes its own release commit on main again. The main-branch guard lets through exactly the commit release.py cut prepared, staged in the call before it, and still blocks every other commit on main.
@@ -16,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The guards on git commit, the force-push and secret checks among them, now block a command whose hook input they cannot read, instead of letting it run unchecked.
 - The design drift check reports a scanned file's name as text; a crafted name could make it write a file.
 - The pentester's shell fence no longer allows awk, sed, sort, uniq or file; through them the pentester could run a shell or overwrite files in your repo.
+- Known low issue: A05:2025 Injection in plugins/zuko/scripts/lib/release-commit.py; see docs/security/v2.3.0/report.md.
 
 ## [2.2.0] - 2026-10-05
 
@@ -56,5 +59,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
