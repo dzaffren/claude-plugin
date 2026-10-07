@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-07
+
 ### Security
 
 - The release commit's pass onto main covers only the files /release staged; a crafted message could add more files to that commit, and no longer can.
@@ -64,6 +66,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
