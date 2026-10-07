@@ -46,6 +46,41 @@ run_hook "git pu\\
 sh --force origin main"
 expect_exit 2 "$hook_status" "a continuation splitting the subcommand is still a force push"
 
+# Every other spelling git 2.52.0 forced a bare remote with: a + refspec, -f
+# bundled with other short options, and --mirror or any prefix of it.
+for form in 'git push origin +main' \
+  'git push origin +HEAD:main' \
+  "git push origin '+main'" \
+  'git push -uf origin main' \
+  'git push -fu origin main' \
+  'git push --mirror origin' \
+  'git push --mi origin' \
+  "$(printf 'git push origin +main\ncat <<EOF\nnever closed')"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "force push blocked: $form"
+done
+
+# bash expands a brace or glob before git runs, so the words the guard reads
+# are not the words git gets: {--force,origin} reaches git as --force origin.
+for form in 'git push {--force,origin} main' \
+  'git push -{f,u} origin main' \
+  'git push origin feat/*'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "push with a brace or glob blocked: $form"
+done
+push_err=$(printf '%s' '{"tool_input":{"command":"git push {--force,origin} main"}}' \
+  | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/block-dangerous.sh" 2>&1 >/dev/null)
+expect_match 'brace or glob' "$push_err" "the brace block says why"
+
+for form in 'git push -u origin feat/thing' \
+  'git push -uv origin feat/thing' \
+  'git push --atomic origin main v2.3.0' \
+  'git push --follow-tags origin main' \
+  'git push origin main'; do
+  run_hook "$form"
+  expect_exit 0 "$hook_status" "push allowed: $form"
+done
+
 # The commit lands in the directory it runs in, not the session's. A worktree
 # on a feature branch sits beside a session on main, and the reverse.
 wt="$work/wt"

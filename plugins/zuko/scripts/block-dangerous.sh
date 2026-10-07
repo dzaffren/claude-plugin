@@ -17,19 +17,30 @@ deny() { echo "$1" >&2; exit 2; }
 # that only mentions "git commit" in a quoted argument or a heredoc body is not
 # mistaken for one. A parse failure falls back to matching the raw text, which
 # over-blocks rather than under-blocks.
+#
+# A push forces with --force and its -with-lease form, with -f alone or bundled
+# (-uf), with --mirror or any prefix of it (git takes --mi), and with a refspec
+# that starts with +. A brace or glob is expanded by the shell before git runs,
+# so the words read here are not the words git gets.
 git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>/dev/null)
 if [ $? -eq 0 ]; then
   subject="$git_args"
-  push_re='^push( .*)? (--force[^[:space:]]*|-f)([[:space:]]|$)'
+  push_re='^push( .*)? (--force[^[:space:]]*|--m[^[:space:]]*|-[^-[:space:]]*f[^[:space:]]*|\+[^[:space:]]*)([[:space:]]|$)'
+  expand_re='^push( .*)? [^[:space:]]*[][{}*?]'
   commit_re='^commit([[:space:]]|$)'
 else
   subject="$cmd"
-  push_re='git push[^;|&]*(--force|--force-with-lease|[[:space:]]-f([[:space:]]|$))'
+  push_re='git push[^;|&]*[[:space:]]["'\'']?(--force|--m|-[^-[:space:]]*f|\+)'
+  expand_re='git push[^;|&]*[][{}*?]'
   commit_re='(^|[;&|[:space:]])git commit'
 fi
 
 if printf '%s\n' "$subject" | grep -qE "$push_re"; then
   deny "Blocked: force push rewrites shared history. Ask the user first."
+fi
+
+if printf '%s\n' "$subject" | grep -qE "$expand_re"; then
+  deny "Blocked: this push has a brace or glob character, which the shell can expand into a force flag. Write the arguments out in full, or ask the user first."
 fi
 
 if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)[[:space:]]+(/([[:space:]]|$)|/[a-z]+([[:space:]]|$)|~|\.\.)'; then
