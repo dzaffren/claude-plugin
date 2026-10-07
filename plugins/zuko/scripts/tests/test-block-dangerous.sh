@@ -54,10 +54,21 @@ for form in 'git push origin +main' \
   'git push -uf origin main' \
   'git push -fu origin main' \
   'git push --mirror origin' \
-  'git push --mi origin' \
-  "$(printf 'git push origin +main\ncat <<EOF\nnever closed')"; do
+  'git push --mi origin'; do
   run_hook "$form"
   expect_exit 2 "$hook_status" "force push blocked: $form"
+done
+
+# A command that will not parse is judged on its raw text. An unclosed heredoc
+# fails the parse, and bash still runs the push in front of it.
+unclosed=$(printf '\ncat <<EOF\nnever closed')
+for form in 'git push origin +main' \
+  "git push origin '+main'" \
+  'git push -uf origin main' \
+  'git push --mi origin' \
+  'git push origin feat/{a,b}'; do
+  run_hook "$form$unclosed"
+  expect_exit 2 "$hook_status" "unparsed push blocked: $form"
 done
 
 # bash expands a brace or glob before git runs, so the words the guard reads
