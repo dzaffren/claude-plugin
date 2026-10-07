@@ -57,7 +57,7 @@ projects.
 | design-drift-filename | Shipped | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file | — |
 | pentester-fence-awk | Shipped | The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw | — |
 | release-commit-brace | Shipped | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit | — |
-| force-push-expansion | Built | The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands | — |
+| force-push-expansion | Shipped | The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands | — |
 
 ## More
 

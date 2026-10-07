@@ -1,6 +1,6 @@
 # Force push expansion
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** `hook-command-match` — the parsed git arguments this check reads
 
