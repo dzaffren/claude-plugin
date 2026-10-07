@@ -194,6 +194,7 @@ projects.
 - /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read
 - The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file
 - The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw
+- The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit
 
 ## Docs
 

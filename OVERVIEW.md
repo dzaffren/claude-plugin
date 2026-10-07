@@ -56,7 +56,7 @@ projects.
 | release-commit-guard | Shipped | /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read | https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w |
 | design-drift-filename | Shipped | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file | — |
 | pentester-fence-awk | Shipped | The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw | — |
-| release-commit-brace | Built | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit | — |
+| release-commit-brace | Shipped | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit | — |
 
 ## More
 
