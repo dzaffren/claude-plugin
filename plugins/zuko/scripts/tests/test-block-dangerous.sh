@@ -158,6 +158,8 @@ printf '# Changelog\n\n## [2.3.0] - 2026-10-06\n\n- Reworded.\n' >"$rel/CHANGELO
 git -C "$rel" add CHANGELOG.md
 run_rel "$release_commit"
 expect_exit 0 "$hook_status" "release: the commit cut prepared passes on main"
+run_rel 'git commit -m "chore(release): v2.3.0" -m "CHANGELOG.md: [Unreleased] under [2.3.0], {a,b} and * quoted."'
+expect_exit 0 "$hook_status" "release: brackets, braces and stars inside quotes are text"
 
 # Scenario 3: the marker covers only what cut wrote, in the form step 4 writes.
 mkdir -p "$rel/src"
@@ -187,6 +189,10 @@ for form in 'git commit -a -m "chore(release): v2.3.0"' \
   'git add src/app.py && git commit -m "chore(release): v2.3.0"' \
   'git commit -m "chore(release): v2.3.0" -m $(echo body --all)' \
   'git commit -m "chore(release): v2.3.0" -m `echo body --all`' \
+  'git commit -m "chore(release): v2.3.0" -m {body,--all}' \
+  'git commit -m "chore(release): v2.3.0" -m *' \
+  'git commit -m "chore(release): v2.3.0" -m body?' \
+  'git commit -m "chore(release): v2.3.0" -m [a-z]*' \
   'GIT_INDEX_FILE=.git/alt git commit -m "chore(release): v2.3.0"' \
   'git -c core.hooksPath=/dev/null commit -m "chore(release): v2.3.0"' \
   'git commit -m "chore(release): v2.3.0" -m body # note' \
