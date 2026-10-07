@@ -715,7 +715,7 @@ same() {       # same <file> <file>; prints 0 when the bytes match
 }
 
 changed() {    # changed <repo>: the paths git sees changed, one line
-  git -C "$1" status --porcelain | awk '{ print $2 }' | sort | tr '\n' ' '
+  git -C "$1" status --porcelain | awk '{ print $2 }' | LC_ALL=C sort | tr '\n' ' '
 }
 
 pentest_fixtures="$scripts/tests/fixtures/pentest"
