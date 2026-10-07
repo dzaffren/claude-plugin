@@ -88,7 +88,8 @@ One line per lesson. Loaded into every session in this repo.
   (`-`) lines, or the reviewer calls the function unchanged.
   ([detail](reviewers-skim-deleted-lines.md))
 - A command guard allow-lists the raw text's characters before tokenising —
-  a `#` comment can swallow the newline between two commands.
+  a `#` comment can swallow the newline between two commands, and an
+  unquoted brace or glob turns one token into several words.
   ([detail](comments-can-swallow-the-separator.md))
 - Never pipe into `grep -q` under `pipefail` — an early match SIGPIPEs the
   writer on text over 64 KB and the pipeline reads as a miss; use a here-string.

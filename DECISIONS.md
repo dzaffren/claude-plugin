@@ -356,3 +356,16 @@ guard), keeping sort and its siblings for a later slice (one of them writes the
 real repo today).
 Source: specs/pentester-fence-awk.md
 Status: active
+
+## D33 · 2026-10-07 · The release-commit check refuses braces and globs outside quotes
+
+Why: `whole_call` counts shlex tokens as git's arguments, but bash expands an
+unquoted `{a,b}`, `*`, `?` or `[` into several words after the check passes. The
+v2.3.0 pentest found it (P1), and a probe on 2026-10-07 showed
+`-m {body,--all}` reach git as `-m body --all` on main. As shlex punctuation,
+those characters split out only when unquoted, and the existing check refuses them.
+Rejected: allow-listing the raw command's characters (the release body names
+`[2.3.0]` inside quotes, so real releases would block), a hand-written quote
+scanner (more code for the answer shlex already gives).
+Source: specs/release-commit-brace.md
+Status: active

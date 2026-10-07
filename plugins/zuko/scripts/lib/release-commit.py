@@ -11,8 +11,8 @@ HEAD is still the marker's, and the staged files are exactly the marker's.
 
 The whole call, because this runs before the call does: a `git add` before
 the commit, an env prefix such as GIT_INDEX_FILE, a git option such as -c, or
-a `$(...)` the shell splits into more arguments would each change what the
-commit takes after the check has passed.
+a `$(...)`, `{a,b}` or `*` the shell expands into more arguments would each
+change what the commit takes after the check has passed.
 
 Exit 0  it is that commit
 Exit 1  it tries to be a release commit and something does not match; the
@@ -51,10 +51,12 @@ def subject_of(args):
 def whole_call(command):
     """True when the command is `git commit -m <message> [-m <message> ...]`
     and nothing else. One line, no comment, and no token the shell would
-    expand or treat as an operator: `$`, a backtick, or punctuation."""
+    expand or treat as an operator: `$`, a backtick, or punctuation. Brace
+    and glob characters count as punctuation, so outside quotes they come
+    out as tokens of their own and are refused; inside quotes they are text."""
     if "\n" in command or "\r" in command:
         return False
-    lex = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&{}[]*?")
     lex.whitespace_split = True
     lex.commenters = ""
     try:
