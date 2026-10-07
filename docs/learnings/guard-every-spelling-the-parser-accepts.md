@@ -21,3 +21,10 @@ Position counts too. `pr-attribution` (2026-09-28) read every spelling of
 `-b` and `-F`, then missed `gh pr -R o/r create`: the command group's own
 flag (`gh pr --help`, `-R/--repo`) sits before the subcommand. Read the
 group's `--help`, not only the subcommand's.
+
+A value can spell an option too. The force-push check (2026-10-07) read
+`--force` and `-f`, and git 2.52.0 also forced with `-uf` (a bundled short
+flag), `--mi` (a prefix of `--mirror`, which forces every ref), and
+`origin +main` (a refspec whose leading `+` forces that one ref). List the
+spellings from `git push -h` and the refspec docs, then prove each against a
+scratch bare remote.

@@ -76,7 +76,8 @@ One line per lesson. Loaded into every session in this repo.
   longest match, and this machine's global config rewrites github.com.
   ([detail](insteadof-longest-match-wins.md))
 - A guard over a CLI reads every spelling that CLI's parser accepts —
-  aliases, abbreviated long options, `-F=path` — and git and gh differ.
+  aliases, abbreviated long options, bundled short flags,
+  `-F=path`, a `+` refspec — and git and gh differ.
   ([detail](guard-every-spelling-the-parser-accepts.md))
 - An agent's `tools:` pattern like `Bash(git diff *)` grants the whole tool —
   scope it with a PreToolUse hook on `agent_type`, and probe it headless.
