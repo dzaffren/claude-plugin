@@ -1,6 +1,6 @@
 # Ask up front, decide at the PR
 
-**Project type:** CLI/Library · **Status:** Draft
+**Project type:** CLI/Library · **Status:** Shaped
 
 ## Problem
 
@@ -90,7 +90,8 @@ about 900 approved words. The rules that change zuko's writing most:
 - One topic in each paragraph, and no more than six sentences.
 - Use an "-ing" form only as a technical noun.
 
-`voice.md` keeps its ban list. The STE rules go next to it.
+`voice.md` keeps its ban list. The STE rules go next to it. zuko uses the rules
+only, not the dictionary (O1). They apply to all new text that zuko writes (O2).
 
 ### Slice 3 · pause-questions
 
@@ -101,7 +102,7 @@ with rows still open. Claude also wrote 27 answers itself and asked later.
   Each question shows a recommended answer first.
 - Each assumption Claude makes is shown as a question, not written down
   quietly.
-- An `unproven` row offers `/poc` as an answer.
+- An `unproven` row offers `/poc` as the first answer (O4).
 - No pause is approved while a row is Open.
 
 ### Slice 4 · unattended-build
@@ -109,7 +110,7 @@ with rows still open. Claude also wrote 27 answers itself and asked later.
 | Where it stops today | After |
 | --- | --- |
 | `/build` gate: walks Open rows with the user | Cannot happen. A `Refined` spec has zero Open rows. A spec that is not `Refined` goes back to `/spec`. |
-| `/build`: the spec turns out wrong | Depends on O3 |
+| `/build`: the spec turns out wrong | Decides, records a row, continues. The PR lists it first (O3) |
 | `/build`: a file the plan did not name | Decides, records a row, continues |
 | `/review`: a fix changes what the spec approved | Applies the fix, records a row |
 | `/review`: a Decisions finding | Changes the code to obey the entry, records a row (O5) |
@@ -145,10 +146,10 @@ The new body, in order:
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | ASD-STE100: use the 53 writing rules only, or the approved dictionary too? | question | shape | user | Open | — |
-| O2 | Which text follows STE: everything zuko writes, or only the text you read to decide (pause summaries, reports, PR body)? | question | shape | user | Open | — |
-| O3 | `/build` finds the spec wrong in the middle of a run. Decide, record a row and continue, or stop and go back to `/spec` as today? | question | shape | user | Open | — |
-| O4 | A pause meets an unproven claim. Offer `/poc` as the first answer, or run `/poc` without asking? | question | shape | user | Open | — |
+| O1 | ASD-STE100: use the 53 writing rules only, or the approved dictionary too? | question | shape | user | Resolved | Rules only. No dictionary, 2026-10-07 |
+| O2 | Which text follows STE: everything zuko writes, or only the text you read to decide (pause summaries, reports, PR body)? | question | shape | user | Resolved | Everything zuko writes. New text only, 2026-10-07 |
+| O3 | `/build` finds the spec wrong in the middle of a run. Decide, record a row and continue, or stop and go back to `/spec` as today? | question | shape | user | Resolved | Decide, record a row, continue. The PR lists it first, 2026-10-07 |
+| O4 | A pause meets an unproven claim. Offer `/poc` as the first answer, or run `/poc` without asking? | question | shape | user | Resolved | Offer `/poc` first. You choose each time, 2026-10-07 |
 | O5 | Assuming `/review` fixes a Decisions finding by changing the code to obey the entry. Superseding the entry stays your call at the PR. | assumption | shape | user | Handed to unattended-build | — |
 | O6 | In auto mode the harness tells Claude not to ask questions. Does a skill rule to ask at each pause win over it? The 27 rows suggest that it does not today. | unproven | shape | poc | Handed to pause-questions | A headless run can settle it |
 | O7 | Assuming "the Stop hooks must not block required work" means: they pull Claude onto files that the task did not touch, or that are not zuko docs. Taken from 18 logged sessions. | assumption | shape | user | Handed to stop-hook-scope | — |
