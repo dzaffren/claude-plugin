@@ -369,3 +369,17 @@ Rejected: allow-listing the raw command's characters (the release body names
 scanner (more code for the answer shlex already gives).
 Source: specs/release-commit-brace.md
 Status: active
+
+## D34 · 2026-10-07 · The force-push check reads git's spellings of force, not shell variables
+
+Why: git 2.52.0 forced a bare remote with `-uf`, `--mi` and `origin +main`, and
+the check read only `--force` and `-f`. bash builds any of those from a brace
+or glob after the hook reads the text, so a push holding one blocks with its
+own reason.
+Rejected: blocking `$` and backticks in a push (it would stop
+`git push -u origin "$(git branch --show-current)"`), reading git config for
+`remote.*.mirror` or a `+` push refspec (config set outside the command is out of
+a command hook's sight). Both stay known limits: a command hook stops mistakes,
+not a push written to get past it.
+Source: specs/force-push-expansion.md
+Status: active

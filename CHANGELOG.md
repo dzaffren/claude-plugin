@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - The release commit's pass onto main covers only the files /release staged; a crafted message could add more files to that commit, and no longer can.
+- The force-push guard now blocks the other ways git spells a force push: a + before the branch name, -f bundled with other short flags, --mirror, and braces or globs the shell expands into one of these.
 
 ## [2.3.0] - 2026-10-06
 
