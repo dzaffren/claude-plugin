@@ -6,6 +6,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Claude is no longer sent back at the end of a turn to fix runbooks, other tools' specs, or old specs the work never touched. The end-of-turn checks now look only at zuko specs and shapes this branch or the working tree changed.
+- A spec the end-of-turn open-items check cannot read now fails the check, instead of passing as if it had no open rows.
+
 ## [2.3.1] - 2026-10-07
 
 ### Security
