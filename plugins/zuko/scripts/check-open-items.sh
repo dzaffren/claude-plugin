@@ -45,8 +45,15 @@ active=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys
 specs="$dir/docs/specs"
 [ -d "$specs" ] || exit 0
 
+# Only the zuko docs this work touched (D35, D36).
+if ! scope=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/stop_scope.py" "$dir" 2>&1); then
+  echo "Open-items gate failed: the docs to judge could not be listed: $scope" >&2
+  exit 2
+fi
+
 problems=""
 while IFS= read -r md; do
+  [ -n "$md" ] || continue
   status=$(spec_status "$md")
   case "$(basename "$md"):${status:-}" in
     shape.md:Shaped) ;;
@@ -60,7 +67,7 @@ while IFS= read -r md; do
 - $md is '$status' but still has open ledger items:
 $rows"
   fi
-done < <(find "$specs" -maxdepth 2 -name '*.md' ! -path '*/archive/*' 2>/dev/null)
+done <<<"$scope"
 
 if [ -n "$problems" ]; then
   {
