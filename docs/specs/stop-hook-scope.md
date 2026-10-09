@@ -1,6 +1,6 @@
 # Stop hook scope
 
-**Version:** v1 · **Status:** Draft · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** None
@@ -225,7 +225,7 @@ Single chunk. The test file is written first.
 
 | Risk | Mitigation |
 | --- | --- |
-| A zuko spec with a broken Version line is no longer judged by the Stop hooks. | `/build` and `/ship` still read the spec by its path. O4 asks you to accept this. |
+| A zuko spec with a broken Version line is no longer judged by the Stop hooks. | `/build` and `/ship` still read the spec by its path. Accepted in O4. |
 | A narrower matcher turns false blocks into false allows. | The verdict diff over the real repos, before ship. |
 | A repo with no `origin/HEAD`, `main` or `master` judges every zuko doc, so it still gets old breaches. | Fail toward the gate. A missed check costs more than a false block. |
 | macOS runs the hooks with bash 3.2. | The shell change only swaps the input of an existing loop. The logic lives in Python. |
@@ -265,7 +265,7 @@ Status: active
 | O1 | Assuming "the Stop hooks must not block required work" means: they judge files that are not zuko docs, and zuko docs that the task did not touch (from shape O7) | assumption | shape | user | Resolved | Both. Confirmed 2026-10-09 |
 | O2 | What counts as a doc that the current work touched? | question | spec p1 | user | Resolved | Changed on the branch since the merge-base, staged, unstaged, or new. 2026-10-09 |
 | O3 | A zuko spec that nobody touched still has a breach. Ignore it, or warn without blocking? | question | spec p1 | user | Resolved | Ignore. `/status` shows the open rows. 2026-10-09 |
-| O4 | 118 docs in 8 local repos stop being judged, because none has the Version line. None follows the current template, and each fails today's gate. A zuko spec whose Version line gets broken is also no longer judged. | flag | spec p3 | user | Open | — |
+| O4 | 118 docs in 8 local repos stop being judged, because none has the Version line. None follows the current template, and each fails today's gate. A zuko spec whose Version line gets broken is also no longer judged. | flag | spec p3 | user | Accepted risk | Every one fails today's gate on every turn, and `/build` and `/ship` still read a spec by its path. 2026-10-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
