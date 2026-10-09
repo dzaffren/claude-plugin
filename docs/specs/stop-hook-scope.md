@@ -1,6 +1,6 @@
 # Stop hook scope
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** None
