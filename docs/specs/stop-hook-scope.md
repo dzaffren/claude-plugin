@@ -242,6 +242,7 @@ Recorded as D35, D36.
 | O2 | What counts as a doc that the current work touched? | question | spec p1 | user | Resolved | Changed on the branch since the merge-base, staged, unstaged, or new. 2026-10-09 |
 | O3 | A zuko spec that nobody touched still has a breach. Ignore it, or warn without blocking? | question | spec p1 | user | Resolved | Ignore. `/status` shows the open rows. 2026-10-09 |
 | O4 | 118 docs in 8 local repos stop being judged, because none has the Version line. None follows the current template, and each fails today's gate. A zuko spec whose Version line gets broken is also no longer judged. | flag | spec p3 | user | Accepted risk | Every one fails today's gate on every turn, and `/build` and `/ship` still read a spec by its path. 2026-10-09 |
+| O5 | Review: in a repo with no remote, on main, a spec committed on main is never judged, because the merge-base is HEAD itself. | flag | review | user | Accepted risk | Claude cannot commit on main: `block-dangerous.sh:52` denied both commit forms in a scratch repo, so only a hand commit reaches this. Keep as built. 2026-10-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
