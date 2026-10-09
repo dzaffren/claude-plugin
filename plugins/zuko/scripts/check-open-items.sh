@@ -2,7 +2,8 @@
 # Gate: no shape may be Shaped, and no spec Refined, Built or Shipped, while a
 # ledger row is still Open. A shape's 'Handed to SLICE' row is not Open.
 # Used two ways:
-#   - Stop hook, no args: checks every live spec and shape, blocks the turn on a breach.
+#   - Stop hook, no args: checks the zuko docs this work touched (lib/stop_scope.py),
+#     blocks the turn on a breach.
 #   - With a spec path: prints that spec's open rows, exit 1 if any (for /build).
 set -uo pipefail
 
