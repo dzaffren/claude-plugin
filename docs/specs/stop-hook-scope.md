@@ -1,6 +1,6 @@
 # Stop hook scope
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** None
@@ -161,7 +161,7 @@ sequenceDiagram
 
 | File | What changes | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/lib/stop_scope.py` (new) | Prints the zuko docs to judge, one absolute path per line. It reads git output with `-z` and passes names as arguments, never through a shell. It exits 1 with a reason if git fails. | Scenarios 1 to 5 |
+| `plugins/zuko/scripts/lib/stop_scope.py` (new) | Prints the zuko docs to judge, one absolute path per line. It reads git output with `-z` and passes names as arguments, never through a shell. It exits 1 with a reason when `git diff` or `git ls-files` fails, or a doc it lists cannot be read. | Scenarios 1 to 5 |
 | `plugins/zuko/scripts/verify-gates.sh:37` | The loop reads the helper's list instead of `find`. If the helper fails, that is a problem line, the same as the glossary check's failure at `verify-gates.sh:46`. | Scenarios 1, 2, 4 |
 | `plugins/zuko/scripts/check-open-items.sh:63` | The loop reads the helper's list instead of `find`. If the helper fails, the gate fails with the helper's reason. Direct mode, lines 22 to 37, does not change. | Scenarios 3, 4, 5 |
 | `plugins/zuko/skills/build/SKILL.md:33` | "checks the whole repo" changes to "checks only the zuko docs that this branch or the working tree changed". | Keeps the gate's description true |

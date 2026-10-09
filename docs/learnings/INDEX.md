@@ -153,3 +153,6 @@ One line per lesson. Loaded into every session in this repo.
 - An edit holding attack strings for a guard test can get no verdict from auto
   mode — ask the user, then splice it in from a scratchpad heredoc.
   ([detail](attack-strings-stall-the-edit-check.md))
+- A gate that greps a file it cannot read sees no match and passes —
+  read every file once where an error fails, then grep only what was read.
+  ([detail](grep-cannot-read-is-a-miss.md))
