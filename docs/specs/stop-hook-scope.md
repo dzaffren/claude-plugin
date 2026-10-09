@@ -232,31 +232,7 @@ Single chunk. The test file is written first.
 
 ### Decisions to record
 
-```markdown
-## D35 · 2026-10-09 · Stop hooks judge only the zuko docs this work changed
-
-Why: in 18 logged sessions across 7 projects the hooks failed turns over docs
-the task never touched, and an old Built spec in Raslaw failed every turn until
-fixed. A doc changed on the branch since the merge-base, staged, unstaged or
-new is still judged, so a spec committed earlier in the same turn is caught.
-Rejected: every doc on every turn (today; pulls Claude off its task),
-uncommitted changes only (a spec set to Refined and committed in the same turn
-is never checked), a warning for untouched breaches (/status already shows
-each spec's open rows).
-Source: specs/stop-hook-scope.md
-Status: active
-
-## D36 · 2026-10-09 · A zuko spec is known by its Version and Status line, a shape by its file name
-
-Why: 118 docs in 8 local repos sit under docs/specs without the template's
-`**Version:** vN · **Status:**` line. They are runbooks and other tools'
-specs, and each fails today's gate. Raslaw keeps 20 real zuko specs in idea
-folders, so the path cannot tell the two kinds apart.
-Rejected: top-level docs/specs/*.md only (misses Raslaw's 20 nested specs),
-any file with a `**Status:**` line (the runbook has one).
-Source: specs/stop-hook-scope.md
-Status: active
-```
+Recorded as D35, D36.
 
 ## Open items
 
