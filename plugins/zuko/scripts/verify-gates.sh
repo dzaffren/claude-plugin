@@ -12,7 +12,15 @@ specs="$dir/docs/specs"
 problems=""
 live=()   # Draft or Refined specs and every shape: the glossary check reads these
 
+# Only the zuko docs this work touched (D35, D36).
+if ! scope=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/stop_scope.py" "$dir" 2>&1); then
+  problems="$problems
+- the docs to judge could not be listed: $scope"
+  scope=""
+fi
+
 while IFS= read -r md; do
+  [ -n "$md" ] || continue
   base=$(basename "$md" .md)
   if [ "$base" = "shape" ]; then
     live+=("$md")
@@ -34,7 +42,7 @@ while IFS= read -r md; do
 
   grep -q '^## Open items' "$md" || problems="$problems
 - $md has no '## Open items' section. The ledger is never deleted, even when empty."
-done < <(find "$specs" -maxdepth 2 -name '*.md' ! -path '*/archive/*' 2>/dev/null)
+done <<<"$scope"
 
 if [ "${#live[@]}" -gt 0 ]; then
   if undefined=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/glossary.py" missing "${live[@]}" 2>&1); then

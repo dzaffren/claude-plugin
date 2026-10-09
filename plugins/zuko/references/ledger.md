@@ -74,8 +74,10 @@ adds a row.
 
 **7. A script enforces it.** `check-open-items.sh` runs on the Stop hook: a
 shape at Status `Shaped`, or a spec at `Refined`, `Built` or `Shipped`, with
-any `Open` row fails the turn. `Accepted risk` and `Handed to SLICE` rows never
-count. Prompt rules drift; grep does not.
+any `Open` row fails the turn. It judges only the zuko docs this branch or the
+working tree changed, so an old breach never fails an unrelated turn.
+`Accepted risk` and `Handed to SLICE` rows never count. Prompt rules drift;
+grep does not.
 
 ## What qualifies
 
