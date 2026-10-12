@@ -59,7 +59,7 @@ projects.
 | release-commit-brace | Shipped | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit | — |
 | force-push-expansion | Shipped | The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands | — |
 | stop-hook-scope | Shipped | The Stop hooks judge only the zuko docs this work changed, so runbooks, other tools' specs and old breaches no longer fail a turn | — |
-| ste-voice | Built | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them | — |
+| ste-voice | Shipped | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them | — |
 
 ## More
 
