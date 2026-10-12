@@ -165,3 +165,6 @@ One line per lesson. Loaded into every session in this repo.
 - A test's `section()` stops at a `## ` line inside a code fence — check a line
   under a fenced example against the whole file.
   ([detail](section-stops-at-a-fenced-heading.md))
+- Copy the spec template's bold labels as they are — `verify-ship-gates.sh`
+  greps `**Proof it works**`, and a new name reads as a missing line.
+  ([detail](template-labels-are-gate-keys.md))
