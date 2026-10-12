@@ -47,15 +47,17 @@ defect, not a contribution.
 **Stay in scope.** No drive-by improvements, no refactors you were not asked
 for, no new abstractions the acceptance criteria do not demand.
 
-**The plan is wrong?** Stop. Report what you found and what you would do
-instead. Do not improvise around it — the other chunks are built on the same
-plan.
+**The plan is wrong?** When the choice changes only your own files, make it
+and build on it. Report it with the other choice, so that `/build` can add the
+row. A choice that needs a file you do not own → stop and report it. `/build`
+makes that choice when it integrates.
 
 ## Report back
 
 - Scenarios covered, and the test that proves each.
 - Files you created or modified.
-- Anything the plan got wrong.
+- Anything the plan got wrong, and each choice you made: what you chose and
+  the other choice.
 - Anything you needed from a file you do not own.
 - Test results, verbatim.
 

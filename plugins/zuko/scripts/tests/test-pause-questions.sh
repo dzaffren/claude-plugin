@@ -74,8 +74,8 @@ expect_match 'Ask which slice to spec first, as the last question in the prompt\
 
 # --- the session-start text, read from the hook's real output ---
 route=$(bash "$scripts/route-to-zuko.sh" | tr '\n' ' ' | tr -s ' ')
-expect_match '2\. Never guess silently\. At a /shape or /spec pause, ask each unknown in the question prompt\. In other stages, write it into the spec.s open-items ledger as an assumption\.' \
-  "$route" "route-to-zuko.sh rule 2: ask at a pause, write an assumption elsewhere"
+expect_match '2\. Never guess silently\. At a /shape or /spec pause, ask each unknown in the question prompt\. In other stages, write it into the spec.s open-items ledger\.' \
+  "$route" "route-to-zuko.sh rule 2: ask at a pause, write into the ledger elsewhere"
 
 # --- the old allowance is gone from all four files ---
 expect_no_match 'either asked or written into the ledger' "$spec" "spec/SKILL.md: no 'asked or written into the ledger'"
