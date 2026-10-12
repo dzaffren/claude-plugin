@@ -142,6 +142,9 @@ One shared reference every stage loads. No consultant vocabulary, no emojis,
 no summary of a three-line thing, no compliment before an answer. Say the
 thing first, say the number, and say "I don't know" when that is the truth.
 
+The sentence rules come from ASD-STE100, Simplified Technical English. An
+instruction has 20 words or fewer, and a description has 25 or fewer.
+
 ## Learning
 
 Lessons are captured without being asked — your corrections, blockers,
