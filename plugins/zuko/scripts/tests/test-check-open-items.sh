@@ -56,11 +56,16 @@ for status in Built Shipped; do
   expect_exit 2 "$gate_status" "$(echo "$status" | tr 'A-Z' 'a-z') spec, open row: exits 2"
 done
 
-# 4. Resolved and Accepted risk pass at Refined.
+# 4. Resolved and Accepted risk pass at Refined. A row that /build decided
+#    alone passes at Built, in both modes (D42).
 new_repo; write_doc "$repo/docs/specs/refunds.md" Refined Resolved; gate
 expect_exit 0 "$gate_status" "refined spec, resolved row: passes"
 write_doc "$repo/docs/specs/refunds.md" Refined 'Accepted risk'; gate
 expect_exit 0 "$gate_status" "refined spec, accepted-risk row: passes"
+write_doc "$repo/docs/specs/refunds.md" Built 'Decided alone'; gate
+expect_exit 0 "$gate_status" "built spec, decided-alone row: passes"
+out=$(bash "$scripts/check-open-items.sh" "$repo/docs/specs/refunds.md" 2>&1); status=$?
+expect_exit 0 "$status" "direct, decided-alone row: exits 0"
 
 # 5. End to end in one repo: the shape hands O4, the spec picks it up as Open
 #    and cannot be Refined, then resolving it lets the spec through.

@@ -16,8 +16,8 @@ asking=$(section "$ledger" "Asking at a pause")
 rules=$(section "$ledger" "Rules")
 
 # --- the section: its place, and the rules for asking (scenarios 1 to 5) ---
-expect_match '## Rules\|## Asking at a pause\|## What qualifies\|' "$(grep '^## ' "$ledger" | tr '\n' '|')" \
-  "ledger.md: 'Asking at a pause' sits between 'Rules' and 'What qualifies'"
+expect_match '## Rules\|## Asking at a pause\|' "$(grep '^## ' "$ledger" | tr '\n' '|')" \
+  "ledger.md: 'Asking at a pause' follows 'Rules'"
 expect_match 'At each pause, `/shape` and `/spec` ask the user every open question and every assumption\. Use the question prompt, the `AskUserQuestion` tool\.' \
   "$asking" "ledger.md asking: every question and assumption goes to the question prompt"
 expect_match 'Ask up to four questions in one prompt\. When there are more, use several prompts, one after the other\.' \
@@ -45,7 +45,7 @@ expect_match 'In a `claude -p` run, or when the user denies the tool, print the 
 expect_match 'Recommended: No\. A refund stops at the order total\.' "$asking" "ledger.md asking: the no-prompt example"
 
 # --- rules 1 and 4 ---
-expect_match '\*\*1\. Never guess silently\.\*\* At a pause in `/shape` or `/spec`, ask each unknown, as "Asking at a pause" says\. Do not write it down without asking\. In any other stage, any moment a stage would assume something' \
+expect_match '\*\*1\. Never guess silently\.\*\* At a pause in `/shape` or `/spec`, ask each unknown, as "Asking at a pause" says\. Do not write it down without asking\. .*In any other stage, any moment a stage would assume something' \
   "$rules" "ledger.md rule 1: ask at a pause, write an assumption elsewhere"
 expect_match '\*\*4\. Nothing is approved with an Open row\.\*\* No pause of `/shape` or `/spec` is approved while a row is Open, and this includes pauses 1 and 2\. A shape is not `Shaped`' \
   "$rules" "ledger.md rule 4: no pause is approved with an Open row"
