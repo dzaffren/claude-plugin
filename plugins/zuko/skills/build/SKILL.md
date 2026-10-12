@@ -15,8 +15,9 @@ Turn an approved spec into working code with tests that prove it. Nothing
 starts until the ledger is clear.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`,
-`${CLAUDE_PLUGIN_ROOT}/references/slicing.md` and
-`${CLAUDE_PLUGIN_ROOT}/references/git-naming.md`.
+`${CLAUDE_PLUGIN_ROOT}/references/slicing.md`,
+`${CLAUDE_PLUGIN_ROOT}/references/git-naming.md` and
+`${CLAUDE_PLUGIN_ROOT}/references/ledger.md`.
 
 If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
@@ -34,18 +35,13 @@ mode, which checks only the zuko docs this branch or the working tree changed,
 and only specs at `Refined`, `Built` or `Shipped` and shapes at `Shaped` — it
 would pass a spec at any other status and never list this spec's rows. Exit 1 means the build does not start.
 
-Print the open rows, then work through them with the user one at a time. Each
-becomes:
+A spec Status other than `Refined` also means the build does not start.
+Print the open rows, then "Run /spec continue {slice} to answer them." Then
+stop. Ask nothing, and do not answer a row yourself.
 
-- `Resolved` — with the answer written into the row and the spec updated to
-  match, or
-- `Accepted risk` — with a stated reason and today's date.
-
-An `unproven` row that a spike would settle → offer `/poc` instead of
-guessing. Only when every row is closed does the build begin.
-
-Also confirm: spec Status is `Refined`, the acceptance criteria have not
-changed since approval, and the plan's commands actually exist in this repo.
+Also confirm that the acceptance criteria have not changed since approval. A
+command in the plan that does not exist in this repo is not a choice: use the
+repo's real command, with no row.
 
 ## Steps
 
@@ -81,7 +77,8 @@ Rules that make parallel safe:
 - Migrations are never parallel. One chunk owns the schema.
 - After all chunks return, **integrate serially**: merge the worktrees, run
   the full suite, resolve conflicts yourself. Do not hand integration to an
-  agent.
+  agent. Add a `Decided alone` row for each choice that a chunk reports. Make
+  each choice that a chunk stopped on, then add its row.
 
 ### 3. Build test-first, scenario by scenario
 
@@ -101,8 +98,9 @@ For each acceptance scenario, in order:
 Reuse what exists. The plan named the helpers — use those. A new parallel
 implementation of something the repo already does is a defect.
 
-Stay in scope. Touching a file the plan did not name means either the plan was
-wrong (say so, add a ledger row) or you are drifting (stop).
+Stay in scope. When a scenario needs a file that the plan did not name, change
+it and add a row, as `ledger.md` › "Deciding alone" says. A change that no
+scenario needs is drift. Do not make it.
 
 ### 4. Schema changes
 
@@ -137,9 +135,10 @@ a flag that leaves half the change live is not a rollback.
 ### 7. Report
 
 Print: chunks and their results, tests added and passing, the e2e result, the
-flag name, the branch, and anything you did that the plan did not anticipate.
+flag name, the branch, anything you did that the plan did not anticipate, and
+each `Decided alone` row you added.
 
-Set spec Status to `Built`.
+Set spec Status to `Built`, unless a blocker set it to `Draft`.
 
 Capture lessons silently to `docs/learnings/` — corrections the user made,
 things the plan got wrong, patterns worth remembering. Do not narrate this.
@@ -148,12 +147,14 @@ Say `/review` is next. Do not review your own work here.
 
 ## When the spec turns out wrong
 
-You will sometimes discover mid-build that a scenario is impossible, a
-constraint is different, or the whole slice is shaped wrong. Do not improvise
-around it.
+You will sometimes find mid-build that a scenario is impossible, or that a
+constraint is different. Do not stop to ask. Make the choice, edit the spec
+to match, add a row and go on, as `ledger.md` › "Deciding alone" says. Go on
+also when the choice drops a scenario.
 
-Stop. Set the spec's Status back to `Draft` — the Stop hook fails a `Refined`
-spec with an Open row — then add a ledger row saying what you found. Report
-to the user with a proposal, and route back to `/spec` — which bumps the version and records what
-was learned. Building something the spec does not describe is worse than
-stopping.
+## When a blocker stops a scenario
+
+A blocker is a thing that you cannot choose around: a missing secret, an
+account or a paid service. Do as `ledger.md` › "Deciding alone" says. Build
+the rest, then set `Draft` and add an Open row at the end. The user answers
+the row with `/spec continue {slice}`.

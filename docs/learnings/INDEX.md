@@ -162,3 +162,6 @@ One line per lesson. Loaded into every session in this repo.
 - A skill with `disable-model-invocation: true` starts only when the user types
   it — read the frontmatter before a design lets Claude start one.
   ([detail](user-only-skills-cannot-be-chained.md))
+- A test's `section()` stops at a `## ` line inside a code fence — check a line
+  under a fenced example against the whole file.
+  ([detail](section-stops-at-a-fenced-heading.md))

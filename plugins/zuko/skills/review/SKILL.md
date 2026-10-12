@@ -14,7 +14,8 @@ allowed-tools: Bash(git diff *) Bash(git show *) Bash(git status *) Bash(git log
 One pass over the diff covering correctness, security, quality, the active
 decisions and test coverage. Nothing reaches the user unverified.
 
-Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` and
+`${CLAUDE_PLUGIN_ROOT}/references/ledger.md`.
 
 If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
@@ -203,16 +204,17 @@ what it does change. Nothing survived → `Findings   7 raw, 0 survived — clea
 A clean review is a real outcome, not a failure to look hard enough.
 
 Fix what survived without asking, whatever its severity — verification
-already confirmed it, and severity sets the order, not whether it is fixed. One
-exception: a fix that changes something the user approved in the spec (an
-interface, a message, the scope) is proposed first and waits for a yes. Fix
-each finding test-first where a test can catch it, one commit per finding,
-then re-run the full suite and the e2e test, and confirm green. A coverage
-finding is fixed like any other: its fix is a test.
+already confirmed it, and severity sets the order, not whether it is fixed. A
+fix that changes something the user approved in the spec (an interface, a
+message, the scope) is applied too. Edit the spec to match, and add a row, as
+`ledger.md` › "Deciding alone" says. Fix each finding test-first where a test
+can catch it, one commit per finding, then re-run the full suite and the e2e
+test, and confirm green. A coverage finding is fixed like any other: its fix
+is a test.
 
-A Decisions finding is never fixed without asking. Offer exactly two fixes —
-change the code, or supersede the entry through `/spec` — and wait for the
-user to pick. `/review` never edits `DECISIONS.md`.
+A Decisions finding is fixed by changing the code to obey the entry. Add a
+row, as `ledger.md` › "Deciding alone" says, with "supersede the entry
+through `/spec`" as the other choice. `/review` never edits `DECISIONS.md`.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.

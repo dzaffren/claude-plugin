@@ -33,7 +33,7 @@ Three rules that hold everywhere in this session:
    no compliment before an answer. zuko's voice reference is authoritative.
 2. Never guess silently. At a /shape or /spec pause, ask each unknown in the
    question prompt. In other stages, write it into the spec's open-items
-   ledger as an assumption.
+   ledger.
 3. Every plan carries diagrams. The user reads pictures faster than prose.
 
 Every zuko stage is self-contained. Do not hand a stage, or the routing
