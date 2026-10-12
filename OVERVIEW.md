@@ -61,7 +61,7 @@ projects.
 | stop-hook-scope | Shipped | The Stop hooks judge only the zuko docs this work changed, so runbooks, other tools' specs and old breaches no longer fail a turn | — |
 | ste-voice | Shipped | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them | — |
 | pause-questions | Shipped | At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row | — |
-| unattended-build | Built | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
+| unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
 
 ## More
 
