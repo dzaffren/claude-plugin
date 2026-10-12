@@ -320,6 +320,11 @@ contain that path. So Claude Code puts the real path in the agent's prompt.
 Reusing: `run.sh`'s `expect_match` and `expect_no_match`, and a one-line
 `section()` helper, defined the same way as `test-ascii-terminal.sh:12`.
 
+Added after the build, by `/debug` at the user's request: `run.sh`'s
+`expect_match` and `expect_no_match` pass the pattern to grep with `-e`. Before
+this, grep read a pattern that starts with `-` as an option.
+`test-run-helpers.sh` has one regression case for each helper.
+
 Two tests read `voice.md` today. `test-ascii-terminal.sh` checks the "Visuals
 over prose" section, and `test-design-system.sh` checks one read line. Neither
 changes, and both must stay green.
