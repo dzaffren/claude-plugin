@@ -1,17 +1,17 @@
 # A pattern that starts with a dash is a grep option
 
-**Learned:** 2026-10-12 · **From:** /build ste-voice
+**Learned:** 2026-10-12 · **From:** /build ste-voice, then /debug
 
-`run.sh`'s `expect_match` runs `grep -qE "$1"`. A pattern such as
-`'- code, commands and paths'` starts with `-`, so grep reads it as an option.
-grep prints "invalid option" and exits 2, and the helper records "nothing
-matched". The check fails before the code exists and after it, so its first
-red run proves nothing.
+`run.sh`'s helpers ran `grep -qE "$1"`. A pattern such as
+`'- code, commands and paths'` starts with `-`, so grep read it as an option.
+grep printed "invalid option" and exited 2. `expect_match` then recorded
+"nothing matched", before the code existed and after it. `expect_no_match` was
+worse: it recorded a pass on text that did match, and printed no failure.
 
 ## The rule
 
-When a pattern starts with `-`, write the dash as `[-]`. Read a test's first
-red run for grep errors, not only for FAIL lines.
+Pass a caller's pattern to grep with `-e`. Read a test's first red run for
+grep errors, not only for FAIL lines.
 
-A fix in the helpers, `grep -qE -e "$1"`, would close this for every test. It
-is not made yet.
+`run.sh` uses `grep -qE -e "$1"`. The regression test is in
+`scripts/tests/test-run-helpers.sh`.
