@@ -119,9 +119,12 @@ The contract test proves scenarios 1 to 4 from the text of the files. Scenario
 - **Which text.** Every new sentence that zuko writes: terminal replies, specs,
   shapes, PR bodies, commit bodies, CHANGELOG lines, reports, and agent output.
 - **Not prose (O6).** Code, commands, paths, quoted text, headings, table
-  labels, diagram labels and commit subjects keep their own format. Quoted text
-  includes the user's words, ticket text and tool output. A command, path,
-  number or name in backticks counts as one word.
+  labels, diagram labels and other fragments keep their own format. Quoted text
+  includes the user's words, ticket text and tool output. Commit subjects follow
+  `git-naming.md`. Code comments match the comments in the file around them.
+- **Full sentences.** A full sentence follows the rules, also in a table cell
+  or a Gherkin step. A command, path, number or name in backticks counts as one
+  word.
 - **Clash.** When the project's CLAUDE.md sets its own writing rules, those
   rules win. STE fills the gaps (O4).
 - The read line goes into `skills/status/SKILL.md` and the four agent files (O2).
@@ -141,6 +144,105 @@ The contract test proves scenarios 1 to 4 from the text of the files. Scenario
 - The wording of the pause questions and the PR body. pause-questions and
   decision-pr write those, in this voice.
 
+## Interface
+
+The interface is the text that Claude reads. This section gives the exact
+wording that `/build` puts into each file.
+
+```mermaid
+flowchart LR
+    SK["12 skills/*/SKILL.md"] -- "Read voice.md" --> V["references/voice.md:<br/>Simplified Technical English"]
+    AG["4 agents/*.md"] -- "Read voice.md" --> V
+    V -- "rules for each<br/>new sentence" --> O["replies, specs, PR bodies,<br/>commit bodies, agent output"]
+    V -- "commit subjects" --> G["references/git-naming.md"]
+    R["README.md: Voice"] -- "names the standard" --> U((user))
+    O -- "checks against ASD-STE100" --> U
+```
+
+Each skill and agent reads `voice.md`. Its new section sets the rules for each
+new sentence. The README tells the user which standard to check against.
+
+### The new section in voice.md
+
+It goes after "Banned outright" and before "Rules".
+
+```markdown
+## Simplified Technical English
+
+zuko writes to the writing rules of ASD-STE100, Issue 9 (January 2025).
+ASD-STE100 is Simplified Technical English, a standard from ASD, the European
+aerospace and defence association. zuko uses the writing rules only. It does
+not use the STE dictionary of approved words.
+
+The rules apply to each new sentence that zuko writes. This includes terminal
+replies, specs, shapes, PR bodies, commit bodies, CHANGELOG lines, reports and
+agent output. Old text stays as it is.
+
+An instruction tells the reader to do something. A description tells the
+reader what is true.
+
+1. An instruction has 20 words or fewer. A description has 25 words or fewer.
+2. Write one instruction in each sentence. Put a condition before the
+   instruction.
+3. Write an instruction as a command.
+4. Use the active voice. In a description, use the passive voice only when the
+   doer is not known.
+5. Do not make a noun cluster of more than three words.
+6. Write about one topic in each paragraph. A paragraph has six sentences or
+   fewer.
+7. Use an "-ing" form only as a technical noun, or as part of one.
+8. Do not leave out a verb, a subject or an article to make a sentence shorter.
+9. Use a vertical list for complex text.
+
+A command, path, number or name in backticks counts as one word.
+
+**Not prose.** These keep their own format:
+
+- code, commands and paths
+- quoted text: the user's words, ticket text and tool output, copied as it is
+- headings, table labels, diagram labels and other fragments
+- commit subjects, which follow `git-naming.md`
+- code comments, which match the comments in the file around them
+
+A full sentence follows the rules, also in a table cell or a Gherkin step.
+
+**The project's rules win.** When the project's CLAUDE.md sets its own writing
+rules, follow those rules. The STE rules fill the gaps.
+```
+
+### House rule 2 in voice.md
+
+Before:
+
+```markdown
+2. **Short sentences.** If a sentence has two ideas, make it two sentences.
+```
+
+After:
+
+```markdown
+2. **Short sentences.** If a sentence has two ideas, make it two sentences.
+   The word limits are in "Simplified Technical English", above.
+```
+
+### README.md, Voice section
+
+One paragraph goes after the current paragraph:
+
+```markdown
+The sentence rules come from ASD-STE100, Simplified Technical English. An
+instruction has 20 words or fewer, and a description has 25 or fewer.
+```
+
+### The read line
+
+`/status` and the four agents get this line. The agents already name
+`owasp.md` with `${CLAUDE_PLUGIN_ROOT}`, so `voice.md` uses the same form.
+
+```markdown
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before you write anything.
+```
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -149,8 +251,8 @@ The contract test proves scenarios 1 to 4 from the text of the files. Scenario
 | O2 | `/status` and the four agents do not read `voice.md`. Which of them should? | question | spec p1 | user | Resolved | All of them. Every skill and agent names `voice.md`. 2026-10-12 |
 | O3 | Does the user have a copy of ASD-STE100 Issue 9, so `voice.md` can cite rule numbers? | question | spec p1 | user | Resolved | No. `voice.md` states each rule in its own words, with no numbers. 2026-10-12 |
 | O4 | When the project's CLAUDE.md sets other writing rules, which wins? | question | spec p1 | user | Resolved | The project's rules. STE fills the gaps. 2026-10-12 |
-| O5 | Assuming the adopted rules are the ones that public sources confirm: the shape's list and the Wikipedia summary of Issue 9. Rules not checked against a source are left out. | assumption | spec p1 | user | Open | — |
-| O6 | Assuming code, commands, paths, quotes, headings, table labels, diagram labels and commit subjects are not prose, and a name in backticks counts as one word. | assumption | spec p1 | user | Open | — |
+| O5 | Assuming the adopted rules are the ones that public sources confirm: the shape's list and the Wikipedia summary of Issue 9. Rules not checked against a source are left out. | assumption | spec p1 | user | Resolved | Accepted as written. A missing rule costs one line in `voice.md` later. 2026-10-12 |
+| O6 | Assuming code, commands, paths, quotes, headings, table labels, diagram labels and commit subjects are not prose, and a name in backticks counts as one word. | assumption | spec p1 | user | Resolved | Accepted with two changes. Code comments match the file. A full sentence follows STE, also in a table cell or a Gherkin step. 2026-10-12 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
