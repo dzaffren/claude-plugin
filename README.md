@@ -201,6 +201,7 @@ projects.
 - The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands
 - The Stop hooks judge only the zuko docs this work changed, so runbooks, other tools' specs and old breaches no longer fail a turn
 - zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them
+- At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row
 
 ## Docs
 
