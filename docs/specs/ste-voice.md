@@ -1,6 +1,6 @@
 # STE voice
 
-**Version:** v1 · **Status:** Draft · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** None
@@ -120,7 +120,8 @@ The contract test proves scenarios 1 to 4 from the text of the files. Scenario
   shapes, PR bodies, commit bodies, CHANGELOG lines, reports, and agent output.
 - **Not prose (O6).** Code, commands, paths, quoted text, headings, table
   labels, diagram labels and other fragments keep their own format. Quoted text
-  includes the user's words, ticket text and tool output. Commit subjects follow
+  includes the user's words, ticket text, tool output, and a message that a
+  skill gives word for word. Commit subjects follow
   `git-naming.md`. Code comments match the comments in the file around them.
 - **Full sentences.** A full sentence follows the rules, also in a table cell
   or a Gherkin step. A command, path, number or name in backticks counts as one
@@ -199,7 +200,8 @@ A command, path, number or name in backticks counts as one word.
 **Not prose.** These keep their own format:
 
 - code, commands and paths
-- quoted text: the user's words, ticket text and tool output, copied as it is
+- quoted text, copied as it is: the user's words, ticket text, tool output,
+  and a message that a skill gives word for word
 - headings, table labels, diagram labels and other fragments
 - commit subjects, which follow `git-naming.md`
 - code comments, which match the comments in the file around them
@@ -241,6 +243,171 @@ instruction has 20 words or fewer, and a description has 25 or fewer.
 
 ```markdown
 Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before you write anything.
+```
+
+## Technical plan
+
+### Approach
+
+This change is prompt text only. `/build` adds the new section to `voice.md`,
+a second line to house rule 2, a paragraph to the README, and the read line to
+five files. A contract test, `test-ste-voice.sh`, is written first and checks
+each change.
+
+Relies on: D37, D38 (drafted below)
+
+```mermaid
+flowchart TB
+    subgraph readers["read voice.md when they start"]
+        SK["skills/*/SKILL.md:<br/>11 today, and status"]
+        AG["agents/*.md: chunk-builder,<br/>reviewer, finding-verifier, pentester"]
+    end
+    V["references/voice.md"]
+    GN["references/git-naming.md"]
+    RM["README.md: Voice"]
+    T["tests/test-ste-voice.sh"]
+    SK -- "read line" --> V
+    AG -- "read line" --> V
+    V -- "commit subjects" --> GN
+    T -- "checks the section" --> V
+    T -- "checks each read line" --> readers
+    T -- "checks the paragraph" --> RM
+```
+
+Each skill and agent reads `voice.md` through its read line. The test checks
+the new section, each read line and the README paragraph.
+
+```mermaid
+sequenceDiagram
+    participant U as user
+    participant RS as /review skill
+    participant RA as reviewer agent
+    participant FV as finding-verifier
+    participant V as voice.md
+    U->>RS: /review
+    RS->>V: Read (review/SKILL.md:17)
+    RS->>RA: the diff
+    RA->>V: Read (new line in reviewer.md)
+    RA-->>RS: findings in the STE voice
+    RS->>FV: one finding
+    FV->>V: Read (new line in finding-verifier.md)
+    FV-->>RS: verdict in the STE voice
+    RS-->>U: report in the STE voice
+```
+
+In a `/review` run, the skill and both agents read `voice.md` before they
+write. Today only the skill reads it.
+
+**Evidence that the read line works in an agent.** The agents already name
+`${CLAUDE_PLUGIN_ROOT}/references/owasp.md`. In the session logs, six agent
+runs read `owasp.md` at its full cache path, and their dispatch prompts did not
+contain that path. So Claude Code puts the real path in the agent's prompt.
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `plugins/zuko/scripts/tests/test-ste-voice.sh` (new) | The contract test, written first. It fails before the other changes. | Test plan |
+| `plugins/zuko/references/voice.md:40` | The new section goes between "Banned outright" (line 11) and "Rules" (line 41), word for word from the Interface section. | Scenarios 1, 3, 4 |
+| `plugins/zuko/references/voice.md:44` | House rule 2 gets its second line. | Scenario 1 |
+| `README.md:143` | A new paragraph after the Voice paragraph. | Scenario 1 |
+| `plugins/zuko/skills/status/SKILL.md:13` | The read line, as a new paragraph after the opening paragraph. | Scenario 2 |
+| `plugins/zuko/agents/chunk-builder.md:11` | The read line, after the opening paragraph. | Scenario 2 |
+| `plugins/zuko/agents/reviewer.md:10` | The read line, after "You review a diff. You do not fix anything." | Scenario 2 |
+| `plugins/zuko/agents/finding-verifier.md:14` | The read line, after the opening paragraph. | Scenario 2 |
+| `plugins/zuko/agents/pentester.md:15` | The read line, after the line that names `owasp.md`. | Scenario 2 |
+
+Reusing: `run.sh`'s `expect_match` and `expect_no_match`, and a one-line
+`section()` helper, defined the same way as `test-ascii-terminal.sh:12`.
+
+Two tests read `voice.md` today. `test-ascii-terminal.sh` checks the "Visuals
+over prose" section, and `test-design-system.sh` checks one read line. Neither
+changes, and both must stay green.
+
+### Earn-it
+
+Nothing new: no layer, script, option or dependency. The only new file is the
+test.
+
+### Non-functionals
+
+|  |  |
+| --- | --- |
+| **Load** | `voice.md` grows from 647 words to about 980. The five new readers each read it once in each run, which is about 1,300 tokens. |
+| **Breaks first** | A longer `voice.md` is easier to skim. If it doubles again, split the STE section into its own reference. |
+| **Security surface** | Prompt text only. Nothing calls it, it trusts no input, it touches no secrets, and it stores nothing. |
+| **Proof it works** | After the release and a plugin update, the next `/spec` pause 1 stop has no prose sentence over 25 words. The rough splitter in the scratchpad counts it. |
+| **Rollout** | No flag. Rollback: `git revert` the build commits. |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 1. voice.md holds the STE rules | `tests/test-ste-voice.sh` | `bash plugins/zuko/scripts/tests/run.sh ste-voice` |
+| 2. Every skill and agent reads voice.md | `tests/test-ste-voice.sh` | same |
+| 3. Text that is not prose keeps its format | `tests/test-ste-voice.sh` | same |
+| 4. The project's own writing rules win | `tests/test-ste-voice.sh` | same |
+| 5. The next real stop follows the rules | by hand, after the release (O1) | — |
+
+What the test checks:
+
+- **Scenario 1.** The section names "ASD-STE100, Issue 9 (January 2025)" and
+  says that zuko does not use the dictionary. One pattern for each of the nine
+  rules. "Banned outright" still holds `leverage` and `Emojis`. Rule 2 names
+  the new section. The README's Voice section names ASD-STE100 and "20 words or
+  fewer".
+- **Scenario 2.** Each `skills/*/SKILL.md` and `agents/*.md` names
+  `${CLAUDE_PLUGIN_ROOT}/references/voice.md`. The test fails if it finds fewer
+  than 12 skills or 4 agents, because a loop that read nothing is not a pass.
+- **Scenarios 3 and 4.** The "Not prose" list, the one-word count, the
+  full-sentence line and "The project's rules win" are in the section.
+
+**E2E:** `test-ste-voice.sh` walks scenarios 1 to 4 over the files that ship.
+Scenario 5 is the behaviour check, by hand at the next real stop.
+
+The full suite must stay green: `bash plugins/zuko/scripts/tests/run.sh`.
+
+### Chunks
+
+Single chunk. The test file is written first.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| Claude reads the rules and still writes long sentences. Only a person checks it. | Accepted in O1. The next real stop shows it. |
+| An agent skips its read line. | The stage that reports to the user reads `voice.md` too, and it writes the final text. |
+| Claude rewords a fixed message that a skill gives word for word. | The quoted-text item in "Not prose" names those messages. |
+| macOS runs the test with bash 3.2. | The test uses only the helpers and forms of the existing tests. `/build` checks it with `bash -n`. |
+
+### Decisions to record
+
+```markdown
+## D37 · 2026-10-12 · zuko writes to the ASD-STE100 writing rules, and a project's own writing rules win
+
+Why: the house rules in voice.md had no limits, so the user could not check a
+draft against a standard. In the five newest zuko docs, 14 of 209 prose
+sentences had more than 25 words. ASD-STE100 Issue 9 gives published limits:
+20 words in an instruction and 25 in a description.
+Rejected: the house rules alone (no limit that the user can look up), the STE
+dictionary of about 900 approved words (the repo has no copy of the standard,
+so no word can be checked against it), STE over the project's CLAUDE.md
+inside zuko docs (the user's global CLAUDE.md already lets a project's file
+override it).
+Source: specs/ste-voice.md
+Status: active
+
+## D38 · 2026-10-12 · The STE rules are prompt text, and nothing measures sentence length
+
+Why: a contract test proves that the rules are in voice.md. The next real
+stage stop shows whether Claude follows them. A gate on sentence length would
+stop Claude in the middle of a task, which D35 removed from the Stop hooks.
+Rejected: a Stop-hook gate on new long sentences (pulls Claude off its task),
+a ste-check.py script that the user runs (the user chose not to build it,
+2026-10-12), a headless claude -p proof (a spike that the user did not take,
+2026-10-12).
+Source: specs/ste-voice.md
+Status: active
 ```
 
 ## Open items
