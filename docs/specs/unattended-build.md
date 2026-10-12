@@ -1,6 +1,6 @@
 # Unattended build
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** stop-hook-scope, pause-questions
