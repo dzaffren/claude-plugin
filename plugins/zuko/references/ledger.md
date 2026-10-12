@@ -138,7 +138,6 @@ a row and go on.
 | A scenario needs a file that the plan did not name. | Change the file. |
 | A `/review` fix changes what the spec approved: an interface, a message or the scope. | Apply the fix, and edit the spec to match. |
 | A Decisions finding. | Change the code to obey the entry. Do not edit `DECISIONS.md`. Superseding the entry stays the user's call. |
-| A command in the plan does not exist in this repo. | Use the repo's real command. |
 
 Add one row for each choice. Its Status is `Decided alone`, its Type is
 `flag`, and Raised at is `build` or `review`. The Answer has three parts and
@@ -172,6 +171,8 @@ which is worse than no ledger.
 - a consequence the user should weigh (cost, downtime, a breaking change)
 - an interface contract with something outside this repo
 - anything where being wrong means rework, not a small fix
+- a choice that /build or /review made alone, as "Deciding alone" says: it
+  changes what the user approved
 
 **Does not belong in it:**
 - naming

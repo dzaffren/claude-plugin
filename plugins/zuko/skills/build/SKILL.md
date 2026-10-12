@@ -40,8 +40,8 @@ Print the open rows, then "Run /spec continue {slice} to answer them." Then
 stop. Ask nothing, and do not answer a row yourself.
 
 Also confirm that the acceptance criteria have not changed since approval. A
-command in the plan that does not exist in this repo is a choice, as
-`ledger.md` › "Deciding alone" says.
+command in the plan that does not exist in this repo is not a choice: use the
+repo's real command, with no row.
 
 ## Steps
 

@@ -131,7 +131,7 @@ Scenario: /build refuses a spec that is not ready
 - A chunk-builder makes a choice that changes only its own files, and
   reports it. `/build` adds the row (O7).
 - A command in the plan that does not exist: `/build` uses the repo's real
-  command.
+  command, with no row (O9).
 - Each of these choices adds a `Decided alone` row, which does not block
   (O5). Its Answer says Chose, Other and Undo (O6).
 - `references/ledger.md`: the new status, a "Deciding alone" section, and
@@ -185,7 +185,6 @@ a row and go on.
 | A scenario needs a file that the plan did not name. | Change the file. |
 | A `/review` fix changes what the spec approved: an interface, a message or the scope. | Apply the fix, and edit the spec to match. |
 | A Decisions finding. | Change the code to obey the entry. Do not edit `DECISIONS.md`. Superseding the entry stays the user's call. |
-| A command in the plan does not exist in this repo. | Use the repo's real command. |
 
 Add one row for each choice. Its Status is `Decided alone`, its Type is
 `flag`, and Raised at is `build` or `review`. The Answer has three parts and
@@ -261,12 +260,19 @@ unconsidered case adds a row.
 Rule 7: "`Accepted risk` and `Handed to SLICE` rows never count." becomes
 "`Accepted risk`, `Decided alone` and `Handed to SLICE` rows never count."
 
+"What qualifies" › "Belongs in it" gets a last line (O9):
+
+```markdown
+- a choice that /build or /review made alone, as "Deciding alone" says: it
+  changes what the user approved
+```
+
 ### /build
 
 | Line | Before | After |
 | --- | --- | --- |
 | `build/SKILL.md:37` | Print the open rows, then work through them with the user one at a time. Each becomes: `Resolved` … or `Accepted risk` … An `unproven` row that a spike would settle → offer `/poc` instead of guessing. Only when every row is closed does the build begin. | A spec Status other than `Refined` also means the build does not start. Print the open rows, then "Run /spec continue {slice} to answer them." Then stop. Ask nothing, and do not answer a row yourself. |
-| `build/SKILL.md:47` | Also confirm: spec Status is `Refined`, the acceptance criteria have not changed since approval, and the plan's commands actually exist in this repo. | Also confirm that the acceptance criteria have not changed since approval. A command in the plan that does not exist in this repo is a choice, as `ledger.md` › "Deciding alone" says. |
+| `build/SKILL.md:47` | Also confirm: spec Status is `Refined`, the acceptance criteria have not changed since approval, and the plan's commands actually exist in this repo. | Also confirm that the acceptance criteria have not changed since approval. A command in the plan that does not exist in this repo is not a choice: use the repo's real command, with no row. |
 | `build/SKILL.md:82` | After all chunks return, **integrate serially**: … Do not hand integration to an agent. | (adds) Add a `Decided alone` row for each choice that a chunk reports. Make each choice that a chunk stopped on, then add its row. |
 | `build/SKILL.md:104` | Stay in scope. Touching a file the plan did not name means either the plan was wrong (say so, add a ledger row) or you are drifting (stop). | Stay in scope. When a scenario needs a file that the plan did not name, change it and add a row, as `ledger.md` › "Deciding alone" says. A change that no scenario needs is drift. Do not make it. |
 | `build/SKILL.md:139` | Print: chunks and their results, … and anything you did that the plan did not anticipate. Set spec Status to `Built`. | Print: chunks and their results, … anything you did that the plan did not anticipate, and each `Decided alone` row you added. Set spec Status to `Built`, unless a blocker set it to `Draft`. |
@@ -460,6 +466,7 @@ Recorded as D42, D43, D44, D45.
 | O6 | How does the row's Answer say what was chosen? | question | spec p2 | user | Resolved | Three labelled parts: Chose, Other and Undo, then the date. 2026-10-12 |
 | O7 | A chunk-builder finds the plan wrong. What does it do? | question | spec p2 | user | Resolved | It makes the choice when only its own files change, and reports it. `/build` adds the row. A choice that needs another chunk's file still stops that agent. 2026-10-12 |
 | O8 | Does a script check that each `Decided alone` row has its Chose, Other and Undo parts? | question | spec p3 | user | Resolved | No. The rule is prompt text, and a contract test checks the text, as D38 does. decision-pr can add a check. 2026-10-12 |
+| O9 | `/review`: "Deciding alone" said to add a row for each choice, a missing command too. "What qualifies" says that a thing the code answers in five minutes does not belong. | flag | review | user | Resolved | A missing command is not a choice: `/build` uses the real one, with no row. "What qualifies" says that a choice made alone belongs, because it changes what the user approved. 2026-10-12 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

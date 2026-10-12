@@ -29,8 +29,10 @@ expect_match '\| A `/review` fix changes what the spec approved: an interface, a
   "$deciding" "ledger.md deciding: a fix that changes the spec is applied (scenario 3)"
 expect_match '\| A Decisions finding\. \| Change the code to obey the entry\. Do not edit `DECISIONS\.md`\. Superseding the entry stays the user.s call\. \|' \
   "$deciding" "ledger.md deciding: a Decisions finding obeys the entry (scenario 3)"
-expect_match '\| A command in the plan does not exist in this repo\. \| Use the repo.s real command\. \|' \
-  "$deciding" "ledger.md deciding: a missing command uses the repo's real one"
+expect_no_match 'A command in the plan does not exist' "$deciding" \
+  "ledger.md deciding: a missing command is not a choice, so it gets no row"
+expect_match '\*\*Belongs in it:\*\* .*- a choice that /build or /review made alone, as "Deciding alone" says: it changes what the user approved' \
+  "$(section "$ledger" "What qualifies")" "ledger.md what qualifies: a choice made alone belongs in the ledger"
 expect_match 'Add one row for each choice\. Its Status is `Decided alone`, its Type is `flag`, and Raised at is `build` or `review`\. The Answer has three parts and the date:' \
   "$deciding" "ledger.md deciding: one Decided alone row for each choice"
 expect_match '\*\*Chose:\*\* what you did\. - \*\*Other:\*\* the choice that you did not make\. - \*\*Undo:\*\* what the user does to get the other choice\. Name the commit when a `git revert` is enough\.' \
@@ -64,8 +66,8 @@ expect_match 'Read `\$\{CLAUDE_PLUGIN_ROOT\}/references/voice\.md`, `\$\{CLAUDE_
   "$build" "build/SKILL.md reads ledger.md"
 expect_match 'A spec Status other than `Refined` also means the build does not start\. Print the open rows, then "Run /spec continue \{slice\} to answer them\." Then stop\. Ask nothing, and do not answer a row yourself\.' \
   "$build" "build/SKILL.md gate: prints the rows and sends the user to /spec continue (scenario 5)"
-expect_match "Also confirm that the acceptance criteria have not changed since approval\. A command in the plan that does not exist in this repo is a choice, $pointer\." \
-  "$build" "build/SKILL.md gate: a missing command is a choice"
+expect_match "Also confirm that the acceptance criteria have not changed since approval\. A command in the plan that does not exist in this repo is not a choice: use the repo.s real command, with no row\." \
+  "$build" "build/SKILL.md gate: a missing command uses the real one, with no row"
 expect_match 'Do not hand integration to an agent\. Add a `Decided alone` row for each choice that a chunk reports\. Make each choice that a chunk stopped on, then add its row\.' \
   "$build" "build/SKILL.md integrate: a row for each choice a chunk reports"
 expect_match "Stay in scope\. When a scenario needs a file that the plan did not name, change it and add a row, $pointer\. A change that no scenario needs is drift\. Do not make it\." \
