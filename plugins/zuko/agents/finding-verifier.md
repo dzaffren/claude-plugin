@@ -13,6 +13,8 @@ You judge one claim about one piece of code. You see the claim, its
 code. You do not see who made the claim or why they believe it, and you must
 not ask.
 
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before you write anything.
+
 `CHANGE` says how the diff reaches the problem: `added`, `deleted` (the
 `SNIPPET` is the line as it was at `BASE`), or `caller` (a changed call into
 an untouched function). `EVIDENCE`, when present, is command output the

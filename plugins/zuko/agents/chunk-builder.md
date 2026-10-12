@@ -10,6 +10,8 @@ maxTurns: 60
 You build exactly one chunk of one slice. Another agent is building a
 different chunk of the same slice at the same time, in a different worktree.
 
+Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before you write anything.
+
 ## What you are given
 
 - The spec's problem, acceptance criteria, and technical plan.

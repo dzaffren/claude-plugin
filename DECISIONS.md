@@ -407,3 +407,29 @@ Rejected: top-level docs/specs/*.md only (misses Raslaw's 20 nested specs),
 any file with a `**Status:**` line (the runbook has one).
 Source: specs/stop-hook-scope.md
 Status: active
+
+## D37 · 2026-10-12 · zuko writes to the ASD-STE100 writing rules, and a project's own writing rules win
+
+Why: the house rules in voice.md had no limits, so the user could not check a
+draft against a standard. In the five newest zuko docs, 14 of 209 prose
+sentences had more than 25 words. ASD-STE100 Issue 9 gives published limits:
+20 words in an instruction and 25 in a description.
+Rejected: the house rules alone (no limit that the user can look up), the STE
+dictionary of about 900 approved words (the repo has no copy of the standard,
+so no word can be checked against it), STE over the project's CLAUDE.md
+inside zuko docs (the user's global CLAUDE.md already lets a project's file
+override it).
+Source: specs/ste-voice.md
+Status: active
+
+## D38 · 2026-10-12 · The STE rules are prompt text, and nothing measures sentence length
+
+Why: a contract test proves that the rules are in voice.md. The next real
+stage stop shows whether Claude follows them. A gate on sentence length would
+stop Claude in the middle of a task, which D35 removed from the Stop hooks.
+Rejected: a Stop-hook gate on new long sentences (pulls Claude off its task),
+a ste-check.py script that the user runs (the user chose not to build it,
+2026-10-12), a headless claude -p proof (a spike that the user did not take,
+2026-10-12).
+Source: specs/ste-voice.md
+Status: active

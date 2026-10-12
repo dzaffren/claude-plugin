@@ -156,3 +156,6 @@ One line per lesson. Loaded into every session in this repo.
 - A gate that greps a file it cannot read sees no match and passes —
   read every file once where an error fails, then grep only what was read.
   ([detail](grep-cannot-read-is-a-miss.md))
+- Pass a caller's pattern to grep with `-e` — a pattern that starts with `-`
+  is read as an option, and `expect_no_match` then passes without a word.
+  ([detail](a-dash-pattern-is-a-grep-option.md))
