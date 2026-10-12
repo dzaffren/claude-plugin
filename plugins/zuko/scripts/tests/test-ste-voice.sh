@@ -49,6 +49,28 @@ expect_match 'The sentence rules come from ASD-STE100, Simplified Technical Engl
 expect_match 'An instruction has 20 words or fewer, and a description has 25 or fewer\.' "$readme" \
   "README.md Voice: gives the two limits"
 
+# --- scenario 2: every skill and agent reads voice.md ---
+voice_path='`\$\{CLAUDE_PLUGIN_ROOT\}/references/voice\.md`'
+skills=0
+for f in "$zuko"/skills/*/SKILL.md; do
+  [ -f "$f" ] || continue
+  skills=$((skills + 1))
+  expect_match "$voice_path" "$(cat "$f")" "$(basename "$(dirname "$f")")/SKILL.md reads voice.md"
+done
+agents=0
+for f in "$zuko"/agents/*.md; do
+  [ -f "$f" ] || continue
+  agents=$((agents + 1))
+  expect_match "$voice_path" "$(cat "$f")" "agents/$(basename "$f") reads voice.md"
+done
+# A loop that read nothing is not a pass.
+[ "$skills" -ge 12 ]; expect_exit 0 $? "found 12 or more skills to check (found $skills)"
+[ "$agents" -ge 4 ]; expect_exit 0 $? "found 4 or more agents to check (found $agents)"
+
+for f in skills/status/SKILL.md agents/chunk-builder.md agents/reviewer.md agents/finding-verifier.md agents/pentester.md; do
+  expect_match "Read $voice_path before you write anything\." "$(tr '\n' ' ' <"$zuko/$f" | tr -s ' ')" "$f: the new read line, word for word"
+done
+
 # --- scenario 3: text that is not prose keeps its own format ---
 expect_match 'A command, path, number or name in backticks counts as one word\.' "$ste" \
   "voice.md STE: a backticked name counts as one word"
