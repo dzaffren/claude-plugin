@@ -446,52 +446,7 @@ the session text. The tests come first in each step.
 
 ### Decisions to record
 
-```markdown
-## D42 · 2026-10-12 · /build and /review decide alone and add a row; they never stop to ask
-
-Why: a run left alone should finish. Since pause-questions the pauses ask
-every unknown, so what is left comes up during the run. A `Decided alone` row
-says Chose, Other and Undo, so each choice is seen and can be undone at the PR.
-Rejected: stopping to ask as today (a run waits for the user in five places),
-stopping only when a scenario is dropped (O2), a free sentence in the Answer
-(decision-pr could not pick out each part, O6).
-Source: specs/unattended-build.md
-Status: active
-```
-
-```markdown
-## D43 · 2026-10-12 · /review fixes a Decisions finding by obeying the entry
-
-Why: D7 fixes every confirmed finding. To supersede an entry changes
-DECISIONS.md, which stays the user's call through /spec, at the PR.
-Rejected: leaving the code as it is with a row (a confirmed finding left in,
-which D7 rejected; shape O5, O1), offering two fixes and waiting (a stop).
-Source: specs/unattended-build.md
-Status: active
-```
-
-```markdown
-## D44 · 2026-10-12 · A blocker ends /build at the end of the run, with the spec at Draft
-
-Why: the scenarios that do not need the secret, the account or the service
-still get built and tested. The one Open row is answered with /spec continue.
-Rejected: stopping at once (the rest waits for an answer it does not need,
-O3).
-Source: specs/unattended-build.md
-Status: active
-```
-
-```markdown
-## D45 · 2026-10-12 · A chunk-builder makes a choice only when it changes its own files
-
-Why: file ownership keeps parallel chunks apart. A choice in its own files
-cannot break another chunk. A choice that needs another chunk's file is made
-by /build when it integrates.
-Rejected: stopping and reporting as today (/build then builds the rest of the
-chunk itself, O7), a choice in any file (two chunks could write one file).
-Source: specs/unattended-build.md
-Status: active
-```
+Recorded as D42, D43, D44, D45.
 
 ## Open items
 
