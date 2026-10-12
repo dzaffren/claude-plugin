@@ -100,7 +100,7 @@ Scenario: /shape asks the same way
   When the shape stops
   Then it asks the question in the question prompt, with the recommended answer first
   And "Hand to points-expiry" is one of the options
-  And the last question asks "Approve the shape?"
+  And the last question asks "Which slice do we spec first?", with the recommended slice first
 ```
 
 The contract test proves the rule text for each scenario. The next real pause
@@ -134,6 +134,142 @@ shows the behaviour (O6).
 - A new gate for each pause. The `Shaped` and `Refined` gates stay as they are
   (D19).
 - An interactive spike that proves the behaviour (O6).
+
+## Interface
+
+The interface is the text that Claude reads at a pause, and the prompt that
+the user sees. A new section in `ledger.md` holds the rules for asking.
+`/spec`, `/shape` and the session-start text point to it, so the rules exist
+in one place.
+
+```mermaid
+flowchart LR
+    SP["spec/SKILL.md:<br/>pauses 1, 2 and 3"] -- "asks as it says" --> AP["ledger.md:<br/>Asking at a pause"]
+    SH["shape/SKILL.md:<br/>step 6"] -- "asks as it says" --> AP
+    RZ["route-to-zuko.sh:<br/>rule 2"] -- "names the rule" --> AP
+    AP -- "up to four questions,<br/>recommended first" --> QP["question prompt"]
+    AP -- "no prompt" --> TX["numbered list,<br/>then stop"]
+    QP -- "one key or a typed reply" --> U((user))
+    TX -- "typed answers" --> U
+```
+
+Each pause follows "Asking at a pause" in `ledger.md`. The user answers in the
+question prompt, or in text when there is no prompt.
+
+### The new section in ledger.md
+
+It goes after "Rules" and before "What qualifies".
+
+````markdown
+## Asking at a pause
+
+At each pause, `/shape` and `/spec` ask the user every open question and
+every assumption. Use the question prompt, the `AskUserQuestion` tool.
+
+- Ask up to four questions in one prompt. When there are more, use several
+  prompts, one after the other.
+- Give each question two to four answers. Put the recommended answer first,
+  and end its label with "(Recommended)".
+- For an `unproven` row, put `/poc` first. Put the recommended answer second.
+- In a shape, give a question that belongs to a later slice the answer
+  "Hand to {slice}", with a slice from the table.
+- Write each answer into its row as `Resolved`, `Accepted risk` or, in a
+  shape, `Handed to {slice}`. Add the date.
+- When a question has no answer to offer, such as "What made you think of
+  this?", ask it as plain text.
+
+When no row is Open, the last question approves the pause. A typed reply is a
+change. Make the change, then ask again.
+
+| Pause | Last question | Answers |
+| --- | --- | --- |
+| `/spec` pause 1 | Approve pause 1 of {slice}? | Approve (Recommended): go on to pause 2. Not yet: stop here. |
+| `/spec` pause 2 | Approve pause 2 of {slice}? | Approve (Recommended): go on to pause 3. Not yet: stop here. |
+| `/spec` pause 3 | Run /build for {slice} now? | Run /build (Recommended): this approves the plan and its drafted decisions. Not yet: run /build later. |
+| `/shape` | Which slice do we spec first? | The recommended slice first, then the others. Not yet: stop here. |
+
+**No question prompt.** In a `claude -p` run, or when the user denies the
+tool, print the questions as a numbered list. Put the recommended answer first
+in each. Then stop. Do not write an answer, and leave each row Open.
+
+```text
+Open items. Answer by number:
+
+1. O2 · Can a refund be more than the order total?
+   Recommended: No. A refund stops at the order total.
+   Or: Yes, up to 110% as a goodwill payment.
+2. O3 · Assuming refunds over £500 need a manager's approval. Is that right?
+   Recommended: Yes.
+   Or: No. Any refund goes through.
+```
+````
+
+### Rules 1 and 4 in ledger.md
+
+Rule 1, before:
+
+```markdown
+**1. Never guess silently.** Any moment a stage would assume something to
+keep moving, it writes an `assumption` row first. The assumption still gets
+used — work continues — but it is now visible and owed an answer.
+```
+
+Rule 1, after:
+
+```markdown
+**1. Never guess silently.** At a pause in `/shape` or `/spec`, ask each
+unknown, as "Asking at a pause" says. Do not write it down without asking. In
+any other stage, any moment a stage would assume something to keep moving, it
+writes an `assumption` row first. The assumption still gets used — work
+continues — but it is now visible and owed an answer.
+```
+
+Rule 4 gets a new first sentence. The rest stays:
+
+```markdown
+**4. Nothing is approved with an Open row.** No pause of `/shape` or `/spec`
+is approved while a row is Open, and this includes pauses 1 and 2. A shape is
+not `Shaped`, and a spec is not `Refined`, while any row is `Open`: …
+```
+
+### /spec
+
+| Line | Before | After |
+| --- | --- | --- |
+| `spec/SKILL.md:27` | **Never assume.** Anything unknown is either asked or written into the ledger as an assumption. Never a silent guess. | **Never assume.** At each pause, ask every unknown in the question prompt, as `ledger.md` › "Asking at a pause" says. Never a silent guess, and never an assumption written down without asking. |
+| `spec/SKILL.md:75` | **Then stop.** Show the diagram, the scenarios, the slice test result, and any open items. Ask for approval. Do not continue. | **Then stop.** Show the diagram, the scenarios, the slice test result, and any open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says. Do not continue until the user approves. |
+| `spec/SKILL.md:153` | **Then stop.** Give the preview link and name which design system the tokens came from. Design review is a loop … | **Then stop.** Give the preview link and name which design system the tokens came from. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says. Design review is a loop … |
+| `spec/SKILL.md:214` | **`Refined` needs zero `Open` rows.** Work each one with the user first: … | **`Refined` needs zero `Open` rows.** Ask each one first, as `ledger.md` › "Asking at a pause" says: … |
+| `spec/SKILL.md:222` | … Say `/build` is next. Do not write code. | … Say `/build` is next. Do not write code. Then ask the last question, "Run /build for {slice} now?", as `ledger.md` › "Asking at a pause" says. |
+
+### /shape
+
+| Line | Before | After |
+| --- | --- | --- |
+| `shape/SKILL.md:24` | When something is unknown, either ask, or write it into the ledger as an assumption. | Ask each unknown in the question prompt, as `ledger.md` › "Asking at a pause" says. |
+| `shape/SKILL.md:41` | Anything it leaves unsure is asked or goes into the ledger as an assumption. | Anything it leaves unsure is asked. |
+| `shape/SKILL.md:153` | Before writing it, take each Open row to the user: … | Before writing it, ask each Open row, as `ledger.md` › "Asking at a pause" says: … |
+| `shape/SKILL.md:168` | - Ask which slice to spec first. Recommend one and say why. | - Ask which slice to spec first, as the last question in the prompt. Put the recommended slice first, and say why in its description. |
+
+The interview questions in step 1, such as "What made you think of this?",
+stay plain text. They have no answer to offer.
+
+### route-to-zuko.sh, rule 2
+
+Before:
+
+```text
+2. Never guess silently. An unknown is either asked, or written into the
+   spec's open-items ledger as an assumption.
+```
+
+After:
+
+```text
+2. Never guess silently. At a /shape or /spec pause, ask each unknown in the
+   question prompt. In other stages, write it into the spec's open-items
+   ledger as an assumption.
+```
 
 ## Open items
 
