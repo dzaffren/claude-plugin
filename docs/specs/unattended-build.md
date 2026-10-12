@@ -408,7 +408,7 @@ is demanded by scenarios 1 to 4, which need one place for the rules.
 | **Load** | `ledger.md` grows by about 35 lines, or 500 tokens. `/build` and `/review` now read it at start: about 2,400 tokens each. |
 | **At 10×** | Nothing breaks. A run with many choices adds many rows, and each row is one line. |
 | **Security surface** | Prompt text only. `/build` now edits the approved spec and changes files that the plan did not name, without asking. Each change is a row, and `/ship` still asks before it pushes. |
-| **Proof in prod** | The next real `/build` and `/review` run without a question prompt. `grep -c 'Decided alone' docs/specs/{slice}.md` counts the choices they made. |
+| **Proof it works** | The next real `/build` and `/review` run without a question prompt. `grep -c 'Decided alone' docs/specs/{slice}.md` counts the choices they made. |
 | **Rollout** | No flag, because this is prompt text. Rollback: `git revert` the build commits. |
 
 ### Test plan
