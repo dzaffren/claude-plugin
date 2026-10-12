@@ -433,3 +433,40 @@ a ste-check.py script that the user runs (the user chose not to build it,
 2026-10-12).
 Source: specs/ste-voice.md
 Status: active
+
+## D39 · 2026-10-12 · At a /spec or /shape pause, every unknown is asked in the question prompt
+
+Why: 27 ledger rows in 10 specs say "default chosen autonomously". Four rule
+texts let Claude write an assumption instead of asking, and pauses 1 and 2
+could pass with rows Open. The auto-mode text says that a skill's rule to ask
+wins, so the rule can require it.
+Rejected: ask or write an assumption (today; Claude picked 27 answers alone),
+assume and continue when there is no question prompt (answers that Claude
+picked alone reach the next pause), a gate for each pause (a spec has no
+marker for its pause; the Shaped and Refined gates stay, D19), the
+/design-system pauses as well (a third area, outside this slice).
+Source: specs/pause-questions.md
+Status: active
+
+## D40 · 2026-10-12 · An unproven row offers /poc before the recommended answer
+
+Why: shape O4 makes a spike a choice that the user makes each time. The user
+chose /poc first, always, also when the evidence already settles the claim
+(spec O5). The recommended answer comes second, marked "(Recommended)".
+Rejected: the recommended answer first, with /poc after it (the user chose
+against it, 2026-10-12), running /poc without asking (shape O4).
+Source: specs/pause-questions.md
+Status: active
+
+## D41 · 2026-10-12 · The last question at a pause approves it, and /build stays user-only
+
+Why: one key approves /spec pauses 1 and 2. For /shape, "Which slice do we
+spec first?" approves the shape. /build has disable-model-invocation: true, as
+/review, /ship and /release do, so Claude cannot start it, and pause 3 ends
+when the user types /build.
+Rejected: a typed "proceed" as today (O3), "Approve the shape?" before the
+slice question (two questions where one does, O7), a "Run /build now?" answer
+with /build open to model invocation (Claude could then start /build for any
+request that sounds like "build it", O8).
+Source: specs/pause-questions.md
+Status: active

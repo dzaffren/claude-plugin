@@ -24,8 +24,9 @@ Read these before starting:
 If `OVERVIEW.md` is missing at the repo root, or still says Draft, follow
 `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` first, then continue.
 
-**Never assume.** Anything unknown is either asked or written into the ledger
-as an assumption. Never a silent guess.
+**Never assume.** At each pause, ask every unknown in the question prompt,
+as `ledger.md` › "Asking at a pause" says. Never a silent guess, and never an assumption
+written down without asking.
 
 ## Before pause 1 — orient
 
@@ -73,7 +74,8 @@ to make it pass.
 - The ledger, updated.
 
 **Then stop.** Show the diagram, the scenarios, the slice test result, and any
-open items. Ask for approval. Do not continue.
+open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
+Do not continue until the user approves.
 
 ## Pause 2 — the interface
 
@@ -151,7 +153,8 @@ Write the Interface section: what was designed, the components used (names
 from the system only), the motion tier, and the preview path.
 
 **Then stop.** Give the preview link and name which design system the tokens
-came from. Design review is a loop — when the user wants changes, edit and
+came from. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
+Design review is a loop — when the user wants changes, edit and
 stop again. Do not continue to pause 3 until approved.
 
 ## Pause 3 — technical and ship plan
@@ -211,7 +214,7 @@ gets none.
 **Publish the visual page** per
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`.
 
-**`Refined` needs zero `Open` rows.** Work each one with the user first:
+**`Refined` needs zero `Open` rows.** Ask each one first, as `ledger.md` › "Asking at a pause" says:
 `Resolved` with the answer in the row, or `Accepted risk` with a reason and a
 date. A row that stays Open → Status stays `Draft`; say which rows block it
 and stop there. The Stop hook fails a `Refined` spec with an Open row.

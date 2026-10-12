@@ -44,9 +44,11 @@ Every spec carries this section. It is never deleted, even when empty.
 
 ## Rules
 
-**1. Never guess silently.** Any moment a stage would assume something to
-keep moving, it writes an `assumption` row first. The assumption still gets
-used — work continues — but it is now visible and owed an answer.
+**1. Never guess silently.** At a pause in `/shape` or `/spec`, ask each
+unknown, as "Asking at a pause" says. Do not write it down without asking. In
+any other stage, any moment a stage would assume something to keep moving, it
+writes an `assumption` row first. The assumption still gets used — work
+continues — but it is now visible and owed an answer.
 
 **2. Rows are never deleted.** A resolved row is the decision record. Six
 months later it answers "why did we do it this way". A row resolved as a
@@ -57,9 +59,11 @@ per `decisions.md`, shown and approved in the same pause.
 first and works through them. Resolved rows stay resolved and are not
 reopened unless the user reopens them.
 
-**4. Nothing is approved with an Open row.** A shape is not `Shaped`, and a
-spec is not `Refined`, while any row is `Open`: each is answered, accepted, or
-— in a shape only — handed to the later slice it belongs to. `/build` still
+**4. Nothing is approved with an Open row.** No pause of `/shape` or `/spec`
+is approved while a row is Open, and this includes pauses 1 and 2. A shape is
+not `Shaped`, and a spec is not `Refined`, while any row is `Open`: each is
+answered, accepted, or — in a shape only — handed to the later slice it
+belongs to. `/build` still
 refuses to start with any Open row. It prints them, and walks through each one
 with the user. Each becomes `Resolved` or `Accepted risk` before a line of code
 is written.
@@ -78,6 +82,48 @@ any `Open` row fails the turn. It judges only the zuko docs this branch or the
 working tree changed, so an old breach never fails an unrelated turn.
 `Accepted risk` and `Handed to SLICE` rows never count. Prompt rules drift;
 grep does not.
+
+## Asking at a pause
+
+At each pause, `/shape` and `/spec` ask the user every open question and
+every assumption. Use the question prompt, the `AskUserQuestion` tool.
+
+- Ask up to four questions in one prompt. When there are more, use several
+  prompts, one after the other.
+- Give each question two to four answers. Put the recommended answer first,
+  and end its label with "(Recommended)".
+- For an `unproven` row, put `/poc` first. Put the recommended answer second.
+- In a shape, give a question that belongs to a later slice the answer
+  "Hand to {slice}", with a slice from the table.
+- Write each answer into its row as `Resolved`, `Accepted risk` or, in a
+  shape, `Handed to {slice}`. Add the date.
+- When a question has no answer to offer, such as "What made you think of
+  this?", ask it as plain text.
+
+When no row is Open, the last question approves the pause. A typed reply is a
+change. Make the change, then ask again. `/spec` pause 3 has no last question:
+the user types `/build`, and that approves the plan.
+
+| Pause | Last question | Answers |
+| --- | --- | --- |
+| `/spec` pause 1 | Approve pause 1 of {slice}? | Approve (Recommended): go on to pause 2. Not yet: stop here. |
+| `/spec` pause 2 | Approve pause 2 of {slice}? | Approve (Recommended): go on to pause 3. Not yet: stop here. |
+| `/shape` | Which slice do we spec first? | The recommended slice first, then the others. Not yet: stop here. |
+
+**No question prompt.** In a `claude -p` run, or when the user denies the
+tool, print the questions as a numbered list. Put the recommended answer first
+in each. Then stop. Do not write an answer, and leave each row Open.
+
+```text
+Open items. Answer by number:
+
+1. O2 · Can a refund be more than the order total?
+   Recommended: No. A refund stops at the order total.
+   Or: Yes, up to 110% as a goodwill payment.
+2. O3 · Assuming refunds over £500 need a manager's approval. Is that right?
+   Recommended: Yes.
+   Or: No. Any refund goes through.
+```
 
 ## What qualifies
 
