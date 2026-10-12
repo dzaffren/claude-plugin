@@ -32,3 +32,10 @@ expect_match '^FAIL$' "$(helper_record expect_no_match NEEDLE "$long")" \
   "expect_no_match fails on a 200 KB text that matches on its first line"
 expect_match '^PASS$' "$(helper_record expect_no_match NEEDLE "$long_miss")" \
   "expect_no_match passes on a 200 KB text with no match"
+
+# A pattern that starts with "-" is a pattern, not a grep option.
+dash="- code, commands and paths"
+expect_match '^PASS$' "$(helper_record expect_match '- code' "$dash")" \
+  "expect_match passes on a pattern that starts with -"
+expect_match '^FAIL$' "$(helper_record expect_no_match '- code' "$dash")" \
+  "expect_no_match fails on a pattern that starts with - and matches"
