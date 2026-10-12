@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- zuko writes to the ASD-STE100 rules for Simplified Technical English: 20 words or fewer in an instruction, and 25 or fewer in a description. Every stage and agent, /status included, reads these rules, and a project's own CLAUDE.md writing rules still win.
+
 ### Fixed
 
 - Claude is no longer sent back at the end of a turn to fix runbooks, other tools' specs, or old specs the work never touched. The end-of-turn checks now look only at zuko specs and shapes this branch or the working tree changed.
