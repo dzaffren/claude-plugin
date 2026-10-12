@@ -394,7 +394,7 @@ are checked as text), D39 and D41 (the pauses ask, and the user types
 | `plugins/zuko/scripts/route-to-zuko.sh:36` | Rule 2 drops "as an assumption". | `/build` and `/review` now write `Decided alone` rows. |
 | `plugins/zuko/scripts/tests/test-unattended-build.sh` | New contract test. It reuses the `section()` helper from `test-pause-questions.sh` and reads the hook's real output. | Scenarios 1 to 5. |
 | `plugins/zuko/scripts/tests/test-check-open-items.sh:59` | Case 4: a `Decided alone` row passes at `Built`, in hook mode and in direct mode. | Proves that the row does not block. |
-| `plugins/zuko/scripts/tests/test-pause-questions.sh:48`, `:77` | Match the new rule 1 and rule 2 text. | Both checks pin text that this slice changes. |
+| `plugins/zuko/scripts/tests/test-pause-questions.sh:18`, `:48`, `:77` | Match the new heading order, and the new rule 1 and rule 2 text. | The three checks pin text that this slice changes. |
 
 ### Earn-it
 
