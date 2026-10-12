@@ -61,8 +61,9 @@ reopened unless the user reopens them.
 
 **4. Nothing is approved with an Open row.** No pause of `/shape` or `/spec`
 is approved while a row is Open, and this includes pauses 1 and 2. A shape is
-not `Shaped`, and a spec is not `Refined`, while any row is `Open`: each is answered, accepted, or
-— in a shape only — handed to the later slice it belongs to. `/build` still
+not `Shaped`, and a spec is not `Refined`, while any row is `Open`: each is
+answered, accepted, or — in a shape only — handed to the later slice it
+belongs to. `/build` still
 refuses to start with any Open row. It prints them, and walks through each one
 with the user. Each becomes `Resolved` or `Accepted risk` before a line of code
 is written.

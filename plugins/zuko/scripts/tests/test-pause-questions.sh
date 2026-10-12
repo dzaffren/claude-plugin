@@ -49,3 +49,37 @@ expect_match '\*\*1\. Never guess silently\.\*\* At a pause in `/shape` or `/spe
   "$rules" "ledger.md rule 1: ask at a pause, write an assumption elsewhere"
 expect_match '\*\*4\. Nothing is approved with an Open row\.\*\* No pause of `/shape` or `/spec` is approved while a row is Open, and this includes pauses 1 and 2\. A shape is not `Shaped`' \
   "$rules" "ledger.md rule 4: no pause is approved with an Open row"
+
+# --- the stages point to the section (scenarios 1, 2, 3 and 5) ---
+flat() { [ -f "$1" ] && tr '\n' ' ' <"$1" | tr -s ' ' || echo "(missing: $1)"; }
+spec=$(flat "$zuko/skills/spec/SKILL.md")
+shape=$(flat "$zuko/skills/shape/SKILL.md")
+pointer='as `ledger\.md` › "Asking at a pause" says'
+
+expect_match "\*\*Never assume\.\*\* At each pause, ask every unknown in the question prompt, $pointer\. Never a silent guess, and never an assumption written down without asking\." \
+  "$spec" "spec/SKILL.md: the Never assume rule asks at each pause"
+expect_match "\*\*Then stop\.\*\* Show the diagram, the scenarios, the slice test result, and any open items\. Ask the open items, then the approval, $pointer\. Do not continue until the user approves\." \
+  "$spec" "spec/SKILL.md pause 1: asks the open items, then the approval"
+expect_match "name which design system the tokens came from\. Ask the open items, then the approval, $pointer\. Design review is a loop" \
+  "$spec" "spec/SKILL.md pause 2: asks the open items, then the approval"
+expect_match "\*\*\`Refined\` needs zero \`Open\` rows\.\*\* Ask each one first, $pointer:" \
+  "$spec" "spec/SKILL.md pause 3: asks each Open row"
+
+expect_match "\*\*Never assume\.\*\* Every claim in the shape doc comes from the user or the codebase\. Ask each unknown in the question prompt, $pointer\." \
+  "$shape" "shape/SKILL.md: the Never assume rule asks each unknown"
+expect_match 'Anything it leaves unsure is asked\.' "$shape" "shape/SKILL.md step 1: a ticket's gaps are asked"
+expect_match "Before writing it, ask each Open row, $pointer:" "$shape" "shape/SKILL.md step 6: asks each Open row"
+expect_match 'Ask which slice to spec first, as the last question in the prompt\. Put the recommended slice first, and say why in its description\.' \
+  "$shape" "shape/SKILL.md step 6: the slice question is the last question"
+
+# --- the session-start text, read from the hook's real output ---
+route=$(bash "$scripts/route-to-zuko.sh" | tr '\n' ' ' | tr -s ' ')
+expect_match '2\. Never guess silently\. At a /shape or /spec pause, ask each unknown in the question prompt\. In other stages, write it into the spec.s open-items ledger as an assumption\.' \
+  "$route" "route-to-zuko.sh rule 2: ask at a pause, write an assumption elsewhere"
+
+# --- the old allowance is gone from all four files ---
+expect_no_match 'either asked or written into the ledger' "$spec" "spec/SKILL.md: no 'asked or written into the ledger'"
+expect_no_match 'either ask, or write it into the ledger' "$shape" "shape/SKILL.md: no 'ask, or write it into the ledger'"
+expect_no_match 'asked or goes into the ledger as an assumption' "$shape" "shape/SKILL.md: no 'asked or goes into the ledger'"
+expect_no_match 'take each Open row to the user' "$shape" "shape/SKILL.md: no 'take each Open row to the user'"
+expect_no_match 'An unknown is either asked, or written' "$route" "route-to-zuko.sh: no 'either asked, or written'"
