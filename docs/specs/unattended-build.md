@@ -1,6 +1,6 @@
 # Unattended build
 
-**Version:** v1 · **Status:** Draft · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** stop-hook-scope, pause-questions
@@ -321,6 +321,178 @@ After:
    ledger.
 ```
 
+## Technical plan
+
+### Approach
+
+All of the change is prompt text, plus tests. A new section in `ledger.md`,
+"Deciding alone", holds the rules. `/build`, `/review` and the chunk-builder
+point to it. `/build` and `/review` do not read `ledger.md` today, so each
+gets it in its Read line. The hooks need no change: `check-open-items.sh`
+blocks only a row whose Status cell is `Open`. A test run on 2026-10-12 showed
+it: a `Decided alone` row at `Built` exits 0, and the same row at `Open` exits
+2.
+
+```mermaid
+flowchart LR
+    RZ["scripts/route-to-zuko.sh"] -- "rule 2 at session start" --> C((Claude))
+    BS["skills/build/SKILL.md"] -- "reads, points to" --> LG["references/ledger.md:<br/>Deciding alone"]
+    RS["skills/review/SKILL.md"] -- "reads, points to" --> LG
+    CB["agents/chunk-builder.md"] -- "reports each choice" --> BS
+    LG -- "rules" --> C
+    C -- "writes Decided alone rows" --> SP[("docs/specs/{slice}.md")]
+    SP -- "Stop hook: only Open counts" --> CO["check-open-items.sh<br/>(unchanged)"]
+    SP -- "/ship: only Open counts" --> VS["verify-ship-gates.sh<br/>(unchanged)"]
+```
+
+```mermaid
+sequenceDiagram
+    actor U as user
+    participant B as /build
+    participant G as check-open-items.sh
+    participant S as export-csv.md
+    participant H as Stop hooks
+    U->>B: /build export-csv
+    B->>G: check-open-items.sh docs/specs/export-csv.md
+    G-->>B: exit 0, no Open rows
+    B->>S: scenario 3 is wrong: edit it, add O8 Decided alone
+    B->>B: build scenarios 4 and 5, e2e green
+    B->>S: Status Built
+    B-->>H: end of turn
+    H->>S: any Open row?
+    H-->>B: exit 0, O8 does not count
+    B-->>U: report lists O8
+```
+
+Relies on: D7 (every confirmed finding is fixed), D19 (`Refined` needs zero
+Open rows), D35 (the Stop hooks judge only touched docs), D38 (prompt rules
+are checked as text), D39 and D41 (the pauses ask, and the user types
+`/build`), and the four entries drafted below.
+
+### Changes
+
+| File | Change | Why |
+| --- | --- | --- |
+| `plugins/zuko/references/ledger.md:43` | Add the `Decided alone` row to the Status table, after `Handed to SLICE`. | Scenarios 1 to 3: the new status. |
+| `plugins/zuko/references/ledger.md:47` | Rule 1: add the sentence for `/build` and `/review`. | They write a `Decided alone` row, not an `assumption` row. |
+| `plugins/zuko/references/ledger.md:62` | Rule 4: `/build` prints the Open rows, sends the user to `/spec continue` and asks nothing. | Scenario 5. |
+| `plugins/zuko/references/ledger.md:75` | Rule 6: a choice adds a `Decided alone` row. Only a blocker sets `Draft`, at the end. | Scenarios 1 and 4. |
+| `plugins/zuko/references/ledger.md:83` | Rule 7: `Decided alone` rows never count. | It says what the hook already does. |
+| `plugins/zuko/references/ledger.md:128` | Add "Deciding alone" before "What qualifies", word for word from Interface. | One copy of the rules. |
+| `plugins/zuko/skills/build/SKILL.md:17` | Add `${CLAUDE_PLUGIN_ROOT}/references/ledger.md` to the Read line. | The new lines point to it. |
+| `plugins/zuko/skills/build/SKILL.md:37`, `:47`, `:82`, `:104`, `:139` | The five line edits in Interface › /build. | Scenarios 1, 2 and 5. |
+| `plugins/zuko/skills/build/SKILL.md:149` | Replace "When the spec turns out wrong" with the two sections in Interface. | Scenarios 1 and 4. |
+| `plugins/zuko/skills/review/SKILL.md:17` | Add `${CLAUDE_PLUGIN_ROOT}/references/ledger.md` to the Read line. | The new lines point to it. |
+| `plugins/zuko/skills/review/SKILL.md:206`, `:213` | The two edits in Interface › /review. | Scenario 3. |
+| `plugins/zuko/agents/chunk-builder.md:50`, `:58` | The two edits in Interface › chunk-builder. | O7. |
+| `plugins/zuko/scripts/route-to-zuko.sh:36` | Rule 2 drops "as an assumption". | `/build` and `/review` now write `Decided alone` rows. |
+| `plugins/zuko/scripts/tests/test-unattended-build.sh` | New contract test. It reuses the `section()` helper from `test-pause-questions.sh` and reads the hook's real output. | Scenarios 1 to 5. |
+| `plugins/zuko/scripts/tests/test-check-open-items.sh:59` | Case 4: a `Decided alone` row passes at `Built`, in hook mode and in direct mode. | Proves that the row does not block. |
+| `plugins/zuko/scripts/tests/test-pause-questions.sh:48`, `:77` | Match the new rule 1 and rule 2 text. | Both checks pin text that this slice changes. |
+
+### Earn-it
+
+Nothing new: no new layer, script, config or dependency. The one new section
+is demanded by scenarios 1 to 4, which need one place for the rules.
+
+### Non-functionals
+
+| | |
+| --- | --- |
+| **Load** | `ledger.md` grows by about 35 lines, or 500 tokens. `/build` and `/review` now read it at start: about 2,400 tokens each. |
+| **At 10×** | Nothing breaks. A run with many choices adds many rows, and each row is one line. |
+| **Security surface** | Prompt text only. `/build` now edits the approved spec and changes files that the plan did not name, without asking. Each change is a row, and `/ship` still asks before it pushes. |
+| **Proof in prod** | The next real `/build` and `/review` run without a question prompt. `grep -c 'Decided alone' docs/specs/{slice}.md` counts the choices they made. |
+| **Rollout** | No flag, because this is prompt text. Rollback: `git revert` the build commits. |
+
+### Test plan
+
+| Scenario | Test |
+| --- | --- |
+| 1. A wrong scenario | `test-unattended-build.sh`: the "Deciding alone" table row, the row format, and the new "When the spec turns out wrong" text. |
+| 2. A file the plan did not name | `test-unattended-build.sh`: the table row and the new `build/SKILL.md:104` line. |
+| 3. `/review` fixes | `test-unattended-build.sh`: the two table rows, both `review/SKILL.md` lines, and "never edits `DECISIONS.md`". |
+| 4. A blocker | `test-unattended-build.sh`: the blocker paragraph and the build section. `test-check-open-items.sh` case 2 already proves that a `Draft` spec with an Open row passes. |
+| 5. The gate refuses | `test-unattended-build.sh`: the gate text and rule 4. |
+| All | `test-unattended-build.sh`: the old stop text is gone from each file. `test-check-open-items.sh`: a `Decided alone` row at `Built` passes. |
+
+Commands:
+
+```bash
+bash plugins/zuko/scripts/tests/run.sh unattended-build
+bash plugins/zuko/scripts/tests/run.sh check-open-items
+bash plugins/zuko/scripts/tests/run.sh pause-questions
+bash plugins/zuko/scripts/tests/run.sh
+```
+
+The e2e is `test-unattended-build.sh`. It reads the four Markdown files and
+runs `route-to-zuko.sh` for its real output. The behaviour is checked by hand
+at the next real `/build` and `/review` (O4).
+
+### Chunks
+
+Single chunk. Order: `ledger.md` first, then the skills and the agent, then
+the session text. The tests come first in each step.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| `/build` makes a large choice, such as a dropped scenario, and you see it only at the end. | The `/build` report lists each `Decided alone` row. Each row has an Undo, and `/ship` asks before it pushes. decision-pr puts the rows first in the PR. |
+| A Decisions-finding fix is large, such as SQLite to Postgres. | One commit per finding, so a `git revert` undoes it. You can supersede the entry at the PR. |
+| Claude still asks out of habit. | The test checks that the old stop text is gone. The next real run is checked by hand. |
+| `/build` adds the blocker's Open row while the spec is still `Refined`, and the Stop hook fails the turn. | The text says to set `Draft` first. |
+| A `Decided alone` row lacks a part, and nothing catches it (O8). | decision-pr can add a check when it reads the rows. |
+
+### Decisions to record
+
+```markdown
+## D42 · 2026-10-12 · /build and /review decide alone and add a row; they never stop to ask
+
+Why: a run left alone should finish. Since pause-questions the pauses ask
+every unknown, so what is left comes up during the run. A `Decided alone` row
+says Chose, Other and Undo, so each choice is seen and can be undone at the PR.
+Rejected: stopping to ask as today (a run waits for the user in five places),
+stopping only when a scenario is dropped (O2), a free sentence in the Answer
+(decision-pr could not pick out each part, O6).
+Source: specs/unattended-build.md
+Status: active
+```
+
+```markdown
+## D43 · 2026-10-12 · /review fixes a Decisions finding by obeying the entry
+
+Why: D7 fixes every confirmed finding. To supersede an entry changes
+DECISIONS.md, which stays the user's call through /spec, at the PR.
+Rejected: leaving the code as it is with a row (a confirmed finding left in,
+which D7 rejected; shape O5, O1), offering two fixes and waiting (a stop).
+Source: specs/unattended-build.md
+Status: active
+```
+
+```markdown
+## D44 · 2026-10-12 · A blocker ends /build at the end of the run, with the spec at Draft
+
+Why: the scenarios that do not need the secret, the account or the service
+still get built and tested. The one Open row is answered with /spec continue.
+Rejected: stopping at once (the rest waits for an answer it does not need,
+O3).
+Source: specs/unattended-build.md
+Status: active
+```
+
+```markdown
+## D45 · 2026-10-12 · A chunk-builder makes a choice only when it changes its own files
+
+Why: file ownership keeps parallel chunks apart. A choice in its own files
+cannot break another chunk. A choice that needs another chunk's file is made
+by /build when it integrates.
+Rejected: stopping and reporting as today (/build then builds the rest of the
+chunk itself, O7), a choice in any file (two chunks could write one file).
+Source: specs/unattended-build.md
+Status: active
+```
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -332,6 +504,7 @@ After:
 | O5 | What is the status of a row that `/build` or `/review` decided without the user? | question | spec p2 | user | Resolved | `Decided alone`. It does not match `Open`, so no hook blocks it. 2026-10-12 |
 | O6 | How does the row's Answer say what was chosen? | question | spec p2 | user | Resolved | Three labelled parts: Chose, Other and Undo, then the date. 2026-10-12 |
 | O7 | A chunk-builder finds the plan wrong. What does it do? | question | spec p2 | user | Resolved | It makes the choice when only its own files change, and reports it. `/build` adds the row. A choice that needs another chunk's file still stops that agent. 2026-10-12 |
+| O8 | Does a script check that each `Decided alone` row has its Chose, Other and Undo parts? | question | spec p3 | user | Resolved | No. The rule is prompt text, and a contract test checks the text, as D38 does. decision-pr can add a check. 2026-10-12 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
