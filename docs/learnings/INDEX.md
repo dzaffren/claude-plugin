@@ -159,3 +159,6 @@ One line per lesson. Loaded into every session in this repo.
 - Pass a caller's pattern to grep with `-e` — a pattern that starts with `-`
   is read as an option, and `expect_no_match` then passes without a word.
   ([detail](a-dash-pattern-is-a-grep-option.md))
+- A skill with `disable-model-invocation: true` starts only when the user types
+  it — read the frontmatter before a design lets Claude start one.
+  ([detail](user-only-skills-cannot-be-chained.md))
