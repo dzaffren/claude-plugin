@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - zuko writes to the ASD-STE100 rules for Simplified Technical English: 20 words or fewer in an instruction, and 25 or fewer in a description. Every stage and agent, /status included, reads these rules, and a project's own CLAUDE.md writing rules still win.
+- At each /spec and /shape pause, zuko asks every open question and assumption in the question prompt, with the recommended answer first. An unproven claim offers /poc first. A pause is approved only when no row is Open.
 
 ### Fixed
 
