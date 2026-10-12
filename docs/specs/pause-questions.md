@@ -1,6 +1,6 @@
 # Pause questions
 
-**Version:** v1 · **Status:** Draft · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/ask-up-front/shape.md
 **Depends on:** None
@@ -110,7 +110,8 @@ shows the behaviour (O6).
 
 **In:**
 
-- `/spec`: the "Never assume" rule, and the stop at each of the three pauses.
+- `/spec`: the "Never assume" rule, the stop at pauses 1 and 2, and the Open
+  rows at pause 3. Pause 3 still ends when the user types `/build` (O8).
 - `/shape`: the "Never assume" rule, the questions in step 1, the ledger in
   step 5, and the stop in step 6.
 - `ledger.md` rule 1: at a pause, an assumption is asked, not written down
@@ -122,6 +123,7 @@ shows the behaviour (O6).
 - The recommended answer is first, marked "(Recommended)". An unproven claim
   is the exception: `/poc` is first, and the recommended answer is second (O5).
 - The approval is a question in the prompt: "Approve" or a typed change (O3).
+  For `/shape`, the approval is "Which slice do we spec first?" (O7).
 - No question prompt → a numbered list of the questions, each with its
   recommended answer first, then stop. The rows stay Open (O4).
 - A contract test, `tests/test-pause-questions.sh`.
@@ -179,13 +181,13 @@ every assumption. Use the question prompt, the `AskUserQuestion` tool.
   this?", ask it as plain text.
 
 When no row is Open, the last question approves the pause. A typed reply is a
-change. Make the change, then ask again.
+change. Make the change, then ask again. `/spec` pause 3 has no last question:
+the user types `/build`, and that approves the plan.
 
 | Pause | Last question | Answers |
 | --- | --- | --- |
 | `/spec` pause 1 | Approve pause 1 of {slice}? | Approve (Recommended): go on to pause 2. Not yet: stop here. |
 | `/spec` pause 2 | Approve pause 2 of {slice}? | Approve (Recommended): go on to pause 3. Not yet: stop here. |
-| `/spec` pause 3 | Run /build for {slice} now? | Run /build (Recommended): this approves the plan and its drafted decisions. Not yet: run /build later. |
 | `/shape` | Which slice do we spec first? | The recommended slice first, then the others. Not yet: stop here. |
 
 **No question prompt.** In a `claude -p` run, or when the user denies the
@@ -240,7 +242,6 @@ not `Shaped`, and a spec is not `Refined`, while any row is `Open`: …
 | `spec/SKILL.md:75` | **Then stop.** Show the diagram, the scenarios, the slice test result, and any open items. Ask for approval. Do not continue. | **Then stop.** Show the diagram, the scenarios, the slice test result, and any open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says. Do not continue until the user approves. |
 | `spec/SKILL.md:153` | **Then stop.** Give the preview link and name which design system the tokens came from. Design review is a loop … | **Then stop.** Give the preview link and name which design system the tokens came from. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says. Design review is a loop … |
 | `spec/SKILL.md:214` | **`Refined` needs zero `Open` rows.** Work each one with the user first: … | **`Refined` needs zero `Open` rows.** Ask each one first, as `ledger.md` › "Asking at a pause" says: … |
-| `spec/SKILL.md:222` | … Say `/build` is next. Do not write code. | … Say `/build` is next. Do not write code. Then ask the last question, "Run /build for {slice} now?", as `ledger.md` › "Asking at a pause" says. |
 
 ### /shape
 
@@ -271,6 +272,190 @@ After:
    ledger as an assumption.
 ```
 
+## Technical plan
+
+### Approach
+
+This change is prompt text and one contract test. A new section in
+`ledger.md`, "Asking at a pause", holds the rules for asking. `/spec`,
+`/shape`, ledger rules 1 and 4, and the session-start text point to it.
+`test-pause-questions.sh` is written first. It reads the three Markdown files
+and runs the session-start hook.
+
+Relies on: D19, D39, D40, D41 (the last three drafted below)
+
+```mermaid
+flowchart TB
+    subgraph stages["stages that pause"]
+        SP["skills/spec/SKILL.md:<br/>lines 27, 75, 153, 214"]
+        SH["skills/shape/SKILL.md:<br/>lines 24, 41, 153, 168"]
+    end
+    L["references/ledger.md:<br/>rules 1 and 4, Asking at a pause"]
+    RZ["scripts/route-to-zuko.sh:<br/>rule 2"]
+    T["tests/test-pause-questions.sh"]
+    SP -- "reads at start" --> L
+    SH -- "reads at step 5" --> L
+    RZ -- "names the rule each session" --> L
+    T -- "reads the section and rules" --> L
+    T -- "reads the changed lines" --> stages
+    T -- "runs the hook, reads its output" --> RZ
+```
+
+`/spec` and `/shape` read the rules in `ledger.md`. The test reads all three
+files and runs the hook.
+
+```mermaid
+sequenceDiagram
+    participant C as Claude in /spec
+    participant L as ledger.md
+    participant Q as question prompt
+    participant U as user
+    participant S as docs/specs/refunds.md
+    C->>L: Asking at a pause
+    alt the prompt is there
+        C->>Q: up to four questions, recommended first
+        Q->>U: one key or a typed reply
+        U-->>C: answers
+        C->>S: rows set to Resolved or Accepted risk, with the date
+        C->>Q: Approve pause 1 of refunds?
+        U-->>C: Approve
+    else claude -p, or the tool is denied
+        C->>U: numbered list, then stop
+        Note over S: rows stay Open
+    end
+```
+
+At a pause, Claude asks through the prompt and writes each answer into the
+spec. Without the prompt, it prints the list and stops.
+
+**What the code already says.** The question prompt holds one to four
+questions, each with two to four answers. It adds an "Other" answer for a typed
+reply by itself. `spec/SKILL.md` and `shape/SKILL.md` have no `allowed-tools`
+line, so nothing stops either skill from calling the prompt.
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `plugins/zuko/scripts/tests/test-pause-questions.sh` (new) | The contract test, written first. It fails before the other changes. | Test plan |
+| `plugins/zuko/references/ledger.md:82` | The section "Asking at a pause" goes before "What qualifies", word for word from the Interface section. | Scenarios 1 to 5 |
+| `plugins/zuko/references/ledger.md:47` | Rule 1 asks at a pause, and keeps the assumption row for other stages. | Scenario 1 |
+| `plugins/zuko/references/ledger.md:60` | Rule 4 gets its new first sentence: no pause is approved with an Open row. | Scenario 2 |
+| `plugins/zuko/skills/spec/SKILL.md:27` | The "Never assume" rule points to the section. | Scenario 1 |
+| `plugins/zuko/skills/spec/SKILL.md:75`, `:153` | The stops of pauses 1 and 2 ask the open items, then the approval. | Scenario 2 |
+| `plugins/zuko/skills/spec/SKILL.md:214` | Pause 3 asks each Open row as the section says. | Scenarios 2, 3 |
+| `plugins/zuko/skills/shape/SKILL.md:24`, `:41`, `:153`, `:168` | The rule, the Jira line, the Open rows and the last question, as the Interface section says. | Scenario 5 |
+| `plugins/zuko/scripts/route-to-zuko.sh:34` | Rule 2 asks at a pause, and writes an assumption in other stages. | Scenario 1 |
+
+Reusing: `run.sh`'s `expect_match` and `expect_no_match`, the one-line
+`section()` helper as `test-ste-voice.sh` defines it, and
+`route=$(bash "$scripts/route-to-zuko.sh")` from `test-design-system.sh:69`.
+
+No existing test reads the lines that change. `test-jira-shape.sh` reads step 1
+of `/shape`, but it checks other phrases.
+
+### Earn-it
+
+| Added | Triggered by |
+| --- | --- |
+| The section "Asking at a pause" in `ledger.md` | `/spec`, `/shape` and the session-start text need the same rules (scenarios 1 to 5). Two copies would drift, as `git-naming.md` warns. `ledger.md` is the one file that both skills already read. |
+
+### Non-functionals
+
+|  |  |
+| --- | --- |
+| **Load** | `ledger.md` grows by about 40 lines, or 600 tokens. `/spec` reads it at start, and `/shape` at step 5. A pause with nine open rows takes three prompts. |
+| **Breaks first** | A pause with many trivial questions. The "What qualifies" rules in `ledger.md` keep trivia out of the ledger, so it stays out of the prompt too. |
+| **Security surface** | Prompt text only. The user's typed answers go into the spec as data. Nothing new reads a secret or stores data. |
+| **Proof it works** | After the release and a plugin update, the next real `/spec` pause 1 asks its open items in the question prompt and ends with "Approve pause 1 of {slice}?". No new row says "default chosen autonomously": `grep -c` over `docs/specs/*.md` stays at 27. |
+| **Rollout** | No flag. Rollback: `git revert` the build commits. |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 1. A pause asks each question, recommended first | `tests/test-pause-questions.sh` | `bash plugins/zuko/scripts/tests/run.sh pause-questions` |
+| 2. More than four questions, no approval with a row Open | `tests/test-pause-questions.sh` | same |
+| 3. An unproven claim offers `/poc` first | `tests/test-pause-questions.sh` | same |
+| 4. No question prompt: print and stop | `tests/test-pause-questions.sh` | same |
+| 5. `/shape` asks the same way | `tests/test-pause-questions.sh` | same |
+| The behaviour at a real pause | by hand, after the release (O6) | — |
+
+What the test checks:
+
+- **The section.** It sits between "Rules" and "What qualifies". It names
+  `AskUserQuestion`, four questions in one prompt, several prompts for more,
+  the recommended answer first with "(Recommended)", `/poc` first for an
+  `unproven` row, "Hand to {slice}", plain text for an open question, the last
+  question for each pause, and the no-prompt list that stops and leaves each
+  row Open.
+- **The old allowance is gone.** None of the four files still says that an
+  unknown can be written down as an assumption instead of asked, at a pause.
+  The hook's output is checked by running it.
+- **The pointers.** Each changed line in `/spec` and `/shape` names
+  "Asking at a pause". Ledger rules 1 and 4 have their new sentences.
+
+**E2E:** `test-pause-questions.sh` walks scenarios 1 to 5 over the files that
+ship, and runs the hook as Claude Code runs it at session start. The behaviour
+at a real pause is the check by hand.
+
+The full suite must stay green, apart from the known timeout in
+`test-scope-verifier-bash.sh:176`: `bash plugins/zuko/scripts/tests/run.sh`.
+
+### Chunks
+
+Single chunk. The test file is written first.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| Claude still writes an assumption without asking. Only a person sees it at a pause. | The `grep -c` count of "default chosen autonomously" is a cheap check after each spec. |
+| The user approves a pause in the prompt without reading the summary above it. | "Not yet" is always an answer, and the summary prints before the prompt. |
+| `claude -p` may lack the question prompt, or deny it. Nobody has checked which. | The fallback handles both: print the list and stop. |
+| `/build`'s own gate still walks Open rows with the user. | No change here. A `Refined` spec has zero Open rows, and unattended-build changes `/build`. |
+
+### Decisions to record
+
+```markdown
+## D39 · 2026-10-12 · At a /spec or /shape pause, every unknown is asked in the question prompt
+
+Why: 27 ledger rows in 10 specs say "default chosen autonomously". Four rule
+texts let Claude write an assumption instead of asking, and pauses 1 and 2
+could pass with rows Open. The auto-mode text says that a skill's rule to ask
+wins, so the rule can require it.
+Rejected: ask or write an assumption (today; Claude picked 27 answers alone),
+assume and continue when there is no question prompt (answers that Claude
+picked alone reach the next pause), a gate for each pause (a spec has no
+marker for its pause; the Shaped and Refined gates stay, D19), the
+/design-system pauses as well (a third area, outside this slice).
+Source: specs/pause-questions.md
+Status: active
+
+## D40 · 2026-10-12 · An unproven row offers /poc before the recommended answer
+
+Why: shape O4 makes a spike a choice that the user makes each time. The user
+chose /poc first, always, also when the evidence already settles the claim
+(spec O5). The recommended answer comes second, marked "(Recommended)".
+Rejected: the recommended answer first, with /poc after it (the user chose
+against it, 2026-10-12), running /poc without asking (shape O4).
+Source: specs/pause-questions.md
+Status: active
+
+## D41 · 2026-10-12 · The last question at a pause approves it, and /build stays user-only
+
+Why: one key approves /spec pauses 1 and 2. For /shape, "Which slice do we
+spec first?" approves the shape. /build has disable-model-invocation: true, as
+/review, /ship and /release do, so Claude cannot start it, and pause 3 ends
+when the user types /build.
+Rejected: a typed "proceed" as today (O3), "Approve the shape?" before the
+slice question (two questions where one does, O7), a "Run /build now?" answer
+with /build open to model invocation (Claude could then start /build for any
+request that sounds like "build it", O8).
+Source: specs/pause-questions.md
+Status: active
+```
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -281,6 +466,8 @@ After:
 | O4 | What happens when the question prompt is not available? | question | spec p1 | user | Resolved | Print the questions as a numbered list, each with its recommended answer first, and stop. The rows stay Open. 2026-10-12 |
 | O5 | An unproven row offers `/poc` first (shape O4), and this slice puts the recommended answer first. Which wins? | question | spec p1 | user | Resolved | `/poc` first, always. The recommended answer is second, marked "(Recommended)". 2026-10-12 |
 | O6 | How do we prove that the pauses ask through the question prompt? | question | spec p1 | user | Resolved | A contract test proves the text. The next real `/spec` pause shows the behaviour. 2026-10-12 |
+| O7 | How does `/shape` end? | question | spec p2 | user | Resolved | One question, "Which slice do we spec first?", with the recommended slice first. The answer approves the shape. 2026-10-12 |
+| O8 | How does pause 3 of `/spec` end? | question | spec p2 | user | Resolved | As today. The user types `/build`. A "Run /build now?" answer was approved first, then dropped at pause 3: `/build` has `disable-model-invocation: true`, so Claude cannot start it. 2026-10-12 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
