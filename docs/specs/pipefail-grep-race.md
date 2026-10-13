@@ -179,6 +179,10 @@ Source: specs/pipefail-grep-race.md
 Status: active
 ```
 
+## Review
+
+2026-10-13 · 0 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
