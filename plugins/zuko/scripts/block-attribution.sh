@@ -39,6 +39,8 @@ except ValueError:
 
 
 def emit(label, kind, value):
+    if kind is None:
+        return                      # an option's value that is not message text
     if kind == "file":
         if not os.path.isfile(value):
             return                  # stdin, a fifo, a device: never readable
@@ -129,6 +131,15 @@ BODY_FILE = ("PR body", "file")
 PR_TITLE = ("PR title", "text")
 MERGE = ("merge commit message", "text")
 MERGE_FILE = ("merge commit message", "file")
+# An option that takes a value which is not message text. It must still take
+# its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
+# or -F and takes the next flag as its text (gh 2.101.0, gh pr edit --help and
+# gh pr merge --help).
+VALUE = (None, None)
+EDIT_VALUES = ("--add-assignee", "--add-label", "--add-project", "--add-reviewer",
+               "--attach", "--base", "--milestone", "--remove-assignee",
+               "--remove-label", "--remove-project", "--remove-reviewer", "--repo")
+MERGE_VALUES = ("--author-email", "--match-head-commit", "--repo")
 
 
 def after_repo(args):
@@ -152,16 +163,25 @@ for args in git_command.invocations(tokens, program="gh"):
     if args[:1] != ["pr"]:
         continue
     args = after_repo(args[1:])
-    if args[:1] in (["create"], ["new"], ["edit"]):
+    if args[:1] in (["create"], ["new"]):
         read_options(
             args[1:],
             {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE},
             {"b": BODY, "F": BODY_FILE, "t": PR_TITLE}, drop_equals=True)
+    elif args[:1] == ["edit"]:
+        read_options(
+            args[1:],
+            {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE,
+             **dict.fromkeys(EDIT_VALUES, VALUE)},
+            {"b": BODY, "F": BODY_FILE, "t": PR_TITLE, "B": VALUE, "m": VALUE,
+             "R": VALUE}, drop_equals=True)
     elif args[:1] == ["merge"]:
         read_options(
             args[1:],
-            {"--body": MERGE, "--body-file": MERGE_FILE, "--subject": MERGE},
-            {"b": MERGE, "F": MERGE_FILE, "t": MERGE}, drop_equals=True)
+            {"--body": MERGE, "--body-file": MERGE_FILE, "--subject": MERGE,
+             **dict.fromkeys(MERGE_VALUES, VALUE)},
+            {"b": MERGE, "F": MERGE_FILE, "t": MERGE, "A": VALUE, "R": VALUE},
+            drop_equals=True)
 PY
 )
 case $? in

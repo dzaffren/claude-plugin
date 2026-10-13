@@ -375,6 +375,22 @@ for form in "gh pr merge 92 --squash --subject 'feat(export): write ledger csv' 
   expect_match 'Blocked: the merge commit message carries Claude attribution\.' "$hook_err" "the merge block names the merge commit message: $form"
 done
 
+# An option that takes a value, which is not message text, must take that
+# value too. Else a value that ends in t, b or F reads as -t, -b or -F, takes
+# the next flag as its text, and the signed text is never read (review of
+# pr-edit-attribution).
+for form in 'gh pr edit 92 -Bnext --body "Generated with Claude Code"' \
+  'gh pr edit 92 -mSprint --body "Generated with Claude Code"' \
+  "gh pr edit 92 -mSprint -F $work/pr-signed.md" \
+  'gh pr edit 92 -Rowner/rept --body "Generated with Claude Code"' \
+  'gh pr edit 92 --add-label -t --body "Generated with Claude Code"' \
+  'gh pr merge 92 -s -Ame@example.net -b "Generated with Claude Code"' \
+  "gh pr merge 92 -s -Ame@example.net -F $work/pr-signed.md" \
+  'gh pr merge 92 -s --author-email -t --body "Generated with Claude Code"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution after a value option: $form"
+done
+
 for form in "gh pr edit 92 --body-file $work/pr-clean.md" \
   "gh pr edit 92 -t 'feat(export): write ledger csv' --add-label bug" \
   'gh pr merge 92 --merge' \
