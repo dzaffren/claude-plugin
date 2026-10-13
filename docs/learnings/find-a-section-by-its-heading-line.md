@@ -16,3 +16,12 @@ Find a heading as a whole line: `"\n## Open items\n"`. Assert `end > start`
 before a slice, and assert that each old text matches once. zuko specs
 quote their own headings in backticks all the time, so the bare words are
 never unique.
+
+## The same class, in a parser
+
+`/review` found it again in `pr_body.py`'s `sections()`. It skipped a heading
+inside a fence but still added the fenced lines to the section above, so a
+fenced example row under `## Open items` was read as a real row. A section
+parser drops every line inside a fence, and the fence lines too, not only the
+headings. Test it with a fence directly under the real heading, not under an
+`## Interface` that no check reads.
