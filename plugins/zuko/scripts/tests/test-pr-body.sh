@@ -141,6 +141,28 @@ fenced_example fenced-only
 run check fenced-only
 expect_match "^No '## Review' section in the spec\." "$out" "check: a Review heading inside nested fences is not read"
 
+# A fence directly under the spec's own headings is still an example.
+write_spec fenced-in-ledger "$run1" "$o7"
+python3 - "$dir/fenced-in-ledger.md" <<'PY'
+import sys
+path = sys.argv[1]
+text = open(path).read()
+example = "```markdown\n| O8 | An example row. | flag | build | user | Decided alone | Dropped it. |\n```\n\n"
+open(path, "w").write(text.replace("## Glossary", example + "## Glossary"))
+PY
+run check fenced-in-ledger
+expect_exit 0 "$status" "check: a fenced row under ## Open items is not read"
+expect_match '^Decided alone: 1 row' "$out" "check: a fenced row under ## Open items is not counted"
+run render fenced-in-ledger
+expect_no_match 'O8' "$out" "render: a fenced row under ## Open items is not in Your call"
+
+write_spec fenced-run '```text
+2026-10-13 · 1 raw finding, 0 survived. Clean.
+```' "$o7"
+run check fenced-run
+expect_exit 1 "$status" "check: a Review whose only run line is fenced fails"
+expect_match "^The '## Review' section has no run line\." "$out" "check: a fenced run line is not a run"
+
 printf '# Export CSV\n\n## Review\n\n%s\n' "$run1" >"$dir/no-ledger.md"
 run check no-ledger
 expect_exit 1 "$status" "check: a spec with no ledger fails"

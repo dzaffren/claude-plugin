@@ -34,9 +34,10 @@ PARTS = ("Chose:", "Other:", "Undo:")
 
 
 def sections(text):
-    """{heading: [lines]} for each "## " heading outside a code fence. A fence
-    closes on its own character, at least as long, with nothing after it, so
-    a ```` block can hold a ``` example."""
+    """{heading: [lines]} for each "## " heading outside a code fence, with
+    the lines outside a fence under it. A fence closes on its own character,
+    at least as long, with nothing after it, so a ```` block can hold a ```
+    example."""
     found, current, fence = {}, None, ""
     for line in text.splitlines():
         marker = FENCE.match(line)
@@ -44,13 +45,14 @@ def sections(text):
             if marker and marker.group(1)[0] == fence[0] and len(marker.group(1)) >= len(fence) \
                     and not line[marker.end():].strip():
                 fence = ""
-        elif marker:
+            continue
+        if marker:
             fence = marker.group(1)
-        elif line.startswith("## "):
+            continue
+        if line.startswith("## "):
             current = line[3:].strip()
             found.setdefault(current, [])
-            continue
-        if current is not None:
+        elif current is not None:
             found[current].append(line)
     return found
 
