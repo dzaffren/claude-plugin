@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- A `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift and not a heredoc, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why.
+
 ## [2.4.1] - 2026-10-13
 
 ### Fixed

@@ -134,18 +134,7 @@ forms failed before the fix (exit 0) and pass after it. The full suite gives
 
 ### Decisions to record
 
-**D55 · The shared parser refuses a `<<` inside arithmetic or `${ }`**
-
-- **Date:** 2026-10-13
-- **Status:** Active
-- **Context:** bash reads `<<` as a shift inside `(( ))`, `$(( ))`, `$[ ]` and
-  `${ }`, but reads `((cat << X); (true))` as subshells and a heredoc.
-- **Decision:** `openers_in` refuses a `<<` while one of these is open, and
-  a backslash-newline that splits one of these openers or a `<<`.
-- **Rejected:** read `<<` inside them as a shift, because the `((` subshell
-  form then hides a heredoc body, and with a quote in that body, the lines
-  after it.
-- **Why:** neither reading is safe alone; a refused command is blocked (D52).
+Recorded as D55.
 
 ## Review
 
