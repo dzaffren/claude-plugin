@@ -29,3 +29,19 @@ with a payload whose second line is a command the guard must refuse.
 not fit: the release body is free text that names `[2.3.0]` inside quotes. The
 fix made `{}[]*?` shlex punctuation, which splits them out only when unquoted.
 When the text must carry these characters, refuse them outside quotes.
+
+## Again in git-command.py (2026-10-13, fail-closed-parse)
+
+The main-thread guards cannot refuse `#`, so the parser took bash's rule:
+a comment starts at an unquoted `#` at the start of a word, and opens no
+quote or heredoc. shlex had started one at any `#`, so `echo x#;` hid the
+command after it. One rule needed care: after `$(date)`, bash keeps `#` in the
+word, and after a subshell's `)` it starts a comment. The first build said
+"read too little as a comment, never too much". /review proved that false:
+read as text, `(true)# <<EOF` opened a heredoc that hid the next line. And
+after `${`, `$'`, a backtick or a `$(` in double quotes, the parser's quotes
+are not bash's, so a `#` it read as a comment hid `; git push --force`.
+
+Neither reading of an unclear `#` is safe on its own. Read it as text, and
+refuse the command when that text holds a quote, a backtick, `<<` or a line
+continuation: the things that change what the walk reads next.

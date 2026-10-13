@@ -5,15 +5,19 @@ Reads one shell command on stdin. Prints one line per bare `git` token — its
 arguments, unquoted and space-joined, with redirections and git's own options
 dropped so the subcommand comes first. A preceding word does not hide it:
 `sudo git commit` and `VAR=x git commit` both count. A `git commit` inside a
-quoted argument or a heredoc body is text, not a command, so it is not printed.
+quoted argument, a heredoc body or a comment is text, not a command, so it is
+not printed. A comment follows bash's rule: it starts at an unquoted `#` at the
+start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
 chain, then by git's own `-C`. The prefix is empty when the text cannot say
 where git runs, and the caller must then judge every directory it could be.
 
-Exit 0 with or without output. Exit 3 when the command cannot be parsed, which
-tells the caller to fall back to matching the raw text and block.
+Exit 0 with or without output. Exit 3 when the command cannot be parsed, with
+the reason on stderr. bash still runs the lines before an unclosed quote, and an
+unclosed heredoc to the end of the text, so the caller must block it (D52).
+Exit 4 when it is over the length limit.
 """
 import os
 import re
@@ -45,13 +49,26 @@ CONTINUATION = re.compile(r"\\\n")
 # a 1.1 MB command took a guard 20 s, and a hook that times out lets the call
 # through. Over this length tokenise refuses at once, and every caller takes
 # its own cannot-parse path (D51). Heredoc bodies are gone before it counts.
-# A long command is valid shell and runs, unlike most text shlex refuses, so
-# main() gives it its own exit code and block-dangerous.sh blocks it.
+# main() gives it its own exit code, so block-dangerous.sh can say what to change.
 MAX_COMMAND_CHARS = 65536
 
 
 class TooLong(ValueError):
     pass
+
+# Where bash starts a new word, so that a `#` after one starts a comment. Not
+# `)`: after `$(date)` bash keeps `#x` in the word, and after a subshell's `)`
+# it starts a comment, so a `#` there is unclear.
+WORD_BREAKS = set(" \t;&|(<>")
+
+# Inside `${...}`, `$'...'`, a backtick, or a `$(` in double quotes, bash's
+# quotes and comments are not the walk's, so after one the walk is lost: it
+# cannot tell whether a `#` at a word start starts a comment.
+LOST_AFTER = ("${", "$'", "`")
+
+# Text after an unclear `#` that would change what the walk reads next, if it
+# is read as text: a quote, a backtick, a heredoc, or a line continuation.
+CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
 
 # git's own options, which sit before the subcommand. These take a value.
 GLOBAL_OPTIONS_WITH_VALUE = {
@@ -60,13 +77,26 @@ GLOBAL_OPTIONS_WITH_VALUE = {
 }
 
 
-def openers_in(line, quote):
-    """Heredoc delimiters opened by this line, and the quote state it ends in.
+def openers_in(line, state):
+    """Heredoc delimiters opened by this line, and where its comment starts
+    (None for no comment). `state` carries the quote, whether the next
+    character starts a word (None when unclear), and whether the walk is lost,
+    from one line to the next.
 
     `echo '<<EOF'` opens nothing — it is a string. Only an unquoted `<<` does,
     which is why the quote state has to be carried in from the line before.
+    A comment opens nothing either: `# it's` is no quote, `# <<EOF` no heredoc.
+
+    A backslash that ends the line joins the next line to this word, as bash
+    deletes the pair, so the next line starts a word only where the backslash
+    stood at one: after `echo a\\`, a `#` on the next line is inside `a#`.
+
+    An unclear `#` is read as text, so the rest of the line is checked too.
+    When that text could change what the walk reads next, a quote or a
+    heredoc that hides the lines after it, the command cannot be read.
     """
     delimiters = []
+    quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -75,31 +105,53 @@ def openers_in(line, quote):
                 quote = None
             elif char == "\\" and quote == '"':
                 at += 1
+            elif quote == '"' and line.startswith(("$(", "${", "`"), at):
+                lost = True
+            word_start = False
         elif char in "'\"":
             quote = char
+            word_start = False
         elif char == "\\":
+            if at == len(line) - 1:
+                state.update(quote=quote, word_start=word_start, lost=lost)
+                return delimiters, None
             at += 1
+            word_start = False
+        elif char == "#" and (word_start is None or (word_start and lost)):
+            if CHANGES_THE_WALK.search(line, at):
+                raise ValueError("cannot tell whether a # starts a comment here; remove the comment")
+            word_start = False
+        elif char == "#" and word_start:
+            state.update(quote=quote, word_start=True, lost=lost)
+            return delimiters, at
         elif line.startswith("<<<", at):
             at += 2                      # a here-string, not a heredoc
+            word_start = True
         else:
+            lost = lost or line.startswith(LOST_AFTER, at)
             match = HEREDOC.match(line, at)
             if match:
                 delimiters.append(match.group(2))
                 at = match.end() - 1
+                word_start = False
+            else:
+                word_start = None if char == ")" else char in WORD_BREAKS
         at += 1
-    return delimiters, quote
+    state.update(quote=quote, word_start=True, lost=lost)
+    return delimiters, None
 
 
 def strip_heredocs(command):
-    """Drop heredoc bodies. They are raw text; shlex would read them as words."""
+    """Drop heredoc bodies and comments. They are raw text; shlex would read
+    them as words."""
     lines = command.split("\n")
     kept = []
     index = 0
-    quote = None
+    state = {"quote": None, "word_start": True, "lost": False}
     while index < len(lines):
         line = lines[index]
-        kept.append(line)
-        delimiters, quote = openers_in(line, quote)
+        delimiters, comment = openers_in(line, state)
+        kept.append(line if comment is None else line[:comment])
         index += 1
         for delimiter in delimiters:
             # Bodies are never scanned for quotes: an apostrophe in prose is
@@ -109,8 +161,8 @@ def strip_heredocs(command):
             if index >= len(lines):
                 raise ValueError("heredoc %s is never closed" % delimiter)
             index += 1
-    if quote:
-        raise ValueError("unbalanced %s quote" % quote)
+    if state["quote"]:
+        raise ValueError("unbalanced %s quote" % state["quote"])
     return "\n".join(kept)
 
 
@@ -121,6 +173,7 @@ def tokenise(command):
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"
+    lex.commenters = ""                  # strip_heredocs drops comments, as bash reads them
     return list(lex)
 
 
