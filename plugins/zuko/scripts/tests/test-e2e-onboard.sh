@@ -20,6 +20,10 @@ cat >"$repo/docs/specs/export-csv.md" <<'SPEC'
 
 **E2E:** this file.
 
+## Review
+
+2026-10-13 · 2 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |

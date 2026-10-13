@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.3.1 · **Updated:** 2026-10-12 by /ship unattended-build
+**Status:** Active · **Release:** v2.3.1 · **Updated:** 2026-10-13 by /ship decision-pr
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -62,6 +62,7 @@ projects.
 | ste-voice | Shipped | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them | — |
 | pause-questions | Shipped | At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row | — |
 | unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
+| decision-pr | Built | /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review | — |
 
 ## More
 

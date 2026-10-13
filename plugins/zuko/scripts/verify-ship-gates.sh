@@ -30,6 +30,17 @@ $rows"
 grep -q '^## Open items' "$spec" || problems="$problems
 - Spec has no '## Open items' section. The ledger is never deleted."
 
+# The PR body's sources: each Decided alone row has Chose, Other and Undo, and
+# /review recorded a run. Every non-zero exit is a problem, one per line it
+# printed -- exit 2, a spec it cannot read, is never a pass.
+pr_body_out=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/pr_body.py" check "$spec" 2>&1)
+if [ $? -eq 0 ]; then
+  echo "$pr_body_out"
+else
+  problems="$problems
+$(printf '%s\n' "$pr_body_out" | sed 's/^/- /')"
+fi
+
 # Overview: the slice (the spec's basename) needs a row in OVERVIEW.md's
 # slices table. Matched by the first cell exactly, inside '## Slices' only, and
 # a file that could not be read is never a pass.
