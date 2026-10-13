@@ -57,9 +57,18 @@ class TooLong(ValueError):
     pass
 
 # Where bash starts a new word, so that a `#` after one starts a comment. Not
-# `)`: after `$(date)` bash keeps `#x` in the word, after a subshell's `)` it
-# starts a comment, and reading too little as a comment is the safe side.
+# `)`: after `$(date)` bash keeps `#x` in the word, and after a subshell's `)`
+# it starts a comment, so a `#` there is unclear.
 WORD_BREAKS = set(" \t;&|(<>")
+
+# Inside `${...}`, `$'...'`, a backtick, or a `$(` in double quotes, bash's
+# quotes and comments are not the walk's, so after one the walk is lost: it
+# cannot tell whether a `#` at a word start starts a comment.
+LOST_AFTER = ("${", "$'", "`")
+
+# Text after an unclear `#` that would change what the walk reads next, if it
+# is read as text: a quote, a backtick, a heredoc, or a line continuation.
+CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
 
 # git's own options, which sit before the subcommand. These take a value.
 GLOBAL_OPTIONS_WITH_VALUE = {
@@ -68,10 +77,11 @@ GLOBAL_OPTIONS_WITH_VALUE = {
 }
 
 
-def openers_in(line, quote, word_start=True):
-    """Heredoc delimiters opened by this line, where its comment starts (None
-    for no comment), the quote state it ends in, and whether the next line
-    starts a word.
+def openers_in(line, state):
+    """Heredoc delimiters opened by this line, and where its comment starts
+    (None for no comment). `state` carries the quote, whether the next
+    character starts a word (None when unclear), and whether the walk is lost,
+    from one line to the next.
 
     `echo '<<EOF'` opens nothing — it is a string. Only an unquoted `<<` does,
     which is why the quote state has to be carried in from the line before.
@@ -80,8 +90,13 @@ def openers_in(line, quote, word_start=True):
     A backslash that ends the line joins the next line to this word, as bash
     deletes the pair, so the next line starts a word only where the backslash
     stood at one: after `echo a\\`, a `#` on the next line is inside `a#`.
+
+    An unclear `#` is read as text, so the rest of the line is checked too.
+    When that text could change what the walk reads next, a quote or a
+    heredoc that hides the lines after it, the command cannot be read.
     """
     delimiters = []
+    quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -90,30 +105,40 @@ def openers_in(line, quote, word_start=True):
                 quote = None
             elif char == "\\" and quote == '"':
                 at += 1
+            elif quote == '"' and line.startswith(("$(", "${", "`"), at):
+                lost = True
             word_start = False
         elif char in "'\"":
             quote = char
             word_start = False
         elif char == "\\":
             if at == len(line) - 1:
-                return delimiters, None, quote, word_start
+                state.update(quote=quote, word_start=word_start, lost=lost)
+                return delimiters, None
             at += 1
             word_start = False
+        elif char == "#" and (word_start is None or (word_start and lost)):
+            if CHANGES_THE_WALK.search(line, at):
+                raise ValueError("cannot tell whether a # starts a comment here; remove the comment")
+            word_start = False
         elif char == "#" and word_start:
-            return delimiters, at, quote, True
+            state.update(quote=quote, word_start=True, lost=lost)
+            return delimiters, at
         elif line.startswith("<<<", at):
             at += 2                      # a here-string, not a heredoc
             word_start = True
         else:
+            lost = lost or line.startswith(LOST_AFTER, at)
             match = HEREDOC.match(line, at)
             if match:
                 delimiters.append(match.group(2))
                 at = match.end() - 1
                 word_start = False
             else:
-                word_start = char in WORD_BREAKS
+                word_start = None if char == ")" else char in WORD_BREAKS
         at += 1
-    return delimiters, None, quote, True
+    state.update(quote=quote, word_start=True, lost=lost)
+    return delimiters, None
 
 
 def strip_heredocs(command):
@@ -122,11 +147,10 @@ def strip_heredocs(command):
     lines = command.split("\n")
     kept = []
     index = 0
-    quote = None
-    word_start = True
+    state = {"quote": None, "word_start": True, "lost": False}
     while index < len(lines):
         line = lines[index]
-        delimiters, comment, quote, word_start = openers_in(line, quote, word_start)
+        delimiters, comment = openers_in(line, state)
         kept.append(line if comment is None else line[:comment])
         index += 1
         for delimiter in delimiters:
@@ -137,8 +161,8 @@ def strip_heredocs(command):
             if index >= len(lines):
                 raise ValueError("heredoc %s is never closed" % delimiter)
             index += 1
-    if quote:
-        raise ValueError("unbalanced %s quote" % quote)
+    if state["quote"]:
+        raise ValueError("unbalanced %s quote" % state["quote"])
     return "\n".join(kept)
 
 

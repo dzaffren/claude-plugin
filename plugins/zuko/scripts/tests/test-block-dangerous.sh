@@ -350,6 +350,31 @@ run_hook "# Check what's on the branch
 git status"
 expect_exit 0 "$hook_status" "comment: a comment that bash ignores does not block a command"
 
+# Where the walk cannot follow bash's quotes, after `${`, `$'`, a backtick or
+# a `$(` inside double quotes, or right after a `)`, it cannot tell whether a
+# `#` starts a comment. It reads the rest of the line as text, or refuses when
+# that text could change what it reads next (review of fail-closed-parse).
+for form in "echo \"\$(echo \" # it's \")\"; git push --force origin main" \
+  "echo \$'a\\' # '; git push --force origin main" \
+  "echo \"\${v:-\" # \"}\"; git push --force origin main" \
+  'echo `true #`; git push --force origin main' \
+  "(true)# <<EOF
+git push --force origin main
+EOF" \
+  "(true)# it's
+git push --force origin main
+echo '"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "unclear #: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell whether a # starts a comment" "$hook_err" "unclear #: the block says why, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'echo ${v:- #x}; git push --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_match '^push --force origin main$' "$parsed" "unclear #: the text after it is read, when it holds no quote"
+run_hook 'cd "${HOME}"
+# Check the branch
+git status'
+expect_exit 0 "$hook_status" "unclear #: a comment with no quote, heredoc or backslash does not block"
+
 # Each `#` that bash keeps in a word, and each comment bash ends at its line:
 # the push after it must be read.
 for form in 'echo ${#name}; git push --force origin main' \
