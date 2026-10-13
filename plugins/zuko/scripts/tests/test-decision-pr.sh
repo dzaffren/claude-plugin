@@ -78,7 +78,8 @@ expect_match 'A fix line has four parts: the category, `file:line`, the fix in a
   "$review_all" "review: the four parts of a fix line"
 expect_match 'A clean run writes one line: `2026-10-14 · 3 raw findings, 0 survived\. Clean\.`' "$review_all" "review: a clean run is one line"
 expect_match 'A second run adds its lines below the first\. Do not change or remove a line\.' "$review_all" "review: runs append, nothing is removed"
-expect_match 'Do not put a brace pair in a line: the ship gate reads it as a blank\.' "$review_all" "review: no brace pair, for the placeholder check"
+expect_match 'Do not put a brace pair, `TODO` or `\[TBD\]` in a line: the ship gate reads each one as a blank\. Name the thing in other words, such as "a leftover to-do note"\.' \
+  "$review_all" "review: no brace pair, TODO or [TBD], for the placeholder check"
 expect_match 'Commit the spec as `docs\(spec\): record the review of \{slice\}`\.' "$review_all" "review: the Review commit"
 
 # --- ledger.md: /ship decides alone too (O4) ---

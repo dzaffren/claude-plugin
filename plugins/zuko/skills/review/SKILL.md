@@ -232,8 +232,9 @@ has none. Under it, add one line for this run, then one line for each fix:
 A fix line has four parts: the category, `file:line`, the fix in a few words,
 and the fix commit. A clean run writes one line:
 `2026-10-14 · 3 raw findings, 0 survived. Clean.` A second run adds its lines
-below the first. Do not change or remove a line. Do not put a brace pair in a
-line: the ship gate reads it as a blank. Commit the spec as
+below the first. Do not change or remove a line. Do not put a brace pair,
+`TODO` or `[TBD]` in a line: the ship gate reads each one as a blank. Name the
+thing in other words, such as "a leftover to-do note". Commit the spec as
 `docs(spec): record the review of {slice}`.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
