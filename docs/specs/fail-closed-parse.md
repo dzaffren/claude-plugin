@@ -1,6 +1,6 @@
 # Fail closed parse
 
-**Version:** v1 · **Status:** Draft · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -262,8 +262,8 @@ Status: active
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | A command that the parser cannot read, such as an unclosed quote or heredoc: block it, or keep the raw-text check? About 5 in 9,504 past commands would be blocked. | question | spec p1 | user | Open | |
-| O2 | Also teach the parser `$'it\'s'`, `$((1 << 2))` and quotes inside `"$( … )"`, so they are not blocked? | question | spec p1 | user | Open | |
+| O1 | A command that the parser cannot read, such as an unclosed quote or heredoc: block it, or keep the raw-text check? About 5 in 9,504 past commands would be blocked. | question | spec p1 | user | Resolved | Block it. `block-dangerous.sh` blocks it with the parser's reason, because bash runs the lines before the break. 2026-10-13 |
+| O2 | Also teach the parser `$'it\'s'`, `$((1 << 2))` and quotes inside `"$( … )"`, so they are not blocked? | question | spec p1 | user | Resolved | No. They stay blocked: 5 in 9,504 past commands, and each block says what to change. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
