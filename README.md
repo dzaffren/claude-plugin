@@ -203,6 +203,7 @@ projects.
 - zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them
 - At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row
 - /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block
+- /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review
 
 ## Docs
 
