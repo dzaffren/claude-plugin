@@ -94,9 +94,15 @@ def openers_in(line, state):
     An unclear `#` is read as text, so the rest of the line is checked too.
     When that text could change what the walk reads next, a quote or a
     heredoc that hides the lines after it, the command cannot be read.
+
+    Inside `(( ))`, `$(( ))`, `$[ ]` and `${ }`, bash reads `<<` as a shift,
+    and the line after it runs. But `((cat << X); (true))` is two subshells
+    and a heredoc. `depth` counts the brackets open since one of these
+    started, and a `<<` while it is over 0 cannot be read.
     """
     delimiters = []
     quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
+    depth = state["depth"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -113,7 +119,7 @@ def openers_in(line, state):
             word_start = False
         elif char == "\\":
             if at == len(line) - 1:
-                state.update(quote=quote, word_start=word_start, lost=lost)
+                state.update(quote=quote, word_start=word_start, lost=lost, depth=depth)
                 return delimiters, None
             at += 1
             word_start = False
@@ -122,13 +128,20 @@ def openers_in(line, state):
                 raise ValueError("cannot tell whether a # starts a comment here; remove the comment")
             word_start = False
         elif char == "#" and word_start:
-            state.update(quote=quote, word_start=True, lost=lost)
+            state.update(quote=quote, word_start=True, lost=lost, depth=depth)
             return delimiters, at
         elif line.startswith("<<<", at):
             at += 2                      # a here-string, not a heredoc
             word_start = True
         else:
             lost = lost or line.startswith(LOST_AFTER, at)
+            if depth and line.startswith("<<", at):
+                raise ValueError("cannot tell whether this << starts a heredoc or shifts a number; put the command in a file")
+            if char in "([{" and (depth or line.startswith("((", at)
+                                  or (char != "(" and line[at - 1:at] == "$")):
+                depth += 1
+            elif char in ")]}" and depth:
+                depth -= 1
             match = HEREDOC.match(line, at)
             if match:
                 delimiters.append(match.group(2))
@@ -137,7 +150,7 @@ def openers_in(line, state):
             else:
                 word_start = None if char == ")" else char in WORD_BREAKS
         at += 1
-    state.update(quote=quote, word_start=True, lost=lost)
+    state.update(quote=quote, word_start=True, lost=lost, depth=depth)
     return delimiters, None
 
 
@@ -147,7 +160,7 @@ def strip_heredocs(command):
     lines = command.split("\n")
     kept = []
     index = 0
-    state = {"quote": None, "word_start": True, "lost": False}
+    state = {"quote": None, "word_start": True, "lost": False, "depth": 0}
     while index < len(lines):
         line = lines[index]
         delimiters, comment = openers_in(line, state)
