@@ -331,6 +331,17 @@ EOF" "$repo"
 expect_exit 2 "$hook_status" "comment: a heredoc named in a comment opens nothing"
 expect_match '^Blocked: committing directly on main' "$hook_err" "comment: the <<EOF case is the commit-on-main block"
 
+run_hook "git -C . push --force origin main
+cat <<EOF
+release notes"
+expect_exit 2 "$hook_status" "unparsed: an unclosed heredoc is blocked"
+expect_match '^Blocked: this command could not be checked: heredoc EOF is never closed' "$hook_err" "unparsed: the block gives the parser's reason"
+
+run_hook 'git status
+echo "unclosed'
+expect_exit 2 "$hook_status" "unparsed: an unclosed quote is blocked, with no git command in it"
+expect_match '^Blocked: this command could not be checked: unbalanced " quote' "$hook_err" "unparsed: the quote block gives the parser's reason"
+
 parsed=$(printf '%s' "# Check what's on the branch
 git status" | python3 "$scripts/lib/git-command.py")
 expect_exit 0 "$?" "comment: a comment with an apostrophe parses"
