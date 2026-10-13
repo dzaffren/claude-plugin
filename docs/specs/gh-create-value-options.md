@@ -1,6 +1,6 @@
 # gh create value options
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** `pr-edit-attribution` — its row O4 named this gap
 

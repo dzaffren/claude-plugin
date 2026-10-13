@@ -1,6 +1,6 @@
 # Quoted subst heredoc
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** `arith-heredoc` — this closes the gap that its O2 left out
 
