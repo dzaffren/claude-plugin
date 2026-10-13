@@ -1,6 +1,6 @@
 # Fail closed parse
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 

@@ -205,6 +205,7 @@ projects.
 - /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block
 - /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review
 - The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out
+- The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main
 
 ## Docs
 
