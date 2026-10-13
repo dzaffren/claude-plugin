@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship arith-heredoc
+**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship gh-create-value-options
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -67,6 +67,7 @@ projects.
 | fail-closed-parse | Shipped | The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main | — |
 | pr-edit-attribution | Shipped | The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create, so a replaced PR body or a merge commit message cannot sign Claude's name | — |
 | arith-heredoc | Shipped | The guards' parser refuses a `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift, so it no longer hides the lines after it | — |
+| gh-create-value-options | Built | The attribution hook gives each value option of gh pr create and gh release create its value, so a value option before the body or the notes no longer hides a signed text | — |
 
 ## More
 
