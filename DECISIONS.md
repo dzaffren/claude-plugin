@@ -509,3 +509,59 @@ Rejected: stopping and reporting as today (/build then builds the rest of the
 chunk itself, O7), a choice in any file (two chunks could write one file).
 Source: specs/unattended-build.md
 Status: active
+
+## D46 · 2026-10-13 · /ship builds the PR body from the spec: Your call, then Review, then what ships
+
+Why: PRs 80 to 86 put "Your call" first, written by hand from memory, and some of
+its choices were in no spec row. A body built from the Decided alone rows and the
+Review section is the same after a new session. From ## Review down it has 300
+words or fewer; the last four had 356 to 550. A row added after the PR opens is
+rendered again into the body.
+Rejected: rewording each row for the reader as PRs 80 to 86 did (the PR can drift
+from the spec, O7), /ship's own choices in the body only (the spec stops being the
+one record, O4), the scenario list (about 60 words that the spec link covers, O10),
+Your call under the template's best heading (it can end up last, O5), 200 words or
+no number (O3), a PR comment for a late row (O12), Review cut to its counts line
+(O13).
+Source: specs/decision-pr.md
+Status: active
+
+## D47 · 2026-10-13 · /review writes its result into the spec, and the ship gate fails a spec without it
+
+Why: /review printed its findings to the terminal only, so a /ship in a new session
+had nothing to report. Each run adds a dated line and one line for each fix. No line
+is removed, so a clean second run does not hide the first run's fixes.
+Rejected: /ship building the result from git log (the raw count is lost, O2), the
+session's memory only (O2), each run replacing the section (O8), a hand check in
+/ship (prompt rules drift, O9).
+Source: specs/decision-pr.md
+Status: active
+
+## D48 · 2026-10-13 · The ship gate fails a Decided alone row that lacks Chose, Other or Undo
+
+Why: the Your call table copies the three parts. A row with no Undo shows the user a
+choice with no way back. unattended-build O8 left this check to decision-pr.
+Rejected: "not recorded" in the empty cell (the PR opens with a gap, O6), prompt text
+only as D38 (nothing catches a missing part, O6).
+Source: specs/decision-pr.md
+Status: active
+
+## D49 · 2026-10-13 · When /ship cannot open the PR, it prints the body to paste
+
+Why: two of the user's work repos are on gitlab.com, where /ship opens nothing and
+the body was lost. A four-backtick fence holds the body, so a code block in it does
+not end the fence.
+Rejected: the push link only, as before (O1), opening a GitLab merge request (GitLab
+was dropped on 2026-09-25, v3-release-and-hosts O13).
+Source: specs/decision-pr.md
+Status: active
+
+## D50 · 2026-10-13 · One pr_body.py reads the rows for the ship gate and for the PR body
+
+Why: the gate and the Your call table need the same split of each row into Chose,
+Other and Undo. With one parser, the table cannot show a row that the gate did not
+check, and a test can compare the output word for word.
+Rejected: an awk check in verify-ship-gates.sh while Claude copies the rows (no test
+can prove the copy, O11).
+Source: specs/decision-pr.md
+Status: active
