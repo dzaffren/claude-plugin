@@ -45,3 +45,12 @@ are not bash's, so a `#` it read as a comment hid `; git push --force`.
 Neither reading of an unclear `#` is safe on its own. Read it as text, and
 refuse the command when that text holds a quote, a backtick, `<<` or a line
 continuation: the things that change what the walk reads next.
+
+## Again for `<<` (2026-10-13, pentest v2.4.1)
+
+The walk read every unquoted `<<` as a heredoc. Inside `(( ))`, `$(( ))`,
+`$[ ]` and `${ }`, bash reads it as a shift, so `(( 1 << X ))` hid a force
+push on the next line. Skipping those brackets was no fix: bash reads
+`((cat << X); (true))` as two subshells and a heredoc. The walk now refuses a
+`<<` inside them. When bash reads a symbol in two ways, test each place bash
+can meet it, not only the place you had in mind.
