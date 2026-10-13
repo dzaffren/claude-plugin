@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-13
+
 ### Fixed
 
 - A PR body that /ship replaces with `gh pr edit`, and a merge commit message from `gh pr merge`, can no longer sign Claude's name. The attribution hook now reads both, as it already read `gh pr create`.
@@ -93,7 +95,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...HEAD
+[2.4.1]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...v2.3.0
