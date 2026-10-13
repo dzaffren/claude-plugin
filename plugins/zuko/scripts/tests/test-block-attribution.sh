@@ -344,6 +344,46 @@ expect_no_match '.' "$hook_out$hook_err" "a clean gh pr create prints nothing"
 run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-clean.md"
 expect_exit 0 "$hook_status" "allows a clean gh pr -F body file"
 
+# gh pr edit replaces an open PR's body or title, as /ship does when a row
+# lands after the PR is open. gh pr merge writes the merge commit on the base
+# branch from --subject and --body (gh pr edit --help, gh pr merge --help).
+for form in "gh pr edit 92 --body-file $work/pr-signed.md" \
+  "gh pr edit 92 -F $work/pr-signed.md" \
+  "gh pr edit 92 -F=$work/pr-signed.md" \
+  'gh pr edit 92 -b "Generated with Claude Code"' \
+  'gh pr edit 92 --body="Generated with Claude Code"' \
+  "gh pr -R o/r edit 92 --body-file $work/pr-signed.md"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution in $form"
+  expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "the edit block names the PR body: $form"
+done
+
+for form in "gh pr edit 92 -t 'feat(export): write ledger csv, Generated with Claude Code'" \
+  "gh pr edit 92 --title 'Co-Authored-By: Claude <noreply@anthropic.com>'"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution in $form"
+  expect_match 'Blocked: the PR title carries Claude attribution\.' "$hook_err" "the edit block names the PR title: $form"
+done
+
+for form in "gh pr merge 92 --squash --subject 'feat(export): write ledger csv' --body 'Generated with Claude Code'" \
+  "gh pr merge 92 --squash -F $work/pr-signed.md" \
+  "gh pr merge 92 --squash --body-file=$work/pr-signed.md" \
+  "gh pr merge 92 --squash -t 'Co-Authored-By: Claude <noreply@anthropic.com>'" \
+  'gh pr merge 92 -sb "Generated with Claude Code"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution in $form"
+  expect_match 'Blocked: the merge commit message carries Claude attribution\.' "$hook_err" "the merge block names the merge commit message: $form"
+done
+
+for form in "gh pr edit 92 --body-file $work/pr-clean.md" \
+  "gh pr edit 92 -t 'feat(export): write ledger csv' --add-label bug" \
+  'gh pr merge 92 --merge' \
+  'gh pr merge 92 --squash --delete-branch' \
+  "gh pr merge 92 --squash -t 'feat(export): write ledger csv' -F $work/pr-clean.md"; do
+  run_hook "$form"
+  expect_exit 0 "$hook_status" "allows a clean $form"
+done
+
 # No body text on the command line: --fill reuses commits the commit hook
 # checked, and stdin, the editor and the browser are never read.
 run_hook 'gh pr create --fill'
@@ -378,8 +418,8 @@ expect_exit 'Bash(gh pr *) Bash(gh release *) Bash(git commit *) Bash(git tag *)
 # The ban text names every command the hook blocks, so the rule and the route
 # cannot drift apart unseen.
 naming=$(tr '\n' ' ' <"$scripts/../references/git-naming.md")
-expect_match 'blocks the first +three at .*`gh pr create`' "$naming" \
-  "git-naming.md names gh pr create among the commands the hook blocks"
+expect_match 'blocks the first +three at .*`gh pr create`, `gh pr edit` and `gh pr merge`' "$naming" \
+  "git-naming.md names gh pr create, edit and merge among the commands the hook blocks"
 
 # A lone surrogate the payload parse cannot print used to end in `|| exit 0`,
 # so the message went unread (spec O6).
