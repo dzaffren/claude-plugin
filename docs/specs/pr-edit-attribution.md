@@ -1,6 +1,6 @@
 # PR edit attribution
 
-**Version:** v1 · **Status:** Draft · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -191,7 +191,7 @@ Status: active
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | Which `gh pr` subcommands does the hook read, after `create`? `gh pr merge --subject` and `--body` write the merge commit on `main`. `gh pr comment` and `gh pr review` post comments. | question | spec p1 | user | Open | |
+| O1 | Which `gh pr` subcommands does the hook read, after `create`? `gh pr merge --subject` and `--body` write the merge commit on `main`. `gh pr comment` and `gh pr review` post comments. | question | spec p1 | user | Resolved | `edit` and `merge`. `git-naming.md` bans attribution in a PR body and a commit message, and not in a comment. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
