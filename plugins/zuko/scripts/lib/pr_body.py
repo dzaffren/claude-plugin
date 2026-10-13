@@ -8,7 +8,8 @@ The rows are the table under "## Open items", the Review lines are the lines
 under "## Review"; both outside code fences, so an example in the spec is
 never read as the spec's own. A row is Decided alone when its Status cell is
 exactly that, and its Answer then holds "Chose:", "Other:" and "Undo:",
-each with text after it, a date at the end of Undo not counted. The
+each with text after it, a date at the end of Undo not counted. A label
+inside backticks or double quotes is part of the text, not a label. The
 rules live in references/ledger.md, the body layout in skills/ship/SKILL.md.
 
   check   each Decided alone row has all three parts, and the Review section
@@ -32,6 +33,7 @@ CELL = re.compile(r"(?<!\\)\|")
 RUN = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2} · ")
 DATE = re.compile(r"\s*[0-9]{4}-[0-9]{2}-[0-9]{2}\s*$")
 PARTS = ("Chose:", "Other:", "Undo:")
+QUOTED = re.compile(r'(`+).*?\1|"[^"]*"')
 
 
 def sections(text):
@@ -58,6 +60,12 @@ def sections(text):
     return found
 
 
+def masked(text):
+    """text with each code span and double-quoted string blanked to spaces, the
+    same length, so a label quoted inside a part is not read as the next one."""
+    return QUOTED.sub(lambda match: " " * len(match.group(0)), text)
+
+
 def decided(ledger):
     """(id, what, {part: text}) for each Decided alone row, in order."""
     rows = []
@@ -68,7 +76,8 @@ def decided(ledger):
         if len(cells) < 7 or cells[5] != "Decided alone":
             continue
         answer = cells[6]
-        at = sorted((answer.find(part), part) for part in PARTS if part in answer)
+        bare = masked(answer)
+        at = sorted((bare.find(part), part) for part in PARTS if part in bare)
         parts = {}
         for i, (start, part) in enumerate(at):
             end = at[i + 1][0] if i + 1 < len(at) else len(answer)

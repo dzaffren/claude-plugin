@@ -92,6 +92,18 @@ write_spec empty-two "$run1" '| O9 | Stored rows in SQLite. | flag | review | us
 run check empty-two
 expect_match '^O9  Decided alone row has an empty "Chose:" and an empty "Other:"$' "$out" "check: names two empty parts in one line"
 
+# A label quoted inside a part's text is that text, not the next part.
+write_spec quoted-label "$run1" '| O15 | The gate named only a missing part. | flag | review | user | Decided alone | Chose: a new line, `has an empty "Undo:"`. Other: reuse the "Undo:" line, and say "Other:" too. Undo: count an empty part as missing. 2026-10-13 |'
+run check quoted-label
+expect_exit 0 "$status" "check: a label inside quotes or code does not split the Answer"
+run render quoted-label
+expect_match '^\| O15 \| The gate named only a missing part\. \| a new line, `has an empty "Undo:"`\. \| reuse the "Undo:" line, and say "Other:" too\. \| count an empty part as missing\. \|$' \
+  "$out" "render: a quoted label stays in its part's text"
+
+write_spec only-quoted "$run1" '| O4 | Dropped VAT. | flag | build | user | Decided alone | Chose: drop VAT. Other: keep VAT. The old text said `Undo: put it back`. |'
+run check only-quoted
+expect_match '^O4  Decided alone row has no "Undo:"$' "$out" "check: a label only inside code is no label"
+
 write_spec only-decided "$run1" '| O1 | A question. | question | spec p1 | user | Resolved | Yes. |' '| O2 | A risk. | flag | spec p3 | user | Accepted risk | Off-peak, 2026-10-10 |'
 run check only-decided
 expect_exit 0 "$status" "check: only Decided alone rows need the three parts"
