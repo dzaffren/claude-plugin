@@ -192,3 +192,6 @@ One line per lesson. Loaded into every session in this repo.
 - An option walk must know every option that takes a value, including the ones
   it ignores, or one of them eats the option it reads.
   ([detail](an-option-table-lists-every-value-option.md))
+- A slice that changes only prompt text gets its red tests from the text
+  checks; its e2e may pass first, and the report says why.
+  ([detail](a-prompt-only-e2e-passes-first.md))

@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- /ship now marks a slice Shipped inside the slice's own PR, so a slice no longer needs a second PR after the merge that only changes its status.
+
 ## [2.4.2] - 2026-10-13
 
 ### Fixed

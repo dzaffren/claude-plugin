@@ -29,13 +29,20 @@ git log --oneline -8
 
 ## Refresh the overview
 
-The gate below reads what this step writes, so it runs first.
+Every file /ship writes, it writes here, on the branch, before the push. The
+merge carries them to the base branch, and after the merge /ship writes
+nothing. The gate below reads what this step writes, so it runs first.
 
-- `OVERVIEW.md` slices table: set this slice's row to `Built`, with the spec's
-  page link and a "What it does" line taken from the spec's two-line summary.
-  The row's first cell is the spec's file name without `.md` —
+- Take the base branch into this one first, as "Tidy the branch" says. The
+  hub page below is published from this branch's files, so a branch behind
+  its base would publish a hub without the slices and the release merged
+  since.
+- `OVERVIEW.md` slices table: set this slice's row to `Shipped`, with the
+  spec's page link and a "What it does" line taken from the spec's two-line
+  summary. The row's first cell is the spec's file name without `.md` —
   `docs/specs/export-csv.md` → `export-csv` — because that is what the gate
   matches. No row yet → add one, and drop a `none yet` row if there is one.
+- Spec Status → `Shipped`.
 - `docs/ARCHITECTURE.md`: when the spec's pause 3 added or changed a
   component, update the components diagram and add or edit its table row —
   folder and one line saying what it does.
@@ -65,17 +72,25 @@ The gate below reads what this step writes, so it runs first.
   `git diff {base}..HEAD -- CHANGELOG.md` first and write only for changes
   those lines do not cover, so a second `/ship` run adds nothing twice. Show
   the user the lines you wrote.
+- Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
+  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
+  `hub page: {url}` it returns to the overview's `## More` line.
 - Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
   re-render the `README.md` block from the updated overview. It rewrites only
   the text between the zuko markers.
-- Commit these files, `README.md`, `CHANGELOG.md` and any new `DECISIONS.md`
-  included, on the branch — `docs(overview): mark {slice} built`. The gate
-  fails on an uncommitted tree, so this commit comes before it.
+- Capture lessons to `docs/learnings/` silently. A lesson found after the
+  merge goes in the next branch's refresh commit.
+- Commit these files, the spec, `README.md`, `CHANGELOG.md`, the lessons and
+  any new `DECISIONS.md` included, on the branch — `docs(overview): mark
+  {slice} shipped`. The gate fails on an uncommitted tree, so this commit
+  comes before it. A second `/ship` run that changes nothing makes no commit.
 
 ## The gates
 
-Run `${CLAUDE_PLUGIN_ROOT}/scripts/verify-ship-gates.sh`, then check by hand
-what a script cannot:
+Run `${CLAUDE_PLUGIN_ROOT}/scripts/verify-ship-gates.sh docs/specs/{slice}.md`.
+Always give it the spec path: the refresh set the spec to `Shipped`, and
+with no path the gate looks only for a `Built` spec. Then check by hand what
+a script cannot:
 
 | Gate                    | Check                                                                                                                                                                                                                                                                                                                                                                                    |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +109,10 @@ gate, and the fix is `--write`. A missing block fails it too, and the fix is
 onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
-proceed on a "probably fine".
+proceed on a "probably fine". Before you route to `/spec` or `/build`, set the
+spec and its row back to `Built`, run `render-readme-block.sh --write` again,
+and commit. The slice is not shipped until its PR merges, and `/spec` starts a
+new version of a `Shipped` spec.
 
 When `/ship` makes a choice alone, such as a test left red because the base
 branch fails the same way, add a row as `ledger.md` › "Deciding alone" says.
@@ -211,23 +229,19 @@ line, a metric, an endpoint. Check for it.
 - Found → say so, with what you saw.
 - Not found → say that plainly, and say what it means: either the deploy has
   not landed, the flag is still off, or the slice is not working. Do not
-  declare success on a missing signal.
+  declare success on a missing signal. Send the user to `/debug`, and put any
+  fix on a `fix/` branch. The spec stays `Shipped`: on the base branch, it
+  means merged with every gate green, and the signal does not change it.
 
 The flag is still off by default. Turning it on is the user's call, and worth
 saying out loud.
 
 ## Close out
 
-- Flip this slice's row in the `OVERVIEW.md` slices table to `Shipped`, then
-  run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` so the
-  README's Features list picks it up.
-- Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
-  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
-  `hub page: {url}` it returns to the overview's `## More` line.
-- Spec Status → `Shipped`, then one commit carrying the spec, the row,
-  `README.md`, and any hub link. The hub is published first because its link
-  only exists after.
-- Capture lessons to `docs/learnings/` silently.
+Write no file, and make no commit and no branch. The refresh put the row,
+the spec, the README, the hub link and the lessons in the slice's own PR, and
+the base branch is closed to a commit.
+
 - **Graduation:** a component from this slice that is now used in two or more
   slices, or that the user promotes, moves into the design system. Ask first,
   then hand over the `/design-sync` run — the user types it. One-off
