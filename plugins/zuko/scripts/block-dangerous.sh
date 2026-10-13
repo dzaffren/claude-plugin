@@ -14,39 +14,34 @@ project="${CLAUDE_PROJECT_DIR:-$PWD}"
 deny() { echo "$1" >&2; exit 2; }
 
 # What git is actually being asked to do, one invocation per line, so a command
-# that only mentions "git commit" in a quoted argument or a heredoc body is not
-# mistaken for one. A parse failure falls back to matching the raw text, which
-# over-blocks rather than under-blocks.
+# that only mentions "git commit" in a quoted argument, a heredoc body or a
+# comment is not mistaken for one.
 #
 # A push forces with --force and its -with-lease form, with -f alone or bundled
 # (-uf), with --mirror or any prefix of it (git takes --mi), and with a refspec
 # that starts with +. A brace or glob is expanded by the shell before git runs,
 # so the words read here are not the words git gets.
 #
-# A command over the parser's 64 KB limit (exit 4) is blocked outright: the
-# raw-text patterns miss `git -C . push --force` and `cd other && git commit`,
-# and secret-scan.sh and block-attribution.sh fall back the same way. This
-# hook runs on every Bash call, so its block covers theirs (D51).
-git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>/dev/null)
+# A command the parser cannot read is blocked (D52): bash runs the lines before
+# an unclosed quote, and an unclosed heredoc to the end of the text. So is a
+# command over its 64 KB limit, exit 4 (D51). A check of the raw text instead
+# missed `git -C . push --force` and `git -C . commit`. secret-scan.sh and
+# block-attribution.sh still fall back to the raw text; this hook runs on every
+# Bash call, so its block covers theirs. The parser writes to stderr only when
+# it fails, and then its last ": " part is the reason.
+git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>&1)
 parsed=$?
 [ "$parsed" -eq 4 ] && deny "Blocked: this command is over 65536 characters, too long to check. Put the long text in a heredoc or a file, then run it again."
-if [ "$parsed" -eq 0 ]; then
-  subject="$git_args"
-  push_re='^push( .*)? (--force[^[:space:]]*|--m[^[:space:]]*|-[^-[:space:]]*f[^[:space:]]*|\+[^[:space:]]*)([[:space:]]|$)'
-  expand_re='^push( .*)? [^[:space:]]*[][{}*?]'
-  commit_re='^commit([[:space:]]|$)'
-else
-  subject="$cmd"
-  push_re='git push[^;|&]*[[:space:]]["'\'']?(--force|--m|-[^-[:space:]]*f|\+)'
-  expand_re='git push[^;|&]*[][{}*?]'
-  commit_re='(^|[;&|[:space:]])git commit'
-fi
+[ "$parsed" -ne 0 ] && deny "Blocked: this command could not be checked: ${git_args##*: }. bash runs the lines before a broken quote or heredoc. Close it, or put the text in a file, then run it again."
+push_re='^push( .*)? (--force[^[:space:]]*|--m[^[:space:]]*|-[^-[:space:]]*f[^[:space:]]*|\+[^[:space:]]*)([[:space:]]|$)'
+expand_re='^push( .*)? [^[:space:]]*[][{}*?]'
+commit_re='^commit([[:space:]]|$)'
 
-if printf '%s\n' "$subject" | grep -qE "$push_re"; then
+if printf '%s\n' "$git_args" | grep -qE "$push_re"; then
   deny "Blocked: force push rewrites shared history. Ask the user first."
 fi
 
-if printf '%s\n' "$subject" | grep -qE "$expand_re"; then
+if printf '%s\n' "$git_args" | grep -qE "$expand_re"; then
   deny "Blocked: this push has a brace or glob character, which the shell can expand into a force flag. Write the arguments out in full, or ask the user first."
 fi
 
@@ -85,7 +80,7 @@ deny_commit_anywhere() {
   deny_commit_on_main "$project"
 }
 
-if printf '%s\n' "$subject" | grep -qE "$commit_re"; then
+if printf '%s\n' "$git_args" | grep -qE "$commit_re"; then
   if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --dir "$base" 2>/dev/null); then
     # Split on the first tab by hand: read with IFS=tab strips a leading one,
     # and an empty directory would shift the arguments into it.

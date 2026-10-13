@@ -183,3 +183,6 @@ One line per lesson. Loaded into every session in this repo.
 - A guard's fallback is safe only for input that cannot run — a command that
   runs, sent down it, gets the full check or a block, never a weaker one.
   ([detail](a-fallback-is-safe-only-for-what-cannot-run.md))
+- In a script with `pipefail`, never pipe text into `grep -q` — an early exit
+  gives the writer SIGPIPE, and a match reads as a miss. Use `<<<"$x"`.
+  ([detail](pipefail-turns-an-early-grep-exit-into-a-miss.md))
