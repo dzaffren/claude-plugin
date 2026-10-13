@@ -174,18 +174,7 @@ Single chunk. The tests first, then the two cases in `block-attribution.sh`.
 
 ### Decisions to record
 
-```markdown
-## D54 · 2026-10-13 · The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create
-
-Why: /ship replaces the PR body with gh pr edit --body-file when a row lands
-after the PR is open, and gh pr merge --subject and --body write the merge
-commit on the base branch. The hook read only create, so both passed a signed
-body (checked on v2.4.0).
-Rejected: reading only create (proven gap), also reading gh pr comment and gh
-pr review (git-naming.md does not ban attribution there, O1).
-Source: specs/pr-edit-attribution.md
-Status: active
-```
+Recorded as D54.
 
 ## Open items
 
