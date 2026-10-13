@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.3] - 2026-10-13
+
 ### Fixed
 
 - /ship now marks a slice Shipped inside the slice's own PR, so a slice no longer needs a second PR after the merge that only changes its status.
@@ -112,7 +114,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...HEAD
+[2.4.3]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...v2.4.0
