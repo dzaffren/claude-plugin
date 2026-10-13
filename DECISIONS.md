@@ -680,3 +680,29 @@ Why: The pentester run was stopped by a safety classifier before it attacked the
 Rejected: running the pentest before v2.4.2 (The pentester run was stopped by a safety classifier before it attacked the parser and hooks. Each of the four fixes in this range was reviewed with bypass inputs run against bash, and every review finding is fixed and tested.)
 Source: docs/security/v2.4.2/report.md
 Status: active
+
+## D60 · 2026-10-13 · /ship marks a slice Shipped before the push, in the slice's own PR
+
+Why: after the merge the branch is gone and block-dangerous.sh blocks a
+commit on main, so 31 of 96 merged PRs here were status-only. On main,
+Shipped now means merged with every gate green; the signal check still
+runs, but does not gate the word.
+Rejected: a close-out commit after the merge (main is closed to it), a
+second status-only PR for each slice (31 of 96 PRs here), republishing the
+hub page only at /release (the hub falls behind until a release), a
+ship-gate check that fails a spec or row not at Shipped (the flip sits in
+the refresh step that already sets the row each time, and seven fixtures
+would change).
+Source: specs/shipped-in-pr.md
+Status: active
+
+## D61 · 2026-10-13 · /ship gives the ship gate the spec path
+
+Why: with the spec at Shipped before the gate, the gate's no-argument
+search for a Built spec finds nothing; the path also stops the gate from
+checking another slice that main still has at Built.
+Rejected: a no-argument search that also finds Shipped specs (it reads
+every spec in docs/specs, and 40 are Shipped, so it would gate the wrong
+one).
+Source: specs/shipped-in-pr.md
+Status: active
