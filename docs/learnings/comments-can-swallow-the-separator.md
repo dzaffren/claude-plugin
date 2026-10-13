@@ -54,3 +54,7 @@ push on the next line. Skipping those brackets was no fix: bash reads
 `((cat << X); (true))` as two subshells and a heredoc. The walk now refuses a
 `<<` inside them. When bash reads a symbol in two ways, test each place bash
 can meet it, not only the place you had in mind.
+/review then found two more places: a `)` inside `${ }`, which bash reads as
+text but the count read as a closer, and a backslash-newline between `$(` and
+`(`, which bash joins but the line-by-line walk does not. List the places
+first: quotes, each bracket kind, a backslash-newline, a heredoc, a comment.
