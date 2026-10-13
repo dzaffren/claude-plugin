@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.0 · **Updated:** 2026-10-13 by /ship tokenise-linear
+**Status:** Active · **Release:** v2.4.0 · **Updated:** 2026-10-13 by /ship fail-closed-parse
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -64,6 +64,7 @@ projects.
 | unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
 | decision-pr | Shipped | /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review | — |
 | tokenise-linear | Shipped | The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out | — |
+| fail-closed-parse | Built | The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main | — |
 
 ## More
 
