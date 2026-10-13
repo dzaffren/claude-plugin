@@ -505,6 +505,39 @@ git push --force origin main
   expect_match "^Blocked: this command could not be checked: cannot tell where a heredoc inside \"\\$\\( \\)\" ends" "$hook_err" "heredoc in \"\$( )\": the unclear-end block says why, $(printf '%q' "$form")"
 done
 
+# bash may end a body before the walk does (at `EOF)`, or at a closing
+# backtick), or never open it (`<<` in single quotes or `${ }`). A `<<` on a
+# line the walk reads as body may then open a real heredoc, so the walk counts
+# it too (review of quoted-subst-heredoc).
+for form in 'echo "$(cat <<EOF
+EOF)
+$(cat <<X
+EOF
+say "hi
+X
+)"' 'echo "`cat <<EOF
+hi` $(cat <<X
+EOF
+say "hi
+X
+)"' "echo \"\$(echo '<<EOF ')
+\$(cat <<X
+EOF
+say \"hi
+X
+)\"" 'echo "${x:-<<EOF }
+$(cat <<X
+EOF
+say "hi
+X
+)"'; do
+  run_hook "$form
+git push --force origin main
+\""
+  expect_exit 2 "$hook_status" "heredoc in \"\$( )\": a second heredoc is checked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell whether the lines after a heredoc inside \"\\$\\( \\)\" are quoted" "$hook_err" "heredoc in \"\$( )\": the second-heredoc block says why, $(printf '%q' "$form")"
+done
+
 # Quotes that pair up in the body, and a `<<` that is text, still parse.
 for form in 'echo "$(cat <<EOF
 say "hi"

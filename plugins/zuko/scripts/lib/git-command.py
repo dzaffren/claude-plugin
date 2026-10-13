@@ -119,14 +119,15 @@ def openers_in(line, state):
     a `$( )` or backticks, which bash reads and the walk does not. `inner`
     holds each one, as its delimiter, whether it is `<<-`, and whether it is
     quoted, until strip_heredocs finds the line that ends its body. One found
-    on a line of such a body is text.
+    on a line of such a body counts too: bash may have ended that body already
+    (at `EOF)`, or at a closing backtick), or never opened it (`<<` in single
+    quotes or `${ }`), and then the `<<` opens a real heredoc.
     """
     if state["tail"] + line[:1] in JOINED_OPENERS:
         raise ValueError("cannot tell what this backslash-newline joins; put the two lines on one line")
     delimiters = []
     quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
     closers = state["closers"]
-    opening = not state["inner"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -137,7 +138,7 @@ def openers_in(line, state):
                 at += 1
             elif quote == '"' and line.startswith(("$(", "${", "`"), at):
                 lost = True
-            elif (quote == '"' and lost and opening and line.startswith("<<", at)
+            elif (quote == '"' and lost and line.startswith("<<", at)
                     and not line.startswith("<<<", at) and line[at - 1:at] != "<"):
                 match = INNER_HEREDOC.match(line, at)
                 if not match:
