@@ -125,7 +125,7 @@ only), and D54, drafted here.
 
 | File | Change | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/block-attribution.sh:147` | After `after_repo`, `edit` calls `read_options` with `--body`, `--body-file`, `--title` and `b`, `F`, `t`, as `create` does. `merge` calls it with `--body`, `--body-file`, `--subject` and `b`, `F`, `t`, labelled "merge commit message". `drop_equals=True` for both, as gh's flag parser takes `-F=path`. The header comment at `:2` and the one at `:13` name the two subcommands. | Scenarios 1 to 3. |
+| `plugins/zuko/scripts/block-attribution.sh:147` | After `after_repo`, `edit` calls `read_options` with `--body`, `--body-file`, `--title` and `b`, `F`, `t`, as `create` does. `merge` calls it with `--body`, `--body-file`, `--subject` and `b`, `F`, `t`, labelled "merge commit message". `drop_equals=True` for both, as gh's flag parser takes `-F=path`. Each other option of `edit` and `merge` that takes a value, such as `-B`, `-m`, `-A` or `--add-label`, takes its value and emits nothing (O3). The header comment at `:2` and the one at `:13` name the two subcommands. | Scenarios 1 to 3. |
 | `plugins/zuko/references/git-naming.md:32` | The list of commands that the hook blocks also names `gh pr edit` and `gh pr merge` (O2). | Scenarios 1 to 3. |
 | `plugins/zuko/scripts/tests/test-block-attribution.sh` | Scenarios 1 to 4 as hook payloads, with `signed.md` and `clean.md` in `$work`. `gh pr -R o/r edit` too. | All. |
 
@@ -177,12 +177,20 @@ Single chunk. The tests first, then the two cases in `block-attribution.sh`.
 
 Recorded as D54.
 
+## Review
+
+2026-10-13 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/block-attribution.sh:164` · each `gh pr edit` and `gh pr merge` option that takes a value takes it, so `-Bnext` no longer hides the body · `86a0c9f`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | Which `gh pr` subcommands does the hook read, after `create`? `gh pr merge --subject` and `--body` write the merge commit on `main`. `gh pr comment` and `gh pr review` post comments. | question | spec p1 | user | Resolved | `edit` and `merge`. `git-naming.md` bans attribution in a PR body and a commit message, and not in a comment. 2026-10-13 |
 | O2 | The plan named `block-attribution.sh` and its test only. `git-naming.md:32` lists each command that the hook blocks, and `test-block-attribution.sh` checks that list, so it would name `gh pr create` and not `gh pr edit` or `gh pr merge`. | flag | build | user | Decided alone | Chose: name `gh pr edit` and `gh pr merge` in `git-naming.md`, and check both in the test. Other: leave the list at the four commands it named. Undo: put back the old sentence in `git-naming.md` and the old pattern in `test-block-attribution.sh`, both in b1c6cdf. 2026-10-13 |
+| O3 | `/review`: the edit and merge tables knew only `-b`, `-F` and `-t`. A value-taking option they did not know, such as `-Bnext`, read its value as `-t`, took `--body` as the title, and `gh pr edit 92 -Bnext --body "Generated with Claude Code"` passed. The finding named the short options. The long ones, such as `--add-label -t --body`, fail the same way. | flag | review | user | Decided alone | Chose: list every value-taking option of `gh pr edit` and `gh pr merge`, short and long, from gh 2.101.0's help. Other: list only the short options that the finding named. Undo: git revert 86a0c9f. 2026-10-13 |
+| O4 | `/review` found the same gap outside this slice: `gh pr create -Bnext --body "Generated with Claude Code"` and `gh release create v2.4.1 --target -t -n "Generated with Claude Code"` pass the hook on `main` too. | flag | review | user | Decided alone | Chose: leave `create` and `release create` as they are, because no scenario needs them. Other: give them the same value-option tables here. Undo: run /zuko:debug on it, or spec a slice with /spec. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
