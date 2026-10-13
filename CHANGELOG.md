@@ -13,6 +13,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - A force push, a commit on main or a staged secret can no longer pass the guards when the machine is slow. A guard that piped text into a check could read a match as a miss; each check now gets its text in one piece.
+- A heredoc inside a double-quoted `$( )` or backticks, with a quote in its body, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why. The usual `git commit -m "$(cat <<'EOF' ...` form still works, and its message is still checked.
 - A `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift and not a heredoc, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why.
 
 ## [2.4.1] - 2026-10-13
