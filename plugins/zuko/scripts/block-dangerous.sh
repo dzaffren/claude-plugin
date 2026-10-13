@@ -37,15 +37,15 @@ push_re='^push( .*)? (--force[^[:space:]]*|--m[^[:space:]]*|-[^-[:space:]]*f[^[:
 expand_re='^push( .*)? [^[:space:]]*[][{}*?]'
 commit_re='^commit([[:space:]]|$)'
 
-if printf '%s\n' "$git_args" | grep -qE "$push_re"; then
+if grep -qE "$push_re" <<<"$git_args"; then
   deny "Blocked: force push rewrites shared history. Ask the user first."
 fi
 
-if printf '%s\n' "$git_args" | grep -qE "$expand_re"; then
+if grep -qE "$expand_re" <<<"$git_args"; then
   deny "Blocked: this push has a brace or glob character, which the shell can expand into a force flag. Write the arguments out in full, or ask the user first."
 fi
 
-if printf '%s' "$cmd" | grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)[[:space:]]+(/([[:space:]]|$)|/[a-z]+([[:space:]]|$)|~|\.\.)'; then
+if grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)[[:space:]]+(/([[:space:]]|$)|/[a-z]+([[:space:]]|$)|~|\.\.)' <<<"$cmd"; then
   deny "Blocked: recursive delete of a top-level or home path."
 fi
 
@@ -80,13 +80,13 @@ deny_commit_anywhere() {
   deny_commit_on_main "$project"
 }
 
-if printf '%s\n' "$git_args" | grep -qE "$commit_re"; then
+if grep -qE "$commit_re" <<<"$git_args"; then
   if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --dir "$base" 2>/dev/null); then
     # Split on the first tab by hand: read with IFS=tab strips a leading one,
     # and an empty directory would shift the arguments into it.
     while IFS= read -r line; do
       dir=${line%%$'\t'*}
-      printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" || continue
+      grep -qE "$commit_re" <<<"${line#*$'\t'}" || continue
       if [ -n "$dir" ]; then deny_commit_on_main "$dir" release-ok; else deny_commit_anywhere; fi
     done <<<"$dirs"
   else

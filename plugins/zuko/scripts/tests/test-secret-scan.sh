@@ -64,3 +64,18 @@ expect_exit 2 "$scan_status" "a secret reached by an unresolvable cd is scanned"
 
 scan "pushd $wt && popd && git commit -m x" "$repo"
 expect_exit 2 "$scan_status" "a secret left behind by pushd and popd is scanned"
+
+# Every script with pipefail, not only this one: piped text lets grep -q exit
+# at a match before printf writes its next line, printf dies of SIGPIPE, and
+# pipefail reads the match as a miss (pipefail-grep-race). Only strace can
+# force that race, so this reads the scripts instead of running them.
+piped_grep_q='(^|[^|])\|[[:space:]]*grep([[:space:]]+-[^[:space:]]+)*[[:space:]]+(-[a-zA-Z]*q[a-zA-Z]*|--quiet|--silent)([[:space:]]|$)'
+for f in "$scripts"/*.sh; do
+  grep -q pipefail "$f" || continue
+  lines=$(grep -nE "$piped_grep_q" "$f" | cut -d: -f1 | paste -sd, -)
+  if [ -z "$lines" ]; then
+    record PASS "$(basename "$f") pipes no text into grep -q"
+  else
+    record FAIL "$(basename "$f") pipes no text into grep -q" "piped into grep -q at line $lines"
+  fi
+done

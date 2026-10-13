@@ -35,7 +35,7 @@ while IFS= read -r md; do
 - $md has Status '${status:-missing}' — must be Draft, Refined, Built, or Shipped." ;;
   esac
 
-  if printf '%s' "$base" | grep -qE -- '-v[0-9]+$'; then
+  if grep -qE -- '-v[0-9]+$' <<<"$base"; then
     problems="$problems
 - $md is a versioned spec outside archive/. Old iterations live in docs/specs/archive/; the live spec has no -vN suffix."
   fi
