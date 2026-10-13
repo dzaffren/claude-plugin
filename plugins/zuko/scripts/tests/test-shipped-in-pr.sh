@@ -35,6 +35,9 @@ expect_match 'Commit these files, the spec, `README\.md`, `CHANGELOG\.md`, the l
   "$refresh" "ship refresh: one commit, mark shipped"
 expect_match 'Spec Status → `Shipped`.*Republish the hub page.*render-readme-block\.sh --write.*Capture lessons.*mark \{slice\} shipped' \
   "$refresh" "ship refresh: every write comes before the commit"
+expect_match '- Take the base branch into this one first, as "Tidy the branch" says\. The hub page below is published from this branch.s files, so a branch behind its base would publish a hub without the slices and the release merged since\.' \
+  "$refresh" "ship refresh: the base branch comes in before the hub is published"
+expect_match 'Take the base branch into this one first.*Republish the hub page' "$refresh" "ship refresh: the base is taken before the hub"
 expect_no_match 'mark \{slice\} built' "$(squeezed "$ship")" "ship: the mark built commit is gone"
 
 # --- the hub is built before the push (scenario 1, O1) ---

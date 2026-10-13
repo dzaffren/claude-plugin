@@ -33,6 +33,10 @@ Every file /ship writes, it writes here, on the branch, before the push. The
 merge carries them to the base branch, and after the merge /ship writes
 nothing. The gate below reads what this step writes, so it runs first.
 
+- Take the base branch into this one first, as "Tidy the branch" says. The
+  hub page below is published from this branch's files, so a branch behind
+  its base would publish a hub without the slices and the release merged
+  since.
 - `OVERVIEW.md` slices table: set this slice's row to `Shipped`, with the
   spec's page link and a "What it does" line taken from the spec's two-line
   summary. The row's first cell is the spec's file name without `.md` —
