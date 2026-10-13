@@ -31,9 +31,9 @@ expect_match '\| A Decisions finding\. \| Change the code to obey the entry\. Do
   "$deciding" "ledger.md deciding: a Decisions finding obeys the entry (scenario 3)"
 expect_no_match 'A command in the plan does not exist' "$deciding" \
   "ledger.md deciding: a missing command is not a choice, so it gets no row"
-expect_match '\*\*Belongs in it:\*\* .*- a choice that /build or /review made alone, as "Deciding alone" says: it changes what the user approved' \
+expect_match '\*\*Belongs in it:\*\* .*- a choice that /build, /review or /ship made alone, as "Deciding alone" says: it changes what the user approved' \
   "$(section "$ledger" "What qualifies")" "ledger.md what qualifies: a choice made alone belongs in the ledger"
-expect_match 'Add one row for each choice\. Its Status is `Decided alone`, its Type is `flag`, and Raised at is `build` or `review`\. The Answer has three parts and the date:' \
+expect_match 'Add one row for each choice\. Its Status is `Decided alone`, its Type is `flag`, and Raised at is `build`, `review` or `ship`\. The Answer has three parts and the date:' \
   "$deciding" "ledger.md deciding: one Decided alone row for each choice"
 expect_match '\*\*Chose:\*\* what you did\. - \*\*Other:\*\* the choice that you did not make\. - \*\*Undo:\*\* what the user does to get the other choice\. Name the commit when a `git revert` is enough\.' \
   "$deciding" "ledger.md deciding: the Answer says Chose, Other and Undo"
@@ -45,10 +45,10 @@ expect_match '\*\*A blocker\*\* is a thing that you cannot choose around: a miss
   "$deciding" "ledger.md deciding: a blocker ends the run at the end, Draft first (scenario 4)"
 
 # --- the status and the rules ---
-expect_match '\| `Decided alone` \| `/build` or `/review` made a choice without the user\. The Answer says what was chosen, the other choice, and how to undo it\. Does not block\. \|' \
+expect_match '\| `Decided alone` \| `/build`, `/review` or `/ship` made a choice without the user\. The Answer says what was chosen, the other choice, and how to undo it\. Does not block\. \|' \
   "$(cat "$ledger")" "ledger.md status table: Decided alone does not block"
-expect_match 'Do not write it down without asking\. In `/build` and `/review`, a choice made without the user is a `Decided alone` row, as "Deciding alone" says\. In any other stage, any moment a stage would assume something' \
-  "$rules" "ledger.md rule 1: /build and /review write a Decided alone row"
+expect_match 'Do not write it down without asking\. In `/build`, `/review` and `/ship`, a choice made without the user is a `Decided alone` row, as "Deciding alone" says\. In any other stage, any moment a stage would assume something' \
+  "$rules" "ledger.md rule 1: /build, /review and /ship write a Decided alone row"
 expect_match '`/build` still refuses to start with any Open row\. It prints them and sends the user to `/spec continue \{slice\}`\. It asks nothing\.' \
   "$rules" "ledger.md rule 4: /build sends the user to /spec continue (scenario 5)"
 expect_match '\*\*6\. New items can appear at any stage\.\*\* `/build` and `/review` add a `Decided alone` row for each choice they make, and go on\. Only a blocker sets the spec back to `Draft`, at the end of the run\. `/review` finding an unconsidered case adds a row\.' \

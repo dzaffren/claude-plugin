@@ -41,14 +41,14 @@ Every spec carries this section. It is never deleted, even when empty.
 | `Resolved` | Answered. The answer is in the row, and the spec reflects it. |
 | `Accepted risk` | Knowingly proceeding without an answer. Needs a reason and a date in the Answer column. Does not block. |
 | `Handed to SLICE` | Shape only. The question belongs to a later slice. Does not block the shape. `/spec SLICE` copies it in as `Open`, naming the shape row. |
-| `Decided alone` | `/build` or `/review` made a choice without the user. The Answer says what was chosen, the other choice, and how to undo it. Does not block. |
+| `Decided alone` | `/build`, `/review` or `/ship` made a choice without the user. The Answer says what was chosen, the other choice, and how to undo it. Does not block. |
 
 ## Rules
 
 **1. Never guess silently.** At a pause in `/shape` or `/spec`, ask each
 unknown, as "Asking at a pause" says. Do not write it down without asking. In
-`/build` and `/review`, a choice made without the user is a `Decided alone`
-row, as "Deciding alone" says. In any other stage, any moment a stage would
+`/build`, `/review` and `/ship`, a choice made without the user is a `Decided
+alone` row, as "Deciding alone" says. In any other stage, any moment a stage would
 assume something to keep moving, it writes an `assumption` row first. The
 assumption still gets used — work continues — but it is now visible and owed
 an answer.
@@ -130,7 +130,8 @@ Open items. Answer by number:
 ## Deciding alone
 
 `/build` and `/review` never stop to ask. When a choice comes up, make it, add
-a row and go on.
+a row and go on. `/ship` still asks before it pushes and before it merges. For
+any other choice that it makes alone, it adds a row too.
 
 | The choice | What to do |
 | --- | --- |
@@ -138,10 +139,12 @@ a row and go on.
 | A scenario needs a file that the plan did not name. | Change the file. |
 | A `/review` fix changes what the spec approved: an interface, a message or the scope. | Apply the fix, and edit the spec to match. |
 | A Decisions finding. | Change the code to obey the entry. Do not edit `DECISIONS.md`. Superseding the entry stays the user's call. |
+| A test or check stays red, because the base branch fails the same way. | Leave it. Name the test and the base branch in the row. |
+| A `feat` or `fix` commit gets no CHANGELOG line. | Say why in the row. |
 
 Add one row for each choice. Its Status is `Decided alone`, its Type is
-`flag`, and Raised at is `build` or `review`. The Answer has three parts and
-the date:
+`flag`, and Raised at is `build`, `review` or `ship`. The Answer has three
+parts and the date:
 
 - **Chose:** what you did.
 - **Other:** the choice that you did not make.
@@ -171,8 +174,8 @@ which is worse than no ledger.
 - a consequence the user should weigh (cost, downtime, a breaking change)
 - an interface contract with something outside this repo
 - anything where being wrong means rework, not a small fix
-- a choice that /build or /review made alone, as "Deciding alone" says: it
-  changes what the user approved
+- a choice that /build, /review or /ship made alone, as "Deciding alone"
+  says: it changes what the user approved
 
 **Does not belong in it:**
 - naming

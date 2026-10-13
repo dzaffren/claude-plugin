@@ -216,6 +216,26 @@ A Decisions finding is fixed by changing the code to obey the entry. Add a
 row, as `ledger.md` › "Deciding alone" says, with "supersede the entry
 through `/spec`" as the other choice. `/review` never edits `DECISIONS.md`.
 
+After the fixes, write the result into the spec, just above `## Open items`.
+The ship gate and the PR body read it. Add a `## Review` heading when the spec
+has none. Under it, add one line for this run, then one line for each fix:
+
+```markdown
+## Review
+
+2026-10-13 · 7 raw findings, 4 survived, 4 fixed.
+
+- A01 Broken Access Control · `routes/export.py:14` · put back `@login_required` on `export_ledger` · `9c1d2e3`
+- coverage · `invoice_api/auth.py:22` · a test for the roles-lookup-fails path · `e02b9f6`
+```
+
+A fix line has four parts: the category, `file:line`, the fix in a few words,
+and the fix commit. A clean run writes one line:
+`2026-10-14 · 3 raw findings, 0 survived. Clean.` A second run adds its lines
+below the first. Do not change or remove a line. Do not put a brace pair in a
+line: the ship gate reads it as a blank. Commit the spec as
+`docs(spec): record the review of {slice}`.
+
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.
 
