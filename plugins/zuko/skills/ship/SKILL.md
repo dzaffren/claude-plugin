@@ -105,7 +105,10 @@ gate, and the fix is `--write`. A missing block fails it too, and the fix is
 onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
-proceed on a "probably fine".
+proceed on a "probably fine". Before you route to `/spec` or `/build`, set the
+spec and its row back to `Built`, run `render-readme-block.sh --write` again,
+and commit. The slice is not shipped until its PR merges, and `/spec` starts a
+new version of a `Shipped` spec.
 
 When `/ship` makes a choice alone, such as a test left red because the base
 branch fails the same way, add a row as `ledger.md` › "Deciding alone" says.
