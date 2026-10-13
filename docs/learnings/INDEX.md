@@ -168,3 +168,9 @@ One line per lesson. Loaded into every session in this repo.
 - Copy the spec template's bold labels as they are — `verify-ship-gates.sh`
   greps `**Proof it works**`, and a new name reads as a missing line.
   ([detail](template-labels-are-gate-keys.md))
+- A hook reads a file option's path as written — `$(…)` arrives unexpanded and
+  reads as no file; pass the literal absolute path, and prove the hook reads it.
+  ([detail](hooks-read-the-path-as-written.md))
+- Find a section by its whole heading line, `\n## X\n` — an inline mention in
+  backticks matches first, and a slice with end before start duplicates text.
+  ([detail](find-a-section-by-its-heading-line.md))
