@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse[Bash] hook: block a commit message, tag message, release notes or
-# title, or PR body or title that signs Claude's name. Judges the message text
-# only. Subject format is verify-ship-gates.sh's job, so this stays safe in
+# title, PR body or title, or merge commit message that signs Claude's name.
+# Judges the message text only. Subject format is verify-ship-gates.sh's job, so this stays safe in
 # repos that do not use Conventional Commits.
 set -uo pipefail
 
@@ -10,8 +10,8 @@ cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# The text of every commit message, tag message, release notes and title, and
-# PR body and title on the command line, via lib/git-command.py so that a
+# The text of every commit message, tag message, release notes and title, PR
+# body and title, and merge commit message on the command line, via lib/git-command.py so that a
 # trailer inside a quoted argument to some other command is text, not a
 # message. Each line comes out as "<what it is><tab><line>" so the block can
 # say which one carried it.
@@ -39,6 +39,8 @@ except ValueError:
 
 
 def emit(label, kind, value):
+    if kind is None:
+        return                      # an option's value that is not message text
     if kind == "file":
         if not os.path.isfile(value):
             return                  # stdin, a fifo, a device: never readable
@@ -127,6 +129,17 @@ for args in git_command.invocations(tokens, program="gh"):
 BODY = ("PR body", "text")
 BODY_FILE = ("PR body", "file")
 PR_TITLE = ("PR title", "text")
+MERGE = ("merge commit message", "text")
+MERGE_FILE = ("merge commit message", "file")
+# An option that takes a value which is not message text. It must still take
+# its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
+# or -F and takes the next flag as its text (gh 2.101.0, gh pr edit --help and
+# gh pr merge --help).
+VALUE = (None, None)
+EDIT_VALUES = ("--add-assignee", "--add-label", "--add-project", "--add-reviewer",
+               "--attach", "--base", "--milestone", "--remove-assignee",
+               "--remove-label", "--remove-project", "--remove-reviewer", "--repo")
+MERGE_VALUES = ("--author-email", "--match-head-commit", "--repo")
 
 
 def after_repo(args):
@@ -143,7 +156,9 @@ def after_repo(args):
     return args
 
 
-# "new" is gh's own alias for "create" (gh pr create --help).
+# "new" is gh's own alias for "create" (gh pr create --help). edit replaces an
+# open PR's body and title the same way. merge writes the merge commit on the
+# base branch from --subject and --body (gh pr merge --help) (D54).
 for args in git_command.invocations(tokens, program="gh"):
     if args[:1] != ["pr"]:
         continue
@@ -153,6 +168,20 @@ for args in git_command.invocations(tokens, program="gh"):
             args[1:],
             {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE},
             {"b": BODY, "F": BODY_FILE, "t": PR_TITLE}, drop_equals=True)
+    elif args[:1] == ["edit"]:
+        read_options(
+            args[1:],
+            {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE,
+             **dict.fromkeys(EDIT_VALUES, VALUE)},
+            {"b": BODY, "F": BODY_FILE, "t": PR_TITLE, "B": VALUE, "m": VALUE,
+             "R": VALUE}, drop_equals=True)
+    elif args[:1] == ["merge"]:
+        read_options(
+            args[1:],
+            {"--body": MERGE, "--body-file": MERGE_FILE, "--subject": MERGE,
+             **dict.fromkeys(MERGE_VALUES, VALUE)},
+            {"b": MERGE, "F": MERGE_FILE, "t": MERGE, "A": VALUE, "R": VALUE},
+            drop_equals=True)
 PY
 )
 case $? in

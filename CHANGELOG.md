@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A PR body that /ship replaces with `gh pr edit`, and a merge commit message from `gh pr merge`, can no longer sign Claude's name. The attribution hook now reads both, as it already read `gh pr create`.
+
 ### Security
 
 - A comment, an unclosed quote or an unclosed heredoc no longer hides a force push or a commit on main from the guards. A command the guards cannot read is now blocked, and the block says why. A comment with an apostrophe, such as `# it's done`, no longer stops the guards from reading the command.
