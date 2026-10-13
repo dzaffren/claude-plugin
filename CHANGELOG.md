@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-13
+
 ### Added
 
 - zuko writes to the ASD-STE100 rules for Simplified Technical English: 20 words or fewer in an instruction, and 25 or fewer in a description. Every stage and agent, /status included, reads these rules, and a project's own CLAUDE.md writing rules still win.
@@ -83,7 +85,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/dzaffren/claude-plugin/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
