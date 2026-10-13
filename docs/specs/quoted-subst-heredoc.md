@@ -184,24 +184,7 @@ The full suite gives 2434 passed, 0 failed.
 
 ### Decisions to record
 
-Draft for `DECISIONS.md`:
-
-```
-## D56 · 2026-10-13 · The shared parser refuses a heredoc body in `"$( )"` that changes its quotes
-
-Why: inside a double-quoted `$( )` or backticks, bash skips the quotes in
-a heredoc body, and the parser read them. One `"` in the body made the
-lines after the heredoc text, and a force push there passed
-block-dangerous.sh (main 4ef85fe, v2.4.1). Each body line must now leave
-the parser's state as it found it.
-Rejected: a check only at the line that ends the body (bash ends it at
-the next backtick inside backticks, and bash 5.1 also at a line `EOF)`),
-dropping the body as other heredoc bodies are (block-attribution.sh reads
-the commit body in the `-m` word), refusing each `<<` inside `"$( )"` (it
-blocks the standard commit form).
-Source: specs/quoted-subst-heredoc.md
-Status: active
-```
+Recorded as D58.
 
 ## Review
 

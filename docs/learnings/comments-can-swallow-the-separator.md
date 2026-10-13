@@ -58,3 +58,12 @@ can meet it, not only the place you had in mind.
 text but the count read as a closer, and a backslash-newline between `$(` and
 `(`, which bash joins but the line-by-line walk does not. List the places
 first: quotes, each bracket kind, a backslash-newline, a heredoc, a comment.
+
+## Again inside `"$( )"` (2026-10-13, quoted-subst-heredoc)
+
+bash skips a heredoc body only where it reads a command, and inside `"$( )"`
+the walk thought it was in a string, so a `"` in the body hid the lines after
+it. Where bash and the walk can disagree on where a skipped region ends, do
+not try to find bash's exact end: require each line in it to leave the walk's
+state unchanged. /review then showed the region's openers count too: a `<<`
+on a line the walk read as body opened a real heredoc for bash.
