@@ -232,6 +232,7 @@ each row that lacks a part:
 Ship gates FAILED:
 - O7  Decided alone row has no "Undo:"
 - O9  Decided alone row has no "Other:" and no "Undo:"
+- O4  Decided alone row has an empty "Undo:"
 ```
 
 On a pass it reports what it checked, so a spec with no rows is still a
@@ -353,7 +354,7 @@ Chose, Other and Undo), D43, and D46 to D50, drafted below.
 | `plugins/zuko/skills/ship/SKILL.md:95` | Add: a choice that `/ship` makes alone gets a row, as `ledger.md` › "Deciding alone" says. Commit the spec, then run the gate again. | O4. |
 | `plugins/zuko/skills/ship/SKILL.md:106` | Rewrite "The PR": render into `.git/zuko-pr-body.md`, then the order, the template rule, the 300 words, `--body-file`, and the text for no PR. | Scenarios 1, 2 and 4. O1, O3, O5, O10, O13. |
 | `plugins/zuko/skills/ship/SKILL.md:137` | A check that is red on the base branch too: add the row, commit, push, render again and run `gh pr edit --body-file`. | O12. |
-| `plugins/zuko/skills/review/SKILL.md:213` | Add: after the fixes, write the `## Review` section as Interface says. Do not put a brace pair in a line. Commit it as `docs(spec): record the review of {slice}`. | Scenario 3. O2, O8. |
+| `plugins/zuko/skills/review/SKILL.md:213` | Add: after the fixes, write the `## Review` section as Interface says. Do not put a word in a line that the placeholder check reads as a blank. Commit it as `docs(spec): record the review of {slice}`. | Scenario 3. O2, O8. |
 | `plugins/zuko/references/ledger.md:44` | The Status row: "`/build`, `/review` or `/ship` made a choice without the user." | O4. |
 | `plugins/zuko/references/ledger.md:50` | Rule 1: "In `/build`, `/review` and `/ship`, a choice made without the user is a `Decided alone` row". | O4. |
 | `plugins/zuko/references/ledger.md:132` | "Deciding alone": a sentence for `/ship` and the two table rows from Interface. Raised at is `build`, `review` or `ship`. | O4. |
@@ -376,8 +377,8 @@ Usage: pr_body.py check  <spec>
 ```
 
 - It reads the table under `## Open items` and the lines under `## Review`.
-  Both must be outside code fences. A table or heading in an example does not
-  count.
+  Both must be outside code fences. A line inside a fence belongs to no
+  section, so a table, a run line or a heading in an example does not count.
 - A row is `Decided alone` when its sixth cell is exactly that. A cell splits
   on each `|` that has no backslash before it.
 - The parts are the text after `Chose:`, `Other:` and `Undo:`. A date at the
@@ -387,8 +388,9 @@ Usage: pr_body.py check  <spec>
   Undo`, `Decided alone: 1 row, with Chose, Other and Undo` or `Decided alone:
   no rows`, then `Review: 1 run recorded`.
 - `check` exit 1 prints one line for each problem, with no `- `. The gate adds
-  it. The problems are a row that lacks a part, no `## Review` section, a
-  Review section with no run line, and no `## Open items` section.
+  it. The problems are a row that lacks a part, a row with an empty part, no
+  `## Review` section, a Review section with no run line, and no
+  `## Open items` section.
 - `render` exit 0 prints Your call and Review as Interface shows. One row says
   "1 thing was decided without you. It can be undone." `render` exit 1 prints
   the `check` problems to stderr and nothing to stdout.
@@ -459,7 +461,7 @@ Single chunk. Order:
 
 | Risk | Mitigation |
 | --- | --- |
-| A fix line in Review holds a route parameter in braces, and the placeholder check fails the spec. | The review rule says no brace pair in a line. The gate names the line, and the fix is to reword it. |
+| A fix line in Review holds a route parameter in braces, or another word that the placeholder check reads as a blank, and the gate fails the spec. | The review rule names each of those words and says to name the thing in other words (O14). The gate names the line. |
 | `--body-file "$(git rev-parse --git-dir)/…"` reaches the attribution hook unexpanded. The hook finds no file and reads no body. | `/ship` runs `git rev-parse --absolute-git-dir` first and passes the literal path. The e2e proves that the hook reads it there and blocks a signed body. |
 | `gh pr edit --body-file` has no attribution hook (D20 covers `create`). | `/ship` changes only the Your call part, from the same render. The rest of the file is the one that the hook read at create. |
 | A spec built before this slice has no Review section, and its ship fails. | The message says to run `/review`, which writes the section. Every spec in this repo has shipped. |
@@ -469,6 +471,14 @@ Single chunk. Order:
 ### Decisions to record
 
 Recorded as D46, D47, D48, D49, D50.
+
+## Review
+
+2026-10-13 · 4 raw findings, 3 survived, 3 fixed.
+
+- correctness · `plugins/zuko/scripts/lib/pr_body.py:37` · `sections` puts no line from inside a fence in a section · `7f27f15`
+- correctness · `plugins/zuko/scripts/lib/pr_body.py:108` · an empty Chose, Other or Undo is a problem line · `62a43f0`
+- correctness · `plugins/zuko/skills/review/SKILL.md:235` · the Review rule names each word that the gate reads as a blank · `78ed5a2`
 
 ## Open items
 
@@ -487,6 +497,8 @@ Recorded as D46, D47, D48, D49, D50.
 | O11 | What reads the `Decided alone` rows: one `pr_body.py` script for the gate and the body, or an awk check in the gate while Claude copies the rows? | question | spec p3 | user | Resolved | One script, `scripts/lib/pr_body.py`. `check` runs in `verify-ship-gates.sh`, and `render` prints Your call and Review. One parser serves both, and a test compares its output. 2026-10-13 |
 | O12 | `/ship` adds a row after the PR is open, for a CI check that is red on the base branch too. What happens to the body? | question | spec p3 | user | Resolved | Commit the row and push. Then render the body again and replace it with `gh pr edit --body-file`. 2026-10-13 |
 | O13 | The Review lines alone take the body over 300 words. What does `/ship` do? | question | spec p3 | user | Resolved | Shorten What ships and Verify by hand first. Never cut a Your call row or a Review line. When the body is still over 300 words, open the PR and give the count in the reply. 2026-10-13 |
+| O14 | `/review`: the Review rule said "Do not put a brace pair in a line". The ship gate's placeholder check also fails a line with a to-do marker or a TBD in brackets, and the rule forbids a change to the line after. | flag | review | user | Decided alone | Chose: the rule names all three words and says to name the thing in other words. Other: make the placeholder check skip the Review section. Undo: git revert 78ed5a2, then skip the Review section in the placeholder check of verify-ship-gates.sh. 2026-10-13 |
+| O15 | `/review`: Interface › The gate lines named only a missing part, as `has no "Undo:"`. An Undo with only a date passed the gate, and the PR showed an empty Undo cell. | flag | review | user | Decided alone | Chose: a new problem line, `has an empty "Undo:"`. Other: report an empty part with the approved `has no "Undo:"` line. Undo: in `pr_body.py` read, count an empty part as missing. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
