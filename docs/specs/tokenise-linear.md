@@ -1,6 +1,6 @@
 # Tokenise linear
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -185,10 +185,10 @@ payload helper's file handoff.
 
 | Scenario | Test |
 | --- | --- |
-| 1. Verifier command refused | `test-scope-verifier-bash.sh`: the 1.1 MB `git show` case, exit 2, the message, and the time. |
+| 1. Verifier command refused | `test-scope-verifier-bash.sh`: the 1.1 MB `git show` case, exit 2 and the message. Its 20 s alarm bounds the time; the guard took 0.34 s. |
 | 2. Main-thread raw-text pass | `test-block-dangerous.sh`: a 1.1 MB `git status`, exit 0, under 2 s. |
 | 3. Long force push blocked | `test-block-dangerous.sh`: a 1.1 MB force push, exit 2, the message. |
-| 4. Long heredoc body | `test-block-dangerous.sh`: a 200,000-character body, then a force push, exit 2. |
+| 4. Long heredoc body | `test-block-dangerous.sh`: `git-command.py` parses a 200,000-character body and a force push, exit 0, and prints `push --force origin main`. A 70,000-character command with no heredoc exits 3 and names the limit. |
 | 5. Release suite | Run `run.sh scope-verifier-bash` 5 times by hand, then `release.py plan`. |
 
 ```bash
