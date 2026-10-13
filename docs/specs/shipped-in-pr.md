@@ -57,6 +57,7 @@ stateDiagram-v2
     Refined --> Built: /build
     Built --> Shipped: /ship refresh, on the branch
     Shipped --> Shipped: second /ship run after red CI
+    Shipped --> Built: a failed gate routes to /spec or /build
 ```
 
 ## Acceptance criteria
@@ -201,6 +202,13 @@ Single chunk.
 
 Recorded as D60, D61.
 
+## Review
+
+2026-10-13 · 3 raw findings, 2 survived, 2 fixed.
+
+- correctness · `plugins/zuko/skills/ship/SKILL.md:41` · put the spec and its row back to Built before a failed gate routes to /spec · `cca830d`
+- correctness · `plugins/zuko/skills/ship/SKILL.md:71` · take the base branch before the hub page is published · `aedb860`
+
 ## Open items
 
 | ID  | What                                                                                                                                                         | Type     | Raised at | Owner | Status | Answer |
@@ -208,6 +216,7 @@ Recorded as D60, D61.
 | O1  | When does /ship republish the hub page? Before the push, the hub can show a slice as Shipped while its PR is still open.                                      | question | spec p1   | user  | Resolved   | Before the push, with the other writes. A first publish puts its link in the same commit. Other: only at /release. 2026-10-13      |
 | O2  | `Shipped` on `main` changes meaning: from "merged, and the signal seen" to "merged with every gate green". The signal check still runs, but does not gate the word. | flag     | spec p1   | user  | Accepted risk   | Accepted: the signal check still runs after the merge, and a missing signal goes to /debug. A second PR for each slice costs more. 2026-10-13      |
 | O3  | Does the ship gate also fail a spec, or its `OVERVIEW.md` row, that is not `Shipped`? That changes seven test fixtures and takes the slice off the light path. | question | spec p1   | user  | Resolved   | No. The flip sits in the refresh step, which already sets the row each time. Other: a gate check that changes seven fixtures. 2026-10-13      |
+| O4  | The States diagram had no way back from `Shipped`. A gate that fails after the refresh, and routes to /spec, met a `Shipped` spec, and /spec starts a new version of one. | flag     | review    | user  | Decided alone | Chose: a failed gate that routes to /spec or /build first sets the spec and its row back to `Built`, renders the README again and commits (`cca830d`). Other: set the spec to `Shipped` only after the gate passes, with a second commit and a second gate run. Undo: `git revert cca830d`, then move the flip after the gate. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
