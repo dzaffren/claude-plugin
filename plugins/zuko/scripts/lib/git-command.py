@@ -45,7 +45,13 @@ CONTINUATION = re.compile(r"\\\n")
 # a 1.1 MB command took a guard 20 s, and a hook that times out lets the call
 # through. Over this length tokenise refuses at once, and every caller takes
 # its own cannot-parse path (D51). Heredoc bodies are gone before it counts.
+# A long command is valid shell and runs, unlike most text shlex refuses, so
+# main() gives it its own exit code and block-dangerous.sh blocks it.
 MAX_COMMAND_CHARS = 65536
+
+
+class TooLong(ValueError):
+    pass
 
 # git's own options, which sit before the subcommand. These take a value.
 GLOBAL_OPTIONS_WITH_VALUE = {
@@ -111,7 +117,7 @@ def strip_heredocs(command):
 def tokenise(command):
     command = CONTINUATION.sub("", command)
     if len(command) > MAX_COMMAND_CHARS:
-        raise ValueError("the command is over %d characters" % MAX_COMMAND_CHARS)
+        raise TooLong("the command is over %d characters" % MAX_COMMAND_CHARS)
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"
@@ -264,6 +270,9 @@ def main():
     command = sys.stdin.read()
     try:
         tokens = tokenise(strip_heredocs(command))
+    except TooLong as err:
+        sys.stderr.write("git-command.py: %s\n" % err)
+        return 4
     except ValueError as err:
         sys.stderr.write("git-command.py: cannot parse the command: %s\n" % err)
         return 3
