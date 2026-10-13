@@ -428,6 +428,20 @@ run_hook 'x=$(( 1 + 2 ))
 git status'
 expect_exit 0 "$hook_status" "arithmetic with no << does not block"
 
+# A bracket closes only its own kind: in `${v:-)<<X}` the `)` is text, and
+# the `<<` is still inside `${ }` (review of arith-heredoc).
+for form in 'echo ${v:-)<<X}' 'echo ${v:-]<<X}'; do
+  run_hook "$form
+git push --force origin main
+X"
+  expect_exit 2 "$hook_status" "unclear <<: blocked after a stray closer, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'echo ${v:-(}; cat <<X
+git status
+X
+git push --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_match '^push --force origin main$' "$parsed" "a ( inside \${ } does not keep it open past its }"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
