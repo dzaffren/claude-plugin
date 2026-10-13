@@ -143,7 +143,7 @@ case "$branch" in
   main|master|"") problems="$problems
 - On branch '${branch:-detached}'. Ship from a feature branch." ;;
   *)
-    printf '%s' "$branch" | grep -qE '^(feat|fix|chore|docs|refactor|test)/[^/]+$' || problems="$problems
+    grep -qE '^(feat|fix|chore|docs|refactor|test)/[^/]+$' <<<"$branch" || problems="$problems
 - Branch '$branch' is not {type}/{slice}. Types: feat fix chore docs refactor test." ;;
 esac
 
@@ -193,7 +193,7 @@ else
       subject=$(git -C "$dir" log -1 --format=%s "$sha")
       message=$(git -C "$dir" log -1 --format=%B "$sha")
       reasons=""
-      if ! printf '%s' "$subject" | grep -qE '^(feat|fix|chore|docs|refactor|test)(\([a-z0-9._-]+\))?!?: .+'; then
+      if ! grep -qE '^(feat|fix|chore|docs|refactor|test)(\([a-z0-9._-]+\))?!?: .+' <<<"$subject"; then
         reasons="$reasons
     $sha  subject is not {type}({scope}): {subject}
              \"$subject\""
@@ -205,15 +205,15 @@ else
         [ "${#subject}" -gt 72 ] && reasons="$reasons
     $sha  subject is longer than 72 characters"
       fi
-      if printf '%s\n' "$message" | grep -qiE "$ban_session"; then
+      if grep -qiE "$ban_session" <<<"$message"; then
         reasons="$reasons
     $sha  carries a Claude-Session trailer"
       fi
-      if printf '%s\n' "$message" | grep -qiE "$ban_coauthor"; then
+      if grep -qiE "$ban_coauthor" <<<"$message"; then
         reasons="$reasons
     $sha  carries a Co-Authored-By trailer naming Claude"
       fi
-      if printf '%s\n' "$message" | grep -qiE "$ban_generated"; then
+      if grep -qiE "$ban_generated" <<<"$message"; then
         reasons="$reasons
     $sha  carries a \"Generated with Claude Code\" line"
       fi

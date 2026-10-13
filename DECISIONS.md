@@ -630,3 +630,29 @@ hides a heredoc body), joining continued lines before the walk (time grows
 with the square of the joined lines, D51).
 Source: specs/arith-heredoc.md
 Status: active
+
+## D56 · 2026-10-13 · The attribution hook gives each value option of gh pr create and gh release create its value
+
+Why: a value option the create tables did not know left its value in the
+walk, so -Bnext read as -t and --target -t took -n as the title. The signed
+body or notes after it were never read (checked on v2.4.1, main 4ef85fe).
+Rejected: listing only -B and --target, the two found cases (-Hfeat and
+--label -t fail the same way), reading -T/--template as a body file (gh
+2.101.0 refuses it with --body, and needs a prompt without one, O2).
+Source: specs/gh-create-value-options.md
+Status: active
+
+## D57 · 2026-10-13 · Scripts with pipefail give grep -q its text with a here-string
+
+Why: under pipefail, grep -q can exit at a match before printf writes its next
+line. printf then dies of SIGPIPE, the pipeline returns 141, and the if reads
+the match as a miss. With strace pausing printf, block-dangerous.sh passed a
+force push, and secret-scan.sh passed a staged key. bash writes a here-string
+in full before grep starts, so no writer can die. A static check in
+test-secret-scan.sh holds every script with pipefail to this.
+Rejected: process substitution (printf can still die, and pipefail does not
+see it, O5), [[ =~ ]] (^ and $ match only at the ends of the whole text),
+set +o pipefail around each check (more lines at each of 14 sites), a strace
+test alone (it cannot run where strace is missing, such as macOS, O1).
+Source: specs/pipefail-grep-race.md
+Status: active

@@ -249,6 +249,24 @@ expect_no_match '.' "$hook_out$hook_err" "a clean gh release create prints nothi
 run_hook 'gh release create v2.2.0 -F -'
 expect_exit 0 "$hook_status" "a gh release -F - reads stdin and is skipped"
 
+# Every other option of gh release create that takes a value takes it too
+# (gh 2.101.0, gh release create --help). Else --target -t reads -n as the
+# title, and the signed notes are never read.
+signed_text="Generated with Claude"" Code"
+for form in "gh release create v2.4.1 --target -t -n '$signed_text'" \
+  "gh release create v2.4.1 --target -t -F $work/tag-signed.txt" \
+  "gh release create v2.4.1 --notes-start-tag -t -n '$signed_text'" \
+  "gh release create v2.4.1 --discussion-category -t -n '$signed_text'" \
+  "gh release create v2.4.1 --repo -t -n '$signed_text'" \
+  "gh release create v2.4.1 -Ro/rept -n '$signed_text'"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution after a value option: $form"
+  expect_match 'the release notes carry' "$hook_err" "the block names the release notes: $form"
+done
+
+run_hook "gh release create v2.4.1 --target main --notes-start-tag v2.4.0 -t v2.4.1 -n 'clean notes'"
+expect_exit 0 "$hook_status" "allows a clean gh release create with value options"
+
 run_hook 'gh release view v2.2.0 --json body'
 expect_exit 0 "$hook_status" "allows a gh release command that writes no notes"
 
@@ -343,6 +361,24 @@ expect_no_match '.' "$hook_out$hook_err" "a clean gh pr create prints nothing"
 
 run_hook "gh pr create -t 'feat(export): write ledger csv' -F $work/pr-clean.md"
 expect_exit 0 "$hook_status" "allows a clean gh pr -F body file"
+
+# Every other option of gh pr create that takes a value takes it too (gh
+# 2.101.0, gh pr create --help). Else -Bnext reads as -t, takes --body as the
+# title, and the signed body is never read.
+for form in "gh pr create -Bnext --body '$signed_text'" \
+  "gh pr create -Hfeat -b '$signed_text'" \
+  "gh pr create -mSprint -F $work/pr-signed.md" \
+  "gh pr create -Rowner/rept -b '$signed_text'" \
+  "gh pr create --base -t --body '$signed_text'" \
+  "gh pr create --label -t -b '$signed_text'" \
+  "gh pr create --template -t -F $work/pr-signed.md"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution after a value option: $form"
+  expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "the block names the PR body: $form"
+done
+
+run_hook "gh pr create -B main -H feat -l bug -m Sprint -t 'feat(export): write ledger csv' -b 'Adds the ledger exporter.'"
+expect_exit 0 "$hook_status" "allows a clean gh pr create with value options"
 
 # gh pr edit replaces an open PR's body or title, as /ship does when a row
 # lands after the PR is open. gh pr merge writes the merge commit on the base

@@ -114,28 +114,33 @@ for args in git_command.invocations(tokens):
             {"--message": (label, "text"), "--file": (label, "file")},
             {"m": (label, "text"), "F": (label, "file")}, abbreviate=True)
 
+# An option that takes a value which is not message text. It must still take
+# its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
+# or -F and takes the next flag as its text (gh 2.101.0, the --help of
+# gh release create, gh pr create, gh pr edit and gh pr merge).
+VALUE = (None, None)
 NOTES = ("release notes", "text")
 NOTES_FILE = ("release notes", "file")
 TITLE = ("release title", "text")
+RELEASE_VALUES = ("--discussion-category", "--notes-start-tag", "--repo", "--target")
 
 # "new" is gh's own alias for "create" (gh release create --help).
 for args in git_command.invocations(tokens, program="gh"):
     if args[:1] == ["release"] and args[1:2] in (["create"], ["new"]):
         read_options(
             args[2:],
-            {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE},
-            {"n": NOTES, "F": NOTES_FILE, "t": TITLE}, drop_equals=True)
+            {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE,
+             **dict.fromkeys(RELEASE_VALUES, VALUE)},
+            {"n": NOTES, "F": NOTES_FILE, "t": TITLE, "R": VALUE}, drop_equals=True)
 
 BODY = ("PR body", "text")
 BODY_FILE = ("PR body", "file")
 PR_TITLE = ("PR title", "text")
 MERGE = ("merge commit message", "text")
 MERGE_FILE = ("merge commit message", "file")
-# An option that takes a value which is not message text. It must still take
-# its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
-# or -F and takes the next flag as its text (gh 2.101.0, gh pr edit --help and
-# gh pr merge --help).
-VALUE = (None, None)
+CREATE_VALUES = ("--assignee", "--attach", "--base", "--head", "--label",
+                 "--milestone", "--project", "--recover", "--repo", "--reviewer",
+                 "--template")
 EDIT_VALUES = ("--add-assignee", "--add-label", "--add-project", "--add-reviewer",
                "--attach", "--base", "--milestone", "--remove-assignee",
                "--remove-label", "--remove-project", "--remove-reviewer", "--repo")
@@ -166,8 +171,11 @@ for args in git_command.invocations(tokens, program="gh"):
     if args[:1] in (["create"], ["new"]):
         read_options(
             args[1:],
-            {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE},
-            {"b": BODY, "F": BODY_FILE, "t": PR_TITLE}, drop_equals=True)
+            {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE,
+             **dict.fromkeys(CREATE_VALUES, VALUE)},
+            {"b": BODY, "F": BODY_FILE, "t": PR_TITLE, "a": VALUE, "B": VALUE,
+             "H": VALUE, "l": VALUE, "m": VALUE, "p": VALUE, "r": VALUE,
+             "T": VALUE, "R": VALUE}, drop_equals=True)
     elif args[:1] == ["edit"]:
         read_options(
             args[1:],

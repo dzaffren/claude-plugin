@@ -138,7 +138,7 @@ $hits"
 if [ -n "$known_tokens" ]; then
   hits=$(printf '%s\n' "$scan" | while read -r f; do
     grep -ohE -- 'var\(--[a-zA-Z0-9_-]+' "$f" 2>/dev/null | sed 's/var(//' | while read -r tok; do
-      printf '%s\n' "$known_tokens" | grep -qxF -- "$tok" || echo "$f: $tok"
+      grep -qxF -- "$tok" <<<"$known_tokens" || echo "$f: $tok"
     done
   done | sort -u | head -8)
   [ -n "$hits" ] && problems="$problems

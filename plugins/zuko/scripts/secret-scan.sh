@@ -20,7 +20,7 @@ else
   subject="$cmd"
   commit_re='(^|[;&|[:space:]])git commit'
 fi
-printf '%s\n' "$subject" | grep -qE "$commit_re" || exit 0
+grep -qE "$commit_re" <<<"$subject" || exit 0
 
 # Scan the staged diff each commit takes: the directory it runs in, as
 # block-dangerous.sh works it out. Unknown or unparsed scans both the start and
@@ -31,7 +31,7 @@ if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-c
   commit_dirs=""
   while IFS= read -r line; do
     dir=${line%%$'\t'*}
-    printf '%s\n' "${line#*$'\t'}" | grep -qE "$commit_re" && commit_dirs+="${dir:-$anywhere}"$'\n'
+    grep -qE "$commit_re" <<<"${line#*$'\t'}" && commit_dirs+="${dir:-$anywhere}"$'\n'
   done <<<"$dirs"
   [ -n "$commit_dirs" ] || commit_dirs="$anywhere"
 fi
