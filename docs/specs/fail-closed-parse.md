@@ -231,32 +231,7 @@ Single chunk. The tests first, then `git-command.py`, then
 
 ### Decisions to record
 
-```markdown
-## D52 · 2026-10-13 · block-dangerous blocks a command that the shared parser cannot read
-
-Why: on exit 3, the raw-text patterns missed `git -C . push --force` and
-`git -C . commit`. A comment with an apostrophe, or an unclosed heredoc, sent
-a force push to that check, and bash ran it. bash runs the lines before an
-unclosed quote, and an unclosed heredoc to the end of the text, so "bash
-cannot run it either" was false. This corrects the Why of D51: not every
-caller's cannot-parse path was safe.
-Rejected: keeping the raw-text check (proven bypass), a raw pattern that
-reads git's options (each spelling that git takes is a new miss), a block in
-each guard (block-dangerous.sh runs on every Bash call, and its block covers
-them).
-Source: specs/fail-closed-parse.md
-Status: active
-
-## D53 · 2026-10-13 · The shared parser reads `#` comments as bash does
-
-Why: shlex started a comment at any `#`, so `echo x#;` hid the command after
-it. The heredoc pass read quotes and `<<` inside comments, so `# it's` made
-the parser refuse the command, and `# <<EOF` hid the lines after it.
-Rejected: refusing `#`, as the agent fences do (a main-thread command needs
-comments), keeping shlex's comment rule (proven bypass).
-Source: specs/fail-closed-parse.md
-Status: active
-```
+Recorded as D52, D53.
 
 ## Open items
 
