@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-10-13
+
 ### Fixed
 
 - A value option such as `-B next` in `gh pr create`, or `--target` in `gh release create`, no longer hides a PR body or release notes that sign Claude's name from the attribution hook. The hook now knows every option of both that takes a value.
@@ -15,6 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A force push, a commit on main or a staged secret can no longer pass the guards when the machine is slow. A guard that piped text into a check could read a match as a miss; each check now gets its text in one piece.
 - A heredoc inside a double-quoted `$( )` or backticks, with a quote in its body, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why. The usual `git commit -m "$(cat <<'EOF' ...` form still works, and its message is still checked.
 - A `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift and not a heredoc, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why.
+- Released without pentest: The pentester run was stopped by a safety classifier before it attacked the parser and hooks. Each of the four fixes in this range was reviewed with bypass inputs run against bash, and every review finding is fixed and tested.
 
 ## [2.4.1] - 2026-10-13
 
@@ -105,7 +108,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...HEAD
+[2.4.2]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/dzaffren/claude-plugin/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/dzaffren/claude-plugin/compare/v2.3.0...v2.3.1

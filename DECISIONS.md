@@ -673,3 +673,10 @@ blocks the standard commit form), one rule for each way bash ends a body
 early (each missed way is a bypass, O6).
 Source: specs/quoted-subst-heredoc.md
 Status: active
+
+## D59 · 2026-10-13 · Release v2.4.2 ships without a pentest
+
+Why: The pentester run was stopped by a safety classifier before it attacked the parser and hooks. Each of the four fixes in this range was reviewed with bypass inputs run against bash, and every review finding is fixed and tested.
+Rejected: running the pentest before v2.4.2 (The pentester run was stopped by a safety classifier before it attacked the parser and hooks. Each of the four fixes in this range was reviewed with bypass inputs run against bash, and every review finding is fixed and tested.)
+Source: docs/security/v2.4.2/report.md
+Status: active
