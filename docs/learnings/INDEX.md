@@ -186,3 +186,6 @@ One line per lesson. Loaded into every session in this repo.
 - In a script with `pipefail`, never pipe text into `grep -q` — an early exit
   gives the writer SIGPIPE, and a match reads as a miss. Use `<<<"$x"`.
   ([detail](pipefail-turns-an-early-grep-exit-into-a-miss.md))
+- Take `main` into a slice branch before appending to `DECISIONS.md`, and give
+  the merge a `chore(git):` subject — the naming gate reads merges too.
+  ([detail](reword-a-merge-from-main.md))
