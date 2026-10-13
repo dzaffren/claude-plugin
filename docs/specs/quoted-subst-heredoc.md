@@ -89,6 +89,14 @@ Scenario: the standard commit form still parses, with its body
   Then it prints the commit, with the body in the -m word
   And block-dangerous.sh blocks it on main as a commit on main
   And block-attribution.sh blocks a Claude trailer in that body as the commit message
+
+Scenario: a heredoc that bash opens after the first one ends is checked
+  Given bash ends the first body at EOF) or a closing backtick, or never opens it
+    because its << is in single quotes or in ${ }
+  And the next line opens $(cat <<X, with EOF and say "hi in X's body
+  And a force push and a lone " come after the )" line
+  When block-dangerous.sh sees it
+  Then it exits 2
 ```
 
 ## Scope
@@ -110,7 +118,9 @@ Scenario: the standard commit form still parses, with its body
 
 Once the walk is lost, `openers_in` notes each `<<` inside double quotes in
 the state, as `inner`. It notes the delimiter, whether it is `<<-`, and
-whether it is quoted. It notes only the ones on a line outside such a body.
+whether it is quoted. It notes the ones on a body line too: bash may have
+ended that body already, or never opened it, and then the `<<` opens a real
+heredoc.
 `strip_heredocs` keeps the body lines, so the `-m` word keeps its text.
 
 For each body line, `strip_heredocs` compares the walk's state before and after
@@ -121,8 +131,9 @@ exactly the delimiter, or the delimiter after tabs for `<<-`, as in bash.
 The walk then needs no rule for where bash ends the body early. Inside backticks,
 bash ends it at the next backtick, and bash 5.1 also ends it at a line `EOF)`.
 Up to that point, each line left the state as it was. So bash and the walk are
-both in the double-quoted string again. A later line that changes the state is
-refused, so here the walk can only block too much.
+both in the double-quoted string again. A `<<` on one of those lines is noted
+too, so a heredoc that bash opens there is checked up to its end. A later line
+that changes the state is refused, so here the walk can only block too much.
 
 The walk must not end a body before bash does, so it refuses:
 
@@ -138,9 +149,9 @@ Relies on: D52, D53, D55.
 | File                                                     | What changes                                                                          | Why            |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------- | -------------- |
 | `plugins/zuko/scripts/lib/git-command.py:32`             | `INNER_HEREDOC` reads a delimiter only when a blank, `;&\|()<>` or the line end follows it | scenario 2     |
-| `plugins/zuko/scripts/lib/git-command.py:140`            | `openers_in` notes each `<<` in double quotes once the walk is lost                      | scenarios 1, 2 |
+| `plugins/zuko/scripts/lib/git-command.py:141`            | `openers_in` notes each `<<` in double quotes once the walk is lost, on a body line too  | scenarios 1, 2, 4 |
 | `plugins/zuko/scripts/lib/git-command.py:218`            | `strip_heredocs` refuses a body line that changes the state, or a body with no known end | scenarios 1, 2 |
-| `plugins/zuko/scripts/tests/test-block-dangerous.sh:462` | eight refused forms through the hook, two forms that still parse, the commit form        | scenarios 1-3  |
+| `plugins/zuko/scripts/tests/test-block-dangerous.sh:462` | twelve refused forms through the hook, two forms that still parse, the commit form       | scenarios 1-4  |
 | `plugins/zuko/scripts/tests/test-block-attribution.sh:451` | the commit form with and without a Claude trailer through the hook                     | scenario 3     |
 
 ### Non-functionals
@@ -148,9 +159,9 @@ Relies on: D52, D53, D55.
 |                      |                                                                                                                        |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **Load**             | unchanged; one compare of the walk's state for each line                                                               |
-| **Breaks first**     | a body line with a quoted phrase that holds an apostrophe, such as `the "can't" case`. 2 of 9,410 recorded commands are newly refused |
+| **Breaks first**     | a body line with a quoted phrase that holds an apostrophe, such as `the "can't" case`. 2 of 9,410 recorded commands are newly refused. So is a quoted body that names a `<<word`; none of 9,458 does |
 | **Security surface** | closes the force-push bypass in O2 of `arith-heredoc`                                                                  |
-| **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` gives 188 passed                                              |
+| **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` gives 196 passed                                              |
 | **Rollout**          | no flag: a hook script. Rollback is `git revert` of the fix commit                                                     |
 
 The replay ran each of 9,410 recorded Bash commands through the parser on
@@ -166,9 +177,10 @@ invocations, so each `-m` body is the same.
 **E2E:** `bash plugins/zuko/scripts/tests/run.sh block-dangerous` pipes each
 command as a real hook payload into `block-dangerous.sh`. Before the fix, 16
 checks failed: the hook exited 0 for each of the eight refused forms, with no
-block message. They pass after it.
+block message. They pass after it. The review's four forms failed 8 more
+checks before its fix, and pass after it.
 `bash plugins/zuko/scripts/tests/run.sh block-attribution` gives 148 passed.
-The full suite gives 2426 passed, 0 failed.
+The full suite gives 2434 passed, 0 failed.
 
 ### Decisions to record
 
@@ -191,6 +203,12 @@ Source: specs/quoted-subst-heredoc.md
 Status: active
 ```
 
+## Review
+
+2026-10-13 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/lib/git-command.py:141` · note a `<<` on a body line too, so a heredoc that bash opens after the first body ends is checked · `c3c6074`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -200,6 +218,7 @@ Status: active
 | O3 | `/debug` found two more gaps inside `"$( )"`. `echo "$(git push --force origin main)"` passes the guard, because the parser never reads the command in it. A single quote, as in `"$(echo 'a"b')"`, changes the parser's quotes with no heredoc. bash runs the lines after it. Both are on `main`. | flag | /debug | user | Decided alone | Chose: leave them out of this fix. Both need the walk to follow the nested command as bash does. The first also needs new words for the callers. Other: fix them here. Undo: spec them through /spec. 2026-10-13 |
 | O4 | `/debug` found gaps in the other heredoc path. It ends a body at an indented `EOF`, reads `<<EOF-1` as `EOF`, misses `<<\EOF`, and ignores a backslash before the delimiter line. Each hides lines that bash runs, on `main`. | flag | /debug | user | Decided alone | Chose: leave them out of this fix. Other: fix them here. Undo: run /zuko:debug on them. 2026-10-13 |
 | O5 | `/debug` found that a `"two words"` phrase in the body of the standard commit form cuts the `-m` word. `block-attribution.sh` then misses a Claude trailer after it, on `main`. | flag | /debug | user | Decided alone | Chose: leave it out of this fix, which keeps the words as `main` builds them. Other: fix it here. Undo: spec it through /spec. 2026-10-13 |
+| O6 | `/review`: the walk noted a `<<` only outside a body. bash may end the first body early, at `EOF)` or a closing backtick, or never open it, so a second, real heredoc went unchecked, and a force push after it passed. | flag | review | user | Decided alone | Chose: note every `<<` in double quotes once the walk is lost, on a body line too. A quoted body that only names a `<<word`, such as a commit message about heredocs, is now refused; none of 9,458 recorded commands does so. Other: one narrow rule for each early end and each opener that bash does not open. Undo: git revert c3c6074. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
