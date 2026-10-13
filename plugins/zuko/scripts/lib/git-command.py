@@ -41,6 +41,12 @@ REDIRECTION_CHARS = set("<>&")
 # it into `pu` and `sh` and the force-push guard would never see a `push`.
 CONTINUATION = re.compile(r"\\\n")
 
+# shlex grows a word one character at a time, so its parse time is quadratic:
+# a 1.1 MB command took a guard 20 s, and a hook that times out lets the call
+# through. Over this length tokenise refuses at once, and every caller takes
+# its own cannot-parse path (D51). Heredoc bodies are gone before it counts.
+MAX_COMMAND_CHARS = 65536
+
 # git's own options, which sit before the subcommand. These take a value.
 GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
@@ -104,6 +110,8 @@ def strip_heredocs(command):
 
 def tokenise(command):
     command = CONTINUATION.sub("", command)
+    if len(command) > MAX_COMMAND_CHARS:
+        raise ValueError("the command is over %d characters" % MAX_COMMAND_CHARS)
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"

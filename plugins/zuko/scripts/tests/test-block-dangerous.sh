@@ -270,6 +270,38 @@ surrogate_err=$(printf '%s' '{"tool_input":{"command":"git push --force origin f
 expect_exit 2 "$?" "a payload that will not decode blocks instead of passing"
 expect_match '^Blocked: could not read the hook payload' "$surrogate_err" "the unreadable-payload block says why"
 
+# A command over git-command.py's 64 KB limit is refused by the parser at once,
+# and the guard checks the raw text (D51). The parse was quadratic: a 1.1 MB
+# command took 21 s, and a hook that times out lets the call through. The
+# payload goes through a file, because an env var cannot hold 1.1 MB.
+long_hook() {   # long_hook <command prefix>; sets $hook_status $hook_err $hook_secs
+  ZUKO_PREFIX="$1" python3 -c '
+import json, os
+print(json.dumps({"tool_input": {"command": os.environ["ZUKO_PREFIX"] + "a" * 1100000}}))' >"$work/long.json"
+  local start
+  start=$(python3 -c 'import time; print(time.time())')
+  CLAUDE_PROJECT_DIR="$repo" perl -e 'alarm shift; exec @ARGV' 20 bash "$scripts/block-dangerous.sh" <"$work/long.json" >/dev/null 2>"$work/long.err"
+  hook_status=$?
+  hook_secs=$(python3 -c 'import sys, time; print("%.1f" % (time.time() - float(sys.argv[1])))' "$start")
+  hook_err=$(cat "$work/long.err")
+}
+long_hook "git status "
+expect_exit 0 "$hook_status" "a 1.1 MB git status is checked as raw text and allowed"
+expect_match '^([01])\.[0-9]$' "$hook_secs" "a 1.1 MB command is checked in under 2 s (took $hook_secs s)"
+long_hook "git push --force origin main "
+expect_exit 2 "$hook_status" "a 1.1 MB force push is still blocked"
+expect_match '^Blocked: force push rewrites shared history' "$hook_err" "the long force push names the force push"
+
+# A heredoc body is removed before the limit, so a long body still parses.
+long_body=$(python3 -c 'print("cat > notes.md <<'"'"'EOF'"'"'\n" + "a" * 200000 + "\nEOF\ngit push --force origin main")')
+parsed=$(printf '%s' "$long_body" | python3 "$scripts/lib/git-command.py")
+expect_exit 0 "$?" "a command with a 200,000-character heredoc body parses"
+expect_match '^push --force origin main$' "$parsed" "the push after the long body is a parsed invocation"
+printf '%s' "$long_body" | head -c 70000 | tr -d '\n<' >"$work/over"
+python3 "$scripts/lib/git-command.py" <"$work/over" >/dev/null 2>"$work/over.err"
+expect_exit 3 "$?" "a 70,000-character command with no heredoc is refused by the parser"
+expect_match 'over 65536 characters' "$(cat "$work/over.err")" "the refusal names the limit"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
