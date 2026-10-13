@@ -616,3 +616,17 @@ Rejected: reading only create (proven gap), also reading gh pr comment and gh
 pr review (git-naming.md does not ban attribution there, O1).
 Source: specs/pr-edit-attribution.md
 Status: active
+
+## D55 · 2026-10-13 · The shared parser refuses a `<<` inside arithmetic or `${ }`
+
+Why: bash reads `<<` as a shift inside `(( ))`, `$(( ))`, `$[ ]` and `${ }`,
+so a line such as `(( 1 << X ))` made the parser drop the lines after it, and
+a force push there passed block-dangerous.sh (v2.4.1 pentest). But bash reads
+`((cat << X); (true))` as two subshells and a heredoc, so neither reading is
+safe alone. A backslash-newline that splits one of these openers or a `<<` is
+refused too, because the walk reads one line at a time.
+Rejected: reading `<<` inside them as a shift (the `((` subshell form then
+hides a heredoc body), joining continued lines before the walk (time grows
+with the square of the joined lines, D51).
+Source: specs/arith-heredoc.md
+Status: active

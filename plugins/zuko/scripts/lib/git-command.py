@@ -66,6 +66,14 @@ WORD_BREAKS = set(" \t;&|(<>")
 # cannot tell whether a `#` at a word start starts a comment.
 LOST_AFTER = ("${", "$'", "`")
 
+# Each bracket the walk counts inside `(( ))`, `$(( ))`, `$[ ]` and `${ }`,
+# and the one that closes it.
+CLOSES = {"(": ")", "[": "]", "{": "}"}
+
+# Two characters that open a heredoc, arithmetic or an expansion. bash joins
+# them across a backslash-newline, but the walk reads one line at a time.
+JOINED_OPENERS = ("((", "$(", "${", "$[", "<<")
+
 # Text after an unclear `#` that would change what the walk reads next, if it
 # is read as text: a quote, a backtick, a heredoc, or a line continuation.
 CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
@@ -94,9 +102,20 @@ def openers_in(line, state):
     An unclear `#` is read as text, so the rest of the line is checked too.
     When that text could change what the walk reads next, a quote or a
     heredoc that hides the lines after it, the command cannot be read.
+
+    Inside `(( ))`, `$(( ))`, `$[ ]` and `${ }`, bash reads `<<` as a shift,
+    and the line after it runs. But `((cat << X); (true))` is two subshells
+    and a heredoc. `closers` holds the bracket that closes each one open
+    since one of these started, and a `<<` while any is open cannot be read.
+    A bracket closes only its own kind: in `${v:-)}` the `)` is text.
+    `tail` is the character before a backslash-newline that ended the line
+    before, so that a pair split across the two can be refused.
     """
+    if state["tail"] + line[:1] in JOINED_OPENERS:
+        raise ValueError("cannot tell what this backslash-newline joins; put the two lines on one line")
     delimiters = []
     quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
+    closers = state["closers"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -113,7 +132,8 @@ def openers_in(line, state):
             word_start = False
         elif char == "\\":
             if at == len(line) - 1:
-                state.update(quote=quote, word_start=word_start, lost=lost)
+                state.update(quote=quote, word_start=word_start, lost=lost, closers=closers,
+                             tail=line[at - 1:at])
                 return delimiters, None
             at += 1
             word_start = False
@@ -122,13 +142,21 @@ def openers_in(line, state):
                 raise ValueError("cannot tell whether a # starts a comment here; remove the comment")
             word_start = False
         elif char == "#" and word_start:
-            state.update(quote=quote, word_start=True, lost=lost)
+            state.update(quote=quote, word_start=True, lost=lost, closers=closers, tail="")
             return delimiters, at
         elif line.startswith("<<<", at):
             at += 2                      # a here-string, not a heredoc
             word_start = True
         else:
             lost = lost or line.startswith(LOST_AFTER, at)
+            if closers and line.startswith("<<", at):
+                raise ValueError("cannot tell whether this << starts a heredoc or shifts a number; put the command in a file")
+            if line.startswith("((", at) or (char in "[{" and line[at - 1:at] == "$"):
+                closers.append(CLOSES[char])
+            elif closers and CLOSES.get(char) == closers[-1]:
+                closers.append(closers[-1])
+            elif closers and char == closers[-1]:
+                closers.pop()
             match = HEREDOC.match(line, at)
             if match:
                 delimiters.append(match.group(2))
@@ -137,7 +165,7 @@ def openers_in(line, state):
             else:
                 word_start = None if char == ")" else char in WORD_BREAKS
         at += 1
-    state.update(quote=quote, word_start=True, lost=lost)
+    state.update(quote=quote, word_start=True, lost=lost, closers=closers, tail="")
     return delimiters, None
 
 
@@ -147,7 +175,7 @@ def strip_heredocs(command):
     lines = command.split("\n")
     kept = []
     index = 0
-    state = {"quote": None, "word_start": True, "lost": False}
+    state = {"quote": None, "word_start": True, "lost": False, "closers": [], "tail": ""}
     while index < len(lines):
         line = lines[index]
         delimiters, comment = openers_in(line, state)

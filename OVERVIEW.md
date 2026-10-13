@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship pr-edit-attribution
+**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship arith-heredoc
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -66,6 +66,7 @@ projects.
 | tokenise-linear | Shipped | The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out | — |
 | fail-closed-parse | Shipped | The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main | — |
 | pr-edit-attribution | Shipped | The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create, so a replaced PR body or a merge commit message cannot sign Claude's name | — |
+| arith-heredoc | Built | The guards' parser refuses a `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift, so it no longer hides the lines after it | — |
 
 ## More
 

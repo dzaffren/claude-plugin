@@ -397,6 +397,68 @@ git push --force origin main"; do
   expect_match '^push --force origin main$' "$parsed" "comment rule: the push is read in $(printf '%q' "$form")"
 done
 
+# Inside `(( ))`, `$(( ))`, `$[ ]` and `${ }`, bash reads `<<` as a shift, so
+# the line after it runs. But `((cat << X); (true))` is two subshells and a
+# heredoc. The walk cannot tell which, so it refuses (v2.4.1 pentest).
+for form in '(( 1 << X ))' 'x=$(( 1 << X ))' 'x=$[ 1 << X ]' \
+  'v=abc; echo ${v:1<<X}' 'for (( i = 1 << X; i < 0; i++ )); do :; done' \
+  '((cat << X); (true))'; do
+  run_hook "$form
+git push --force origin main
+X"
+  expect_exit 2 "$hook_status" "unclear <<: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell whether this << starts a heredoc" "$hook_err" "unclear <<: the block says why, $(printf '%q' "$form")"
+done
+
+# A heredoc after the `))` that closes it is still a heredoc, and `<<` in
+# double quotes is text.
+for form in '(( 1 )) && cat << X
+git status
+X
+git push --force origin main' \
+  'x=$(( (1 + 2) * 3 )); cat <<X
+git status
+X
+git push --force origin main' \
+  'echo "$(( 1 << 2 ))"; git push --force origin main'; do
+  parsed=$(printf '%s' "$form" | python3 "$scripts/lib/git-command.py" 2>&1)
+  expect_match '^push --force origin main$' "$parsed" "<< after arithmetic: the push is read in $(printf '%q' "$form")"
+done
+run_hook 'x=$(( 1 + 2 ))
+git status'
+expect_exit 0 "$hook_status" "arithmetic with no << does not block"
+
+# A bracket closes only its own kind: in `${v:-)<<X}` the `)` is text, and
+# the `<<` is still inside `${ }` (review of arith-heredoc).
+for form in 'echo ${v:-)<<X}' 'echo ${v:-]<<X}'; do
+  run_hook "$form
+git push --force origin main
+X"
+  expect_exit 2 "$hook_status" "unclear <<: blocked after a stray closer, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'echo ${v:-(}; cat <<X
+git status
+X
+git push --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_match '^push --force origin main$' "$parsed" "a ( inside \${ } does not keep it open past its }"
+
+# bash joins the lines at a backslash-newline, so `$(\` then `(` is `$((`.
+# The walk reads one line at a time and cannot see the pair (review of
+# arith-heredoc).
+for form in 'x=$(\
+( 1 << X ))' '(\
+( 1 << X ))' 'echo $\
+{v:-<<X}'; do
+  run_hook "$form
+git push --force origin main
+X"
+  expect_exit 2 "$hook_status" "split opener: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell what this backslash-newline joins" "$hook_err" "split opener: the block says why, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'echo a \
+(b)' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_exit 0 "$?" "a backslash-newline before a lone ( still parses"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
