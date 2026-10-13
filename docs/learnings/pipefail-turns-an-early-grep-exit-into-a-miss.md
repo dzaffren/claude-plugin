@@ -19,3 +19,10 @@ In a script with `pipefail`, never pipe text into `grep -q` for a yes or no.
 Give `grep` the text with a here-string, `grep -qE "$re" <<<"$x"`, so no
 writer can die. To prove a race like this, force the pause with strace
 instead of looping and hoping.
+
+## Now enforced (2026-10-13, pipefail-grep-race)
+
+All 14 sites under `scripts/` now use a here-string, and a static check in
+`tests/test-secret-scan.sh` fails any script with pipefail that pipes into
+`grep -q`. To prove the race when the match is not on the first line, pause
+every write: strace `inject=write:delay_exit=300000:when=1+`, not `when=1`.

@@ -160,24 +160,7 @@ gives 26 passed. The full suite gives 2416 passed, 0 failed.
 
 ### Decisions to record
 
-Draft for `DECISIONS.md`:
-
-```markdown
-## D57 · 2026-10-13 · Scripts with pipefail give grep -q its text with a here-string
-
-Why: under pipefail, grep -q can exit at a match before printf writes its next
-line. printf then dies of SIGPIPE, the pipeline returns 141, and the if reads
-the match as a miss. With strace pausing printf, block-dangerous.sh passed a
-force push, and secret-scan.sh passed a staged key. bash writes a here-string
-in full before grep starts, so no writer can die. A static check in
-test-secret-scan.sh holds every script with pipefail to this.
-Rejected: process substitution (printf can still die, and pipefail does not
-see it, O5), [[ =~ ]] (^ and $ match only at the ends of the whole text),
-set +o pipefail around each check (more lines at each of 14 sites), a strace
-test alone (it cannot run where strace is missing, such as macOS, O1).
-Source: specs/pipefail-grep-race.md
-Status: active
-```
+Recorded as D57.
 
 ## Review
 

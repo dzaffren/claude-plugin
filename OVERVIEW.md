@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship gh-create-value-options
+**Status:** Active · **Release:** v2.4.1 · **Updated:** 2026-10-13 by /ship pipefail-grep-race
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -68,6 +68,7 @@ projects.
 | pr-edit-attribution | Shipped | The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create, so a replaced PR body or a merge commit message cannot sign Claude's name | — |
 | arith-heredoc | Shipped | The guards' parser refuses a `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift, so it no longer hides the lines after it | — |
 | gh-create-value-options | Built | The attribution hook gives each value option of gh pr create and gh release create its value, so a value option before the body or the notes no longer hides a signed text | — |
+| pipefail-grep-race | Built | The hook and gate scripts give grep -q its text with a here-string, not a pipe, so a slow printf can no longer turn a match into a miss and let a force push, a commit on main or a staged secret pass | — |
 
 ## More
 
