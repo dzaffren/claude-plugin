@@ -36,7 +36,12 @@ The main-thread guards cannot refuse `#`, so the parser took bash's rule:
 a comment starts at an unquoted `#` at the start of a word, and opens no
 quote or heredoc. shlex had started one at any `#`, so `echo x#;` hid the
 command after it. One rule needed care: after `$(date)`, bash keeps `#` in the
-word, and after a subshell's `)` it starts a comment. The parser counts no
-`)` as a word break. When the text cannot tell, read too little as a comment,
-never too much: a missed comment is extra text to check, a false one hides a
-command.
+word, and after a subshell's `)` it starts a comment. The first build said
+"read too little as a comment, never too much". /review proved that false:
+read as text, `(true)# <<EOF` opened a heredoc that hid the next line. And
+after `${`, `$'`, a backtick or a `$(` in double quotes, the parser's quotes
+are not bash's, so a `#` it read as a comment hid `; git push --force`.
+
+Neither reading of an unclear `#` is safe on its own. Read it as text, and
+refuse the command when that text holds a quote, a backtick, `<<` or a line
+continuation: the things that change what the walk reads next.
