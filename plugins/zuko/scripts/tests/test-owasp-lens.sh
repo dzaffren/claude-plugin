@@ -48,7 +48,7 @@ while IFS= read -r heading; do
   id=${heading#\#\# }
   id=${id%%:*}
   for part in "**The diff can touch it when:**" "**Check:**" "**Not a finding:**"; do
-    if printf '%s\n' "$section" | grep -qF -- "$part"; then
+    if grep -qF -- "$part" <<<"$section"; then
       record PASS "$id has $part"
     else
       record FAIL "$id has $part" "not found in its section"
