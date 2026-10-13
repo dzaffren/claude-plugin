@@ -1,6 +1,6 @@
 # Shipped in the PR
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None. This fixes GitHub issue #46.
 
