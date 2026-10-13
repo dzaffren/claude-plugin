@@ -180,3 +180,6 @@ One line per lesson. Loaded into every session in this repo.
 - `shlex` is quadratic on a long word, and a timed-out hook lets the call through
   — time a guard at two input sizes before you set its test's alarm.
   ([detail](shlex-is-quadratic-on-a-long-word.md))
+- A guard's fallback is safe only for input that cannot run — a command that
+  runs, sent down it, gets the full check or a block, never a weaker one.
+  ([detail](a-fallback-is-safe-only-for-what-cannot-run.md))
