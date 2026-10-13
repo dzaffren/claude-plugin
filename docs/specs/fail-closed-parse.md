@@ -1,6 +1,6 @@
 # Fail closed parse
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -171,7 +171,7 @@ D51 (the parser refuses a command over 64 KB), and D52 and D53, drafted here.
 
 | File | Change | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/lib/git-command.py:63` `openers_in`, `:93` `strip_heredocs` | The walk drops an unquoted `#` at the start of a word, and the rest of its line, and reads no quote or `<<` there. A word starts at the start of the text, after a space or a tab, after a newline that no backslash escapes, and after one of `;&\|()<>`. A backslash and a newline join two lines, so the character before the backslash decides whether a `#` after the newline starts a word. The module docstring's exit 3 line, and the `MAX_COMMAND_CHARS` comment at `:44`, say what exit 3 now means. | Scenarios 1, 3 and 5. |
+| `plugins/zuko/scripts/lib/git-command.py:63` `openers_in`, `:93` `strip_heredocs` | The walk drops an unquoted `#` at the start of a word, and the rest of its line, and reads no quote or `<<` there. A word starts at the start of the text, after a space or a tab, after a newline that no backslash escapes, and after one of `;&\|(<>`. Not after `)`: bash keeps `#` in the word after `$(date)` (O3). A backslash and a newline join two lines, so the character before the backslash decides whether a `#` after the newline starts a word. The module docstring's exit 3 line, and the `MAX_COMMAND_CHARS` comment at `:44`, say what exit 3 now means. | Scenarios 1, 3 and 5. |
 | `plugins/zuko/scripts/lib/git-command.py:117` `tokenise` | `lex.commenters = ""`. | Scenario 2. |
 | `plugins/zuko/scripts/block-dangerous.sh:16` | Keep the parser's stderr. Exit 4 keeps its message. Any other exit that is not 0 blocks: "Blocked: this command could not be checked: " and the parser's reason, then "bash runs the lines before a broken quote or heredoc. Close it, or put the text in a file, then run it again." The `else` branch with the raw patterns goes, so `subject` is always the parsed invocations. The comment above it says why. | Scenario 4. O1. |
 | `plugins/zuko/scripts/tests/test-block-dangerous.sh` | Scenarios 1 to 5 as hook payloads, in a scratch repo on `main`. Parser cases: `${#name}`, `$#`, `a;#b`, and a backslash and a newline before `#b`, each read as bash reads it. | All. |
@@ -239,6 +239,8 @@ Recorded as D52, D53.
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | A command that the parser cannot read, such as an unclosed quote or heredoc: block it, or keep the raw-text check? About 5 in 9,504 past commands would be blocked. | question | spec p1 | user | Resolved | Block it. `block-dangerous.sh` blocks it with the parser's reason, because bash runs the lines before the break. 2026-10-13 |
 | O2 | Also teach the parser `$'it\'s'`, `$((1 << 2))` and quotes inside `"$( … )"`, so they are not blocked? | question | spec p1 | user | Resolved | No. They stay blocked: 5 in 9,504 past commands, and each block says what to change. 2026-10-13 |
+| O3 | The plan said a word starts after one of `;&\|()<>`. bash keeps `#` in the word after `$(date)`, so with `)` the parser read `echo $(date)#; git push --force origin main` as a comment and hid the push. After a subshell's `)`, bash starts a comment. | flag | build | user | Decided alone | Chose: `)` is not a word break, so a `#` after any `)` is read as text, which reads too little as a comment, never too much. Other: count `)` as a word break, as the plan said. Undo: add `)` to `WORD_BREAKS` in `git-command.py`, and drop the `$(date)#` case from `test-block-dangerous.sh`. 2026-10-13 |
+| O4 | `/build` found a race outside this slice. `printf '%s\n' "$x" \| grep -qE` under `pipefail` gives 141 when `grep` exits before `printf` writes its last line, and the `if` reads that as no match. bash's `printf` writes a pipe one line at a time. With `printf` paused 0.3 s after its first line, v2.3.1's `block-dangerous.sh` passed `git push --force origin main; git status` (exit 0). `secret-scan.sh:23` exits 0 the same way. One full-suite run on this branch most likely failed a check this way. | flag | build | user | Decided alone | Chose: leave it out of this slice, because no scenario needs it. Other: fix it here, with `grep -qE … <<<"$x"` in each guard. Undo: run /zuko:debug on it, or spec a slice with /spec. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
