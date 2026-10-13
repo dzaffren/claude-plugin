@@ -459,6 +459,78 @@ parsed=$(printf '%s' 'echo a \
 (b)' | python3 "$scripts/lib/git-command.py" 2>&1)
 expect_exit 0 "$?" "a backslash-newline before a lone ( still parses"
 
+# Inside a double-quoted `$( )` or backticks, bash reads a heredoc and skips
+# the quotes in its body. The walk read them, so one `"` in the body made the
+# lines after the heredoc a string, and a force push there passed. The walk
+# refuses when its quote after the body is not the one it had before it.
+for form in 'echo "$(cat <<EOF
+say "hi
+EOF
+)"' "echo \"\$(cat <<'EOF'
+say \"hi
+EOF
+)\"" "$(printf 'echo "$(cat <<-EOF\nsay "hi\n\tEOF\n)"')" 'echo "`cat <<EOF
+say "hi
+EOF
+`"' 'echo "$(cat <<EOF
+  EOF
+say "hi
+EOF
+)"'; do
+  run_hook "$form
+git push --force origin main
+\""
+  expect_exit 2 "$hook_status" "heredoc in \"\$( )\": blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell whether the lines after a heredoc inside \"\\$\\( \\)\" are quoted" "$hook_err" "heredoc in \"\$( )\": the block says why, $(printf '%q' "$form")"
+done
+
+# Where the walk cannot tell which line ends the body, it cannot check it:
+# a delimiter it does not read whole, or a backslash-newline that bash joins.
+for form in 'echo "$(cat <<\EOF
+say "hi
+EOF
+)"' 'echo "$(cat <<EOF-1
+say "hi
+EOF-1
+)"' 'echo "$(cat <<EOF
+foo\
+EOF
+x "
+EOF
+)"'; do
+  run_hook "$form
+git push --force origin main
+\""
+  expect_exit 2 "$hook_status" "heredoc in \"\$( )\": unclear end blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell where a heredoc inside \"\\$\\( \\)\" ends" "$hook_err" "heredoc in \"\$( )\": the unclear-end block says why, $(printf '%q' "$form")"
+done
+
+# Quotes that pair up in the body, and a `<<` that is text, still parse.
+for form in 'echo "$(cat <<EOF
+say "hi"
+EOF
+)"
+git push --force origin main' \
+  'echo "$(date) <<EOF here"; git push --force origin main'; do
+  parsed=$(printf '%s' "$form" | python3 "$scripts/lib/git-command.py" 2>&1)
+  expect_match '^push --force origin main$' "$parsed" "heredoc in \"\$( )\": the push is read in $(printf '%q' "$form")"
+done
+
+# The standard commit form: the body stays in the -m word, as before.
+commit_form="git commit -m \"\$(cat <<'EOF'
+fix(x): subject
+
+Body with \"quotes\", it's, \`backticks\` and \$(dollar) text.
+EOF
+)\""
+parsed=$(printf '%s' "$commit_form" | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_exit 0 "$?" "commit form: the heredoc commit parses"
+expect_match "^commit -m \\\$\\(cat <<'EOF'\$" "$parsed" "commit form: the commit is read"
+expect_match "^Body with quotes, it's, \`backticks\` and \\\$\\(dollar\\) text\\.\$" "$parsed" "commit form: the body is in the -m word"
+run_hook "$commit_form" "$repo"
+expect_exit 2 "$hook_status" "commit form: blocked on main"
+expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: the block is the commit-on-main one"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"

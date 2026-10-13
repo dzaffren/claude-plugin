@@ -27,6 +27,10 @@ import sys
 # <<EOF, <<-EOF, <<'EOF', <<"EOF".
 HEREDOC = re.compile(r'<<-?[ \t]*(["\']?)(\w+)\1')
 
+# The same inside a double-quoted `$( )` or backticks, where the walk must
+# know the whole delimiter: in `<<EOF-1` bash's is `EOF-1`, not `EOF`.
+INNER_HEREDOC = re.compile(HEREDOC.pattern + r"(?=[ \t;&|()<>]|$)")
+
 # What ends one command. shlex glues a run of punctuation into a single token,
 # so `&&\n` and a blank line both arrive as one token — test the characters,
 # not the token. Redirections are not here: `git > log commit` is still one
@@ -110,12 +114,19 @@ def openers_in(line, state):
     A bracket closes only its own kind: in `${v:-)}` the `)` is text.
     `tail` is the character before a backslash-newline that ended the line
     before, so that a pair split across the two can be refused.
+
+    Once the walk is lost, a `<<` inside double quotes may open a heredoc in
+    a `$( )` or backticks, which bash reads and the walk does not. `inner`
+    holds each one, as its delimiter, whether it is `<<-`, and whether it is
+    quoted, until strip_heredocs finds the line that ends its body. One found
+    on a line of such a body is text.
     """
     if state["tail"] + line[:1] in JOINED_OPENERS:
         raise ValueError("cannot tell what this backslash-newline joins; put the two lines on one line")
     delimiters = []
     quote, word_start, lost = state["quote"], state["word_start"], state["lost"]
     closers = state["closers"]
+    opening = not state["inner"]
     at = 0
     while at < len(line):
         char = line[at]
@@ -126,6 +137,13 @@ def openers_in(line, state):
                 at += 1
             elif quote == '"' and line.startswith(("$(", "${", "`"), at):
                 lost = True
+            elif (quote == '"' and lost and opening and line.startswith("<<", at)
+                    and not line.startswith("<<<", at) and line[at - 1:at] != "<"):
+                match = INNER_HEREDOC.match(line, at)
+                if not match:
+                    raise ValueError('cannot tell where a heredoc inside "$( )" ends; put the command in a file')
+                state["inner"].append((match.group(2), match.group(0).startswith("<<-"),
+                                       bool(match.group(1))))
             word_start = False
         elif char in "'\"":
             quote = char
@@ -169,18 +187,42 @@ def openers_in(line, state):
     return delimiters, None
 
 
+def walk_state(state):
+    return state["quote"], state["word_start"], state["lost"], tuple(state["closers"]), state["tail"]
+
+
 def strip_heredocs(command):
     """Drop heredoc bodies and comments. They are raw text; shlex would read
-    them as words."""
+    them as words.
+
+    A heredoc inside a double-quoted `$( )` stays: its body is the text of
+    the quoted word, as in `git commit -m "$(cat <<'EOF'`. bash skips the
+    quotes in that body, but the walk and shlex read them. So each line of the
+    body must leave the walk's state as it found it, or a `"` there would turn
+    the lines after the heredoc into a string. A body that bash may join to
+    the next line at a backslash, or that holds a heredoc the walk would drop,
+    has no line the walk can trust as its end.
+    """
     lines = command.split("\n")
     kept = []
     index = 0
-    state = {"quote": None, "word_start": True, "lost": False, "closers": [], "tail": ""}
+    state = {"quote": None, "word_start": True, "lost": False, "closers": [], "tail": "",
+             "inner": []}
     while index < len(lines):
         line = lines[index]
+        body = bool(state["inner"])
+        before = walk_state(state)
         delimiters, comment = openers_in(line, state)
         kept.append(line if comment is None else line[:comment])
         index += 1
+        if state["inner"]:
+            delimiter, dash, quoted = state["inner"][0]
+            if body and walk_state(state) != before:
+                raise ValueError('cannot tell whether the lines after a heredoc inside "$( )" are quoted; put the command in a file')
+            if delimiters or (line.endswith("\\") and not (body and quoted)):
+                raise ValueError('cannot tell where a heredoc inside "$( )" ends; put the command in a file')
+            if body and (line.lstrip("\t") if dash else line) == delimiter:
+                state["inner"].pop(0)
         for delimiter in delimiters:
             # Bodies are never scanned for quotes: an apostrophe in prose is
             # an apostrophe, not the start of a string.

@@ -447,3 +447,25 @@ expect_match '^Blocked: could not read the hook payload' "$surrogate_err" "the u
 # The CLI keeps printing git invocations only; gh is opt-in for callers.
 cli_out=$(printf '%s' 'gh release create v2.2.0 -n "notes" && git tag -a v2.2.0 -m v2.2.0' | python3 "$scripts/lib/git-command.py")
 expect_exit 'tag -a v2.2.0 -m v2.2.0' "$cli_out" "git-command.py on stdin still prints only the git invocation"
+
+# The heredoc commit form keeps its body in the -m word, so a trailer there is
+# read as the commit message, not as raw text after a refused parse
+# (quoted-subst-heredoc).
+heredoc_commit="git commit -m \"\$(cat <<'EOF'
+fix(x): subject
+
+Body with \"quotes\", it's, \`backticks\` and \$(dollar) text.
+EOF
+)\""
+run_hook "git commit -m \"\$(cat <<'EOF'
+fix(x): subject
+
+Body with \"quotes\", it's, \`backticks\` and \$(dollar) text.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+EOF
+)\""
+expect_exit 2 "$hook_status" "heredoc commit form: a trailer in the body is blocked"
+expect_match '^Blocked: the commit message carries Claude attribution' "$hook_err" "heredoc commit form: the body is read as the commit message"
+run_hook "$heredoc_commit"
+expect_exit 0 "$hook_status" "heredoc commit form: a body with no trailer is allowed"
