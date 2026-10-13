@@ -81,6 +81,17 @@ write_spec no-parts "$run1" '| O4 | Dropped the VAT column. | flag | build | use
 run check no-parts
 expect_match '^O4  Decided alone row has no "Chose:", no "Other:" and no "Undo:"$' "$out" "check: names all three missing parts"
 
+write_spec empty-undo "$run1" '| O7 | Dropped VAT. | flag | build | user | Decided alone | Chose: drop the VAT column. Other: add a VAT field to invoices. Undo: 2026-10-13 |'
+run check empty-undo
+expect_exit 1 "$status" "check: an Undo with only a date fails"
+expect_match '^O7  Decided alone row has an empty "Undo:"$' "$out" "check: names the empty Undo"
+run render empty-undo
+expect_exit 1 "$status" "render: a row with an empty part does not render"
+
+write_spec empty-two "$run1" '| O9 | Stored rows in SQLite. | flag | review | user | Decided alone | Chose: Other: Undo: git revert 4e1f9a2. 2026-10-13 |'
+run check empty-two
+expect_match '^O9  Decided alone row has an empty "Chose:" and an empty "Other:"$' "$out" "check: names two empty parts in one line"
+
 write_spec only-decided "$run1" '| O1 | A question. | question | spec p1 | user | Resolved | Yes. |' '| O2 | A risk. | flag | spec p3 | user | Accepted risk | Off-peak, 2026-10-10 |'
 run check only-decided
 expect_exit 0 "$status" "check: only Decided alone rows need the three parts"

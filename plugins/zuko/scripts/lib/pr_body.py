@@ -7,7 +7,8 @@ Usage: pr_body.py check  <spec>
 The rows are the table under "## Open items", the Review lines are the lines
 under "## Review"; both outside code fences, so an example in the spec is
 never read as the spec's own. A row is Decided alone when its Status cell is
-exactly that, and its Answer then holds "Chose:", "Other:" and "Undo:". The
+exactly that, and its Answer then holds "Chose:", "Other:" and "Undo:",
+each with text after it, a date at the end of Undo not counted. The
 rules live in references/ledger.md, the body layout in skills/ship/SKILL.md.
 
   check   each Decided alone row has all three parts, and the Review section
@@ -78,11 +79,12 @@ def decided(ledger):
     return rows
 
 
-def missing(parts):
-    gone = ['"%s"' % part for part in PARTS if part not in parts]
-    if len(gone) == 1:
-        return "no " + gone[0]
-    return ", ".join("no " + part for part in gone[:-1]) + " and no " + gone[-1]
+def listed(article, labels):
+    """'no "Other:" and no "Undo:"', one article before each label."""
+    named = ['%s "%s"' % (article, label) for label in labels]
+    if len(named) == 1:
+        return named[0]
+    return ", ".join(named[:-1]) + " and " + named[-1]
 
 
 def review(lines):
@@ -102,8 +104,12 @@ def read(path):
         problems.append("No '## Open items' section in the spec.")
     rows = decided(found.get("Open items", []))
     for row_id, _, parts in rows:
-        if len(parts) < len(PARTS):
-            problems.append("%s  Decided alone row has %s" % (row_id, missing(parts)))
+        gone = [part for part in PARTS if part not in parts]
+        empty = [part for part in PARTS if part in parts and not parts[part]]
+        if gone:
+            problems.append("%s  Decided alone row has %s" % (row_id, listed("no", gone)))
+        if empty:
+            problems.append("%s  Decided alone row has %s" % (row_id, listed("an empty", empty)))
     lines = None
     if "Review" not in found:
         problems.append("No '## Review' section in the spec. Run /review on this branch first.")
