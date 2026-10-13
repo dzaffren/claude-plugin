@@ -1,6 +1,6 @@
 # Tokenise linear
 
-**Version:** v1 · **Status:** Draft · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -112,7 +112,7 @@ Scenario: The release suite no longer fails on the verifier test
 **Out:**
 
 - A rewrite of `shlex` that parses any size in linear time. D51 rejects it.
-- `"onFailure": "block"` on the guard hooks (O3).
+- `"onFailure": "block"` on the guard hooks. No slice picks it up (O3).
 - Raising the test's 20 s alarm. The guard would still take 20 s.
 
 ## Technical plan
@@ -223,7 +223,9 @@ command it cannot parse.
 Rejected: a rewrite of shlex that is linear for any size (a new parser in
 every guard, which must match shlex token for token), a longer alarm in the
 test (the guard still takes 20 s, and a timed-out hook lets the call through),
-128 KB or 16 KB as the limit (O2).
+128 KB or 16 KB as the limit (O2), "onFailure": "block" on the guard hooks
+(no guard nears the timeout with the limit, and older versions' handling of
+the field is not known, O3).
 Source: specs/tokenise-linear.md
 Status: active
 ```
@@ -232,9 +234,9 @@ Status: active
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | A command is too long to parse quickly. Refuse to parse it over a limit, so each guard takes its own cannot-parse path, or parse every size with a new linear parser? | question | spec p1 | user | Open | — |
-| O2 | What is the limit, after heredoc bodies are removed? | question | spec p1 | user | Open | — |
-| O3 | Also set `"onFailure": "block"` on the guard hooks, so a hook that times out blocks the call? It needs Claude Code 2.1.295 or later; this machine has 2.1.296. | question | spec p1 | user | Open | — |
+| O1 | A command is too long to parse quickly. Refuse to parse it over a limit, so each guard takes its own cannot-parse path, or parse every size with a new linear parser? | question | spec p1 | user | Resolved | Refuse over a limit. Each guard takes the cannot-parse path it already has, and no caller changes. 2026-10-13 |
+| O2 | What is the limit, after heredoc bodies are removed? | question | spec p1 | user | Resolved | 64 KB: 65,536 characters after the heredoc bodies are removed. A parse takes 0.14 s at the limit. 2026-10-13 |
+| O3 | Also set `"onFailure": "block"` on the guard hooks, so a hook that times out blocks the call? It needs Claude Code 2.1.295 or later; this machine has 2.1.296. | question | spec p1 | user | Resolved | No. With the limit, no guard runs near the 600 s timeout, and what older Claude Code versions do with the field is not known. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
