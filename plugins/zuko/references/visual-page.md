@@ -66,10 +66,10 @@ every spec page opens with one line above the slice line:
 ## Hub page
 
 One page for the whole project; each slice's page links from it. Built by
-`/ship` at close-out, and republished by `/release`, from `OVERVIEW.md` and
-`docs/ARCHITECTURE.md`, plus `DECISIONS.md` and `CHANGELOG.md` when they
-exist. The Markdown wins: the hub is regenerated from those files, never
-edited beside them.
+`/ship` before the push, in the slice's own PR, and republished by
+`/release`, from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
+`DECISIONS.md` and `CHANGELOG.md` when they exist. The Markdown wins: the
+hub is regenerated from those files, never edited beside them.
 
 In this order:
 
