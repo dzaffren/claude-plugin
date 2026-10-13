@@ -129,6 +129,161 @@ Scenario: A row decided alone has no Undo
 - Rows in specs that shipped before this slice. Their PRs are merged. No slice
   picks them up.
 
+## Interface
+
+The interface is three outputs and the rules that make them. `/ship` writes
+the PR body. `/review` writes a Review section into the spec. The ship gate
+prints one new problem line for each incomplete row.
+
+```mermaid
+flowchart LR
+    BRS["/build, /review, /ship"] -- "Decided alone rows" --> SP[("docs/specs/{slice}.md")]
+    RV["/review"] -- "## Review: counts,<br/>one line per fix" --> SP
+    SP -- "rows" --> G["verify-ship-gates.sh"]
+    G -- "problem line per<br/>incomplete row" --> SH["/ship"]
+    SP -- "rows, Review lines" --> SH
+    SH -- "gh pr create" --> PR["PR body"]
+    SH -- "no PR possible" --> T["terminal: body<br/>in a code block"]
+```
+
+Each part of the PR body comes from the spec. `/ship` copies the rows and the
+Review lines. It writes only What ships, Verify by hand and Flag and rollback.
+
+### The PR body
+
+Two rows decided alone, no PR template:
+
+````markdown
+## Your call
+
+2 things were decided without you. Each one can be undone.
+
+| ID | What | Chose | Other | Undo |
+| --- | --- | --- | --- | --- |
+| O7 | Scenario 3 said "Then the CSV has the columns number, date, total and VAT". The invoices table has no VAT field. | drop the VAT column. | add a VAT field to invoices. | put back the old scenario 3, and add the field. |
+| O9 | The diff stored the export rows in SQLite. D7 says "Use Postgres, not SQLite". | store the rows in Postgres, as D7 says. | supersede D7 through /spec. | git revert 4e1f9a2. |
+
+## Review
+
+2026-10-13 · 7 raw findings, 4 survived, 4 fixed.
+
+- A01 Broken Access Control · `routes/export.py:14` · put back `@login_required` on `export_ledger` · `9c1d2e3`
+- A05 Injection · `exporters/ledger.py:31` · `db.run` with `customer` as a parameter · `5b7e0f1`
+- correctness · `exporters/ledger.py:52` · `write_rows` writes the header once · `a41c7d8`
+- coverage · `invoice_api/auth.py:22` · a test for the roles-lookup-fails path · `e02b9f6`
+
+## What ships
+
+`invoices export --csv ACME-01` writes the customer's ledger as a CSV file.
+The columns are number, date and total. Only a signed-in user can export.
+
+## Verify by hand
+
+- `pytest tests/test_export.py` gives 14 passed.
+- `invoices export --csv ACME-01` writes `ACME-01-ledger.csv` with 3 columns.
+
+## Flag and rollback
+
+Flag `export_csv`, off by default. Rollback: turn the flag off.
+
+Spec: `docs/specs/export-csv.md` · Page: https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM
+````
+
+- Your call copies each row's ID, What, Chose, Other and Undo word for word.
+  The labels "Chose:", "Other:" and "Undo:" and the date are left out.
+- No row decided alone: the heading, then the line "Nothing was decided
+  without you." No table.
+- Review copies the lines under the spec's `## Review` heading as they are.
+- From `## Review` to the end, the body has 300 words or fewer. When it has
+  more, `/ship` shortens What ships first. It never cuts a Your call row.
+
+With a PR template, Your call and Review come first. The template's headings
+come next, in the template's order, filled from the diff. They replace What
+ships, Verify by hand and Flag and rollback. The spec line stays last.
+
+### The Review section in the spec
+
+`/review` writes it just above `## Open items`, after it fixes the findings.
+It writes one dated line for each run, then one line for each fix:
+
+```markdown
+## Review
+
+2026-10-13 · 7 raw findings, 4 survived, 4 fixed.
+
+- A01 Broken Access Control · `routes/export.py:14` · put back `@login_required` on `export_ledger` · `9c1d2e3`
+- A05 Injection · `exporters/ledger.py:31` · `db.run` with `customer` as a parameter · `5b7e0f1`
+```
+
+A fix line has four parts: the category, `file:line`, the fix in a few
+words, and the fix commit. A clean run writes one line:
+`2026-10-14 · 3 raw findings, 0 survived. Clean.` A second run adds its own
+lines below the first. It never changes or removes a line.
+
+### The gate lines
+
+`verify-ship-gates.sh` reads each `Decided alone` row. One problem line names
+each row that lacks a part:
+
+```text
+Ship gates FAILED:
+- O7  Decided alone row has no "Undo:"
+- O9  Decided alone row has no "Other:" and no "Undo:"
+```
+
+On a pass it reports what it checked, so a spec with no rows is still a
+visible result:
+
+```text
+Decided alone: 2 rows, each with Chose, Other and Undo
+Decided alone: no rows
+```
+
+With no `## Review` section, the gate prints:
+
+```text
+- No '## Review' section in the spec. Run /review on this branch first.
+```
+
+### When /ship cannot open the PR
+
+On a GitLab origin, or with no `gh` and no GitHub tools, `/ship` prints this
+after the push:
+
+`````text
+I opened no PR. The origin is gitlab.com, and /ship opens PRs on GitHub only.
+
+Open it from the link that git push printed:
+https://gitlab.com/acme/invoices/-/merge_requests/new?merge_request%5Bsource_branch%5D=feat%2Fexport-csv
+
+Title: feat(export): add the CSV export of the ledger
+
+Body, to paste:
+
+````markdown
+## Your call
+...
+Spec: `docs/specs/export-csv.md` · Page: https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM
+````
+`````
+
+The fence around the body has four backticks, so a code block inside the body
+does not end it. With no `gh` on a GitHub origin, the first line says "I
+opened no PR. Neither gh nor the GitHub tools are available here."
+
+### Choices that /ship makes alone
+
+`ledger.md` › "Deciding alone" gets `/ship`. A row that `/ship` adds has
+Raised at `ship`. The choices that PRs 84 and 86 show:
+
+| The choice | What to do |
+| --- | --- |
+| A test or check stays red, because the base branch fails the same way. | Leave it. Name the test and the base branch in the row. |
+| A `feat` or `fix` commit gets no CHANGELOG line. | Say why in the row. |
+
+`/ship` still asks before it pushes and before it merges. It adds each row
+before the gate runs, so the gate checks the rows too.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -139,6 +294,10 @@ Scenario: A row decided alone has no Undo
 | O4 | Which choices go in Your call? PRs 84 and 86 listed choices that `/ship` made, which no spec row records. | question | spec p1 | user | Resolved | Every `Decided alone` row. `/ship` adds a row for each choice that it makes alone, so the spec stays the one record. 2026-10-13 |
 | O5 | The repo has a PR template. Where do Your call and Review go? | question | spec p1 | user | Resolved | Your call and Review come first. The template's headings follow in its order, filled from the diff. 2026-10-13 |
 | O6 | A `Decided alone` row lacks its Chose, Other or Undo part. What does `/ship` do? (from unattended-build O8) | question | spec p1 | user | Resolved | `verify-ship-gates.sh` fails and names the row and the missing part. `/ship` completes the row and runs the gate again. No PR opens before that. 2026-10-13 |
+| O7 | Your call: copy the row's ID, What, Chose, Other and Undo word for word, or reword them as PRs 80 to 86 did? | question | spec p2 | user | Resolved | Copy word for word: ID, What, Chose, Other and Undo. The PR cannot disagree with the spec. 2026-10-13 |
+| O8 | The spec's Review section: does a second `/review` run add its lines below the first, or replace them? | question | spec p2 | user | Resolved | A second run adds its own dated line and fix lines below the first. No line is changed or removed. 2026-10-13 |
+| O9 | A spec with no `## Review` section: does `verify-ship-gates.sh` fail it, or does `/ship` check by hand? | question | spec p2 | user | Resolved | `verify-ship-gates.sh` fails it: "Run /review on this branch first." The gate fixtures get a Review section first. 2026-10-13 |
+| O10 | The PR body today lists the scenarios. Drop them for the spec link, or keep one line for each? | question | spec p2 | user | Resolved | Drop them. The spec line at the end links to them. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
