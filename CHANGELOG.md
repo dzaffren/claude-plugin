@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- A value option such as `-B next` in `gh pr create`, or `--target` in `gh release create`, no longer hides a PR body or release notes that sign Claude's name from the attribution hook. The hook now knows every option of both that takes a value.
+
 ### Security
 
 - A `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift and not a heredoc, no longer hides a force push or a commit on main from the guards. The guards now block such a command, and the block says why.

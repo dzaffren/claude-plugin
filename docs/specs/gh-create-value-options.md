@@ -135,7 +135,7 @@ gh 2.101.0, the `-R`/`--repo` inherited flag among them:
 | `gh release create` | `-R` | `--discussion-category`, `--notes-start-tag`, `--repo`, `--target` |
 
 Relies on: D20 (the hook reads PR bodies and titles from the command line
-only), D54, and D58, drafted here.
+only), D54 and D56.
 
 ### Changes
 
@@ -167,20 +167,7 @@ gives 2428 passed, 0 failed.
 
 ### Decisions to record
 
-Draft, for `DECISIONS.md` at ship:
-
-```
-## D58 · 2026-10-13 · The attribution hook gives each value option of gh pr create and gh release create its value
-
-Why: a value option the create tables did not know left its value in the
-walk, so -Bnext read as -t and --target -t took -n as the title. The signed
-body or notes after it were never read (checked on v2.4.1, main 4ef85fe).
-Rejected: listing only -B and --target, the two found cases (-Hfeat and
---label -t fail the same way), reading -T/--template as a body file (gh
-2.101.0 refuses it with --body, and needs a prompt without one, O2).
-Source: specs/gh-create-value-options.md
-Status: active
-```
+Recorded as D56.
 
 ## Review
 
