@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.2 · **Updated:** 2026-10-13 by /ship quoted-subst-heredoc
+**Status:** Active · **Release:** v2.4.2 · **Updated:** 2026-10-13 by /ship shipped-in-pr
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -70,6 +70,7 @@ projects.
 | gh-create-value-options | Shipped | The attribution hook gives each value option of gh pr create and gh release create its value, so a value option before the body or the notes no longer hides a signed text | — |
 | pipefail-grep-race | Shipped | The hook and gate scripts give grep -q its text with a here-string, not a pipe, so a slow printf can no longer turn a match into a miss and let a force push, a commit on main or a staged secret pass | — |
 | quoted-subst-heredoc | Shipped | The guards' parser refuses a heredoc inside a double-quoted $( ) or backticks when a line of its body changes the parser's quotes, so it no longer hides the lines after it | — |
+| shipped-in-pr | Shipped | /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge | — |
 
 ## More
 

@@ -1,6 +1,6 @@
 # Shipped in the PR
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None. This fixes GitHub issue #46.
 
@@ -151,8 +151,8 @@ sequenceDiagram
 
 | File                                                             | What changes                                                                                                                                                      | Why            |
 | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `plugins/zuko/skills/ship/SKILL.md:34` Refresh the overview      | Set the row and the spec Status to `Shipped`. Republish the hub page, and put a first link on the `## More` line. Capture lessons. Commit as `docs(overview): mark {slice} shipped` | scenario 1     |
-| `plugins/zuko/skills/ship/SKILL.md:75` The gates                 | Run the gate as `verify-ship-gates.sh docs/specs/{slice}.md`                                                                                                     | scenario 3     |
+| `plugins/zuko/skills/ship/SKILL.md:34` Refresh the overview      | Take the base branch in first. Set the row and the spec Status to `Shipped`. Republish the hub page, and put a first link on the `## More` line. Capture lessons. Commit as `docs(overview): mark {slice} shipped` | scenario 1     |
+| `plugins/zuko/skills/ship/SKILL.md:75` The gates                 | Run the gate as `verify-ship-gates.sh docs/specs/{slice}.md`. A failed gate that routes to /spec or /build first sets the spec and its row back to `Built` (O4)                                                                                                     | scenario 3     |
 | `plugins/zuko/skills/ship/SKILL.md:206` Confirm it works         | A missing signal goes to `/debug`, a fix goes on a `fix/` branch, and the spec stays `Shipped`                                                                    | scenario 4     |
 | `plugins/zuko/skills/ship/SKILL.md:219` Close out                | Keep graduation and the next slice. Remove the row flip, the render, the hub, the spec status, the commit and the lessons                                         | scenario 2     |
 | `plugins/zuko/references/visual-page.md:68`                      | The hub is built by /ship before the push, not at close-out                                                                                                       | scenario 1     |
