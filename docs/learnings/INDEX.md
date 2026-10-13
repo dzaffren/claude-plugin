@@ -174,3 +174,6 @@ One line per lesson. Loaded into every session in this repo.
 - Find a section by its whole heading line, `\n## X\n` — an inline mention in
   backticks matches first, and a slice with end before start duplicates text.
   ([detail](find-a-section-by-its-heading-line.md))
+- Run a new parser or renderer on the repo's real docs before the PR, and read
+  the output — fixtures hold the text you thought of, not what stages write.
+  ([detail](render-the-real-spec-before-shipping.md))
