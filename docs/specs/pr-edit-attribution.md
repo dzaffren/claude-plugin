@@ -1,6 +1,6 @@
 # PR edit attribution
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -126,6 +126,7 @@ only), and D54, drafted here.
 | File | Change | Why |
 | --- | --- | --- |
 | `plugins/zuko/scripts/block-attribution.sh:147` | After `after_repo`, `edit` calls `read_options` with `--body`, `--body-file`, `--title` and `b`, `F`, `t`, as `create` does. `merge` calls it with `--body`, `--body-file`, `--subject` and `b`, `F`, `t`, labelled "merge commit message". `drop_equals=True` for both, as gh's flag parser takes `-F=path`. The header comment at `:2` and the one at `:13` name the two subcommands. | Scenarios 1 to 3. |
+| `plugins/zuko/references/git-naming.md:32` | The list of commands that the hook blocks also names `gh pr edit` and `gh pr merge` (O2). | Scenarios 1 to 3. |
 | `plugins/zuko/scripts/tests/test-block-attribution.sh` | Scenarios 1 to 4 as hook payloads, with `signed.md` and `clean.md` in `$work`. `gh pr -R o/r edit` too. | All. |
 
 Reusing: `read_options`, `after_repo`, `emit` and its file read, the banned
@@ -181,6 +182,7 @@ Recorded as D54.
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | Which `gh pr` subcommands does the hook read, after `create`? `gh pr merge --subject` and `--body` write the merge commit on `main`. `gh pr comment` and `gh pr review` post comments. | question | spec p1 | user | Resolved | `edit` and `merge`. `git-naming.md` bans attribution in a PR body and a commit message, and not in a comment. 2026-10-13 |
+| O2 | The plan named `block-attribution.sh` and its test only. `git-naming.md:32` lists each command that the hook blocks, and `test-block-attribution.sh` checks that list, so it would name `gh pr create` and not `gh pr edit` or `gh pr merge`. | flag | build | user | Decided alone | Chose: name `gh pr edit` and `gh pr merge` in `git-naming.md`, and check both in the test. Other: leave the list at the four commands it named. Undo: put back the old sentence in `git-naming.md` and the old pattern in `test-block-attribution.sh`, both in b1c6cdf. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
