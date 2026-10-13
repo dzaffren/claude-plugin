@@ -15,8 +15,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- /release no longer stops about half the time on a verifier-guard test that took 20 seconds on a long command.
 - Claude is no longer sent back at the end of a turn to fix runbooks, other tools' specs, or old specs the work never touched. The end-of-turn checks now look only at zuko specs and shapes this branch or the working tree changed.
 - A spec the end-of-turn open-items check cannot read now fails the check, instead of passing as if it had no open rows.
+
+### Security
+
+- A Bash command over 64 KB is now blocked at once. Before, a guard took up to 21 seconds to read one, and a guard that runs past its timeout lets the command through. Put a long text in a heredoc or a file; a heredoc body does not count.
 
 ## [2.3.1] - 2026-10-07
 
