@@ -381,8 +381,9 @@ Usage: pr_body.py check  <spec>
   section, so a table, a run line or a heading in an example does not count.
 - A row is `Decided alone` when its sixth cell is exactly that. A cell splits
   on each `|` that has no backslash before it.
-- The parts are the text after `Chose:`, `Other:` and `Undo:`. A date at the
-  end of Undo is removed.
+- The parts are the text after `Chose:`, `Other:` and `Undo:`. A label inside
+  backticks or double quotes is text, not a label. A date at the end of Undo
+  is removed.
 - A run line in Review starts with a date, then ` · `.
 - `check` exit 0 prints `Decided alone: 2 rows, each with Chose, Other and
   Undo`, `Decided alone: 1 row, with Chose, Other and Undo` or `Decided alone:
@@ -499,7 +500,8 @@ Recorded as D46, D47, D48, D49, D50.
 | O13 | The Review lines alone take the body over 300 words. What does `/ship` do? | question | spec p3 | user | Resolved | Shorten What ships and Verify by hand first. Never cut a Your call row or a Review line. When the body is still over 300 words, open the PR and give the count in the reply. 2026-10-13 |
 | O14 | `/review`: the Review rule said "Do not put a brace pair in a line". The ship gate's placeholder check also fails a line with a to-do marker or a TBD in brackets, and the rule forbids a change to the line after. | flag | review | user | Decided alone | Chose: the rule names all three words and says to name the thing in other words. Other: make the placeholder check skip the Review section. Undo: git revert 78ed5a2, then skip the Review section in the placeholder check of verify-ship-gates.sh. 2026-10-13 |
 | O15 | `/review`: Interface › The gate lines named only a missing part, as `has no "Undo:"`. An Undo with only a date passed the gate, and the PR showed an empty Undo cell. | flag | review | user | Decided alone | Chose: a new problem line, `has an empty "Undo:"`. Other: report an empty part with the approved `has no "Undo:"` line. Undo: in `pr_body.py` read, count an empty part as missing. 2026-10-13 |
-| O16 | The fix commits `78ed5a2`, `7f27f15` and `62a43f0` get no CHANGELOG line. | flag | ship | user | Decided alone | Chose: no line, because they fix this branch's own code before it ships, and the one Added line covers it. Other: a Fixed line for each. Undo: add the lines under `[Unreleased]` › Fixed in CHANGELOG.md. 2026-10-13 |
+| O16 | The fix commits `78ed5a2`, `7f27f15`, `62a43f0` and `fbb8836` get no CHANGELOG line. | flag | ship | user | Decided alone | Chose: no line, because they fix this branch's own code before it ships, and the one Added line covers it. Other: a Fixed line for each. Undo: add the lines under `[Unreleased]` › Fixed in CHANGELOG.md. 2026-10-13 |
+| O17 | `/ship`: the first live render split O15 inside its quoted `has an empty "Undo:"`, because `decided` took the first label anywhere in the Answer. | flag | ship | user | Decided alone | Chose: a label inside backticks or double quotes is text. Other: count a label only at the start of the Answer or after a full stop. Undo: git revert fbb8836, then match a label only after a full stop in `decided`. 2026-10-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
