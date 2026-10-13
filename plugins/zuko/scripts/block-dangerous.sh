@@ -22,8 +22,15 @@ deny() { echo "$1" >&2; exit 2; }
 # (-uf), with --mirror or any prefix of it (git takes --mi), and with a refspec
 # that starts with +. A brace or glob is expanded by the shell before git runs,
 # so the words read here are not the words git gets.
+#
+# A command over the parser's 64 KB limit (exit 4) is blocked outright: the
+# raw-text patterns miss `git -C . push --force` and `cd other && git commit`,
+# and secret-scan.sh and block-attribution.sh fall back the same way. This
+# hook runs on every Bash call, so its block covers theirs (D51).
 git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>/dev/null)
-if [ $? -eq 0 ]; then
+parsed=$?
+[ "$parsed" -eq 4 ] && deny "Blocked: this command is over 65536 characters, too long to check. Put the long text in a heredoc or a file, then run it again."
+if [ "$parsed" -eq 0 ]; then
   subject="$git_args"
   push_re='^push( .*)? (--force[^[:space:]]*|--m[^[:space:]]*|-[^-[:space:]]*f[^[:space:]]*|\+[^[:space:]]*)([[:space:]]|$)'
   expand_re='^push( .*)? [^[:space:]]*[][{}*?]'

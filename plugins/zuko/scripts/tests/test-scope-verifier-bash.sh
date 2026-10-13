@@ -172,9 +172,13 @@ print(json.dumps(event))' >"$3"
 huge "$VERIFIER" "ls / ; " "$work/huge-ls.json"
 perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-ls.json" >/dev/null 2>"$work/huge.err"
 expect_exit 2 $? "a 1.1 MB verifier payload is blocked, not let through"
+# Over git-command.py's 64 KB limit the parser refuses at once (D51). The
+# quadratic parse took 19.6 s here, against this 20 s alarm.
 huge "$VERIFIER" "git show main:" "$work/huge-git.json"
-perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-git.json" >/dev/null 2>&1
-expect_exit 0 $? "a 1.1 MB verifier git show is checked like any other"
+perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-git.json" >/dev/null 2>"$work/huge-git.err"
+expect_exit 2 $? "a 1.1 MB verifier git show is refused, not parsed for 20 s"
+expect_match 'a command that will not parse: the command is over 65536 characters' "$(cat "$work/huge-git.err")" \
+  "the refusal names the limit"
 huge "" "ls / ; " "$work/huge-main.json"
 perl -e 'alarm shift; exec @ARGV' 20 bash "$guard" <"$work/huge-main.json" >/dev/null 2>&1
 expect_exit 0 $? "a 1.1 MB main-thread payload is still untouched"

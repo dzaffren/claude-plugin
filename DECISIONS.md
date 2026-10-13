@@ -565,3 +565,18 @@ Rejected: an awk check in verify-ship-gates.sh while Claude copies the rows (no 
 can prove the copy, O11).
 Source: specs/decision-pr.md
 Status: active
+
+## D51 · 2026-10-13 · The shared command parser refuses a command over 64 KB
+
+Why: shlex grows a word one character at a time, so a 1.1 MB command took the
+verifier guard 19.6 s and block-dangerous 21 s. A timed-out hook lets the call
+through. At 64 KB a parse takes 0.14 s, and each caller already handles a
+command it cannot parse.
+Rejected: a rewrite of shlex that is linear for any size (a new parser in
+every guard, which must match shlex token for token), a longer alarm in the
+test (the guard still takes 20 s, and a timed-out hook lets the call through),
+128 KB or 16 KB as the limit (O2), "onFailure": "block" on the guard hooks
+(no guard nears the timeout with the limit, and older versions' handling of
+the field is not known, O3).
+Source: specs/tokenise-linear.md
+Status: active

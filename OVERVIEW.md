@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.3.1 · **Updated:** 2026-10-13 by /ship decision-pr
+**Status:** Active · **Release:** v2.3.1 · **Updated:** 2026-10-13 by /ship tokenise-linear
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -63,6 +63,7 @@ projects.
 | pause-questions | Shipped | At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row | — |
 | unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
 | decision-pr | Shipped | /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review | — |
+| tokenise-linear | Built | The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out | — |
 
 ## More
 
