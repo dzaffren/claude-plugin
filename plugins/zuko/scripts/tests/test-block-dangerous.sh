@@ -442,6 +442,23 @@ X
 git push --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
 expect_match '^push --force origin main$' "$parsed" "a ( inside \${ } does not keep it open past its }"
 
+# bash joins the lines at a backslash-newline, so `$(\` then `(` is `$((`.
+# The walk reads one line at a time and cannot see the pair (review of
+# arith-heredoc).
+for form in 'x=$(\
+( 1 << X ))' '(\
+( 1 << X ))' 'echo $\
+{v:-<<X}'; do
+  run_hook "$form
+git push --force origin main
+X"
+  expect_exit 2 "$hook_status" "split opener: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell what this backslash-newline joins" "$hook_err" "split opener: the block says why, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'echo a \
+(b)' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_exit 0 "$?" "a backslash-newline before a lone ( still parses"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
