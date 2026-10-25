@@ -273,6 +273,7 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 | 5 the publish fails | `test-e2e-board.sh`: renders the page, starts `board.py serve`, fetches the page with `curl`, gets 400 with `Host: evil.example`, then stops it. The test skips with a message when port 4751 is taken | `bash plugins/zuko/scripts/tests/run.sh e2e-board` |
 | The stage steps | `test-idea-board.sh`: `visual-page.md` has the "Idea board" section, and the five skills point to it | `bash plugins/zuko/scripts/tests/run.sh idea-board` |
 | Escaping | `test-board.sh`: a spec whose text holds `</script>` gives a page with exactly one closing tag per script block | `bash plugins/zuko/scripts/tests/run.sh board` |
+| The page script | `test-board-dom.sh` (added at review): headless Chrome loads a rendered board; file text shows as text, the header and rail show the stage, a classDef stays inside its diagram. Skips without Chrome or Mermaid | `bash plugins/zuko/scripts/tests/run.sh board-dom` |
 
 **E2E:** `scripts/tests/test-e2e-board.sh` walks the slice: a fixture idea with one shipped slice (one D-entry, three rows), one slice at Pause 1, and one with no spec. It renders the board, checks scenarios 1 to 4 on the output, then serves it with `board.py serve` for scenario 5. The real publish to claude.ai is checked by hand at the next `/spec` pause.
 
