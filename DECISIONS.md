@@ -706,3 +706,40 @@ every spec in docs/specs, and 40 are Shipped, so it would gate the wrong
 one).
 Source: specs/shipped-in-pr.md
 Status: active
+
+## D62 · 2026-10-25 · A script renders the idea board; Claude only publishes it
+
+Why: the board must look the same after every stage and every new session, and a
+test must prove what it shows. `board.py` reads the files with the parsers the gates
+already use (D50), so the board cannot show a row that the gates read in another
+way.
+Rejected: Claude writes the HTML at each stage (the page changes from run to run,
+and no test can check it), Claude edits the last page (it drifts from the files).
+Source: specs/idea-board.md
+Status: active
+
+## D63 · 2026-10-25 · The board is a claude.ai page; localhost serves it only when the publish fails
+
+Why: a claude.ai page opens on a phone and needs no process (shape O3). When the
+publish fails, `board.py serve` on 127.0.0.1:4750 still shows the board (O4). It
+checks the Host header, so a hostile page cannot read it through DNS rebinding
+(O10).
+Rejected: a local live server as the main host, as in Backlot (laptop only, a new
+process, shape "Not doing"), a local file with no server (the user chose a server,
+O4), plain `python3 -m http.server` (no Host check, O10), stopping the stage until
+the publish works (a network blip blocks work).
+Source: specs/idea-board.md
+Status: active
+
+## D64 · 2026-10-26 · The board draws its diagrams with Mermaid 11.12.0, loaded by the page
+
+Why: every spec already holds its diagrams in Mermaid (D23), and the board must show
+them readably in a dark page. claude.ai's built-in Mermaid drew them, but the user
+could not read them (O13). The page loads a pinned Mermaid from cdnjs and draws on
+paper colours that it sets itself, on claude.ai and on localhost alike.
+Rejected: claude.ai's built-in Mermaid (colours not set by the page, O13), SVG made
+at render time by mermaid-cli (Node and a headless Chrome on every machine), D2 or
+Graphviz (each spec's diagrams written twice, against D23), a light panel behind the
+built-in Mermaid (plain, and no diagrams on localhost).
+Source: specs/idea-board.md
+Status: active
