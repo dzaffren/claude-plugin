@@ -235,7 +235,10 @@ and the fix commit. A clean run writes one line:
 below the first. Do not change or remove a line. Do not put a brace pair,
 `TODO` or `[TBD]` in a line: the ship gate reads each one as a blank. Name the
 thing in other words, such as "a leftover to-do note". Commit the spec as
-`docs(spec): record the review of {slice}`.
+`docs(spec): record the review of {slice}`. Then, when the spec has a
+`**Shape doc:**` line, republish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/review {slice}"`.
 
 Capture recurring findings to `docs/learnings/` silently — the third time the
 same class of bug appears, it is a lesson, not a coincidence.

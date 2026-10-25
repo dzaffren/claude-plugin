@@ -138,7 +138,10 @@ Print: chunks and their results, tests added and passing, the e2e result, the
 flag name, the branch, anything you did that the plan did not anticipate, and
 each `Decided alone` row you added.
 
-Set spec Status to `Built`, unless a blocker set it to `Draft`.
+Set spec Status to `Built`, unless a blocker set it to `Draft`. Then,
+when the spec has a `**Shape doc:**` line, republish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/build {slice}"`.
 
 Capture lessons silently to `docs/learnings/` — corrections the user made,
 things the plan got wrong, patterns worth remembering. Do not narrate this.
