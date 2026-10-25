@@ -97,5 +97,7 @@ expect_match "Commit the spec as \`docs\(spec\): record the review of \{slice\}\
 expect_match "Republish the hub page from .*- When the spec has a \`\*\*Shape doc:\*\*\` line, republish the idea board, as $pointer\..*render-readme-block\.sh --write" \
   "$ship" "ship/SKILL.md: republishes the board right after the hub page"
 expect_match 'A new `\*\*Board:\*\*` line in the shape goes in the commit below\.' "$ship" "ship/SKILL.md: a new Board line is committed with the refresh"
+expect_match 'set the spec and its row back to `Built`, republish the idea board, run `render-readme-block\.sh --write` again' \
+  "$ship" "ship/SKILL.md: a failed gate republishes the board after the spec goes back to Built"
 
 expect_no_match '"Idea board"' "$release" "release/SKILL.md: does not republish the board"

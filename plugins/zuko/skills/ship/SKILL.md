@@ -114,8 +114,8 @@ onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
 proceed on a "probably fine". Before you route to `/spec` or `/build`, set the
-spec and its row back to `Built`, run `render-readme-block.sh --write` again,
-and commit. The slice is not shipped until its PR merges, and `/spec` starts a
+spec and its row back to `Built`, republish the idea board, run
+`render-readme-block.sh --write` again, and commit. The slice is not shipped until its PR merges, and `/spec` starts a
 new version of a `Shipped` spec.
 
 When `/ship` makes a choice alone, such as a test left red because the base
