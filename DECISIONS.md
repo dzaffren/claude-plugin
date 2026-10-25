@@ -731,15 +731,18 @@ the publish works (a network blip blocks work).
 Source: specs/idea-board.md
 Status: active
 
-## D64 · 2026-10-26 · The board draws its diagrams with Mermaid 11.12.0, loaded by the page
+## D64 · 2026-10-26 · The board draws its diagrams with Mermaid 11.16.1, loaded by the page
 
 Why: every spec already holds its diagrams in Mermaid (D23), and the board must show
 them readably in a dark page. claude.ai's built-in Mermaid drew them, but the user
-could not read them (O13). The page loads a pinned Mermaid from cdnjs and draws on
-paper colours that it sets itself, on claude.ai and on localhost alike.
+could not read them (O13). The page loads a pinned Mermaid from jsDelivr and draws on
+paper colours that it sets itself, on claude.ai and on localhost alike. 11.16.1 is
+the first version with no known advisory; 11.12.0 let a classDef put HTML outside its
+diagram (GHSA-ghcm-xqfw-q4vr), and cdnjs does not serve 11.16.1.
 Rejected: claude.ai's built-in Mermaid (colours not set by the page, O13), SVG made
 at render time by mermaid-cli (Node and a headless Chrome on every machine), D2 or
 Graphviz (each spec's diagrams written twice, against D23), a light panel behind the
-built-in Mermaid (plain, and no diagrams on localhost).
+built-in Mermaid (plain, and no diagrams on localhost), Mermaid 11.12.0 from cdnjs
+(nine advisories, review O21).
 Source: specs/idea-board.md
 Status: active
