@@ -160,7 +160,7 @@ print(json.dumps(d, sort_keys=True))' "$stages")
 same "$want" "$slot" "render: the data block parses to what data prints"
 expect_no_match "/\*DATA\*/" "$page" "render: the slot is filled"
 expect_match "<title>Idea board</title>" "$page" "render: the static title"
-expect_match "cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js" "$page" "render: Mermaid 11.12.0 from cdnjs"
+expect_match "cdn.jsdelivr.net/npm/mermaid@11.16.1/dist/mermaid.min.js" "$page" "render: Mermaid 11.16.1, which no advisory affects, from jsDelivr"
 expect_match 'securityLevel: "strict"' "$page" "render: Mermaid runs in strict mode"
 
 # --- render: file text cannot close a script block ---
