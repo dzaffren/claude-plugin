@@ -114,21 +114,30 @@ Say nothing about it.
 
 When the publish fails, the stage goes on. Serve the board on localhost:
 
-1. Check for the server with `curl -s -o /dev/null http://127.0.0.1:4751/`.
+1. Check that the server on port 4751 serves this board. The check passes
+   only when the page it returns is the file you wrote:
+
+   ```bash
+   curl -sf http://127.0.0.1:4751/{idea}-board.html | cmp -s - docs/specs/.pages/{idea}-board.html
+   ```
+
 2. If the check fails, start the server in the background:
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/board.py" serve docs/specs/.pages
    ```
 
-3. Print one line, with the error from the Artifact tool:
+   Wait one second. Run the same check again.
+3. When a check matches, print one line, with the error from the Artifact
+   tool:
 
    ```
    Board not published: {error}. Local board: http://127.0.0.1:4751/{idea}-board.html
    ```
 
-`serve` exits 1 when port 4751 is in use. Then print this line instead, with
-the absolute path of the file:
+When the second check does not match, print this line instead, with the
+absolute path of the file. Another program, or the server of another
+project, holds port 4751, and `serve` exits 1:
 
 ```
 Board not published: {error}. Port 4751 is in use, so open the file: {absolute path}

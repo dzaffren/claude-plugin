@@ -56,7 +56,12 @@ expect_match '`render` exits 2 when it cannot read the shape, or when the shape 
 
 # --- the publish fails (scenario 5; O4, O9, O11) ---
 expect_match 'When the publish fails, the stage goes on\.' "$board" "idea board: a failed publish does not stop the stage"
-expect_match 'curl -s -o /dev/null http://127\.0\.0\.1:4751/' "$board" "idea board: the server check"
+expect_match 'curl -sf http://127\.0\.0\.1:4751/\{idea\}-board\.html \| cmp -s - docs/specs/\.pages/\{idea\}-board\.html' "$board" \
+  "idea board: the check fetches this board and compares it with the file"
+expect_no_match 'curl -s -o /dev/null http://127\.0\.0\.1:4751/' "$board" "idea board: no check that passes on any answer"
+expect_match 'Run the same check again\.' "$board" "idea board: the check runs again after serve starts"
+expect_match 'When the second check does not match, print this line instead' "$board" \
+  "idea board: the port-in-use line comes from the second check, not from serve's exit"
 expect_match 'python3 "\$\{CLAUDE_PLUGIN_ROOT\}/scripts/lib/board\.py" serve docs/specs/\.pages' "$board" "idea board: the serve command"
 expect_match 'Board not published: \{error\}\. Local board: http://127\.0\.0\.1:4751/\{idea\}-board\.html' "$board" \
   "idea board: the localhost line"
