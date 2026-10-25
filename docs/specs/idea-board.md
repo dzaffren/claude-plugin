@@ -67,7 +67,7 @@ Scenario: /shape publishes the first board
   And it shows the 5 slices in order: idea-board, gate-card, pr-gate, library, replay
   And each slice is grey, with its "What ships" text from the shape
   And it draws an arrow from idea-board to each of the other four, as the shape's slice map does
-  And shape.md gains a line "**Board:** {url}"
+  And shape.md gains a line "**Board:** <url>"
   And the terminal prints the board link
 
 Scenario: /spec moves a slice along the rail
@@ -97,7 +97,7 @@ Scenario: the publish fails
   When /review ends on idea-board
   Then the board is written to docs/specs/.pages/living-board-board.html
   And a server on 127.0.0.1 serves it, started if it is not already running
-  And the terminal prints "Board not published: {error}. Local board: http://127.0.0.1:{port}/living-board-board.html"
+  And the terminal prints "Board not published: <error>. Local board: http://127.0.0.1:<port>/living-board-board.html"
   And /review finishes as usual
   And the next stage tries the publish again
 ```
@@ -135,9 +135,9 @@ One dark look, by choice, after Backlot. Stage colours: amber at a pause, blue f
 
 | Part | What it shows | From |
 | --- | --- | --- |
-| Header | A striped mark, `zuko board · {shape path}`, the shape's title in spaced capitals, chips (project type · slices, started, shipped · shape status), the problem, and one status on the right: `AWAITING YOU` when a slice is at pause 1 to 3, `IN FLIGHT` when one is Refined, Built or Reviewed, `ALL SHIPPED` when all are Shipped, else `NOT STARTED` | `shape.md`, each spec's Status line |
+| Header | A striped mark, `zuko board · <shape path>`, the shape's title in spaced capitals, chips (project type · slices, started, shipped · shape status), the problem, and one status on the right: `AWAITING YOU` when a slice is at pause 1 to 3, `IN FLIGHT` when one is Refined, Built or Reviewed, `ALL SHIPPED` when all are Shipped, else `NOT STARTED` | `shape.md`, each spec's Status line |
 | Stage rail | The picked slice's six stages, joined by a line: a check for each stage done, a pulsing ring for the current one with one line under it (`awaiting your approval · answer in the terminal`, `awaiting you · run /build to approve`, `refined · run /build`, `built · next /review`, `reviewed · next /ship`), a number for each stage to come | the spec's Status line and sections |
-| Paper card | The slice name, a stamp (`Awaiting you`, `In flight` or `Shipped`), `slice {n} · {stage} · {count} diagrams`, the spec's opening text, then each Mermaid diagram in the spec at full width, with its heading and the sentence under it. A click zooms a diagram; Escape closes it | the spec |
+| Paper card | The slice name, a stamp (`Awaiting you`, `In flight` or `Shipped`), `slice <n> · <stage> · <count> diagrams`, the spec's opening text, then each Mermaid diagram in the spec at full width, with its heading and the sentence under it. A click zooms a diagram; Escape closes it | the spec |
 | Decisions panel | Each D-entry: its ID, title and Why, then `also considered:` with each rejected option struck through and its reason after it | `DECISIONS.md` by `Source:` |
 | Answers panel | Each Resolved, Accepted risk and Decided alone row: ID, a coloured status tag, the answer. A Decided alone row has a violet edge | the spec's ledger |
 | Filmstrip | One frame per slice between two perforated edges: `SL 01`, the stage, the name, the card text, and `needs` tags. A frame for a slice with no spec is dashed amber and says `no spec yet` | the shape table; the spec once it exists |
@@ -156,13 +156,13 @@ Board: https://claude.ai/artifact/…
 When the publish fails:
 
 ```
-Board not published: {error from the Artifact tool}. Local board: http://127.0.0.1:4751/living-board-board.html
+Board not published: <error from the Artifact tool>. Local board: http://127.0.0.1:4751/living-board-board.html
 ```
 
 When port 4751 is taken too:
 
 ```
-Board not published: {error}. Port 4751 is in use, so open the file: {absolute path}
+Board not published: <error>. Port 4751 is in use, so open the file: <absolute path>
 ```
 
 **shape.md** gains one line under the Project type line, written on the first publish and never changed after:
@@ -175,7 +175,7 @@ Board not published: {error}. Port 4751 is in use, so open the file: {absolute p
 
 ### Approach
 
-A new script, `scripts/lib/board.py`, reads one shape, the specs it names, and `DECISIONS.md`, and prints the board as one HTML file. Claude writes that file to `docs/specs/.pages/{idea}-board.html` and publishes it with the Artifact tool. One new section in `references/visual-page.md` holds the steps, and each of the five stages points to it with one line. The script reuses the spec parser in `pr_body.py` and the entry parser in `decisions.py`, so the board reads rows and entries exactly as the ship gate and the decision gate do.
+A new script, `scripts/lib/board.py`, reads one shape, the specs it names, and `DECISIONS.md`, and prints the board as one HTML file. Claude writes that file to `docs/specs/.pages/<idea>-board.html` and publishes it with the Artifact tool. One new section in `references/visual-page.md` holds the steps, and each of the five stages points to it with one line. The script reuses the spec parser in `pr_body.py` and the entry parser in `decisions.py`, so the board reads rows and entries exactly as the ship gate and the decision gate do.
 
 Relies on: D23 (Mermaid stays the source in pages; ASCII in the terminal), D50 (one parser for spec rows), D60 (/ship marks the slice Shipped before the push, so the board it publishes shows Shipped). Drafted below: D62, D63, D64.
 
@@ -218,12 +218,12 @@ sequenceDiagram
 
 | Part | Rule |
 | --- | --- |
-| Slices | The rows of the table under `## Slices` in `shape.md`, outside code fences. The Slice cell, with backticks and a leading `/` removed, lower case, spaces as `-`, names the spec: `docs/specs/{name}.md` |
+| Slices | The rows of the table under `## Slices` in `shape.md`, outside code fences. The Slice cell, with backticks and a leading `/` removed, lower case, spaces as `-`, names the spec: `docs/specs/<name>.md` |
 | Stage | No spec: Not started. `Draft` with no `## Interface` and no `## Technical plan`: Pause 1. `Draft` with `## Interface` only: Pause 2. `Draft` with `## Technical plan`: Pause 3. `Refined`: Refined. `Built` with no `## Review`: Built. `Built` with `## Review`: Reviewed. `Shipped`: Shipped |
 | Card text | The spec's first paragraph under its header lines; with no spec, the shape's What ships cell |
 | needs | The spec's `**Depends on:**` names that are slices of this shape. With no spec, nothing |
 | Diagrams | Every ```` ```mermaid ```` fence in the spec, outside `## Open items`, copied as it is. The caption is the nearest `##` or `###` heading above it. The sentence is the first prose line after the fence |
-| Choices | `DECISIONS.md` entries with `Source: specs/{name}.md`, newest first; then the spec's rows at `Resolved`, `Accepted risk` and `Decided alone` |
+| Choices | `DECISIONS.md` entries with `Source: specs/<name>.md`, newest first; then the spec's rows at `Resolved`, `Accepted risk` and `Decided alone` |
 | Escaping | The JSON block escapes `</` as `<\/`, so no file text can close the script tag. The page puts every value in through an escape function. Mermaid runs with `securityLevel: "strict"` |
 
 The script writes the data as one JSON block into a fixed template, `scripts/lib/board.html`. The template's script draws the page from that block and loads Mermaid 11.16.1 from jsDelivr to draw every diagram in the paper's colours. claude.ai's own Mermaid is not used: its colours could not be read in the user's theme (O13). The same file works on claude.ai and on localhost.
@@ -287,7 +287,7 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 
 | Risk | Mitigation |
 | --- | --- |
-| An old shape's Slice cell does not match its spec's file name, as in `v3-project-memory` ("Auto-onboard", "Decision log"), so a shipped slice shows Not started | The name rule handles case, spaces, backticks and `/`. A cell that still does not match shows Not started, and the card says `no spec at docs/specs/{name}.md`, so the gap is visible. `/shape` already writes kebab-case names |
+| An old shape's Slice cell does not match its spec's file name, as in `v3-project-memory` ("Auto-onboard", "Decision log"), so a shipped slice shows Not started | The name rule handles case, spaces, backticks and `/`. A cell that still does not match shows Not started, and the card says `no spec at docs/specs/<name>.md`, so the gap is visible. `/shape` already writes kebab-case names |
 | Claude forgets the republish step in a stage | `test-idea-board.sh` proves each of the five skills names the step. Each stage prints the Board line, so a missing one shows |
 | A spec's Mermaid has a syntax error, so one diagram shows an error box | The rest of the page still draws. The same block already fails on the spec page, so the gap is seen there too |
 | jsDelivr cannot be reached, so no diagram draws | Each diagram shows "Mermaid did not load". The text, panels and filmstrip still draw from the JSON |
