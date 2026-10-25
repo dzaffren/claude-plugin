@@ -40,7 +40,6 @@ USAGE = ("Usage: board.py render <shape.md> --by <text>\n"
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "board.html")
 SLOT = "/*DATA*/null"
 PORT = 4750
-HOSTS = ("127.0.0.1:%d" % PORT, "localhost:%d" % PORT)
 
 STATUS = re.compile(r"\*\*Status:\*\*\s*([^·\n]+)")
 TYPE = re.compile(r"\*\*Project type:\*\*\s*([^·\n]+)")
@@ -271,18 +270,21 @@ def blob(data):
     return json.dumps(data, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\u0021--")
 
 
-def serve(folder):
+def serve(folder, port=PORT):
+    """The port is a parameter only so the test can run this server when
+    another program holds 4750."""
     if not os.path.isdir(folder):
         print("board.py: %s is not a directory" % folder, file=sys.stderr)
         return 2
     root = os.path.realpath(folder)
+    hosts = ("127.0.0.1:%d" % port, "localhost:%d" % port)
 
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=root, **kwargs)
 
         def send_head(self):
-            if self.headers.get("Host") not in HOSTS:
+            if self.headers.get("Host") not in hosts:
                 self.send_error(400, "Host not allowed")
                 return None
             path = os.path.realpath(self.translate_path(self.path))
@@ -292,9 +294,9 @@ def serve(folder):
             return super().send_head()
 
     try:
-        server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
     except OSError as error:
-        print("board.py: cannot serve on 127.0.0.1:%d: %s" % (PORT, error.strerror or error), file=sys.stderr)
+        print("board.py: cannot serve on 127.0.0.1:%d: %s" % (port, error.strerror or error), file=sys.stderr)
         return 1
     try:
         server.serve_forever()
