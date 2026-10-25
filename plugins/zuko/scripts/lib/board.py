@@ -15,8 +15,8 @@ reads each part".
 
   render  board.html with its JSON slot filled: the page to publish
   data    only the JSON, for the tests
-  serve   serves <dir> on 127.0.0.1:4750 until stopped. Any Host header but
-          127.0.0.1:4750 or localhost:4750 gets 400, so a page on another
+  serve   serves <dir> on 127.0.0.1:4751 until stopped. Any Host header but
+          127.0.0.1:4751 or localhost:4751 gets 400, so a page on another
           site cannot read the board through DNS rebinding
 
 Exit 0 printed, or the server stopped. Exit 1 the port cannot be bound, most
@@ -39,7 +39,7 @@ USAGE = ("Usage: board.py render <shape.md> --by <text>\n"
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "board.html")
 SLOT = "/*DATA*/null"
-PORT = 4750
+PORT = 4751
 
 STATUS = re.compile(r"\*\*Status:\*\*\s*([^·\n]+)")
 TYPE = re.compile(r"\*\*Project type:\*\*\s*([^·\n]+)")
@@ -272,7 +272,7 @@ def blob(data):
 
 def serve(folder, port=PORT):
     """The port is a parameter only so the test can run this server when
-    another program holds 4750."""
+    another program holds 4751."""
     if not os.path.isdir(folder):
         print("board.py: %s is not a directory" % folder, file=sys.stderr)
         return 2

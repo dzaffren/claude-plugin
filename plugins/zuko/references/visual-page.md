@@ -114,7 +114,7 @@ Say nothing about it.
 
 When the publish fails, the stage goes on. Serve the board on localhost:
 
-1. Check for the server with `curl -s -o /dev/null http://127.0.0.1:4750/`.
+1. Check for the server with `curl -s -o /dev/null http://127.0.0.1:4751/`.
 2. If the check fails, start the server in the background:
 
    ```bash
@@ -124,14 +124,14 @@ When the publish fails, the stage goes on. Serve the board on localhost:
 3. Print one line, with the error from the Artifact tool:
 
    ```
-   Board not published: {error}. Local board: http://127.0.0.1:4750/{idea}-board.html
+   Board not published: {error}. Local board: http://127.0.0.1:4751/{idea}-board.html
    ```
 
-`serve` exits 1 when port 4750 is in use. Then print this line instead, with
+`serve` exits 1 when port 4751 is in use. Then print this line instead, with
 the absolute path of the file:
 
 ```
-Board not published: {error}. Port 4750 is in use, so open the file: {absolute path}
+Board not published: {error}. Port 4751 is in use, so open the file: {absolute path}
 ```
 
 Leave the server running after the stage ends. A later failed publish uses

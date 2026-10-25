@@ -56,11 +56,11 @@ expect_match '`render` exits 2 when it cannot read the shape, or when the shape 
 
 # --- the publish fails (scenario 5; O4, O9, O11) ---
 expect_match 'When the publish fails, the stage goes on\.' "$board" "idea board: a failed publish does not stop the stage"
-expect_match 'curl -s -o /dev/null http://127\.0\.0\.1:4750/' "$board" "idea board: the server check"
+expect_match 'curl -s -o /dev/null http://127\.0\.0\.1:4751/' "$board" "idea board: the server check"
 expect_match 'python3 "\$\{CLAUDE_PLUGIN_ROOT\}/scripts/lib/board\.py" serve docs/specs/\.pages' "$board" "idea board: the serve command"
-expect_match 'Board not published: \{error\}\. Local board: http://127\.0\.0\.1:4750/\{idea\}-board\.html' "$board" \
+expect_match 'Board not published: \{error\}\. Local board: http://127\.0\.0\.1:4751/\{idea\}-board\.html' "$board" \
   "idea board: the localhost line"
-expect_match 'Board not published: \{error\}\. Port 4750 is in use, so open the file: \{absolute path\}' "$board" \
+expect_match 'Board not published: \{error\}\. Port 4751 is in use, so open the file: \{absolute path\}' "$board" \
   "idea board: the port-in-use line"
 expect_match 'Leave the server running after the stage ends\.' "$board" "idea board: the server stays up"
 expect_match 'The next stage tries the publish again\.' "$board" "idea board: the next stage tries again"

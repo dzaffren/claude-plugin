@@ -721,7 +721,7 @@ Status: active
 ## D63 · 2026-10-25 · The board is a claude.ai page; localhost serves it only when the publish fails
 
 Why: a claude.ai page opens on a phone and needs no process (shape O3). When the
-publish fails, `board.py serve` on 127.0.0.1:4750 still shows the board (O4). It
+publish fails, `board.py serve` on 127.0.0.1:4751 still shows the board (O4). It
 checks the Host header, so a hostile page cannot read it through DNS rebinding
 (O10).
 Rejected: a local live server as the main host, as in Backlot (laptop only, a new

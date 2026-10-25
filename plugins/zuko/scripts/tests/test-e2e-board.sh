@@ -75,7 +75,7 @@ One slice moves through these stages.
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | What counts as why? | question | spec p1 | user | Resolved | The D-entries, 2026-10-25 |
 | O2 | Is a minute per stage fine? | question | spec p3 | user | Accepted risk | Yes, 2026-10-25 |
-| O3 | Which port? | flag | build | user | Decided alone | Chose: 4750. Other: a free port. Undo: change PORT. 2026-10-26 |
+| O3 | Which port? | flag | build | user | Decided alone | Chose: 4751. Other: a free port. Undo: change PORT. 2026-10-26 |
 | O4 | Still open? | question | spec p3 | user | Open | — |
 SPEC
 
@@ -154,19 +154,19 @@ same "0" "$(get 'sum(len(s["decisions"]) for s in d["slices"] if s["name"] != "i
   "scenario 3: no other slice shows D62"
 
 # --- scenario 5: the publish failed, so board.py serve serves the page ---
-# When another program holds 4750, the CLI's refusal is checked, and the
+# When another program holds 4751, the CLI's refusal is checked, and the
 # same server runs through serve() on a free port for the rest.
 pages="$repo/docs/specs/.pages"
-if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:4750/"; then
-  echo "e2e-board: port 4750 is in use, so the server is checked on a free port" >&2
+if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:4751/"; then
+  echo "e2e-board: port 4751 is in use, so the server is checked on a free port" >&2
   python3 "$board" serve "$pages" 2>"$work/taken.err"
-  expect_exit 1 "$?" "serve: port 4750 in use exits 1"
-  expect_match "4750" "$(cat "$work/taken.err")" "serve: the message names the port"
+  expect_exit 1 "$?" "serve: port 4751 in use exits 1"
+  expect_match "4751" "$(cat "$work/taken.err")" "serve: the message names the port"
   port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
   python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import board; sys.exit(board.serve(sys.argv[2], int(sys.argv[3])))' \
     "$scripts/lib" "$pages" "$port" >/dev/null 2>"$work/serve.err" &
 else
-  port=4750
+  port=4751
   python3 "$board" serve "$pages" >/dev/null 2>"$work/serve.err" &
 fi
 server=$!
@@ -192,10 +192,10 @@ same "404" "$(code "http://127.0.0.1:$port/out.md")" "serve: a link out of the f
 same "404" "$(code --path-as-is "http://127.0.0.1:$port/../living-board/shape.md")" \
   "serve: a .. path does not leave the folder"
 
-if [ "$port" = 4750 ]; then
+if [ "$port" = 4751 ]; then
   python3 "$board" serve "$pages" 2>"$work/taken.err"
-  expect_exit 1 "$?" "serve: a second server on 4750 exits 1"
-  expect_match "4750" "$(cat "$work/taken.err")" "serve: the message names the port"
+  expect_exit 1 "$?" "serve: a second server on 4751 exits 1"
+  expect_match "4751" "$(cat "$work/taken.err")" "serve: the message names the port"
 fi
 
 kill "$server" 2>/dev/null
