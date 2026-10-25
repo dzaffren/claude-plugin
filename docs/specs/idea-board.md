@@ -1,6 +1,6 @@
 # Idea board
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** None
@@ -49,63 +49,7 @@ stateDiagram-v2
   [*] --> NotStarted: listed in shape.md
   NotStarted --> Pause1: /spec writes the spec
   Pause1 --> Pause2: spec gains ## Interface
-
-**Preview:** https://claude.ai/artifact/9o36TJM3VXNn2VKRPLYPBi (version 5, built from the real `living-board` and `ask-up-front` files). The look follows OpenMontage's Backlot board, as the user asked.
-
-```mermaid
-flowchart TB
-  H["Header: idea name, chips, AWAITING YOU / IN FLIGHT / ALL SHIPPED"] --> R["Stage rail of the picked slice: P1 P2 P3 Built Reviewed Shipped"]
-  R --> P["Paper card: slice name, stamp, opening text, every spec diagram"]
-  R --> S["Side panels: Decisions, Answers"]
-  F["Filmstrip: one frame per slice, in shape order"] -- click picks the slice --> R
-  F --> M["Slice map: needs links"]
-```
-
-The header says where the idea stands. A click on a slice in the filmstrip fills the stage rail, the paper card and the side panels with that slice.
-
-**The page**
-
-One dark look, by choice, after Backlot. Stage colours: amber at a pause, blue for Refined, Built and Reviewed, green for Shipped, dashed amber for no spec yet.
-
-| Part | What it shows | From |
-| --- | --- | --- |
-| Header | A striped mark, `zuko board · {shape path}`, the shape's title in spaced capitals, chips (project type · slices, started, shipped · shape status), the problem, and one status on the right: `AWAITING YOU` when a slice is at pause 1 to 3, `IN FLIGHT` when one is Refined, Built or Reviewed, `ALL SHIPPED` when all are Shipped, else `NOT STARTED` | `shape.md`, each spec's Status line |
-| Stage rail | The picked slice's six stages, joined by a line: a check for each stage done, a pulsing ring for the current one with one line under it (`awaiting your approval · answer in the terminal`, `awaiting you · run /build to approve`, `refined · run /build`, `built · next /review`, `reviewed · next /ship`), a number for each stage to come | the spec's Status line and sections |
-| Paper card | The slice name, a stamp (`Awaiting you`, `In flight` or `Shipped`), `slice {n} · {stage} · {count} diagrams`, the spec's opening text, then each Mermaid diagram in the spec at full width, with its heading and the sentence under it. A click zooms a diagram; Escape closes it | the spec |
-| Decisions panel | Each D-entry: its ID, title and Why, then `also considered:` with each rejected option struck through and its reason after it | `DECISIONS.md` by `Source:` |
-| Answers panel | Each Resolved, Accepted risk and Decided alone row: ID, a coloured status tag, the answer. A Decided alone row has a violet edge | the spec's ledger |
-| Filmstrip | One frame per slice between two perforated edges: `SL 01`, the stage, the name, the card text, and `needs` tags. A frame for a slice with no spec is dashed amber and says `no spec yet` | the shape table; the spec once it exists |
-| Slice map | Every slice, coloured by stage, with a `needs` arrow per link. With no links yet, dotted `then` arrows in shape order | each spec's `**Depends on:**` line |
-
-On first load, the page picks the first slice that is not Shipped, or the last one Shipped. A diagram that fails to draw shows `This diagram did not draw: {Mermaid's first error line}` in its place; the rest of the page still draws.
-
-**The terminal**
-
-At the end of each stage that republishes, one line:
-
-```
-Board: https://claude.ai/artifact/…
-```
-
-When the publish fails:
-
-```
-Board not published: {error from the Artifact tool}. Local board: http://127.0.0.1:4750/living-board-board.html
-```
-
-When port 4750 is taken too:
-
-```
-Board not published: {error}. Port 4750 is in use, so open the file: {absolute path}
-```
-
-**shape.md** gains one line under the Project type line, written on the first publish and never changed after:
-
-```
-**Board:** https://claude.ai/artifact/…
-```
-
-## Technical plan
+  Pause2 --> Pause3: spec gains ## Technical plan
   Pause1 --> Pause3: light path, no Interface
   Pause3 --> Refined: Status Refined
   Refined --> Built: /build
@@ -172,27 +116,34 @@ Scenario: the publish fails
 
 ## Interface
 
-**Preview:** https://claude.ai/artifact/9o36TJM3VXNn2VKRPLYPBi (built from `docs/specs/.pages/idea-board-preview.html`, real data from `living-board` and `ask-up-front`)
+**Preview:** https://claude.ai/artifact/9o36TJM3VXNn2VKRPLYPBi (version 5, built from the real `living-board` and `ask-up-front` files). The look follows OpenMontage's Backlot board, as the user asked.
 
 ```mermaid
 flowchart TB
-  H[Header: shape path, idea name, problem, status strip] --> M[Slice map: arrows from each spec's Depends on line]
-  M --> R[Rail: one small card per slice, in shape order]
-  R -- card links to --> X[Slice section: opening text, the spec's diagrams, then choices]
+  H["Header: idea name, chips, AWAITING YOU / IN FLIGHT / ALL SHIPPED"] --> R["Stage rail of the picked slice: P1 P2 P3 Built Reviewed Shipped"]
+  R --> P["Paper card: slice name, stamp, opening text, every spec diagram"]
+  R --> S["Side panels: Decisions, Answers"]
+  F["Filmstrip: one frame per slice, in shape order"] -- click picks the slice --> R
+  F --> M["Slice map: needs links"]
 ```
 
-The page reads top to bottom: the idea, then how its slices connect, then a small card per slice. Below the rail, each slice with a spec has its own section with its diagrams and choices.
+The header says where the idea stands. A click on a slice in the filmstrip fills the stage rail, the paper card and the side panels with that slice.
 
 **The page**
 
+One dark look, by choice, after Backlot. Stage colours: amber at a pause, blue for Refined, Built and Reviewed, green for Shipped, dashed amber for no spec yet.
+
 | Part | What it shows | From |
 | --- | --- | --- |
-| Header | `Idea · {shape path}`, the shape's title, its Problem, then a status strip: the shape's Status · slices started · slices shipped · Open rows · `updated {date} by {stage} {slice}` | `shape.md`, each spec's Status line |
-| Slice map | One box per slice, coloured by stage, with a `needs` arrow for each Depends on link | each spec's `**Depends on:**` line; the shape's slice map for a slice with no spec |
-| Card | The number and name, a stage pill, a track of 6 steps (P1, P2, P3, Built, Reviewed, Shipped; Refined fills P3), the What ships text, a `needs` line, and a link to the spec page | the shape table until a spec exists, then the spec's opening lines |
-| Slice section | One per slice with a spec, in shape order, folded; open while the slice is not Shipped. The spec's opening text, then **Diagrams**: every Mermaid diagram in the spec, each with its heading (Flow, States, Interface, Approach, Data) and the sentence under it; then **Choices**: each D-entry as ID, title, Why and Rejected, then each Resolved, Accepted risk and Decided alone row as ID, status and answer. A Decided alone row has a coloured edge | the spec's Mermaid blocks, `DECISIONS.md` by `Source:`, the spec ledger |
+| Header | A striped mark, `zuko board · {shape path}`, the shape's title in spaced capitals, chips (project type · slices, started, shipped · shape status), the problem, and one status on the right: `AWAITING YOU` when a slice is at pause 1 to 3, `IN FLIGHT` when one is Refined, Built or Reviewed, `ALL SHIPPED` when all are Shipped, else `NOT STARTED` | `shape.md`, each spec's Status line |
+| Stage rail | The picked slice's six stages, joined by a line: a check for each stage done, a pulsing ring for the current one with one line under it (`awaiting your approval · answer in the terminal`, `awaiting you · run /build to approve`, `refined · run /build`, `built · next /review`, `reviewed · next /ship`), a number for each stage to come | the spec's Status line and sections |
+| Paper card | The slice name, a stamp (`Awaiting you`, `In flight` or `Shipped`), `slice {n} · {stage} · {count} diagrams`, the spec's opening text, then each Mermaid diagram in the spec at full width, with its heading and the sentence under it. A click zooms a diagram; Escape closes it | the spec |
+| Decisions panel | Each D-entry: its ID, title and Why, then `also considered:` with each rejected option struck through and its reason after it | `DECISIONS.md` by `Source:` |
+| Answers panel | Each Resolved, Accepted risk and Decided alone row: ID, a coloured status tag, the answer. A Decided alone row has a violet edge | the spec's ledger |
+| Filmstrip | One frame per slice between two perforated edges: `SL 01`, the stage, the name, the card text, and `needs` tags. A frame for a slice with no spec is dashed amber and says `no spec yet` | the shape table; the spec once it exists |
+| Slice map | Every slice, coloured by stage, with a `needs` arrow per link. With no links yet, dotted `then` arrows in shape order | each spec's `**Depends on:**` line |
 
-A slice with no spec shows as a dashed, grey card with only its shape text, and has no section. The slice in flight has a lit border.
+On first load, the page picks the first slice that is not Shipped, or the last one Shipped. A diagram that fails to draw shows `This diagram did not draw: {Mermaid's first error line}` in its place; the rest of the page still draws.
 
 **The terminal**
 
@@ -205,7 +156,13 @@ Board: https://claude.ai/artifact/…
 When the publish fails:
 
 ```
-Board not published: {error from the Artifact tool}. Local board: http://127.0.0.1:{port}/living-board-board.html
+Board not published: {error from the Artifact tool}. Local board: http://127.0.0.1:4751/living-board-board.html
+```
+
+When port 4751 is taken too:
+
+```
+Board not published: {error}. Port 4751 is in use, so open the file: {absolute path}
 ```
 
 **shape.md** gains one line under the Project type line, written on the first publish and never changed after:
@@ -234,7 +191,7 @@ flowchart TB
   BP -- imports parse --> DP[scripts/lib/decisions.py]
   BP -- HTML on stdout --> F[docs/specs/.pages/idea-board.html]
   F -- Artifact publish --> A[claude.ai board]
-  F -. "publish fails: board.py serve, port 4750" .-> L[localhost board]
+  F -. "publish fails: board.py serve, port 4751" .-> L[localhost board]
 ```
 
 Each stage follows the one section in `visual-page.md`. That section runs `board.py`, writes the HTML into `.pages/`, and publishes it, or serves it on localhost when the publish fails.
@@ -276,7 +233,7 @@ The script writes the data as one JSON block into a fixed template, `scripts/lib
 | File | What changes | Why |
 | --- | --- | --- |
 | `plugins/zuko/scripts/lib/board.html` (new) | The page template from preview version 5: the CSS, the JSON slot, and the script that draws the board | The Interface section |
-| `plugins/zuko/scripts/lib/board.py` (new) | `render <shape.md> --by <text>`: prints the board HTML. `data <shape.md>`: prints only the JSON, for the tests. Exit 2 when the shape cannot be read or has no `## Slices` table. `serve <dir>`: serves `<dir>` on 127.0.0.1:4750 and answers 400 to any Host other than `127.0.0.1:4750` or `localhost:4750`. Exit 1 when the port is taken | Scenarios 1 to 5; O10, O11 |
+| `plugins/zuko/scripts/lib/board.py` (new) | `render <shape.md> --by <text>`: prints the board HTML. `data <shape.md>`: prints only the JSON, for the tests. Exit 2 when the shape cannot be read or has no `## Slices` table. `serve <dir>`: serves `<dir>` on 127.0.0.1:4751 and answers 400 to any Host other than `127.0.0.1:4751` or `localhost:4751`. Exit 1 when the port is taken | Scenarios 1 to 5; O10, O11 |
 | `plugins/zuko/references/visual-page.md:59` | New section `## Idea board` after "Link back to the hub": when to publish, the `board.py` call, the file path, the publish, the `**Board:**` line, the terminal line, and the localhost fallback. "Link back to the hub" gains the board line for spec pages | Scenarios 1, 2, 5; O7 |
 | `plugins/zuko/skills/shape/SKILL.md:160` | Before "Then, in the terminal": publish the board per `visual-page.md` › "Idea board" | Scenario 1 |
 | `plugins/zuko/skills/spec/SKILL.md:76`, `:155`, `:222` | Before each "Then stop": republish the board when the spec has a `**Shape doc:**` line | Scenarios 2, 4 |
@@ -313,7 +270,7 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 | 2 /spec moves a slice | `test-board.sh`: one spec per stage rule renders the right pill and track, 8 cases; a spec with Flow and States fences renders 2 diagrams with their captions and sentences, and a fence inside `## Open items` is not copied | `bash plugins/zuko/scripts/tests/run.sh board` |
 | 3 a slice's choices | `test-board.sh`: D62 shows under its own slice only; Resolved, Accepted risk and Decided alone rows show; Open rows do not | `bash plugins/zuko/scripts/tests/run.sh board` |
 | 4 an old shape | `test-board.sh`: a shape whose Slice cells read `` `/release` `` and `OWASP lens` maps them to `release.md` and `owasp-lens.md` | `bash plugins/zuko/scripts/tests/run.sh board` |
-| 5 the publish fails | `test-e2e-board.sh`: renders the page, starts `board.py serve`, fetches the page with `curl`, gets 400 with `Host: evil.example`, then stops it. The test skips with a message when port 4750 is taken | `bash plugins/zuko/scripts/tests/run.sh e2e-board` |
+| 5 the publish fails | `test-e2e-board.sh`: renders the page, starts `board.py serve`, fetches the page with `curl`, gets 400 with `Host: evil.example`, then stops it. The test skips with a message when port 4751 is taken | `bash plugins/zuko/scripts/tests/run.sh e2e-board` |
 | The stage steps | `test-idea-board.sh`: `visual-page.md` has the "Idea board" section, and the five skills point to it | `bash plugins/zuko/scripts/tests/run.sh idea-board` |
 | Escaping | `test-board.sh`: a spec whose text holds `</script>` gives a page with exactly one closing tag per script block | `bash plugins/zuko/scripts/tests/run.sh board` |
 
@@ -334,7 +291,7 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 | Claude forgets the republish step in a stage | `test-idea-board.sh` proves each of the five skills names the step. Each stage prints the Board line, so a missing one shows |
 | A spec's Mermaid has a syntax error, so one diagram shows an error box | The rest of the page still draws. The same block already fails on the spec page, so the gap is seen there too |
 | cdnjs cannot be reached, so no diagram draws | Each diagram shows "Mermaid did not load". The text, panels and filmstrip still draw from the JSON |
-| Port 4750 is taken by another program | `serve` exits 1, and the stage prints the file path instead of a URL |
+| Port 4751 is taken by another program | `serve` exits 1, and the stage prints the file path instead of a URL |
 
 ### Decisions to record
 
@@ -357,6 +314,13 @@ Recorded as D62, D63, D64.
 | O11 | Which port does the localhost board use? | question | spec p3 | user | Resolved | Fixed 4750. If it is taken, the stage says so and prints the file path, 2026-10-26 |
 | O12 | What diagrams does the board show for each slice? | question | spec p3 | user | Resolved | Every Mermaid diagram in the slice's spec (flow, states, interface, architecture, sequence, data flow), in a section per slice, so the user sees what is being built. Pause 2 reopened for it, 2026-10-26 |
 | O13 | The diagrams drew but could not be read, and the page needed more colour. | question | spec p3 | user | Resolved | Pause 2 reopened: the Backlot look of preview version 5, with Mermaid 11.12.0 drawn by the page on paper. Approved 2026-10-26 |
+| O14 | Port 4750 (O11) is held on the user's machine by OpenMontage's Backlot server, which uses 4750 by default. Every failed publish there would print the file path, never a URL. | flag | build | user | Decided alone | Chose: port 4751 in `board.py`, `visual-page.md`, the tests and D63. Other: keep 4750 and accept the file-path line on this machine. Undo: set `PORT = 4750` in `board.py` and change 4751 back in `visual-page.md`, `test-idea-board.sh` and `test-e2e-board.sh`. 2026-10-26 |
+| O15 | The spec did not say which pause 3 shows before Status turns Refined. | flag | build | user | Decided alone | Chose: the board publishes before the "Then stop" paragraph, so pause 3 shows `Pause 3 · awaiting you · run /build to approve`. Other: publish after Status is set, so it shows `Refined`. Undo: move the spec pointer in `skills/spec/SKILL.md` below the Status line of the pause 3 "Then stop" paragraph. 2026-10-26 |
+| O16 | Scenario 1 says the board appears when the shape is Shaped; a shape can also end as Draft. | flag | build | user | Decided alone | Chose: `/shape` publishes the board for a Draft shape too, so the user sees it early. Other: publish only at Shaped. Undo: add "When Status is `Shaped`," to the pointer in `skills/shape/SKILL.md` step 6. 2026-10-26 |
+| O17 | A first publish at `/ship` adds a `**Board:**` line to an old shape, which would leave the tree dirty at the ship gate. | flag | build | user | Decided alone | Chose: `/ship` puts a new Board line in its refresh commit. Other: leave it out and let the gate fail on a dirty tree. Undo: delete that sentence from the board bullet in `skills/ship/SKILL.md` and its check in `test-idea-board.sh`. 2026-10-26 |
+| O18 | The slice number on the board: the shape's `#` cell or the row's place in the table. Old shapes use `1b`, `7a` and a separate Order column. | flag | build | user | Decided alone | Chose: the row's place in the Slices table, 1 to N. Other: the `#` cell as written. Undo: read `#` in `slice_rows` in `board.py`. 2026-10-26 |
+| O19 | The spec did not say whether a superseded D-entry shows under its slice. | flag | build | user | Decided alone | Chose: every entry with the slice's Source shows, whatever its Status. Other: active entries only. Undo: filter on `entry.active` where `board.py` collects decisions. 2026-10-26 |
+| O20 | Two hardening steps past the spec: `<!--` in file text could make the browser skip the data block's closing tag, and `http.server` follows symlinks out of the served folder. | flag | build | user | Decided alone | Chose: `board.py` escapes `<!--` as well as `</`, and `serve` answers 404 for any path that resolves outside `docs/specs/.pages`. Other: escape `</` only and trust `http.server`. Undo: revert those two checks in `board.py` and their tests in `test-board.sh` and `test-e2e-board.sh`. 2026-10-26 |
 
 ## Glossary
 

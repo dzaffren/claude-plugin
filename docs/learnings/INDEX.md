@@ -195,3 +195,6 @@ One line per lesson. Loaded into every session in this repo.
 - A slice that changes only prompt text gets its red tests from the text
   checks; its e2e may pass first, and the report says why.
   ([detail](a-prompt-only-e2e-passes-first.md))
+- Search for a heading as a whole line, `\n## Name\n`, never as text — a
+  diagram label can end with the same words.
+  ([detail](anchor-a-heading-search-to-the-line.md))

@@ -2,6 +2,8 @@
 
 **Project type:** CLI/Library · **Status:** Shaped
 
+**Board:** https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs
+
 ## Problem
 
 After a few specs, the user cannot recall why a choice was made, how the slices connect, what an approved spec says, or what a shipped slice changed in the code. So the user approves `/spec` pauses and PRs without following them, or asks Claude to explain each time.
