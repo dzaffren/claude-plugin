@@ -226,7 +226,7 @@ sequenceDiagram
 | Choices | `DECISIONS.md` entries with `Source: specs/{name}.md`, newest first; then the spec's rows at `Resolved`, `Accepted risk` and `Decided alone` |
 | Escaping | The JSON block escapes `</` as `<\/`, so no file text can close the script tag. The page puts every value in through an escape function. Mermaid runs with `securityLevel: "strict"` |
 
-The script writes the data as one JSON block into a fixed template, `scripts/lib/board.html`. The template's script draws the page from that block and loads Mermaid 11.12.0 from cdnjs to draw every diagram in the paper's colours. claude.ai's own Mermaid is not used: its colours could not be read in the user's theme (O13). The same file works on claude.ai and on localhost.
+The script writes the data as one JSON block into a fixed template, `scripts/lib/board.html`. The template's script draws the page from that block and loads Mermaid 11.16.1 from jsDelivr to draw every diagram in the paper's colours. claude.ai's own Mermaid is not used: its colours could not be read in the user's theme (O13). The same file works on claude.ai and on localhost.
 
 ### Changes
 
@@ -248,7 +248,7 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 | Added | Triggered by |
 | --- | --- |
 | `board.py` | Scenarios 1 to 4 need the same page from the same files every time, and a test must prove it. Claude writing the HTML by hand would differ from run to run |
-| Mermaid 11.12.0 from cdnjs | O12 and O13: the slice diagrams must be readable, and the built-in renderer's colours were not |
+| Mermaid 11.16.1 from jsDelivr | O12 and O13: the slice diagrams must be readable, and the built-in renderer's colours were not |
 | The JSON block and `board.html` | The tests check the data with `json.loads`, not by matching HTML. The template changes without touching the parser |
 | `board.py serve` | Scenario 5, O4 and O10: `http.server` with a Host check, as Backlot does. Standard library only, about 20 lines |
 
@@ -290,12 +290,21 @@ Reusing: `pr_body.sections`, `pr_body.ROW`, `pr_body.CELL` (`scripts/lib/pr_body
 | An old shape's Slice cell does not match its spec's file name, as in `v3-project-memory` ("Auto-onboard", "Decision log"), so a shipped slice shows Not started | The name rule handles case, spaces, backticks and `/`. A cell that still does not match shows Not started, and the card says `no spec at docs/specs/{name}.md`, so the gap is visible. `/shape` already writes kebab-case names |
 | Claude forgets the republish step in a stage | `test-idea-board.sh` proves each of the five skills names the step. Each stage prints the Board line, so a missing one shows |
 | A spec's Mermaid has a syntax error, so one diagram shows an error box | The rest of the page still draws. The same block already fails on the spec page, so the gap is seen there too |
-| cdnjs cannot be reached, so no diagram draws | Each diagram shows "Mermaid did not load". The text, panels and filmstrip still draw from the JSON |
+| jsDelivr cannot be reached, so no diagram draws | Each diagram shows "Mermaid did not load". The text, panels and filmstrip still draw from the JSON |
 | Port 4751 is taken by another program | `serve` exits 1, and the stage prints the file path instead of a URL |
 
 ### Decisions to record
 
 Recorded as D62, D63, D64.
+
+## Review
+
+2026-10-26 · 5 raw findings, 4 survived, 4 fixed.
+
+- A03 Software Supply Chain Failures · `plugins/zuko/scripts/lib/board.html:142` · load Mermaid 11.16.1, which has no known advisory, instead of 11.12.0 · `55f046e`
+- correctness · `plugins/zuko/references/visual-page.md:117` · the localhost check fetches this board and compares it with the file · `a9fd58c`
+- correctness · `plugins/zuko/skills/ship/SKILL.md:116` · a failed ship gate republishes the board after the spec goes back to Built · `38b8c43`
+- coverage · `plugins/zuko/scripts/lib/board.html:159` · a headless Chrome test runs the page script: escaping, the stage, and a classDef kept inside its diagram · `256a2df`
 
 ## Open items
 
@@ -321,6 +330,7 @@ Recorded as D62, D63, D64.
 | O18 | The slice number on the board: the shape's `#` cell or the row's place in the table. Old shapes use `1b`, `7a` and a separate Order column. | flag | build | user | Decided alone | Chose: the row's place in the Slices table, 1 to N. Other: the `#` cell as written. Undo: read `#` in `slice_rows` in `board.py`. 2026-10-26 |
 | O19 | The spec did not say whether a superseded D-entry shows under its slice. | flag | build | user | Decided alone | Chose: every entry with the slice's Source shows, whatever its Status. Other: active entries only. Undo: filter on `entry.active` where `board.py` collects decisions. 2026-10-26 |
 | O20 | Two hardening steps past the spec: `<!--` in file text could make the browser skip the data block's closing tag, and `http.server` follows symlinks out of the served folder. | flag | build | user | Decided alone | Chose: `board.py` escapes `<!--` as well as `</`, and `serve` answers 404 for any path that resolves outside `docs/specs/.pages`. Other: escape `</` only and trust `http.server`. Undo: revert those two checks in `board.py` and their tests in `test-board.sh` and `test-e2e-board.sh`. 2026-10-26 |
+| O21 | Review: Mermaid 11.12.0, which D64 names, has a classDef HTML injection (GHSA-ghcm-xqfw-q4vr) and eight other advisories. 11.16.1 has none, and only jsDelivr serves it. | flag | review | user | Decided alone | Chose: load Mermaid 11.16.1 from jsDelivr, so D64's title and Why now name a version the page does not load. Other: keep 11.12.0 from cdnjs as D64 says, or supersede D64 through `/spec`. Undo: git revert 55f046e. 2026-10-26 |
 
 ## Glossary
 
