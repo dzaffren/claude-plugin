@@ -1,0 +1,299 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Courier+Prime:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a production board. Header, the picked slice's stage rail, then paper (spec + diagrams) beside panels (decisions, ledger), then the slices as a filmstrip. One dark look, by choice, after Backlot. */
+:root {
+  --bg: #0c0d10; --panel: #131419; --panel-2: #181a20; --line: #262932; --line-2: #34384a;
+  --fg: #e9eaee; --muted: #8a8f9c; --faint: #5a5f6c;
+  --amber: #f0a33a; --amber-soft: #2b2112; --amber-glow: rgba(240,163,58,.35);
+  --green: #4fc28a; --green-soft: #132a20; --blue: #7aa6f0; --blue-soft: #16223a;
+  --violet: #c08ae6; --violet-soft: #2a1d36; --red: #ef6b6b;
+  --paper: #f1e8d4; --paper-2: #e8dcc1; --ink: #2a241b; --ink-2: #6b5f4b; --paper-line: #cbbd9c;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --type: "Courier Prime", "Courier New", Courier, monospace;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14.5px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 56px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; gap: 22px; }
+.mono { font-family: var(--mono); }
+.caps { font-family: var(--mono); text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: var(--muted); }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* header */
+.head { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: center; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.logo { width: 34px; height: 34px; border-radius: 6px; background: repeating-linear-gradient(135deg, var(--line-2) 0 5px, var(--panel) 5px 10px); flex: none; }
+.titles { display: grid; gap: 2px; min-width: 0; }
+.titles h1 { margin: 0; font-family: var(--mono); font-size: 21px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-wrap: balance; }
+.chip { font-family: var(--mono); font-size: 11.5px; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 10px; color: var(--muted); white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.status { margin-left: auto; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; display: flex; gap: 8px; align-items: center; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 22%, transparent); }
+.st-await { color: var(--amber); } .st-flight { color: var(--blue); } .st-shipped { color: var(--green); } .st-none { color: var(--muted); }
+.problem { margin: 0; max-width: 90ch; color: var(--muted); font-size: 13.5px; }
+
+/* stage rail */
+.rail { overflow-x: auto; padding: 6px 0 2px; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(92px, 1fr)); min-width: 560px; position: relative; }
+.rail li { display: grid; justify-items: center; gap: 6px; text-align: center; position: relative; }
+.rail li::before { content: ""; position: absolute; top: 15px; left: calc(-50% + 18px); right: calc(50% + 18px); height: 1px; background: var(--line-2); }
+.rail li:first-child::before { display: none; }
+.rail li.done::before, .rail li.cur::before { background: linear-gradient(90deg, var(--green), var(--green)); }
+.rail li.cur::before { background: linear-gradient(90deg, var(--green), var(--amber)); }
+.node { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: var(--faint); background: var(--panel); position: relative; z-index: 1; }
+.done .node { color: var(--green); border-color: color-mix(in srgb, var(--green) 55%, transparent); background: var(--green-soft); }
+.cur .node { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); box-shadow: 0 0 0 5px var(--amber-glow); }
+.cur.flight .node { color: var(--blue); border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 5px rgba(122,166,240,.3); }
+.rail .lbl { font-family: var(--mono); font-size: 12.5px; color: var(--faint); }
+.done .lbl { color: var(--fg); } .cur .lbl { color: var(--amber); font-weight: 700; } .cur.flight .lbl { color: var(--blue); }
+.rail .sub { font-size: 11.5px; color: var(--amber); line-height: 1.35; max-width: 16ch; }
+.cur.flight .sub { color: var(--blue); }
+.railhead { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.railhead b { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+
+/* main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+@media (max-width: 980px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.paper { background: linear-gradient(180deg, var(--paper), var(--paper-2)); color: var(--ink); border-radius: 6px; padding: 26px clamp(16px, 4vw, 40px) 30px; box-shadow: 0 18px 50px rgba(0,0,0,.45); position: relative; display: grid; gap: 18px; min-width: 0; }
+.paper h2 { margin: 0; text-align: center; font-family: var(--type); font-size: 22px; letter-spacing: .14em; text-transform: uppercase; }
+.paper .meta { text-align: center; font-family: var(--type); color: var(--ink-2); font-size: 14px; margin-top: -10px; }
+.paper .lede { font-family: var(--type); font-size: 15.5px; line-height: 1.6; margin: 0; max-width: 72ch; justify-self: center; }
+.stamp { position: absolute; top: 18px; right: 20px; transform: rotate(4deg); font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; padding: 4px 9px; border: 1.5px solid currentColor; border-radius: 4px; }
+.stamp.ok { color: #3f7b5a; } .stamp.wait { color: #b06a12; } .stamp.go { color: #3b5f9c; }
+@media (max-width: 640px) { .stamp { position: static; justify-self: center; } }
+.fig { border-top: 1px dashed var(--paper-line); padding-top: 16px; display: grid; gap: 8px; min-width: 0; }
+.fig h3 { margin: 0; font-family: var(--type); font-size: 15px; letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fig h3 span { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); letter-spacing: .12em; }
+.dia { overflow-x: auto; cursor: zoom-in; min-height: 40px; }
+.dia svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.say { margin: 0; font-family: var(--type); color: var(--ink-2); font-size: 14px; }
+.err { font-family: var(--mono); font-size: 12px; color: #a3312f; white-space: pre-wrap; margin: 0; }
+.blank { font-family: var(--type); color: var(--ink-2); text-align: center; margin: 0; }
+
+.side { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.panel > header { display: flex; justify-content: space-between; gap: 8px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.panel > header .caps { color: var(--fg); font-weight: 700; }
+.panel > header .src { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+.dec { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.dec:last-child { border-bottom: 0; }
+.dec .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; color: var(--faint); text-transform: uppercase; }
+.dec .t { font-weight: 700; font-size: 14px; }
+.dec .t .arrow { color: var(--amber); }
+.dec .w { color: var(--muted); font-size: 13px; }
+.dec .r { font-size: 12px; color: var(--faint); }
+.dec .r s { color: var(--muted); text-decoration-color: var(--red); }
+.empty { padding: 14px 16px; color: var(--faint); font-size: 13px; margin: 0; }
+.row { display: grid; grid-template-columns: 38px 1fr; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.row:last-child { border-bottom: 0; }
+.row .id { font-family: var(--mono); color: var(--faint); }
+.tag { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; padding: 1px 7px; border-radius: 4px; margin-right: 6px; white-space: nowrap; }
+.tag.res { color: var(--green); background: var(--green-soft); }
+.tag.risk { color: var(--amber); background: var(--amber-soft); }
+.tag.alone { color: var(--violet); background: var(--violet-soft); }
+.row.alone { box-shadow: inset 3px 0 0 var(--violet); }
+.row .a { color: var(--muted); }
+
+/* filmstrip */
+.strip { display: grid; gap: 10px; }
+.striphead { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.perf { height: 8px; background: radial-gradient(circle, var(--line-2) 2.2px, transparent 2.6px) 0 0 / 26px 8px repeat-x; }
+.film { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 12px; overflow-x: auto; padding: 4px 2px 8px; }
+.frame { text-align: left; background: var(--panel); border: 1px solid var(--line-2); border-radius: 8px; padding: 0; cursor: pointer; display: grid; overflow: hidden; }
+.frame .fhead { display: flex; justify-content: space-between; gap: 6px; padding: 8px 12px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; color: var(--muted); }
+.frame .fbody { padding: 12px; display: grid; gap: 8px; align-content: start; min-height: 120px; }
+.frame .fname { font-family: var(--mono); font-weight: 700; font-size: 13.5px; letter-spacing: .04em; color: var(--fg); }
+.frame .ftext { font-size: 12.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.frame .fneeds { display: flex; flex-wrap: wrap; gap: 4px; }
+.frame .fneeds span { font-family: var(--mono); font-size: 10.5px; border: 1px solid var(--line-2); border-radius: 4px; padding: 0 6px; color: var(--muted); }
+.frame.k-pause { border-color: color-mix(in srgb, var(--amber) 60%, transparent); }
+.frame.k-pause .fbody { background: linear-gradient(180deg, var(--amber-soft), transparent); }
+.frame.k-flight { border-color: color-mix(in srgb, var(--blue) 60%, transparent); }
+.frame.k-flight .fbody { background: linear-gradient(180deg, var(--blue-soft), transparent); }
+.frame.k-shipped .fbody { background: linear-gradient(180deg, var(--green-soft), transparent); }
+.frame.k-off { border-style: dashed; border-color: color-mix(in srgb, var(--amber) 45%, transparent); background: color-mix(in srgb, var(--amber-soft) 50%, transparent); cursor: default; }
+.frame.k-off .fname { color: var(--amber); }
+.frame .fmiss { font-family: var(--mono); font-size: 11px; color: var(--amber); overflow-wrap: anywhere; }
+.frame[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+.fstate { font-weight: 700; }
+.k-pause .fstate { color: var(--amber); } .k-flight .fstate { color: var(--blue); } .k-shipped .fstate { color: var(--green); } .k-off .fstate { color: var(--faint); }
+.mapbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.mapbox .dia { cursor: default; }
+
+.zoom { position: fixed; inset: 0; z-index: 30; background: rgba(8,8,10,.92); overflow: auto; padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+.zoom .sheet { background: var(--paper); border-radius: 6px; padding: 24px; width: max-content; min-width: min(100%, 600px); margin: 0 auto; }
+.zoom svg { max-width: none !important; height: auto; display: block; }
+.zoom .close { position: sticky; top: 0; float: right; z-index: 2; background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+@media (prefers-reduced-motion: no-preference) { .cur .node { animation: pulse 2.4s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow: 0 0 0 9px transparent; } } }
+</style>
+
+<div class="wrap">
+  <div id="board"></div>
+</div>
+
+<script id="data" type="application/json">/*DATA*/null</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.16.1/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("data").textContent);
+  const STAGES = ["Not started", "Pause 1", "Pause 2", "Pause 3", "Refined", "Built", "Reviewed", "Shipped"];
+  const RAIL = ["Pause 1", "Pause 2", "Pause 3", "Built", "Reviewed", "Shipped"];
+  // stage -> [stages done, current index, line under it, kind]
+  const AT = {
+    0: [0, -1, "", "off"],
+    1: [0, 0, "awaiting your approval · answer in the terminal", "pause"],
+    2: [1, 1, "awaiting your approval · answer in the terminal", "pause"],
+    3: [2, 2, "awaiting you · run /build to approve", "pause"],
+    4: [3, 3, "refined · run /build", "flight"],
+    5: [4, 4, "built · next /review", "flight"],
+    6: [5, 5, "reviewed · next /ship", "flight"],
+    7: [6, -1, "", "shipped"]
+  };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let seq = 0, idea = null, picked = null;
+
+  if (window.mermaid) mermaid.initialize({
+    startOnLoad: false, securityLevel: "strict", theme: "base", fontFamily: css("--sans"),
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" }, sequence: { useMaxWidth: true },
+    themeVariables: {
+      fontFamily: css("--sans"), fontSize: "15px", background: css("--paper"),
+      primaryColor: "#fffaf0", primaryTextColor: css("--ink"), primaryBorderColor: "#8a6a3a",
+      secondaryColor: "#f6dfb6", tertiaryColor: "#e2ecd9", lineColor: "#7a6040", textColor: css("--ink"),
+      mainBkg: "#fffaf0", nodeBorder: "#8a6a3a", clusterBkg: "#efe2c6", clusterBorder: "#b48a4a",
+      edgeLabelBackground: "#f1e8d4", titleColor: css("--ink"),
+      actorBkg: "#fffaf0", actorBorder: "#8a6a3a", actorTextColor: css("--ink"), actorLineColor: "#a08860",
+      signalColor: css("--ink"), signalTextColor: css("--ink"), labelBoxBkgColor: "#fffaf0", labelBoxBorderColor: "#8a6a3a", labelTextColor: css("--ink"),
+      noteBkgColor: "#f6dfb6", noteTextColor: css("--ink"), noteBorderColor: "#b48a4a",
+      activationBkgColor: "#f6dfb6", activationBorderColor: "#b48a4a",
+      stateBkg: "#fffaf0", stateLabelColor: css("--ink"), transitionColor: "#7a6040", transitionLabelColor: css("--ink"),
+      compositeBackground: "#efe2c6", altBackground: "#efe2c6"
+    }
+  });
+
+  async function draw(el, src) {
+    if (!window.mermaid) { el.innerHTML = '<p class="err">Mermaid did not load, so this diagram cannot draw.</p>'; return; }
+    try { el.innerHTML = (await mermaid.render("m" + (++seq), src)).svg; }
+    catch (err) {
+      el.innerHTML = '<p class="err"></p>';
+      el.firstChild.textContent = "This diagram did not draw: " + String(err && err.message || err).split("\n")[0];
+    }
+  }
+  function kindOf(s) { return AT[s.stage][3]; }
+  function overall(d) {
+    const st = d.slices.map(s => s.stage);
+    if (st.some(x => x >= 1 && x <= 3)) return ["st-await", "Awaiting you"];
+    if (st.some(x => x >= 4 && x <= 6)) return ["st-flight", "In flight"];
+    if (st.length && st.every(x => x === 7)) return ["st-shipped", "All shipped"];
+    return ["st-none", "Not started"];
+  }
+  function mapSrc(d) {
+    const id = n => "s_" + n.replace(/[^a-z0-9]/g, "_");
+    const lines = ["flowchart LR"];
+    const fill = { pause: "#2b2112,#f0a33a,#f6d3a0", flight: "#16223a,#7aa6f0,#cfe0fb", shipped: "#132a20,#4fc28a,#bfe9d3", off: "#131419,#5a5f6c,#8a8f9c" };
+    d.slices.forEach(s => {
+      lines.push(`  ${id(s.name)}["${s.n} ${s.name.replace(/"/g, "#quot;")}"]:::${kindOf(s)}`);
+      s.needs.forEach(x => lines.push(`  ${id(x)} -- needs --> ${id(s.name)}`));
+    });
+    if (!d.slices.some(s => s.needs.length)) for (let i = 1; i < d.slices.length; i++) lines.push(`  ${id(d.slices[i - 1].name)} -. then .-> ${id(d.slices[i].name)}`);
+    Object.entries(fill).forEach(([k, v]) => { const [f, s, c] = v.split(","); lines.push(`  classDef ${k} fill:${f},stroke:${s},color:${c}${k === "off" ? ",stroke-dasharray:4 3" : ""}`); });
+    return lines.join("\n");
+  }
+
+  function renderIdea(d) {
+    idea = d;
+    document.title = d.title + " board";
+    const [cls, word] = overall(d);
+    const started = d.slices.filter(s => s.stage > 0).length, shipped = d.slices.filter(s => s.stage === 7).length;
+    document.getElementById("board").innerHTML = `
+      <div style="display:grid;gap:22px">
+      <header class="head">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="titles"><span class="caps">zuko board · docs/specs/${esc(d.idea)}/shape.md</span><h1>${esc(d.title)}</h1></div>
+        <div class="chips"><span class="chip">${esc(d.type)}</span><span class="chip">${d.slices.length} slices · ${started} started · ${shipped} shipped</span><span class="chip">shape ${esc(d.status)}</span><span class="chip">updated ${esc(d.updated.date)} by ${esc(d.updated.by)}</span></div>
+        <div class="status ${cls}"><span class="dot"></span>${word}</div>
+        <p class="problem" style="flex-basis:100%">${esc(d.problem)}</p>
+      </header>
+      <section class="rail" id="rail" aria-label="Stages of the picked slice"></section>
+      <section class="main"><article class="paper" id="paper"></article><aside class="side" id="side"></aside></section>
+      <section class="strip">
+        <div class="striphead"><span class="caps">Slices · click one to open it</span><span class="caps">${d.slices.length} slices · order from the shape</span></div>
+        <div class="perf"></div>
+        <div class="film" id="film">${d.slices.map(frame).join("")}</div>
+        <div class="perf"></div>
+        <div class="mapbox"><div class="caps" style="margin-bottom:6px">Slice map · needs links from each spec</div><div class="dia" id="map"></div></div>
+      </section></div>`;
+    draw(document.getElementById("map"), mapSrc(d));
+    const first = d.slices.find(s => s.stage >= 1 && s.stage <= 6) || [...d.slices].reverse().find(s => s.stage === 7);
+    if (first) pick(first.name);
+    else document.getElementById("paper").innerHTML = '<h2>No spec yet</h2><p class="blank">No slice has a spec yet. Run /spec on the first slice.</p>';
+  }
+  function frame(s) {
+    const k = kindOf(s), off = k === "off";
+    return `<button type="button" class="frame k-${k}" data-pick="${esc(s.name)}" ${off ? 'aria-disabled="true"' : ""} aria-pressed="false">
+      <div class="fhead"><span>SL ${String(s.n).padStart(2, "0")}</span><span class="fstate">${off ? "no spec yet" : esc(STAGES[s.stage])}</span></div>
+      <div class="fbody"><span class="fname">${esc(s.name)}</span><span class="ftext">${esc(s.text)}</span>
+      ${off && s.missing ? `<span class="fmiss">no spec at ${esc(s.missing)}</span>` : ""}
+      ${s.needs.length ? `<span class="fneeds">${s.needs.map(n => `<span>needs ${esc(n)}</span>`).join("")}</span>` : ""}</div></button>`;
+  }
+  function pick(name) {
+    const s = idea.slices.find(x => x.name === name);
+    if (!s || s.stage === 0) return;
+    picked = s;
+    document.querySelectorAll(".frame").forEach(f => f.setAttribute("aria-pressed", String(f.dataset.pick === name)));
+    const [done, cur, sub, kind] = AT[s.stage];
+    document.getElementById("rail").innerHTML = `
+      <div class="railhead"><b>${esc(s.name)}</b><span class="caps">stages of this slice · ${esc(s.spec || "")}</span></div>
+      <ol>${RAIL.map((r, i) => {
+        const c = i < done ? "done" : (i === cur ? "cur" + (kind === "flight" ? " flight" : "") : "");
+        const mark = i < done ? "✓" : (i === cur ? "◈" : String(i + 1));
+        return `<li class="${c}"><span class="node">${mark}</span><span class="lbl">${r}</span>${i === cur ? `<span class="sub">${esc(sub)}</span>` : ""}</li>`;
+      }).join("")}</ol>`;
+    const stamp = s.stage === 7 ? '<span class="stamp ok">Shipped</span>' : (kind === "pause" ? '<span class="stamp wait">Awaiting you</span>' : '<span class="stamp go">In flight</span>');
+    document.getElementById("paper").innerHTML = `${stamp}
+      <h2>${esc(s.name)}</h2><div class="meta">slice ${s.n} · ${esc(STAGES[s.stage])} · ${s.diagrams.length} diagrams</div>
+      <p class="lede">${esc(s.text)}</p>
+      ${s.diagrams.length ? s.diagrams.map((g, i) => `<section class="fig"><h3>${esc(g.caption || "Diagram")} <span>click to zoom</span></h3><div class="dia" data-i="${i}" role="button" tabindex="0" aria-label="Zoom ${esc(g.caption)}"></div>${g.say ? `<p class="say">${esc(g.say)}</p>` : ""}</section>`).join("") : '<p class="blank">No diagrams in this spec yet.</p>'}`;
+    document.querySelectorAll("#paper .dia").forEach(el => draw(el, s.diagrams[+el.dataset.i].src));
+    document.getElementById("side").innerHTML = `
+      <section class="panel"><header><span class="caps">Decisions</span><span class="src">DECISIONS.md</span></header>
+      ${s.decisions.length ? s.decisions.map(dec => `<div class="dec"><span class="k">${esc(dec.id)}</span><span class="t">${esc(dec.title)}</span><span class="w">${esc(dec.why)}</span>
+        ${dec.rejected.length ? `<span class="r">also considered: ${dec.rejected.map(r => { const m = r.match(/^(.*?)\s*(\(.*\))?$/); return `<s>${esc(m[1])}</s>${m[2] ? " " + esc(m[2]) : ""}`; }).join(" · ")}</span>` : ""}</div>`).join("")
+        : '<p class="empty">No D-entry yet. /build records them from the spec.</p>'}</section>
+      <section class="panel"><header><span class="caps">Answers</span><span class="src">${esc(s.spec)} · Open items</span></header>
+      ${s.rows.length ? s.rows.map(r => { const t = r.status === "Decided alone" ? "alone" : (r.status === "Accepted risk" ? "risk" : "res");
+        return `<div class="row ${t === "alone" ? "alone" : ""}"><span class="id">${esc(r.id)}</span><span><span class="tag ${t}">${esc(r.status)}</span><span class="a">${esc(r.answer)}</span></span></div>`; }).join("")
+        : '<p class="empty">No answered rows yet.</p>'}</section>`;
+  }
+  function zoom(el) {
+    const svg = el.querySelector("svg"); if (!svg) return;
+    const box = document.createElement("div"); box.className = "zoom";
+    box.innerHTML = '<button type="button" class="close">Close</button><div class="sheet"></div>';
+    const big = svg.cloneNode(true), vb = svg.viewBox.baseVal;
+    if (vb && vb.width) { big.setAttribute("width", Math.round(vb.width * 1.5)); big.removeAttribute("style"); }
+    box.querySelector(".sheet").appendChild(big);
+    const shut = () => { box.remove(); document.removeEventListener("keydown", key); el.focus(); };
+    const key = ev => { if (ev.key === "Escape") shut(); };
+    box.querySelector(".close").addEventListener("click", shut);
+    box.addEventListener("click", ev => { if (ev.target === box) shut(); });
+    document.addEventListener("keydown", key);
+    document.body.appendChild(box); box.querySelector(".close").focus();
+  }
+  document.addEventListener("click", ev => {
+    const f = ev.target.closest(".frame"); if (f) pick(f.dataset.pick);
+    const z = ev.target.closest("#paper .dia"); if (z) zoom(z);
+  });
+  document.addEventListener("keydown", ev => {
+    const z = ev.target.closest && ev.target.closest("#paper .dia");
+    if (z && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); zoom(z); }
+  });
+  renderIdea(DATA);
+})();
+</script>

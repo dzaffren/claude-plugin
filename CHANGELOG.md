@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Each idea now has one board page that shows its slices in order, where each one stands, its diagrams and the choices it made, and every stage keeps it current.
+
 ## [2.4.3] - 2026-10-13
 
 ### Fixed

@@ -75,6 +75,10 @@ nothing. The gate below reads what this step writes, so it runs first.
 - Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
   `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
   `hub page: {url}` it returns to the overview's `## More` line.
+- When the spec has a `**Shape doc:**` line, republish the idea board, as
+  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+  `--by "/ship {slice}"`. A new `**Board:**` line in the shape goes in the
+  commit below.
 - Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
   re-render the `README.md` block from the updated overview. It rewrites only
   the text between the zuko markers.
@@ -110,8 +114,8 @@ onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
 proceed on a "probably fine". Before you route to `/spec` or `/build`, set the
-spec and its row back to `Built`, run `render-readme-block.sh --write` again,
-and commit. The slice is not shipped until its PR merges, and `/spec` starts a
+spec and its row back to `Built`, republish the idea board, run
+`render-readme-block.sh --write` again, and commit. The slice is not shipped until its PR merges, and `/spec` starts a
 new version of a `Shipped` spec.
 
 When `/ship` makes a choice alone, such as a test left red because the base

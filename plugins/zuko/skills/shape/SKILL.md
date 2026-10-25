@@ -157,11 +157,16 @@ as `ledger.md` › "Asking at a pause" says: answer it (`Resolved`), accept it w
 write Status `Draft` instead and name the rows that block it. The Stop hook
 fails a `Shaped` shape with an Open row.
 
+Publish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/shape {idea}"`.
+
 Then, in the terminal:
 
 - The problem, in two sentences.
 - The slice list with the diagram.
 - Open items, if any.
+- The `Board:` line.
 - **If the project type is web UI and no design system exists** — say so:
   `/design-system` should run once, before the first UI slice, and takes
   roughly half an hour. Do not start it.

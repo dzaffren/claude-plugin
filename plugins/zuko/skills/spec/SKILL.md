@@ -73,6 +73,10 @@ to make it pass.
 - Scope in and out, and which later slice picks up each out-of-scope item.
 - The ledger, updated.
 
+When the spec has a `**Shape doc:**` line, republish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/spec {slice} pause 1"`.
+
 **Then stop.** Show the diagram, the scenarios, the slice test result, and any
 open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Do not continue until the user approves.
@@ -152,6 +156,10 @@ the project type — see the table in `slicing.md`:
 Write the Interface section: what was designed, the components used (names
 from the system only), the motion tier, and the preview path.
 
+When the spec has a `**Shape doc:**` line, republish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/spec {slice} pause 2"`.
+
 **Then stop.** Give the preview link and name which design system the tokens
 came from. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Design review is a loop — when the user wants changes, edit and
@@ -218,6 +226,10 @@ gets none.
 `Resolved` with the answer in the row, or `Accepted risk` with a reason and a
 date. A row that stays Open → Status stays `Draft`; say which rows block it
 and stop there. The Stop hook fails a `Refined` spec with an Open row.
+
+When the spec has a `**Shape doc:**` line, republish the idea board, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
+`--by "/spec {slice} pause 3"`.
 
 **Then stop.** Set Status to `Refined`. Give the spec path, the page link, and
 the plan's riskiest choice in one line. Print the ledger, then the drafted

@@ -63,6 +63,89 @@ every spec page opens with one line above the slice line:
 
 `Part of invoice-cli — hub page: https://claude.ai/...`
 
+If the shape doc of the spec has a `**Board:**` line, add this line above
+the slice line:
+
+`Part of {idea} — board: {url}`
+
+## Idea board
+
+Each idea with a shape has one board. The board is a page that shows the
+slices of the idea, their stages, their links and their choices. The script
+`board.py` makes it from the shape, the specs and `DECISIONS.md`. Do not load
+`artifact-design` for the board. Do not edit the HTML.
+
+These stages republish the board:
+
+- `/shape`, at step 6.
+- `/spec`, at each pause.
+- `/build`, at its report.
+- `/review`, after it writes the `## Review` section.
+- `/ship`, after the hub page.
+
+`/release` does not republish the board. A release does not change the stage
+of a slice.
+
+`/shape` knows its idea. Each other stage reads the `**Shape doc:**` line of
+its spec. The idea is the folder of that shape:
+`docs/specs/living-board/shape.md` → `living-board`. When the spec has no `**Shape doc:**` line, skip the board.
+Say nothing about it.
+
+1. Run the script. For `--by`, give the stage and the slice, for example
+   `--by "/spec idea-board pause 1"`:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/board.py" render docs/specs/{idea}/shape.md --by "{stage} {slice}"
+   ```
+
+2. Write the output to `docs/specs/.pages/{idea}-board.html`.
+3. Publish that file with the Artifact tool. Use the same file path each
+   time, so the URL stays the same. Give an icon on the first publish only.
+4. After the first publish, add `**Board:** {url}` to `shape.md`, on its own
+   line under the `**Project type:**` line. Do not change that line after.
+5. Print one line in the terminal:
+
+   ```
+   Board: https://claude.ai/artifact/…
+   ```
+
+`render` exits 2 when it cannot read the shape, or when the shape has no
+`## Slices` table. Print its message as one line. Then go on with the stage.
+
+When the publish fails, the stage goes on. Serve the board on localhost:
+
+1. Check that the server on port 4751 serves this board. The check passes
+   only when the page it returns is the file you wrote:
+
+   ```bash
+   curl -sf http://127.0.0.1:4751/{idea}-board.html | cmp -s - docs/specs/.pages/{idea}-board.html
+   ```
+
+2. If the check fails, start the server in the background:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/board.py" serve docs/specs/.pages
+   ```
+
+   Wait one second. Run the same check again.
+3. When a check matches, print one line, with the error from the Artifact
+   tool:
+
+   ```
+   Board not published: {error}. Local board: http://127.0.0.1:4751/{idea}-board.html
+   ```
+
+When the second check does not match, print this line instead, with the
+absolute path of the file. Another program, or the server of another
+project, holds port 4751, and `serve` exits 1:
+
+```
+Board not published: {error}. Port 4751 is in use, so open the file: {absolute path}
+```
+
+Leave the server running after the stage ends. A later failed publish uses
+it again. The next stage tries the publish again.
+
 ## Hub page
 
 One page for the whole project; each slice's page links from it. Built by

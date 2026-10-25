@@ -58,7 +58,7 @@ expect_match 'Run `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/verify-ship-gates\.sh docs/s
   "$gates" "ship gates: the gate is given the spec path"
 expect_match 'with no path the gate looks only for a `Built` spec\.' "$gates" "ship gates: says why the path is needed"
 expect_match 'A second `/ship` run that changes nothing makes no commit\.' "$refresh" "ship refresh: a second run with no change makes no commit"
-expect_match 'Before you route to `/spec` or `/build`, set the spec and its row back to `Built`, run `render-readme-block\.sh --write` again, and commit\. The slice is not shipped until its PR merges, and `/spec` starts a new version of a `Shipped` spec\.' \
+expect_match 'Before you route to `/spec` or `/build`, set the spec and its row back to `Built`, republish the idea board, run `render-readme-block\.sh --write` again, and commit\. The slice is not shipped until its PR merges, and `/spec` starts a new version of a `Shipped` spec\.' \
   "$gates" "ship gates: a failed gate puts the spec back to Built before /spec"
 
 # --- a missing signal (scenario 4) ---
