@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.3 · **Updated:** 2026-10-26 by /ship gate-card
+**Status:** Active · **Release:** v2.4.3 · **Updated:** 2026-10-26 by /ship pr-gate
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -73,6 +73,7 @@ projects.
 | shipped-in-pr | Shipped | /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge | — |
 | idea-board | Shipped | Each idea gets one claude.ai board with its slices in order, each slice's stage, diagrams and decisions; every stage republishes it | — |
 | gate-card | Shipped | At each /spec pause and the end of /shape, the board shows what waits for you, what is settled and what changed since the last stop; the terminal prints only the board link, one picture and the questions | — |
+| pr-gate | Shipped | The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board | — |
 
 ## More
 
