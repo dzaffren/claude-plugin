@@ -749,21 +749,29 @@ Status: active
 
 ## D65 · 2026-10-26 · The gate card compares the spec with a git-ignored copy from the last stop
 
-Why: the spec is not committed between pauses, and the card must show what changed since the user last looked (gate-card O1). After each publish at a stop, the stage copies the file to `docs/specs/.pages/<name>-last.md`. A missing copy says so on the card, and never guesses.
-Rejected: a commit at each stop (a commit per stop, and a stop is not a logical chunk), no Changed part (the pain the slice exists for).
+Why: the spec is not committed between pauses, and the card must show what changed
+since the user last looked (gate-card O1). After each publish at a stop, the stage
+copies the file to `docs/specs/.pages/<name>-last.md`. A missing copy says so on the
+card, and never guesses.
+Rejected: a commit at each stop (a commit per stop, and a stop is not a logical
+chunk), no Changed part (the pain the slice exists for).
 Source: specs/gate-card.md
 Status: active
 
 ## D66 · 2026-10-26 · The gate card's Changed part is a summary by section, scenario and row
 
-Why: the user reads the card to decide whether to approve, and a line diff of a 3,000-word spec is the wall of text the board replaces (gate-card O2). The summary names each changed `##` section, each scenario by name, and each new or answered row.
+Why: the user reads the card to decide whether to approve, and a line diff of a
+3,000-word spec is the wall of text the board replaces (gate-card O2). The summary
+names each changed `##` section, each scenario by name, and each new or answered row.
 Rejected: a full line diff (long, and it hides the one change that matters).
 Source: specs/gate-card.md
 Status: active
 
 ## D67 · 2026-10-26 · With a board, a pause prints only the Board line, one ASCII picture and the questions
 
-Why: the board carries the scenarios, the slice test and the rows, so printing them again buries the questions (gate-card O4, shape O4). The question prompt still asks every Open row, as D39 needs. A spec with no board prints as before.
+Why: the board carries the scenarios, the slice test and the rows, so printing them
+again buries the questions (gate-card O4, shape O4). The question prompt still asks
+every Open row, as D39 needs. A spec with no board prints as before.
 Rejected: keep the scenario list in the terminal too (the same facts in two places).
 Source: specs/gate-card.md
 Status: active
