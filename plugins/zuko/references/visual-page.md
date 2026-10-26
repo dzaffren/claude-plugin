@@ -98,16 +98,40 @@ Say nothing about it.
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/board.py" render docs/specs/{idea}/shape.md --by "{stage} {slice}"
    ```
 
+   At a stop, add `--gate {file}`. A stop is a `/spec` pause or the end of
+   `/shape`. The file is the spec at a `/spec` pause, and the shape at
+   `/shape`. The board then shows the gate card. `/build`, `/review` and
+   `/ship` do not stop, so they do not add `--gate`. Their board has no card.
+
 2. Write the output to `docs/specs/.pages/{idea}-board.html`.
 3. Publish that file with the Artifact tool. Use the same file path each
    time, so the URL stays the same. Give an icon on the first publish only.
-4. After the first publish, add `**Board:** {url}` to `shape.md`, on its own
+4. At a stop, copy the `--gate` file to `docs/specs/.pages/`. Do this also
+   when the publish fails:
+
+   ```bash
+   cp docs/specs/{slice}.md docs/specs/.pages/{slice}-last.md
+   cp docs/specs/{idea}/shape.md docs/specs/.pages/{idea}-shape-last.md
+   ```
+
+   Run the first command at a `/spec` pause, and the second at `/shape`.
+   Copy only after the render. `render` reads the old copy to show what
+   changed.
+5. After the first publish, add `**Board:** {url}` to `shape.md`, on its own
    line under the `**Project type:**` line. Do not change that line after.
-5. Print one line in the terminal:
+6. Print one line in the terminal:
 
    ```
    Board: https://claude.ai/artifact/…
    ```
+
+   At a stop, add the gate to the line:
+
+   ```
+   Board: https://claude.ai/artifact/…  ·  gate: pause {n} of {slice}
+   ```
+
+   At `/shape`, the gate part is `gate: pick the first slice`.
 
 `render` exits 2 when it cannot read the shape, or when the shape has no
 `## Slices` table. Print its message as one line. Then go on with the stage.

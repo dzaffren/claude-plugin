@@ -1,6 +1,8 @@
 # The board page's own script, run in headless Chrome: values from the files
 # show as text, the header and the rail show the stage, and a Mermaid classDef
-# cannot put HTML outside its diagram (GHSA-ghcm-xqfw-q4vr). The other board
+# cannot put HTML outside its diagram (GHSA-ghcm-xqfw-q4vr). A second render
+# with --gate draws the gate card: its values show as text, it sits above the
+# rail, and it opens the board on the gated slice. The other board
 # tests read only the JSON block, so they cannot see what the script draws.
 # Skips with a message when Chrome is missing, or when Mermaid does not load
 # from the CDN, since then no diagram is drawn and the classDef check proves
@@ -31,6 +33,7 @@ A problem with <img src=x onerror="document.body.dataset.pwned='problem'"> in it
 | --- | --- | --- | --- |
 | 1 | evil | Ships <b id="bold">bold</b> text. | First. |
 | 2 | later | Comes later. | Second. |
+| 3 | drafty | At pause 3. | Third. |
 SHAPE
 cat >"$dir/docs/specs/evil.md" <<'SPEC'
 # Evil
@@ -83,3 +86,56 @@ expect_match 'Awaiting you' "$dom" "dom: the header shows the idea is awaiting y
 expect_match 'class="cur"><span class="node">◈</span><span class="lbl">Pause 1</span>' "$dom" \
   "dom: the rail lights Pause 1 as the current stage"
 expect_match 'no spec at docs/specs/later\.md' "$dom" "dom: a slice with no spec says where its spec would be"
+expect_match '<section class="gate" id="gate" aria-label="Waiting for you" hidden=""></section>' "$dom" \
+  "dom: with no --gate, the gate card is hidden and empty"
+
+# --- the gate card ---
+cat >"$dir/docs/specs/drafty.md" <<'SPEC'
+# Drafty
+
+**Version:** v1 · **Status:** Draft · **Type:** Feature · **Project type:** CLI/Library
+
+**Depends on:** None
+
+At pause 3.
+
+## Interface
+
+**The card**
+
+## Technical plan
+
+### Decisions to record
+
+```text
+## D9 · 2026-10-26 · Draw <i id="ital">this</i> as text
+```
+
+## Open items
+
+| ID | What | Type | Raised at | Owner | Status | Answer |
+| --- | --- | --- | --- | --- | --- | --- |
+| O1 | Is <img src=x onerror="document.body.dataset.pwned='gate'"> text? | question | spec p3 | user | Open | — |
+SPEC
+
+python3 "$scripts/lib/board.py" render "$dir/docs/specs/dom/shape.md" --by "/spec drafty pause 3" \
+  --gate "$dir/docs/specs/drafty.md" >"$dir/gate.html" 2>"$dir/err"
+expect_exit 0 "$?" "gate: render exits 0"
+dom=$("$chrome" --headless=new --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$dir/gate.html" 2>/dev/null)
+
+expect_no_match 'data-pwned' "$dom" "gate: no onerror from an Open row runs"
+expect_match 'Is &lt;img src=x onerror="document.body.dataset.pwned=.gate."&gt; text\?' "$dom" \
+  "gate: the Open row's What shows its markup as text"
+expect_no_match '<i id="ital">' "$dom" "gate: a drafted title shows as text, not markup"
+expect_match 'To approve with /build:' "$dom" "gate: pause 3 lists the drafted entries to approve"
+expect_match 'D9</span><span>Draw &lt;i id="ital"&gt;this&lt;/i&gt; as text' "$dom" "gate: each drafted entry's ID and title"
+expect_match '<h2>drafty · Pause 3 · technical and ship plan</h2>' "$dom" "gate: the head names the slice and the pause"
+order=$(python3 -c 'import sys
+dom = sys.stdin.read()
+gate, rail = dom.find("<section class=\"gate\" id=\"gate\""), dom.find("id=\"rail\"")
+print("above" if -1 < gate < rail and "hidden" not in dom[gate:dom.index(">", gate)] else "not above")' <<<"$dom")
+expect_match '^above$' "$order" "gate: the card shows, above the rail"
+expect_match 'class="cur"><span class="node">◈</span><span class="lbl">Pause 3</span>' "$dom" \
+  "gate: the card opens the board on the gated slice"
+expect_match '<div class="fbody"><span class="fgate">GATE</span><span class="fname">drafty</span>' "$dom" \
+  "gate: the gated slice's frame carries the GATE tag"

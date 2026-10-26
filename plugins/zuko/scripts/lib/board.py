@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build an idea's board from its shape, the specs it names and DECISIONS.md.
 
-Usage: board.py render <shape.md> --by <text>
-       board.py data   <shape.md> --by <text>
+Usage: board.py render <shape.md> --by <text> [--gate <file>]
+       board.py data   <shape.md> --by <text> [--gate <file>]
        board.py serve  <dir>
 
 The shape is docs/specs/{idea}/shape.md, so the project root is three folders
@@ -13,6 +13,13 @@ parser and entries with decisions.py's, so the board reads them as the gates
 do. The rule for each part is in docs/specs/idea-board.md, "How the script
 reads each part".
 
+--gate names the file at a stop: the shape itself, or the spec of one of its
+slices at pause 1, 2 or 3. The JSON then has a "gate" for the card, built by
+comparing the file with its copy from the last stop,
+docs/specs/.pages/{name}-last.md, or {idea}-shape-last.md for the shape. Any
+other file, and no --gate, gives a null gate. The rules are in
+docs/specs/gate-card.md, "How the script builds the gate".
+
   render  board.html with its JSON slot filled: the page to publish
   data    only the JSON, for the tests
   serve   serves <dir> on 127.0.0.1:4751 until stopped. Any Host header but
@@ -20,8 +27,9 @@ reads each part".
           site cannot read the board through DNS rebinding
 
 Exit 0 printed, or the server stopped. Exit 1 the port cannot be bound, most
-often because it is in use. Exit 2 bad usage, a shape or spec that cannot be
-read, a shape with no Slices table, or a <dir> that is not a directory.
+often because it is in use. Exit 2 bad usage, a shape, spec or --gate file
+that cannot be read, a shape with no Slices table, or a <dir> that is not a
+directory.
 """
 import datetime
 import http.server
@@ -33,8 +41,8 @@ import sys
 import decisions
 import pr_body
 
-USAGE = ("Usage: board.py render <shape.md> --by <text>\n"
-         "       board.py data   <shape.md> --by <text>\n"
+USAGE = ("Usage: board.py render <shape.md> --by <text> [--gate <file>]\n"
+         "       board.py data   <shape.md> --by <text> [--gate <file>]\n"
          "       board.py serve  <dir>")
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "board.html")
@@ -46,6 +54,10 @@ TYPE = re.compile(r"\*\*Project type:\*\*\s*([^·\n]+)")
 DEPENDS = re.compile(r"^\*\*Depends on:\*\*(.*)$", re.M)
 DIVIDER = re.compile(r"^:?-+:?$")
 SHOWN = ("Resolved", "Accepted risk", "Decided alone")
+SCENARIO = re.compile(r"^\s*Scenario:\s*(.+?)\s*$")
+LEAD_IN = re.compile(r"^\*\*([^*]+)\*\*$")
+IN_LINE = re.compile(r"^\*\*In:\*\*\s*(.*)$")
+LIGHT = re.compile(r"^\*\*Path:\*\*\s*light\b", re.M)
 NOT_PROSE = ("#", "|", "```", "~~~", "- ", "* ", "+ ", ">", "<", "**")
 
 
@@ -75,7 +87,8 @@ def spec_name(cell):
 
 
 def slice_rows(lines):
-    """(name, what ships) for each row of the first table with a Slice column."""
+    """(name, what ships, why this order) for each row of the first table with
+    a Slice column."""
     header, rows = None, []
     for line in lines:
         if not line.lstrip().startswith("|"):
@@ -92,7 +105,7 @@ def slice_rows(lines):
         at = dict(zip(header, found))
         name = spec_name(at.get("Slice", ""))
         if name:
-            rows.append((name, at.get("What ships", "")))
+            rows.append((name, at.get("What ships", ""), at.get("Why this order", "")))
     return rows
 
 
@@ -227,6 +240,185 @@ def answers(ledger):
     return rows
 
 
+def raw_sections(text):
+    """pr_body.sections, but each section keeps its fence lines, markers
+    included, so a changed scenario or diagram shows as a change."""
+    found, current, fence = {}, None, ""
+    for line in text.splitlines():
+        if fence:
+            if closes(line, fence):
+                fence = ""
+        else:
+            marker = pr_body.FENCE.match(line)
+            if marker:
+                fence = marker.group(1)
+            elif line.startswith("## "):
+                current = line[3:].strip()
+                found.setdefault(current, [])
+                continue
+        if current is not None:
+            found[current].append(line)
+    return found
+
+
+def scenarios(lines):
+    """{name: [body lines]} for each "Scenario:" inside a fence."""
+    found, current, fence = {}, None, ""
+    for line in lines:
+        if fence:
+            if closes(line, fence):
+                fence, current = "", None
+                continue
+            match = SCENARIO.match(line)
+            if match:
+                current = match.group(1)
+                found[current] = []
+            elif current is not None:
+                found[current].append(line)
+        else:
+            marker = pr_body.FENCE.match(line)
+            if marker:
+                fence = marker.group(1)
+    return found
+
+
+def ledger(lines):
+    """{id: {status, type, what}} for each row of the ledger, in order."""
+    rows = {}
+    for line in lines:
+        if not pr_body.ROW.match(line):
+            continue
+        found = cells(line)
+        if len(found) >= 6:
+            rows[found[0]] = {"status": found[5], "type": found[2], "what": found[1].replace("\\|", "|")}
+    return rows
+
+
+def drafted(text):
+    """{id, title} for each D-entry heading inside a fence under
+    "### Decisions to record"."""
+    out, heading, fence = [], "", ""
+    for line in text.splitlines():
+        if fence:
+            if closes(line, fence):
+                fence = ""
+            elif heading == "Decisions to record" and decisions.HEADING.match(line):
+                match = decisions.HEADING.match(line)
+                out.append({"id": "D" + match.group(1), "title": match.group(3)})
+            continue
+        marker = pr_body.FENCE.match(line)
+        if marker:
+            fence = marker.group(1)
+        elif line.startswith("## "):
+            heading = ""
+        elif line.startswith("### "):
+            heading = line[4:].strip()
+    return out
+
+
+def settled(text, found, pause):
+    """{pause, parts} for each pause below this one that the spec has reached.
+    found is pr_body.sections(text)."""
+    out = []
+    if pause > 1:
+        names = list(scenarios(raw_sections(text).get("Acceptance criteria", [])))
+        scope = [IN_LINE.match(line.strip()) for line in found.get("Scope", [])]
+        out.append({"pause": 1, "parts": names + ["In: " + m.group(1) for m in scope if m]})
+    if pause > 2 and "Interface" in found:
+        parts = []
+        for line in found["Interface"]:
+            lead = LEAD_IN.match(line.strip())
+            if line.startswith("### "):
+                parts.append(line[4:].strip())
+            elif lead:
+                parts.append(lead.group(1).strip())
+        out.append({"pause": 2, "parts": parts})
+    return out
+
+
+def squeeze_lines(lines):
+    return [" ".join(line.split()) for line in lines if line.strip()]
+
+
+def grouped(items, kind, ids):
+    if ids:
+        items.append({"kind": kind, "what": ", ".join(ids)})
+
+
+def changed(now, last):
+    """{kind, what} for each section, scenario and group of rows that differ.
+    now and last are raw_sections."""
+    items = []
+    for name, lines in now.items():
+        if name not in last:
+            items.append({"kind": "added", "what": name})
+        elif name == "Acceptance criteria":
+            was, new = scenarios(last[name]), scenarios(lines)
+            for title, body in new.items():
+                if title not in was:
+                    items.append({"kind": "added", "what": "Scenario: " + title})
+                elif squeeze_lines(body) != squeeze_lines(was[title]):
+                    items.append({"kind": "changed", "what": "Scenario: " + title})
+            for title in was:
+                if title not in new:
+                    items.append({"kind": "removed", "what": "Scenario: " + title})
+        elif name == "Open items":
+            was, new = ledger(last[name]), ledger(lines)
+            grouped(items, "new row", [i for i in new if i not in was])
+            left = {}
+            for i, row in new.items():
+                if i in was and was[i]["status"] == "Open" and row["status"] != "Open":
+                    left.setdefault(row["status"].lower(), []).append(i)
+            for kind, ids in left.items():
+                grouped(items, kind, ids)
+        elif squeeze_lines(lines) != squeeze_lines(last[name]):
+            items.append({"kind": "changed", "what": name})
+    items += [{"kind": "removed", "what": name} for name in last if name not in now]
+    return items
+
+
+def gate(path, shape, root, rows, slices):
+    """The card for the file at a stop, or None when that file gets no card."""
+    text = read(path)
+    found = pr_body.sections(text)
+    pages = os.path.join(root, "docs", "specs", ".pages")
+    now = ledger(found.get("Open items", []))
+    real = os.path.realpath(path)
+    if real == os.path.realpath(shape):
+        stages = {s["name"]: s["stage"] for s in slices}
+        first = next(((name, why) for name, _, why in rows if stages[name] != 7), None)
+        name, pause, kind = None, None, "shape"
+        copy = os.path.join(pages, os.path.basename(os.path.dirname(os.path.abspath(shape))) + "-shape-last.md")
+        recommended = {"name": first[0], "why": first[1]} if first else None
+        done, answered = [], sum(1 for row in now.values() if row["status"] != "Open")
+    else:
+        name = next((name for name, _, _ in rows
+                     if real == os.path.realpath(os.path.join(root, "docs", "specs", name + ".md"))), None)
+        # A Refined spec at a stop is pause 3 again: /build has not run yet.
+        pause = stage(text, found) if name else 0
+        pause = 3 if pause == 4 else pause
+        if not 1 <= pause <= 3:
+            return None
+        kind, copy, recommended = "pause", os.path.join(pages, name + "-last.md"), None
+        # The light path has one pause, so nothing before it was approved.
+        light = bool(LIGHT.search(text))
+        done, answered = [] if light else settled(text, found, pause), len(answers(found.get("Open items", [])))
+    if not os.path.isfile(copy):
+        first = pause in (None, 1) or (kind == "pause" and light)
+        change = {"state": "first" if first else "missing", "since": None, "items": []}
+    else:
+        last = read(copy)
+        at = datetime.datetime.fromtimestamp(os.path.getmtime(copy)).strftime("%Y-%m-%d %H:%M")
+        where = "the last stop" if kind == "shape" else "pause %d" % stage(last, pr_body.sections(last))
+        items = changed(raw_sections(text), raw_sections(last))
+        change = {"state": "diff" if items else "none", "since": "%s, %s" % (where, at), "items": items}
+    return {"kind": kind, "slice": name, "pause": pause,
+            "open": [{"id": i, "type": row["type"], "what": row["what"]}
+                     for i, row in now.items() if row["status"] == "Open"],
+            "drafted": drafted(text) if pause == 3 else [], "recommended": recommended,
+            "settled": done, "answered": answered, "changed": change}
+
+
 def one_slice(n, name, ships, root, names, entries):
     rel = "docs/specs/%s.md" % name
     path = os.path.join(root, "docs", "specs", name + ".md")
@@ -241,7 +433,7 @@ def one_slice(n, name, ships, root, names, entries):
             "rows": answers(found.get("Open items", []))}
 
 
-def board(shape, by):
+def board(shape, by, card=None):
     text = read(shape)
     found = pr_body.sections(text)
     rows = slice_rows(found.get("Slices", []))
@@ -250,9 +442,10 @@ def board(shape, by):
     folder = os.path.dirname(os.path.abspath(shape))
     root = os.path.dirname(os.path.dirname(os.path.dirname(folder)))
     entries = decisions.parse(decisions.read(root))[0]
-    names = [name for name, _ in rows]
+    names = [name for name, _, _ in rows]
     title = next((line[2:].strip() for line in text.splitlines() if line.startswith("# ")), "")
     status, kind = STATUS.search(text), TYPE.search(text)
+    slices = [one_slice(n, name, ships, root, names, entries) for n, (name, ships, _) in enumerate(rows, 1)]
     return {
         "idea": os.path.basename(folder),
         "title": title or os.path.basename(folder),
@@ -260,8 +453,8 @@ def board(shape, by):
         "type": kind.group(1).strip() if kind else "",
         "problem": squeezed(found.get("Problem", [])),
         "updated": {"by": by, "date": datetime.date.today().isoformat()},
-        "slices": [one_slice(n, name, ships, root, names, entries)
-                   for n, (name, ships) in enumerate(rows, 1)],
+        "slices": slices,
+        "gate": gate(card, shape, root, rows, slices) if card is not None else None,
     }
 
 
@@ -310,11 +503,12 @@ def serve(folder, port=PORT):
 def main(argv):
     if len(argv) == 2 and argv[0] == "serve":
         return serve(argv[1])
-    if len(argv) != 4 or argv[0] not in ("render", "data") or argv[2] != "--by":
+    if len(argv) not in (4, 6) or argv[0] not in ("render", "data") or argv[2] != "--by" \
+            or (len(argv) == 6 and argv[4] != "--gate"):
         print(USAGE, file=sys.stderr)
         return 2
     try:
-        data = board(argv[1], argv[3])
+        data = board(argv[1], argv[3], argv[5] if len(argv) == 6 else None)
         page = read(TEMPLATE) if argv[0] == "render" else None
     except Refused as refusal:
         print("board.py: %s" % refusal, file=sys.stderr)
