@@ -83,6 +83,7 @@ Scenario: a later one
 | \`src/export.py\` | Header | Scenario 2 |
 | \`src/cli.py:7\` | \`run|data\` flag | Scenarios 1 to 3 |
 | \`src/quote.py\` | Quotes | The Interface section |
+| \`src/cli.py:10-20\` | A range | Scenario 1 |
 
 ### Test plan
 
@@ -112,7 +113,7 @@ same '[1, "the ledger exports as CSV"]' "$(pick '[P["rows"][0]["n"], P["rows"][0
 same '[{"test": "test_export.py: writes a file", "command": "pytest tests/test_export.py"}]' "$(pick 'P["rows"][0]["tests"]')" \
   "proof: a Test plan row joins the scenario its first cell starts with, backticks taken off"
 same '["src/export.py", "src/cli.py"]' "$(pick 'P["rows"][0]["files"]')" \
-  "proof: files from Why cells in table order, line numbers taken off, once each; a | inside backticks keeps the Why cell"
+  "proof: files from Why cells in table order, line numbers and ranges such as :10-20 taken off, once each; a | inside backticks keeps the Why cell"
 same '["src/export.py", "src/cli.py"]' "$(pick 'P["rows"][1]["files"]')" "proof: 'Scenarios 1 to 3' and 'Scenario 2' both reach scenario 2"
 same '["src/export.py"]' "$(pick 'P["rows"][4]["files"]')" "proof: '1, 2 and 5' reaches scenario 5"
 same '[{"id": "O2", "what": "The spec did not say the file name.", "chose": "`ledger.csv`.", "undo": "rename it in `src/export.py`."}]' \

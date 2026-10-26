@@ -492,7 +492,7 @@ def proof(text, found, at):
             "tests": [{"test": row.get("Test", "").replace("`", ""), "command": row.get("Command", "").replace("`", "")}
                       for row, m in zip(tests, lead) if m and n in numbers(m.group(1))],
             "files": list(dict.fromkeys(
-                re.sub(r":\d+$", "", span.group(1)) for row in changes
+                re.sub(r":\d+(?:-\d+)?$", "", span.group(1)) for row in changes
                 for span in [CODE.search(row.get("File", ""))]
                 if span and any(n in numbers(m) for m in NAMED.findall(row.get("Why", ""))))),
         })
