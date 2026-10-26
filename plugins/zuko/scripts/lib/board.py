@@ -57,6 +57,7 @@ SHOWN = ("Resolved", "Accepted risk", "Decided alone")
 SCENARIO = re.compile(r"^\s*Scenario:\s*(.+?)\s*$")
 LEAD_IN = re.compile(r"^\*\*([^*]+)\*\*$")
 IN_LINE = re.compile(r"^\*\*In:\*\*\s*(.*)$")
+LIGHT = re.compile(r"^\*\*Path:\*\*\s*light\b", re.M)
 NOT_PROSE = ("#", "|", "```", "~~~", "- ", "* ", "+ ", ">", "<", "**")
 
 
@@ -399,9 +400,12 @@ def gate(path, shape, root, rows, slices):
         if not 1 <= pause <= 3:
             return None
         kind, copy, recommended = "pause", os.path.join(pages, name + "-last.md"), None
-        done, answered = settled(text, found, pause), len(answers(found.get("Open items", [])))
+        # The light path has one pause, so nothing before it was approved.
+        light = bool(LIGHT.search(text))
+        done, answered = [] if light else settled(text, found, pause), len(answers(found.get("Open items", [])))
     if not os.path.isfile(copy):
-        change = {"state": "first" if pause in (None, 1) else "missing", "since": None, "items": []}
+        first = pause in (None, 1) or (kind == "pause" and light)
+        change = {"state": "first" if first else "missing", "since": None, "items": []}
     else:
         last = read(copy)
         at = datetime.datetime.fromtimestamp(os.path.getmtime(copy)).strftime("%Y-%m-%d %H:%M")
