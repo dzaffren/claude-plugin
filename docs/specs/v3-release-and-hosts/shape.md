@@ -33,13 +33,22 @@ flowchart LR
     S8["8 · stage polish"]
 ```
 
-| Order | #   | Slice                   | What ships                                                                                | Why this order                                            |
-| ----- | --- | ----------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 1     | 4   | `/release`              | Version from commits, changelog cut, tag, GitHub release, hub page                        | First thing you can release with; 5 plugs into it         |
-| 2     | 7a  | OWASP lens              | `/review` security pass grounded in OWASP Top 10:2025 with a shared `references/owasp.md` | 5 reuses the reference                                    |
-| 3     | 5   | Pentest                 | zuko `pentester` agent runs inside `/release`; critical or high blocks                    | Needs 4's release step and 7a's reference                 |
-| 4     | 7b  | Regression-aware review | Deleted guards count, verifier needs a real defense, silent failures under A10            | Independent; after 7a so both touch `/review` in sequence |
-| 5     | 8   | Stage polish            | `/design-system`, glossary gate, ASCII terminal, Figma/Jira if connected, shape gate      | Small; last so it blocks nothing                          |
+| Order | # | Slice | What ships | Why this order |
+| --- | --- | --- | --- | --- |
+| 1 | 4 | release | Version from commits, changelog cut, tag, GitHub release, hub page | First thing you can release with; 5 plugs into it |
+| 2 | 7a | owasp-lens | `/review` security pass grounded in OWASP Top 10:2025 with a shared `references/owasp.md` | 5 reuses the reference |
+| 3 | 5a | pentest | zuko `pentester` agent runs inside `/release`; critical or high blocks | Needs 4's release step and 7a's reference |
+| 4 | 5b | pentest-live | `/release` also attacks a running web app with real requests, held to one host | Needs 5a's agent |
+| 5 | 7b | regression-review | Deleted guards count, verifier needs a real defense, silent failures under A10 | Independent; after 7a so both touch `/review` in sequence |
+| 6 | 8.1 | mermaid-placeholder | The ship gate reads a Mermaid decision node as syntax, not a placeholder | Stage polish; small, so it blocks nothing |
+| 7 | 8.2 | release-host-message | `/release` on a GitLab origin says it supports GitHub only | Stage polish |
+| 8 | 8.3 | pr-attribution | The attribution hook blocks a `gh pr create` that signs Claude's name | Stage polish |
+| 9 | 8.4 | ledger-handoff | Ledger gains status `Handed to {slice}`; a shape hands a later slice's question forward | Stage polish |
+| 10 | 8.5 | glossary-gate | Shape and spec templates end with a Glossary, checked by the spec gate | Stage polish |
+| 11 | 8.6 | ascii-terminal | Diagrams printed to the terminal are ASCII | Stage polish |
+| 12 | 8.7 | design-system | `/design-system` is its own skill | Stage polish |
+| 13 | 8.8 | figma-brief | `/design-system` takes a Figma frame link when Figma is connected | Stage polish |
+| 14 | 8.9 | jira-shape | `/shape KEY` starts from a Jira ticket when Jira is connected | Stage polish; last |
 
 ### Slice 4 · `/release`
 

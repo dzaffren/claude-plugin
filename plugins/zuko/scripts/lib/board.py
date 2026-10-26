@@ -4,6 +4,7 @@
 Usage: board.py render <shape.md> --by <text> [--gate <file>]
        board.py data   <shape.md> --by <text> [--gate <file>]
        board.py serve  <dir>
+       board.py library <root>
 
 The shape is docs/specs/{idea}/shape.md, so the project root is three folders
 above the shape's folder. Each row of the first table under "## Slices" that
@@ -25,13 +26,18 @@ docs/specs/gate-card.md, "How the script builds the gate".
   serve   serves <dir> on 127.0.0.1:4751 until stopped. Any Host header but
           127.0.0.1:4751 or localhost:4751 gets 400, so a page on another
           site cannot read the board through DNS rebinding
+  library the hub's Ideas section, one row for each docs/specs/*/shape.md
+          under <root>, as an HTML fragment to paste into the hub. No shape
+          gives no output. The rules are in docs/specs/library.md, "Interface"
 
 Exit 0 printed, or the server stopped. Exit 1 the port cannot be bound, most
 often because it is in use. Exit 2 bad usage, a shape, spec or --gate file
-that cannot be read, a shape with no Slices table, or a <dir> that is not a
-directory.
+that cannot be read, a shape with no Slices table, or a <dir> or <root> that
+is not a directory. library never exits 2 for a shape: a shape it cannot read
+is an error row.
 """
 import datetime
+import html
 import http.server
 import json
 import os
@@ -43,7 +49,8 @@ import pr_body
 
 USAGE = ("Usage: board.py render <shape.md> --by <text> [--gate <file>]\n"
          "       board.py data   <shape.md> --by <text> [--gate <file>]\n"
-         "       board.py serve  <dir>")
+         "       board.py serve  <dir>\n"
+         "       board.py library <root>")
 
 TEMPLATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "board.html")
 SLOT = "/*DATA*/null"
@@ -51,6 +58,7 @@ PORT = 4751
 
 STATUS = re.compile(r"\*\*Status:\*\*\s*([^·\n]+)")
 TYPE = re.compile(r"\*\*Project type:\*\*\s*([^·\n]+)")
+BOARD = re.compile(r"^\*\*Board:\*\*\s*(\S+)", re.M)
 DEPENDS = re.compile(r"^\*\*Depends on:\*\*(.*)$", re.M)
 DIVIDER = re.compile(r"^:?-+:?$")
 SHOWN = ("Resolved", "Accepted risk", "Decided alone")
@@ -62,6 +70,8 @@ LIST = r"(\d+(?:\s*(?:,|\band\b|\bto\b|[–-])\s*\d+)*)"
 LISTED = re.compile(r"^\s*" + LIST)
 NAMED = re.compile(r"\bscenarios?\s+" + LIST, re.I)
 CODE = re.compile(r"`([^`]+)`")
+CODE_PATH = re.compile(r"docs/specs/\S+?\.md")
+STAGES = ("Not started", "Pause 1", "Pause 2", "Pause 3", "Refined", "Built", "Reviewed", "Shipped")
 NOT_PROSE = ("#", "|", "```", "~~~", "- ", "* ", "+ ", ">", "<", "**")
 
 
@@ -540,6 +550,99 @@ def board(shape, by, card=None):
     }
 
 
+def one_idea(specs, idea):
+    rel = "docs/specs/%s/shape.md" % idea
+    try:
+        text = read(os.path.join(specs, idea, "shape.md"))
+        rows = slice_rows(pr_body.sections(text).get("Slices", []))
+        if not rows:
+            return {"idea": idea, "error": "no Slices table in %s" % rel}
+        marks = []
+        for name, _, _ in rows:
+            path = os.path.join(specs, name + ".md")
+            spec = read(path) if os.path.isfile(path) else None
+            marks.append((name, stage(spec, pr_body.sections(spec)) if spec is not None else 0))
+    except Refused as refusal:
+        return {"idea": idea, "error": str(refusal).replace(os.path.join(specs, ""), "docs/specs/", 1)}
+    title = next((line[2:].strip() for line in text.splitlines() if line.startswith("# ")), "")
+    link = BOARD.search(text)
+    return {"idea": idea, "title": title or idea, "shape": rel, "marks": marks, "error": None,
+            "board": link.group(1) if link and link.group(1).startswith("https://") else None}
+
+
+def library(root):
+    """Error rows, then ideas with a slice not Shipped, then the rest; each
+    group in folder-name order."""
+    specs = os.path.join(root, "docs", "specs")
+    found = sorted(name for name in os.listdir(specs)
+                   if os.path.isfile(os.path.join(specs, name, "shape.md"))) if os.path.isdir(specs) else []
+    ideas = [one_idea(specs, idea) for idea in found]
+    return sorted(ideas, key=lambda i: 0 if i["error"] else 1 if any(st < 7 for _, st in i["marks"]) else 2)
+
+
+IDEAS_STYLE = """<style>
+.zuko-ideas{--zi-ink:#1A2130;--zi-slate:#5A6477;--zi-rule:#DDE1E8;--zi-surface:#FFFFFF;--zi-head:#EEF1F5;--zi-ship:#2E7A57;--zi-work:#2C5B88;--zi-warn:#A8701C;--zi-warn-soft:#F7EEDD;display:flex;flex-direction:column;gap:14px;color:var(--zi-ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .zuko-ideas{--zi-ink:#E3E7EE;--zi-slate:#98A2B3;--zi-rule:#2A313D;--zi-surface:#181D26;--zi-head:#1E242E;--zi-ship:#6CC49A;--zi-work:#86AEDA;--zi-warn:#E0AE5E;--zi-warn-soft:#2C2416}}
+:root[data-theme="dark"] .zuko-ideas{--zi-ink:#E3E7EE;--zi-slate:#98A2B3;--zi-rule:#2A313D;--zi-surface:#181D26;--zi-head:#1E242E;--zi-ship:#6CC49A;--zi-work:#86AEDA;--zi-warn:#E0AE5E;--zi-warn-soft:#2C2416}
+.zuko-ideas p{margin:0;font-size:.9rem;color:var(--zi-slate)}
+.zuko-ideas .zi-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--zi-slate)}
+.zuko-ideas .zi-legend span{display:inline-flex;gap:6px;align-items:center}
+.zuko-ideas .zi-tbl{overflow-x:auto;border:1px solid var(--zi-rule);border-radius:6px;background:var(--zi-surface)}
+.zuko-ideas table{border-collapse:collapse;width:100%;font-size:.9rem}
+.zuko-ideas th,.zuko-ideas td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--zi-rule)}
+.zuko-ideas th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--zi-slate);font-weight:500;background:var(--zi-head)}
+.zuko-ideas tr:last-child td{border-bottom:0}
+.zuko-ideas b{display:block;font-weight:600}
+.zuko-ideas .zi-folder,.zuko-ideas code{font-family:ui-monospace,Menlo,monospace;font-size:.8em;color:var(--zi-slate);overflow-wrap:anywhere}
+.zuko-ideas .zi-count{white-space:nowrap;font-variant-numeric:tabular-nums}
+.zuko-ideas ul{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0;padding:0;list-style:none}
+.zuko-ideas .zi-legend ul{margin:0}
+.zuko-ideas li{width:11px;height:11px;border-radius:50%;border:2px solid var(--zi-slate);box-sizing:border-box}
+.zuko-ideas li.ship{background:var(--zi-ship);border-color:var(--zi-ship)}
+.zuko-ideas li.work{background:var(--zi-work);border-color:var(--zi-work)}
+.zuko-ideas .zi-none{color:var(--zi-slate)}
+.zuko-ideas .zi-pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--zi-warn-soft);color:var(--zi-warn)}
+</style>"""
+
+
+def mark_kind(st):
+    return "ship" if st == 7 else "none" if st == 0 else "work"
+
+
+def idea_row(i):
+    e = html.escape
+    head = '<tr class="idea" data-idea="%s"><td><b>%s</b><span class="zi-folder">%s</span></td>' % (
+        e(i["idea"]), e(i.get("title") or i["idea"]), e(i["idea"]))
+    if i["error"]:
+        return head + '<td colspan="2"><span class="zi-pill">not read</span> %s</td></tr>' % \
+            CODE_PATH.sub(lambda m: "<code>%s</code>" % m.group(0), e(i["error"]))
+    marks = i["marks"]
+    shipped = sum(1 for _, st in marks if st == 7)
+    label = ", ".join("%s %s" % (name, STAGES[st]) for name, st in marks)
+    dots = "".join('<li class="%s" title="%s · %s"></li>' % (mark_kind(st), e(name), STAGES[st]) for name, st in marks)
+    board = '<a href="%s">open board</a>' % e(i["board"]) if i["board"] else \
+        'no board yet · <code>%s</code>' % e(i["shape"])
+    return head + '<td><span class="zi-count">%d of %d shipped</span><ul aria-label="%s">%s</ul></td><td%s>%s</td></tr>' % (
+        shipped, len(marks), e(label), dots, "" if i["board"] else ' class="zi-none"', board)
+
+
+def library_html(ideas):
+    if not ideas:
+        return ""
+    return "\n".join([
+        '<section class="zuko-ideas" aria-labelledby="zuko-ideas">',
+        IDEAS_STYLE,
+        '<h2 id="zuko-ideas">Ideas</h2>',
+        '<p>One row for each <code>docs/specs/*/shape.md</code>. Specs with no shape are only in Slices, below.</p>',
+        '<div class="zi-legend" aria-hidden="true"><span><ul><li class="ship"></li></ul>Shipped</span>'
+        '<span><ul><li class="work"></li></ul>Pause 1 to Reviewed</span><span><ul><li class="none"></li></ul>Not started</span></div>',
+        '<div class="zi-tbl"><table><thead><tr><th>Idea</th><th>Progress</th><th>Board</th></tr></thead><tbody>',
+        "\n".join(idea_row(i) for i in ideas),
+        '</tbody></table></div>',
+        '</section>',
+    ])
+
+
 def blob(data):
     """The JSON, with nothing in it that can end or confuse a script block."""
     return json.dumps(data, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\u0021--")
@@ -585,6 +688,14 @@ def serve(folder, port=PORT):
 def main(argv):
     if len(argv) == 2 and argv[0] == "serve":
         return serve(argv[1])
+    if len(argv) == 2 and argv[0] == "library":
+        if not os.path.isdir(argv[1]):
+            print("board.py: %s is not a directory" % argv[1], file=sys.stderr)
+            return 2
+        page = library_html(library(argv[1]))
+        if page:
+            print(page)
+        return 0
     if len(argv) not in (4, 6) or argv[0] not in ("render", "data") or argv[2] != "--by" \
             or (len(argv) == 6 and argv[4] != "--gate"):
         print(USAGE, file=sys.stderr)

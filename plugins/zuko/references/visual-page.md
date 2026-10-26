@@ -176,7 +176,9 @@ One page for the whole project; each slice's page links from it. Built by
 `/ship` before the push, in the slice's own PR, and republished by
 `/release`, from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
 `DECISIONS.md` and `CHANGELOG.md` when they exist. The Markdown wins: the
-hub is regenerated from those files, never edited beside them.
+hub is regenerated from those files, never edited beside them. `/shape`
+also publishes it, after the board. When no hub exists yet, `/shape` builds
+it.
 
 In this order:
 
@@ -188,8 +190,15 @@ In this order:
    leave it out.
 2. **Run commands.** The `## Run it` table.
 3. **Architecture.** The context and components diagrams.
-4. **Slices.** The slices table, each row linking to that slice's spec page.
-5. **Links.** README and `docs/ARCHITECTURE.md`.
+4. **Ideas.** Run the script below in the repo root. Paste its output as it
+   is. Do not edit it. No output means no Ideas section.
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/board.py" library .
+   ```
+
+5. **Slices.** The slices table, each row linking to that slice's spec page.
+6. **Links.** README and `docs/ARCHITECTURE.md`.
 
 Write it to `docs/specs/.pages/_hub.html` — next to the spec pages, so the one
 ignore rule covers both; the underscore keeps it from colliding with a slice
