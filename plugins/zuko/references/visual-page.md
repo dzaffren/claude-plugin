@@ -103,6 +103,9 @@ Say nothing about it.
    `/shape`. The board then shows the gate card. `/build`, `/review` and
    `/ship` do not stop, so they do not add `--gate`. Their board has no card.
 
+   `render` also reads git history and asks `gh` and GitHub about
+   squash-merged PRs; a failure there shows only as a note on the board.
+
 2. Write the output to `docs/specs/.pages/{idea}-board.html`.
 3. Publish that file with the Artifact tool. Use the same file path each
    time, so the URL stays the same. Give an icon on the first publish only.
