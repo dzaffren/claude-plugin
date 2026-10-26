@@ -245,14 +245,7 @@ Single chunk.
 
 ### Decisions to record
 
-```text
-## D70 · 2026-10-26 · A script renders the hub's Ideas section; the rest of the hub stays hand-written
-
-Why: the Ideas rows read every shape and every spec they name, about 31 files today. They must read them as the board does (D62), and a test must prove each row.
-Rejected: Claude writes the rows at each stage (the same misreads that D62 stops, and no test), a script renders the whole hub (about twice the work, better as its own slice).
-Source: specs/library.md
-Status: active
-```
+Recorded as D70.
 
 ## Open items
 
