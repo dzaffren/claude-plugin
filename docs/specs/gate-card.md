@@ -93,6 +93,67 @@ Scenario: no copy of the last stop exists
 - Answering a question on the board page itself. Answers stay in the terminal prompt.
 - Stepping back through older stops: **replay**.
 
+## Interface
+
+**Preview:** https://claude.ai/artifact/33X27Ls4EvaLo7UDVU5fi1. It is built from the real `living-board` board, and its five buttons show one state per scenario. The buttons exist only in the preview.
+
+```mermaid
+flowchart TB
+  H[Header] --> G["Gate card: slice, pause, why"]
+  G --> W["Waiting: Open rows, or the recommended slice"]
+  G --> S["Settled: each approved pause and its parts"]
+  G --> C["Changed since the last stop"]
+  G -- picks the gated slice --> R[Stage rail and paper card]
+  F["Filmstrip frame marked GATE"] -- click --> R
+```
+
+The card sits between the header and the stage rail, and it opens the board on the gated slice. Its three columns read from left to right: what waits, what you already agreed, and what moved since you last looked.
+
+**The card**
+
+An amber frame, in the board's existing colours. It shows only on a render made at a stop. A render by `/build`, `/review` or `/ship` has no card.
+
+| Part | What it shows | From |
+| --- | --- | --- |
+| Head | `◈ Waiting for you`, then `<slice> · Pause <n> · <name>`, then one line on how to approve | The stop |
+| Waiting | `Waiting · <n> open`, then each Open row: its ID, its type and its What. With no Open row: `No open rows. Only the approval waits.` At `/shape`, first `Recommended: <slice>.` with its Why this order cell | The spec's or shape's ledger; the shape's Slices table |
+| Settled | One line per approved pause: `P1 ✓`, then the scenario names and the `**In:**` line; `P2 ✓`, then the bold lead-ins and `###` headings under `## Interface`. Then `<n> answered rows · see Answers`. With nothing approved: `Nothing approved yet for this slice.` | The spec |
+| Changed | `Changed since pause <n>, <date> <time>`, then one line per change, each with a tag: `added`, `removed` or `changed` for a `##` section or a scenario; `new row`; `resolved` or `accepted risk` for a row that left Open | The spec against its last-stop copy |
+| Filmstrip | The gated slice's frame gains a `GATE` tag | The stop |
+
+The pause names and the approve lines:
+
+| Stop | Name | How to approve |
+| --- | --- | --- |
+| Pause 1 | scope and acceptance | Approve in the terminal to go on to the interface. |
+| Pause 2 | the interface | Approve in the terminal to go on to the technical plan. |
+| Pause 3, and the light path's one pause | technical and ship plan | Run /build to approve. /build records the drafted decisions. |
+| `/shape` | Pick the first slice | Answer the question prompt in the terminal to start /spec on a slice. |
+
+The Changed part has three fixed messages:
+
+- No copy and pause 1: `First stop for this slice.`
+- No copy at pause 2 or 3: `No copy of the last stop on this machine, so changes cannot be shown.`
+- A copy that matches: `Nothing changed since the last stop.`
+
+**The copy**
+
+After the board is published, the stage copies the file as it is to `docs/specs/.pages/<slice>-last.md`. At `/shape`, the copy is `docs/specs/.pages/<idea>-shape-last.md`. The file's modified time gives the date in `Changed since`. The copy is git-ignored, like every file in `.pages/`.
+
+**The terminal**
+
+At a stop with a board, the terminal prints three things and nothing else before the prompt:
+
+```
+Board: https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs  ·  gate: pause 1 of gate-card
+
+<one ASCII picture>
+
+<the question prompt>
+```
+
+The picture is the Flow diagram at pause 1, the Interface map at pause 2, the Approach architecture at pause 3, and the slice map at `/shape`. When the publish fails, the line is the localhost line from `visual-page.md`, then the same picture and prompt.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
