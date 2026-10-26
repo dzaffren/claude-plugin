@@ -132,6 +132,33 @@ button { font: inherit; color: inherit; }
 .zoom svg { max-width: none !important; height: auto; display: block; }
 .zoom .close { position: sticky; top: 0; float: right; z-index: 2; background: var(--panel); border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 @media (prefers-reduced-motion: no-preference) { .cur .node { animation: pulse 2.4s ease-in-out infinite; } @keyframes pulse { 50% { box-shadow: 0 0 0 9px transparent; } } }
+
+/* gate card */
+.gate { border: 1px solid var(--amber); border-radius: 10px; background: linear-gradient(180deg, var(--amber-soft), var(--panel) 70%); box-shadow: 0 0 0 4px var(--amber-glow); display: grid; }
+.gate > header { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 14px 18px 12px; border-bottom: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); }
+.gate > header .caps { color: var(--amber); font-weight: 700; }
+.gate > header h2 { margin: 0; font-family: var(--mono); font-size: 17px; letter-spacing: .06em; }
+.gate > header .why { color: var(--fg); font-size: 14px; flex-basis: 100%; }
+.gate .cols { display: grid; grid-template-columns: 1.3fr 1fr 1fr; }
+@media (max-width: 980px) { .gate .cols { grid-template-columns: minmax(0, 1fr); } }
+.gate .col { padding: 14px 18px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; border-right: 1px solid var(--line); }
+.gate .col:last-child { border-right: 0; }
+@media (max-width: 980px) { .gate .col { border-right: 0; border-top: 1px solid var(--line); } }
+.gate h3 { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.gate ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.gate li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: baseline; }
+.gate .id { font-family: var(--mono); font-size: 11.5px; color: var(--amber); }
+.gate .ty { font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-right: 4px; }
+.gate .mk { font-family: var(--mono); font-size: 10.5px; padding: 0 6px; border-radius: 4px; white-space: nowrap; }
+.mk.add { color: var(--green); background: var(--green-soft); } .mk.rem { color: var(--red); background: #2c1515; }
+.mk.chg { color: var(--blue); background: var(--blue-soft); } .mk.row { color: var(--amber); background: var(--amber-soft); }
+.mk.res { color: var(--green); background: var(--green-soft); }
+.gate .pz { font-family: var(--mono); font-size: 12px; color: var(--green); }
+.gate .parts { color: var(--muted); font-size: 12.5px; }
+.gate .note { color: var(--muted); font-size: 13px; margin: 0; }
+.gate .rec { font-size: 13.5px; } .gate .rec b { font-family: var(--mono); color: var(--amber); }
+.gate a { color: var(--blue); }
+.frame .fgate { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--bg); background: var(--amber); border-radius: 4px; padding: 0 6px; justify-self: start; }
 </style>
 
 <div class="wrap">
@@ -221,6 +248,7 @@ button { font: inherit; color: inherit; }
         <div class="status ${cls}"><span class="dot"></span>${word}</div>
         <p class="problem" style="flex-basis:100%">${esc(d.problem)}</p>
       </header>
+      <section class="gate" id="gate" aria-label="Waiting for you" hidden></section>
       <section class="rail" id="rail" aria-label="Stages of the picked slice"></section>
       <section class="main"><article class="paper" id="paper"></article><aside class="side" id="side"></aside></section>
       <section class="strip">
@@ -272,6 +300,46 @@ button { font: inherit; color: inherit; }
         return `<div class="row ${t === "alone" ? "alone" : ""}"><span class="id">${esc(r.id)}</span><span><span class="tag ${t}">${esc(r.status)}</span><span class="a">${esc(r.answer)}</span></span></div>`; }).join("")
         : '<p class="empty">No answered rows yet.</p>'}</section>`;
   }
+  const PAUSE = {
+    1: ["Pause 1 · scope and acceptance", "Approve in the terminal to go on to the interface."],
+    2: ["Pause 2 · the interface", "Approve in the terminal to go on to the technical plan."],
+    3: ["Pause 3 · technical and ship plan", "Run /build to approve. /build records the drafted decisions."]
+  };
+  const MK = { added: "add", removed: "rem", changed: "chg", "new row": "row" };
+  function gateCard(g) {
+    const el = document.getElementById("gate");
+    if (!g) { el.innerHTML = ""; el.hidden = true; return; }
+    el.hidden = false;
+    const [title, why] = g.kind === "shape" ? ["Pick the first slice", "Answer the question prompt in the terminal to start /spec on a slice."] : PAUSE[g.pause];
+    const open = g.open.length
+      ? `<ul>${g.open.map(r => `<li><span class="id">${esc(r.id)}</span><span><span class="ty">${esc(r.type)}</span>${esc(r.what)}</span></li>`).join("")}</ul>`
+      : '<p class="note">No open rows. Only the approval waits.</p>';
+    const drafted = g.drafted.length
+      ? `<p class="note">To approve with /build:</p><ul>${g.drafted.map(x => `<li><span class="id">${esc(x.id)}</span><span>${esc(x.title)}</span></li>`).join("")}</ul>`
+      : "";
+    const rec = g.recommended ? `<p class="rec">Recommended: <b>${esc(g.recommended.name)}</b>. ${esc(g.recommended.why)}</p>` : "";
+    const settled = (g.settled.length
+      ? `<ul>${g.settled.map(p => `<li><span class="pz">P${esc(p.pause)} ✓</span><span class="parts">${p.parts.map(esc).join(" · ")}</span></li>`).join("")}</ul>`
+      : '<p class="note">Nothing approved yet for this slice.</p>')
+      + (g.answered ? `<p class="note">${esc(g.answered)} answered rows · <a href="#side">see Answers</a></p>` : "");
+    const c = g.changed, since = c.since ? ` since ${esc(c.since)}` : "";
+    const changed = c.state === "first" ? '<p class="note">First stop for this slice.</p>'
+      : c.state === "missing" ? '<p class="note">No copy of the last stop on this machine, so changes cannot be shown.</p>'
+      : c.state === "none" ? '<p class="note">Nothing changed since the last stop.</p>'
+      : `<ul>${c.items.map(i => `<li><span class="mk ${MK[i.kind] || "res"}">${esc(i.kind)}</span><span>${esc(i.what)}</span></li>`).join("")}</ul>`;
+    el.innerHTML = `<header><span class="caps">◈ Waiting for you</span><h2>${esc(g.slice ? g.slice + " · " : "")}${esc(title)}</h2><span class="why">${esc(why)}</span></header>
+      <div class="cols">
+        <section class="col"><h3>Waiting · ${esc(g.open.length)} open</h3>${rec}${open}${drafted}</section>
+        <section class="col"><h3>Settled</h3>${settled}</section>
+        <section class="col"><h3>Changed${since}</h3>${changed}</section>
+      </div>`;
+    document.querySelectorAll(".frame .fgate").forEach(x => x.remove());
+    if (g.slice) {
+      const f = document.querySelector(`.frame[data-pick="${CSS.escape(g.slice)}"] .fbody`);
+      if (f) f.insertAdjacentHTML("afterbegin", '<span class="fgate">GATE</span>');
+      pick(g.slice);
+    }
+  }
   function zoom(el) {
     const svg = el.querySelector("svg"); if (!svg) return;
     const box = document.createElement("div"); box.className = "zoom";
@@ -295,5 +363,6 @@ button { font: inherit; color: inherit; }
     if (z && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); zoom(z); }
   });
   renderIdea(DATA);
+  gateCard(DATA.gate);
 })();
 </script>
