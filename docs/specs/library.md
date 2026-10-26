@@ -247,6 +247,12 @@ Single chunk.
 
 Recorded as D70.
 
+## Review
+
+2026-10-26 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/tests/test-e2e-library.sh:101` · check the printed fragment, not the lines the test wrote into its own hub · `14c7f95`
+
 ## Open items
 
 | ID  | What | Type | Raised at | Owner | Status | Answer |
