@@ -34,6 +34,8 @@ expect_match '2\. \*\*What ships\*\*, in two to four sentences\. Then \*\*Verify
   "$pr" "ship pr: then what ships, verify and rollback"
 expect_match '3\. One last line: `Spec: docs/specs/\{slice\}\.md`\. Add ` · Page: ` and the link only when the spec has a `\*\*Page:\*\*` line\.' \
   "$pr" "ship pr: the spec line is last, the page only when there is one"
+expect_match 'Then add ` · Board: ` and the link only when the spec.s shape has a `\*\*Board:\*\*` line\. The order is Spec, Page, Board\.' \
+  "$pr" "ship pr: the board link comes last, only when the shape has a board (pr-gate scenarios 2, 5)"
 expect_match 'Do not list the scenarios\. The spec line links to them\.' "$pr" "ship pr: no scenario list (O10)"
 expect_no_match 'the acceptance scenarios' "$pr" "ship pr: the old body rule is gone"
 
