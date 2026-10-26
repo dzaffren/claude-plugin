@@ -48,7 +48,7 @@ Scenario: /ship puts the PR card on the board
   Then gate-card's section shows a PR card with 5 rows, one per scenario, in order
   And the row "a later pause shows what changed since the last stop" lists test-gate.sh with its command
   And it lists the files whose Changes row names scenario 2, such as plugins/zuko/scripts/lib/board.py
-  And under the rows, the card lists the 7 Decided alone rows, each with its Chose and Undo
+  And under the rows, the card lists the 8 Decided alone rows, each with its Chose and Undo
 
 Scenario: the PR body links the board
   Given docs/specs/living-board/shape.md has the line "**Board:** https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs"
@@ -163,9 +163,9 @@ sequenceDiagram
 | When | The slice's `stage()` is 5, 6 or 7. Otherwise `proof` is `null` |
 | Scenarios | Each `Scenario:` line in the fence under `## Acceptance criteria`, numbered 1 to N in order, with `scenarios()` |
 | A table | The first table under `### Test plan` or `### Changes`, outside fences. Columns are found by header name: `Scenario`, `Test` and `Command`; `File` and `Why`. A cell is split on `\|` outside backticks, so `` `render\|data` `` stays one cell |
-| Numbers | A Test plan row belongs to the scenarios that its Scenario cell starts with. A Changes row belongs to the scenarios that its Why cell names after `Scenario` or `Scenarios`, case ignored. Both read a list such as `1`, `1, 2, 5`, `2, 3 and 5` or `1 to 5` |
+| Numbers | A Test plan row belongs to the scenarios that its Scenario cell starts with. A Changes row belongs to the scenarios that its Why cell names after `Scenario` or `Scenarios`, case ignored. Both read a list such as `1`, `1, 2, 5`, `2, 3 and 5`, `1 to 5` or `1–5` |
 | Tests | Test and Command cells with backticks taken off |
-| Files | The first code span of the File cell, with a `:<line>` end taken off. One file shows once per row |
+| Files | The first code span of the File cell, with a `:<line>` or `:<line>-<line>` end taken off. One file shows once per row |
 | Decided without you | `pr_body.decided()` on the Open items lines: ID, What, Chose and Undo, the date taken off |
 
 ### Changes
@@ -228,6 +228,13 @@ Single chunk.
 
 Recorded as D68, D69.
 
+## Review
+
+2026-10-26 · 2 raw findings, 2 survived, 2 fixed.
+
+- correctness · `plugins/zuko/scripts/lib/board.py:61` in `LIST` · read en-dash ranges such as `1–5` · `86cf254`
+- correctness · `plugins/zuko/scripts/lib/board.py:495` in `proof` · take a `:<n>-<m>` line range off a file · `b5e8121`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -237,6 +244,7 @@ Recorded as D68, D69.
 | O3 | Does the PR body link the board, or open the board on this slice with a deep link? | question | spec p1 | user | Resolved | The board URL, on the PR body's last line. No deep link, 2026-10-26 |
 | O4 | Does the card repeat the Decided alone rows that the Answers panel and the PR body already show? | question | spec p1 | user | Resolved | Yes, each with its Chose and Undo parts, 2026-10-26 |
 | O5 | The shipped `board.html` gives the gate card `display: grid`, which beats its `hidden` attribute, so the localhost board shows an empty amber bar when no gate waits. | flag | spec p2 | user | Resolved | Fold the one-line fix into this build, with a DOM test check, 2026-10-26 |
+| O6 | Review: the approved Numbers rule read `to` ranges only, and the Files rule took off a single line number. This repo's shipped specs write `1–5` and `file.md:66-80`. | flag | review | user | Decided alone | Chose: read `–` and `-` as range marks, and take off a `:<n>-<m>` range; both rules now say so. Other: keep the rules as approved and let those specs show amber notes. Undo: `git revert b5e8121 86cf254`. 2026-10-26 |
 
 ## Glossary
 
