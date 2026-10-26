@@ -11,6 +11,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Each idea now has one board page that shows its slices in order, where each one stands, its diagrams and the choices it made, and every stage keeps it current.
 - At each /spec pause and at the end of /shape, the board shows a gate card: what waits for your approval, what you already agreed to, and what changed since the last stop. The terminal then prints only the board link, one picture and the questions.
 - Each built slice on the board now shows its scenarios next to the tests and files its spec names, and the choices made without you. Each PR body links the board.
+- The hub page now lists every idea with its board link, how many of its slices shipped, and a mark for each slice. /shape publishes the hub too, so a new idea shows the same day.
+
+### Fixed
+
+- The v3 release idea no longer shows five shipped slices as Not started on its board. Its shape now names each of its 14 specs.
 
 ## [2.4.3] - 2026-10-13
 

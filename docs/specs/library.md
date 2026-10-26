@@ -1,6 +1,6 @@
 # Library
 
-**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** idea-board
