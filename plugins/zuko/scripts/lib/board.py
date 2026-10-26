@@ -678,14 +678,16 @@ def steps(root, shape, names):
         if pr:
             swapped.add(pr["pr"])
             base = git(root, "merge-base", pr["head"], commit[0] + "^").strip()
-            theirs = [c + (pr["pr"],) for c in listed(root, "%s..%s" % (base, pr["head"]), "--", *paths)]
-        commits += theirs or [commit + (None,)]
+            theirs = [c + (pr["pr"], base) for c in listed(root, "%s..%s" % (base, pr["head"]), "--", *paths)]
+        commits += theirs or [commit + (None, None)]
     if main:
-        commits += [c + (None,) for c in listed(root, "%s..HEAD" % main, "--", *paths)]
-    texts = blobs(root, [(c[0], path) for c in commits for path in paths])
+        commits += [c + (None, None) for c in listed(root, "%s..HEAD" % main, "--", *paths)]
+    texts = blobs(root, [(c[i], path) for c in commits for i in (0, 5) if c[i] for path in paths])
     out, before, was = [], dict.fromkeys(paths), dict.fromkeys(names, 0)
-    for sha, short, at, subject, pr in commits:
-        now = {path: texts[sha, path] for path in paths}
+    for sha, short, at, subject, pr, base in commits:
+        # A PR branch can be older than main: it gives only the files it changed.
+        now = {path: texts[sha, path] if base is None or texts[sha, path] != texts[base, path] else before[path]
+               for path in paths}
         stages = {name: stage(now[path], pr_body.sections(now[path])) if now[path] is not None else 0
                   for name, path in zip(names, paths[1:])}
         out.append({"at": at, "hash": short, "subject": subject, "pr": pr, "stages": stages,
