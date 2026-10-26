@@ -73,7 +73,6 @@ hub="$repo/docs/specs/.pages/_hub.html"
   printf '%s\n' "$fragment"
   printf '<section><h2>Slices</h2><table><tr><td>tokenise-linear</td></tr></table></section>\n</main>\n'
 } >"$hub"
-page=$(tr '\n' ' ' <"$hub")
 
 # rows, one line each, in page order
 rows=$(python3 - "$hub" <<'PY'
@@ -85,8 +84,8 @@ PY
 )
 row() { grep -F "data-idea=\"$1\"" <<<"$rows"; }
 
-expect_match '<h2>Architecture</h2></section> <section class="zuko-ideas".*<h2 id="zuko-ideas">Ideas</h2>.*<h2>Slices</h2>' "$page" \
-  "e2e library: the Ideas section sits between Architecture and Slices"
+expect_match '^<section class="zuko-ideas"' "$fragment" "e2e library: the fragment is one Ideas section"
+expect_match '<h2 id="zuko-ideas">Ideas</h2>' "$fragment" "e2e library: the section has the Ideas heading"
 
 # --- scenario 1: an idea with a board ---
 living=$(row living-board)
@@ -96,9 +95,7 @@ expect_match '3 of 5 shipped' "$living" "scenario 1: the row says 3 of 5 shipped
 expect_exit 3 "$(grep -o '<li class="ship"' <<<"$living" | wc -l | tr -d ' ')" "scenario 1: three Shipped marks"
 expect_exit 2 "$(grep -o '<li class="none"' <<<"$living" | wc -l | tr -d ' ')" "scenario 1: two Not started marks"
 expect_match 'title="library · Not started"' "$living" "scenario 1: a mark is titled with its slice and stage"
-expect_no_match 'tokenise-linear' "$(sed -n '/zuko-ideas/,/<h2>Slices/p' "$hub" | sed '$d')" \
-  "scenario 1: the spec with no shape is not in the Ideas section"
-expect_match '<h2>Slices</h2><table><tr><td>tokenise-linear' "$page" "scenario 1: the spec with no shape stays in Slices"
+expect_no_match 'tokenise-linear' "$fragment" "scenario 1: the spec with no shape is not in the Ideas section"
 
 # --- scenario 2: an idea with no board ---
 ask=$(row ask-up-front)
