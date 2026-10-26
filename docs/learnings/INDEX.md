@@ -201,3 +201,6 @@ One line per lesson. Loaded into every session in this repo.
 - Do not copy the port of a tool the design copies — the user may run it.
   Check the port is free at pause 3, and check a server by what it serves.
   ([detail](a-borrowed-default-port-collides.md))
+- When a plan edits prompt text that another test pins word for word, give that
+  test to the same chunk.
+  ([detail](pinned-sentences-bend-new-text.md))

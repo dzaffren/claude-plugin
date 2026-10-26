@@ -1,6 +1,6 @@
 # Gate card
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** idea-board
@@ -285,6 +285,11 @@ Recorded as D65, D66, D67.
 | O4 | With a board, the terminal at a pause prints only the Board line, one ASCII picture and the questions. The scenarios, slice test and Open rows leave the terminal. Is that right? | question | spec p1 | user | Resolved | Yes. The board carries the detail, and the question prompt still asks every Open row, 2026-10-26 |
 | O5 | The spec file does not record an approval. After the user approves pause 1, the board still shows pause 1 waiting until pause 2 stops and republishes. | flag | spec p1 | user | Accepted risk | The next stop republishes, usually within minutes. An approval field in the spec would be one more thing for every gate to read, 2026-10-26 |
 | O6 | Pause 3 has no question to approve: `/build` approves it, with the drafted D-entries. If the terminal prints only the Board line, a picture and the prompt, the drafted entries leave the terminal. Where do they show? | question | spec p3 | user | Resolved | At pause 3, the card's Waiting column lists each drafted entry's title. The terminal also keeps the spec path and the riskiest-choice line. The full entries stay in the spec, 2026-10-26 |
+| O7 | The spec did not say what the "since" text reads at a shape gate. | flag | build | user | Decided alone | Chose: `the last stop, <date> <time>`. Other: `pause <n>`, but `stage()` on a shape always gives 1. Undo: change the `where` line in `gate()` in `board.py`. 2026-10-26 |
+| O8 | The Changed rule names only "new row" and "left Open". A row deleted from the ledger, or an Open row whose What was edited, is not listed. | flag | build | user | Decided alone | Chose: list only those two, as the spec says. Other: also list deleted rows and edited Open rows. Undo: add both cases to `changed()` in `board.py` and to `test-gate.sh`. 2026-10-26 |
+| O9 | Pause 2 with a board printed only the Board line, the Interface map and the prompt (D67), so a web UI slice lost its preview link, which the board does not carry. | flag | build | user | Decided alone | Chose: the pause 2 print lists the preview link as item 3, when the slice has a preview. Other: three items only, as D67 words it. Undo: `git revert` the commit "keep the preview link in the pause 2 print with a board". 2026-10-26 |
+| O10 | O6 named the spec path and the riskiest choice for the pause 3 line; the old line also had the page link. | flag | build | user | Decided alone | Chose: keep the page link in that line. Other: spec path and riskiest choice only. Undo: drop "the page link" from item 3 of pause 3 in `skills/spec/SKILL.md` and from `test-gate-steps.sh`. 2026-10-26 |
+| O11 | `test-idea-board.sh` and `test-pause-questions.sh` pin the old pointer and pause 1 sentences word for word, so the new text had to fit around them. | flag | build | user | Decided alone | Chose: `--gate` sits in a sentence before each board pointer, and pause 1 keeps its no-board print first, then the board print. Pauses 2 and 3 put the board print first. Other: loosen those two tests and use one order at all three pauses. Undo: change the two pinned checks, then move the text. 2026-10-26 |
 
 ## Glossary
 
