@@ -98,6 +98,44 @@ Scenario: The v3 release idea counts every spec it became
 - Publishing a missing board from the hub step. A board appears when a stage of its idea publishes it. No later slice.
 - A history of how each idea moved: **replay**, slice 5 of living-board.
 
+## Interface
+
+The Ideas section is a new section of the hub page, between "Architecture" and "Slices". It uses the hub's own tokens and its table style. The hub has no design system, and this slice adds none.
+
+```mermaid
+flowchart TB
+  H[Ideas heading] --> N["Note: one row for each shape; specs with no shape are in Slices"]
+  N --> L["Legend: Shipped · Pause 1 to Reviewed · Not started"]
+  L --> T["Table: Idea | Progress | Board"]
+  T -->|shape read| R1["Row: title + folder | 3 of 5 shipped + marks | open board, or no board yet + shape path"]
+  T -->|shape not read| R2["Row: folder | not read + the reason, over two columns"]
+```
+
+The section is a heading, a note, a legend and one table. Each shape gives one row, or one error row when the hub cannot read it.
+
+**Row order.** Ideas with a slice that is not Shipped come first. Then the ideas with every slice Shipped. In each group, the rows go in the order of the shape folder names.
+
+**Each row:**
+
+| Column   | Text                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| Idea     | The shape's `# ` title, and under it the folder name in mono, for example `living-board`               |
+| Progress | `{n} of {total} shipped`, then one mark for each row of the Slices table, in table order               |
+| Board    | `open board`, linked to the `**Board:**` URL. With no Board line: `no board yet · docs/specs/{idea}/shape.md` |
+
+**Marks.** A filled green mark is Shipped. A filled blue mark is any stage from Pause 1 to Reviewed. A hollow mark is Not started, which also means the slice has no spec yet. Each mark has the title `{slice} · {stage}`, with the stage names that the board uses. The list of marks has an `aria-label` that names each slice and its stage.
+
+**Error row.** The Idea column has the folder name. The other two columns join, and say `not read` in an amber pill, then the reason:
+
+| Cause                                 | Reason text                                    |
+| ------------------------------------- | ---------------------------------------------- |
+| The shape has no table with a Slice column under `## Slices` | `no Slices table in docs/specs/{idea}/shape.md` |
+| The shape cannot be read              | `cannot read docs/specs/{idea}/shape.md: {error}` |
+
+**No shapes.** With no `docs/specs/*/shape.md`, the hub has no Ideas section. It shows no empty heading.
+
+**Preview:** https://claude.ai/artifact/AcXaSBvFM98p8tbTeee6bt, from `docs/specs/.pages/library-preview.html`
+
 ## Open items
 
 | ID  | What | Type | Raised at | Owner | Status | Answer |
