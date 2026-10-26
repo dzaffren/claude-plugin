@@ -73,13 +73,23 @@ to make it pass.
 - Scope in and out, and which later slice picks up each out-of-scope item.
 - The ledger, updated.
 
-When the spec has a `**Shape doc:**` line, republish the idea board, as
+For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
+spec has a `**Shape doc:**` line, republish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
 `--by "/spec {slice} pause 1"`.
 
 **Then stop.** Show the diagram, the scenarios, the slice test result, and any
 open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Do not continue until the user approves.
+
+That print is for a spec with no board. When "Idea board" printed a `Board`
+line, the terminal shows only these, in this order:
+
+1. The `Board` line, as "Idea board" prints it.
+2. The Flow diagram, in ASCII.
+3. The question prompt.
+
+The board shows the scenarios, the slice test and the open items.
 
 ## Pause 2 — the interface
 
@@ -156,12 +166,22 @@ the project type — see the table in `slicing.md`:
 Write the Interface section: what was designed, the components used (names
 from the system only), the motion tier, and the preview path.
 
-When the spec has a `**Shape doc:**` line, republish the idea board, as
+For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
+spec has a `**Shape doc:**` line, republish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
 `--by "/spec {slice} pause 2"`.
 
-**Then stop.** Give the preview link and name which design system the tokens
-came from. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
+**Then stop.** When "Idea board" printed a `Board` line, the terminal
+shows only these, in this order:
+
+1. The `Board` line, as "Idea board" prints it.
+2. The Interface map, in ASCII.
+3. The question prompt.
+
+With no board, give the preview link and name which design system the tokens
+came from.
+
+Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Design review is a loop — when the user wants changes, edit and
 stop again. Do not continue to pause 3 until approved.
 
@@ -227,14 +247,26 @@ gets none.
 date. A row that stays Open → Status stays `Draft`; say which rows block it
 and stop there. The Stop hook fails a `Refined` spec with an Open row.
 
-When the spec has a `**Shape doc:**` line, republish the idea board, as
+For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
+spec has a `**Shape doc:**` line, republish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
 `--by "/spec {slice} pause 3"`.
 
-**Then stop.** Set Status to `Refined`. Give the spec path, the page link, and
-the plan's riskiest choice in one line. Print the ledger, then the drafted
-entries as "Decisions to record (approve with this pause)". Say `/build` is
-next. Do not write code.
+**Then stop.** Set Status to `Refined`. When "Idea board" printed a `Board`
+line, the terminal shows only these, in this order:
+
+1. The `Board` line, as "Idea board" prints it.
+2. The Approach architecture diagram, in ASCII.
+3. The spec path, the page link, and the plan's riskiest choice, in one line.
+4. `/build` is next.
+
+The board lists the drafted entries. Their full text stays in the spec.
+
+With no board, give the spec path, the page link, and the plan's riskiest
+choice in one line. Print the ledger, then the drafted entries as "Decisions
+to record (approve with this pause)". Say `/build` is next.
+
+Do not write code.
 
 Running `/build` is the approval, so `/build` appends the drafted entries to
 `DECISIONS.md` — this stage never does. Corrections instead → change the
