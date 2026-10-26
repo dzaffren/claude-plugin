@@ -73,7 +73,7 @@ Scenario: The first /shape in a repo creates the hub
   Given OVERVIEW.md has a "## More" line with no hub page link
   And the user runs /shape on a new idea, csv-import, with three slices
   When /shape publishes the csv-import board
-  Then /shape publishes the hub page and adds "hub page: {url}" to the More line
+  Then /shape publishes the hub page and adds "hub page: https://claude.ai/artifact/…" to the More line
   And the Ideas section has a row "CSV import" with the new board link and "0 of 3 shipped"
 
 Scenario: The v3 release idea counts every spec it became
@@ -120,17 +120,17 @@ The section is a heading, a note, a legend and one table. Each shape gives one r
 | Column   | Text                                                                                                   |
 | -------- | ------------------------------------------------------------------------------------------------------ |
 | Idea     | The shape's `# ` title, and under it the folder name in mono, for example `living-board`               |
-| Progress | `{n} of {total} shipped`, then one mark for each row of the Slices table, in table order               |
-| Board    | `open board`, linked to the `**Board:**` URL. With no Board line: `no board yet · docs/specs/{idea}/shape.md` |
+| Progress | `<n> of <total> shipped`, then one mark for each row of the Slices table, in table order               |
+| Board    | `open board`, linked to the `**Board:**` URL. With no Board line: `no board yet · docs/specs/<idea>/shape.md` |
 
-**Marks.** A filled green mark is Shipped. A filled blue mark is any stage from Pause 1 to Reviewed. A hollow mark is Not started, which also means the slice has no spec yet. Each mark has the title `{slice} · {stage}`, with the stage names that the board uses. The list of marks has an `aria-label` that names each slice and its stage.
+**Marks.** A filled green mark is Shipped. A filled blue mark is any stage from Pause 1 to Reviewed. A hollow mark is Not started, which also means the slice has no spec yet. Each mark has the title `<slice> · <stage>`, with the stage names that the board uses. The list of marks has an `aria-label` that names each slice and its stage.
 
 **Error row.** The Idea column has the folder name. The other two columns join, and say `not read` in an amber pill, then the reason:
 
 | Cause                                 | Reason text                                    |
 | ------------------------------------- | ---------------------------------------------- |
-| The shape has no table with a Slice column under `## Slices` | `no Slices table in docs/specs/{idea}/shape.md` |
-| The shape cannot be read              | `cannot read docs/specs/{idea}/shape.md: {error}` |
+| The shape has no table with a Slice column under `## Slices` | `no Slices table in docs/specs/<idea>/shape.md` |
+| The shape cannot be read              | `cannot read docs/specs/<idea>/shape.md: <error>` |
 
 **No shapes.** With no `docs/specs/*/shape.md`, the hub has no Ideas section. It shows no empty heading.
 
@@ -179,7 +179,7 @@ sequenceDiagram
   S->>A: publish _hub.html with the fragment
   alt no hub link on the More line
     A-->>S: new URL
-    S->>O: add "hub page: {url}"
+    S->>O: add the hub page link
   end
 ```
 
