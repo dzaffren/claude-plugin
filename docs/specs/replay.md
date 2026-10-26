@@ -142,7 +142,7 @@ For `living-board` today, that gives 38 steps: 8 from `main` for idea-board, 12 
 | --- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1  | Replay rebuilds frames from git history, but a spec is often written in one commit, so it may have only one or two frames. On `main`, gate-card, pr-gate and library are one squash commit each. Where do the lost frames come from? (from shape O9) | question | shape | user | Resolved | Main, plus each squash-merged PR's commits read from GitHub (`refs/pull/N/head`). Offline or with no GitHub remote, each squash-merged slice shows as one step. 2026-10-26 |
 | O2  | What does a frame show: the stage of each slice and what changed, or the whole board as it was at that commit, with its diagrams and panels? | question | spec p1 | user | Resolved | The stage of each slice, the commit, and what changed since the frame before, with the gate card's tags. 2026-10-26 |
-| O3  | Approved scenario 2 said the stage rail shows each slice as it was at that step. The step card now shows each slice's stage in its own chips, and the rest of the board stays at now, so it never mixes past and present. Is that right? | question | spec p2 | user | Open | — |
+| O3  | Approved scenario 2 said the stage rail shows each slice as it was at that step. The step card now shows each slice's stage in its own chips, and the rest of the board stays at now, so it never mixes past and present. Is that right? | question | spec p2 | user | Resolved | Yes. The step card shows the stages, and the rest of the board stays at now. 2026-10-26 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
