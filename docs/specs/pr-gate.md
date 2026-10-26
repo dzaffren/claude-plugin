@@ -44,7 +44,7 @@ At `/ship`, `board.py` reads the slice's spec and builds the PR card from its sc
 ```gherkin
 Scenario: /ship puts the PR card on the board
   Given docs/specs/gate-card.md is Built, with 5 scenarios, a Changes table and a Test plan table
-  When /ship gate-card republishes the board
+  When any stage republishes the board
   Then gate-card's section shows a PR card with 5 rows, one per scenario, in order
   And the row "a later pause shows what changed since the last stop" lists test-gate.sh with its command
   And it lists the files whose Changes row names scenario 2, such as plugins/zuko/scripts/lib/board.py
@@ -74,7 +74,7 @@ Scenario: a spec with no board
 
 ## Scope
 
-**In:** a PR card on the board for each slice; one row per scenario with its tests and files from the spec's Test plan and Changes tables; the Decided alone rows under the rows; amber notes for a scenario with no test or no file; the Board link on the PR body's last line.
+**In:** a PR card on the board for each slice at Built, Reviewed or Shipped; one row per scenario with its tests and files from the spec's Test plan and Changes tables; the Decided alone rows under the rows; amber notes for a scenario with no test or no file; the Board link on the PR body's last line.
 
 **Out:**
 
@@ -87,10 +87,10 @@ Scenario: a spec with no board
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | Where does the card get the files and tests for each scenario? | question | spec p1 | user | Open | — |
-| O2 | When does the PR card show: only on the render that `/ship` makes, or on every render once the slice is Built? | question | spec p1 | user | Open | — |
-| O3 | Does the PR body link the board, or open the board on this slice with a deep link? | question | spec p1 | user | Open | — |
-| O4 | Does the card repeat the Decided alone rows that the Answers panel and the PR body already show? | question | spec p1 | user | Open | — |
+| O1 | Where does the card get the files and tests for each scenario? | question | spec p1 | user | Resolved | The spec's tables: Test plan rows that start with the scenario number, and Changes rows whose Why cell names the scenario. No git, so it works after the merge too, 2026-10-26 |
+| O2 | When does the PR card show: only on the render that `/ship` makes, or on every render once the slice is Built? | question | spec p1 | user | Resolved | Every render, for a slice at Built, Reviewed or Shipped, so a shipped slice keeps its record, 2026-10-26 |
+| O3 | Does the PR body link the board, or open the board on this slice with a deep link? | question | spec p1 | user | Resolved | The board URL, on the PR body's last line. No deep link, 2026-10-26 |
+| O4 | Does the card repeat the Decided alone rows that the Answers panel and the PR body already show? | question | spec p1 | user | Resolved | Yes, each with its Chose and Undo parts, 2026-10-26 |
 
 ## Glossary
 
