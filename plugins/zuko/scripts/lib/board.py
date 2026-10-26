@@ -573,7 +573,7 @@ def listed(root, *args):
     """(sha, short hash, date and time, subject) for each commit rev-list
     gives, oldest first."""
     out = git(root, "rev-list", "--reverse", "--format=%h%x00%ad%x00%s",
-              "--date=format:%Y-%m-%d %H:%M", *args).splitlines()
+              "--date=format:%Y-%m-%d %H:%M", *args).split("\n")[:-1]
     return [(out[i].split()[1],) + tuple(out[i + 1].split("\0")) for i in range(0, len(out), 2)]
 
 
