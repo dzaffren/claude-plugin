@@ -159,19 +159,23 @@ fails a `Shaped` shape with an Open row.
 
 Publish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-`--by "/shape {idea}"`.
+`--by "/shape {idea}"` and `--gate docs/specs/{idea}/shape.md`. The copy is
+`docs/specs/.pages/{idea}-shape-last.md`.
 
 Then, in the terminal:
 
-- The problem, in two sentences.
-- The slice list with the diagram.
-- Open items, if any.
 - The `Board:` line.
+- The slice map, in ASCII.
 - **If the project type is web UI and no design system exists** — say so:
   `/design-system` should run once, before the first UI slice, and takes
   roughly half an hour. Do not start it.
 - Ask which slice to spec first, as the last question in the prompt. Put the
   recommended slice first, and say why in its description.
+
+Print nothing else before the prompt. The board shows the problem, the slices
+and the open items. When "Idea board" printed no `Board` line, print the
+problem in two sentences, the slice list with the diagram, and any open items.
+Print them before the design-system note.
 
 STOP. Do not write a spec. Do not write code.
 
