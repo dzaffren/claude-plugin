@@ -277,9 +277,9 @@ Recorded as D71, D72, D73, D74.
 
 2026-10-26 · 11 raw findings, 6 survived, 6 fixed.
 
-- correctness · `plugins/zuko/scripts/lib/board.py:679` · swap in a PR merged by rebase or fast-forward only once · `3585b95`
-- correctness · `plugins/zuko/scripts/lib/board.py:689` · a PR step reads only the files the PR changed · `5324f6a`
-- correctness · `plugins/zuko/scripts/lib/board.py:572` · split rev-list output on newline only, so U+2028 in a subject keeps the strip · `88f7f58`
+- correctness · `plugins/zuko/scripts/lib/board.py:679` · swap in a PR merged by rebase or fast-forward only once · `c997534`
+- correctness · `plugins/zuko/scripts/lib/board.py:689` · a PR step reads only the files the PR changed · `6a38b1f`
+- correctness · `plugins/zuko/scripts/lib/board.py:572` · split rev-list output on newline only, so U+2028 in a subject keeps the strip · `9ada36e`
 - quality · `plugins/zuko/scripts/lib/board.html:203` · Not started chips at 5.7:1 contrast · `08ad159`
 - quality · `plugins/zuko/scripts/lib/board.html:185` · back, forward and the slider are 44 px touch targets · `49ee073`
 - quality · `plugins/zuko/scripts/lib/board.html:431` · focus moves to the slider when back or forward turns off · `a1744c8`
