@@ -139,3 +139,84 @@ expect_match 'class="cur"><span class="node">◈</span><span class="lbl">Pause 3
   "gate: the card opens the board on the gated slice"
 expect_match '<div class="fbody"><span class="fgate">GATE</span><span class="fname">drafty</span>' "$dom" \
   "gate: the gated slice's frame carries the GATE tag"
+
+# --- the hidden gate card takes no space (pr-gate O5) ---
+# The page's own .gate rule sets display: grid, which beats the hidden
+# attribute unless a rule says otherwise. A probe script reads the computed
+# display after the page draws.
+sed 's#</body>#<script>document.body.dataset.gateDisplay = getComputedStyle(document.getElementById("gate")).display;</script></body>#' \
+  "$dir/page.html" >"$dir/probe.html"
+grep -q '</body>' "$dir/page.html" || printf '<script>document.body.dataset.gateDisplay = getComputedStyle(document.getElementById("gate")).display;</script>' >>"$dir/probe.html"
+dom=$("$chrome" --headless=new --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$dir/probe.html" 2>/dev/null)
+expect_match 'data-gate-display="none"' "$dom" "gate: with no --gate, the hidden card is not drawn"
+
+# --- the PR card ---
+mkdir -p "$dir/docs/specs/prc"
+cat >"$dir/docs/specs/prc/shape.md" <<'SHAPE'
+# PR card test
+
+**Project type:** CLI/Library · **Status:** Shaped
+
+## Slices
+
+| # | Slice | What ships | Why this order |
+| --- | --- | --- | --- |
+| 1 | built | A built slice. | First. |
+SHAPE
+cat >"$dir/docs/specs/built.md" <<'SPEC'
+# Built
+
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
+
+Built and waiting for review.
+
+## Acceptance criteria
+
+```gherkin
+Scenario: a <img src=x onerror="document.body.dataset.pwned='scenario'"> name
+  Given a
+  When b
+  Then c
+
+Scenario: nothing names this one
+  Given a
+  When b
+  Then c
+```
+
+## Technical plan
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `src/a.py` | A | Scenario 1 |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 1 named | `test_a.py` | `pytest tests/test_a.py` |
+
+## Open items
+
+| ID | What | Type | Raised at | Owner | Status | Answer |
+| --- | --- | --- | --- | --- | --- | --- |
+| O1 | The spec did not say the file name. | flag | build | user | Decided alone | Chose: `a.py`. Other: `b.py`. Undo: rename it. 2026-10-26 |
+SPEC
+python3 "$scripts/lib/board.py" render "$dir/docs/specs/prc/shape.md" --by "/build built" >"$dir/prc.html" 2>"$dir/err"
+expect_exit 0 "$?" "pr card: render exits 0"
+dom=$("$chrome" --headless=new --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$dir/prc.html" 2>/dev/null)
+expect_no_match 'data-pwned' "$dom" "pr card: no onerror from a scenario name runs"
+expect_match 'a &lt;img src=x onerror' "$dom" "pr card: a scenario name shows its markup as text"
+order=$(python3 -c 'import sys
+dom = sys.stdin.read()
+lede, card = dom.find("class=\"lede\""), dom.find("class=\"prc\"")
+print("under" if -1 < lede < card else "not under")' <<<"$dom")
+expect_match '^under$' "$order" "pr card: the card sits under the opening text"
+expect_match '<code>test_a.py</code><span class="cmd">pytest tests/test_a.py</span>' "$dom" "pr card: a test shows with its command"
+expect_match '<code>src/a.py</code>' "$dom" "pr card: a file shows"
+expect_match 'No test named in the Test plan' "$dom" "pr card: the amber note for a scenario with no test"
+expect_match 'No file named in Changes' "$dom" "pr card: the amber note for a scenario with no file"
+expect_match 'Decided without you · 1' "$dom" "pr card: the Decided alone rows are counted"
+expect_match '<span class="k">Chose</span>`a.py`.' "$dom" "pr card: a Decided alone row shows its Chose"
