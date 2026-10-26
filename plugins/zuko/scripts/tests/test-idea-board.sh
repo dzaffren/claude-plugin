@@ -83,7 +83,7 @@ ship=$(flat "$zuko/skills/ship/SKILL.md")
 release=$(flat "$zuko/skills/release/SKILL.md")
 
 expect_match "Publish the idea board, as $pointer\..*Then, in the terminal:" "$shape" "shape/SKILL.md step 6: publishes the board before the terminal list"
-expect_match '- The `Board:` line\.' "$shape" "shape/SKILL.md step 6: the terminal list has the Board line"
+expect_match '- The `Board:` line, or the `Board not published:` line\.' "$shape" "shape/SKILL.md step 6: the terminal list has the Board line"
 
 expect_exit 3 "$(grep -oE -e "When the spec has a \`\*\*Shape doc:\*\*\` line, republish the idea board, as $pointer\. Pass \`--by \"/spec \{slice\} pause [123]\"\`\. \*\*Then stop\.\*\*" <<<"$spec" | wc -l | tr -d ' ')" \
   "spec/SKILL.md: each of the three pauses republishes the board just before 'Then stop'"

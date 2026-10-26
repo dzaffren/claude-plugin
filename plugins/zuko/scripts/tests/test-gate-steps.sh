@@ -71,7 +71,7 @@ expect_match "pause 3\"\`\..*With no board, give the spec path, the page link, a
 expect_match "Publish the idea board, as $pointer\. Pass \`--by \"/shape \{idea\}\"\` and \`--gate docs/specs/\{idea\}/shape\.md\`\." \
   "$shape" "shape/SKILL.md step 6: the pointer passes --gate"
 expect_match 'The copy is `docs/specs/\.pages/\{idea\}-shape-last\.md`\.' "$shape" "shape/SKILL.md step 6: names the shape's copy"
-expect_match 'Then, in the terminal: - The `Board:` line\. - The slice map, in ASCII\. - \*\*If the project type is web UI and no design system exists\*\*.* - Ask which slice to spec first' \
+expect_match 'Then, in the terminal: - The `Board:` line, or the `Board not published:` line\. - The slice map, in ASCII\. - \*\*If the project type is web UI and no design system exists\*\*.* - Ask which slice to spec first' \
   "$shape" "shape/SKILL.md step 6: Board line, slice map, design-system note, then the prompt"
 expect_match 'Print nothing else before the prompt\. The board shows the problem, the slices and the open items\.' \
   "$shape" "shape/SKILL.md step 6: nothing else before the prompt"
