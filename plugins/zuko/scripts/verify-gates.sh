@@ -11,6 +11,7 @@ specs="$dir/docs/specs"
 [ -d "$specs" ] || exit 0
 problems=""
 live=()   # Draft or Refined specs and every shape: the glossary check reads these
+docs=()   # every doc in scope, at any Status: the fence check reads these (D76)
 
 # Only the zuko docs this work touched (D35, D36).
 if ! scope=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/stop_scope.py" "$dir" 2>&1); then
@@ -21,6 +22,7 @@ fi
 
 while IFS= read -r md; do
   [ -n "$md" ] || continue
+  docs+=("$md")
   base=$(basename "$md" .md)
   if [ "$base" = "shape" ]; then
     live+=("$md")
@@ -53,6 +55,23 @@ if [ "${#live[@]}" -gt 0 ]; then
   else
     problems="$problems
 - the glossary check could not run: $undefined"
+  fi
+fi
+
+if [ "${#docs[@]}" -gt 0 ]; then
+  if swallowed=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/fence.py" check "${docs[@]}" 2>&1); then
+    while IFS=$'\t' read -r md problem; do
+      [ -n "$md" ] || continue
+      case "$problem" in
+        line*) problems="$problems
+- $md $problem" ;;
+        *) problems="$problems
+- $md: $problem" ;;
+      esac
+    done <<<"$swallowed"
+  else
+    problems="$problems
+- the fence check could not run: $swallowed"
   fi
 fi
 
