@@ -58,6 +58,10 @@ SCENARIO = re.compile(r"^\s*Scenario:\s*(.+?)\s*$")
 LEAD_IN = re.compile(r"^\*\*([^*]+)\*\*$")
 IN_LINE = re.compile(r"^\*\*In:\*\*\s*(.*)$")
 LIGHT = re.compile(r"^\*\*Path:\*\*\s*light\b", re.M)
+LIST = r"(\d+(?:\s*(?:,|\band\b|\bto\b)\s*\d+)*)"
+LISTED = re.compile(r"^\s*" + LIST)
+NAMED = re.compile(r"\bscenarios?\s+" + LIST, re.I)
+CODE = re.compile(r"`([^`]+)`")
 NOT_PROSE = ("#", "|", "```", "~~~", "- ", "* ", "+ ", ">", "<", "**")
 
 
@@ -419,18 +423,96 @@ def gate(path, shape, root, rows, slices):
             "settled": done, "answered": answered, "changed": change}
 
 
+def code_cells(line):
+    """cells(), but a | inside a code span does not split the cell."""
+    out, cell, i, tick = [], "", 0, 0
+    text = line.strip()
+    while i < len(text):
+        if text[i] == "`":
+            run = len(text[i:]) - len(text[i:].lstrip("`"))
+            tick = 0 if tick == run else (tick or run)
+            cell += text[i:i + run]
+            i += run
+            continue
+        if text[i] == "|" and not tick and (i == 0 or text[i - 1] != "\\"):
+            out.append(cell)
+            cell = ""
+        else:
+            cell += text[i]
+        i += 1
+    out.append(cell)
+    return [c.strip().replace("\\|", "|") for c in out[1:-1]]
+
+
+def numbers(listed):
+    """{1, 2, 5} from "1, 2 and 5", {1, 2, 3} from "1 to 3"."""
+    out = set()
+    for part in re.split(r"\s*(?:,|\band\b)\s*", listed):
+        span = re.match(r"(\d+)(?:\s+to\s+(\d+))?$", part.strip())
+        if span:
+            out |= set(range(int(span.group(1)), int(span.group(2) or span.group(1)) + 1))
+    return out
+
+
+def table(lines, heading):
+    """[{column: cell}] for the first table under "### <heading>"."""
+    rows, header, inside = [], None, False
+    for line in lines:
+        if line.startswith("### "):
+            if header is not None:
+                break
+            inside = line[4:].strip() == heading
+            continue
+        if not inside:
+            continue
+        if not line.lstrip().startswith("|"):
+            if header is not None:
+                break
+            continue
+        found = code_cells(line)
+        if header is None:
+            header = found
+        elif not all(DIVIDER.match(cell) for cell in found):
+            rows.append(dict(zip(header, found)))
+    return rows
+
+
+def proof(text, found, at):
+    """Each scenario with the tests and files the spec names for it, and the
+    Decided alone rows, for a slice at Built or later; else None."""
+    if at < 5:
+        return None
+    plan = found.get("Technical plan", [])
+    tests, changes = table(plan, "Test plan"), table(plan, "Changes")
+    rows = []
+    for n, name in enumerate(scenarios(raw_sections(text).get("Acceptance criteria", [])), 1):
+        lead = [LISTED.match(row.get("Scenario", "")) for row in tests]
+        rows.append({
+            "n": n, "name": name,
+            "tests": [{"test": row.get("Test", "").replace("`", ""), "command": row.get("Command", "").replace("`", "")}
+                      for row, m in zip(tests, lead) if m and n in numbers(m.group(1))],
+            "files": list(dict.fromkeys(
+                re.sub(r":\d+$", "", span.group(1)) for row in changes
+                for span in [CODE.search(row.get("File", ""))]
+                if span and any(n in numbers(m) for m in NAMED.findall(row.get("Why", ""))))),
+        })
+    alone = [{"id": row_id, "what": what.replace("\\|", "|"), "chose": parts.get("Chose:", ""), "undo": parts.get("Undo:", "")}
+             for row_id, what, parts in pr_body.decided(found.get("Open items", []))]
+    return {"rows": rows, "alone": alone}
+
+
 def one_slice(n, name, ships, root, names, entries):
     rel = "docs/specs/%s.md" % name
     path = os.path.join(root, "docs", "specs", name + ".md")
     if not os.path.isfile(path):
         return {"n": n, "name": name, "stage": 0, "text": ships, "spec": None, "missing": rel,
-                "needs": [], "diagrams": [], "decisions": [], "rows": []}
+                "needs": [], "diagrams": [], "decisions": [], "rows": [], "proof": None}
     text = read(path)
     found = pr_body.sections(text)
     return {"n": n, "name": name, "stage": stage(text, found), "text": opening(text) or ships,
             "spec": rel, "missing": None, "needs": needs(text, name, names),
             "diagrams": diagrams(text), "decisions": choices(entries, name),
-            "rows": answers(found.get("Open items", []))}
+            "rows": answers(found.get("Open items", [])), "proof": proof(text, found, stage(text, found))}
 
 
 def board(shape, by, card=None):
