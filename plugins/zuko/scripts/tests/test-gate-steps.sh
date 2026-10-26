@@ -48,8 +48,8 @@ expect_exit 3 "$(grep -oE -e "For the board at this stop, pass \`--gate docs/spe
 shows='When "Idea board" printed a `Board` line, the terminal shows only these, in this order: 1\. The `Board` line, as "Idea board" prints it\.'
 expect_match "pause 1\"\`\..*That print is for a spec with no board\. $shows 2\. The Flow diagram, in ASCII\. 3\. The question prompt\.[^#]*## Pause 2" \
   "$spec" "spec/SKILL.md pause 1: Board line, the Flow diagram, the prompt"
-expect_match "pause 2\"\`\. \*\*Then stop\.\*\* $shows 2\. The Interface map, in ASCII\. 3\. The question prompt\." \
-  "$spec" "spec/SKILL.md pause 2: Board line, the Interface map, the prompt"
+expect_match "pause 2\"\`\. \*\*Then stop\.\*\* $shows 2\. The Interface map, in ASCII\. 3\. The preview link, when the slice has a preview\. 4\. The question prompt\." \
+  "$spec" "spec/SKILL.md pause 2: Board line, the Interface map, the preview link, the prompt"
 expect_match "pause 3\"\`\. \*\*Then stop\.\*\* Set Status to \`Refined\`\. $shows 2\. The Approach architecture diagram, in ASCII\." \
   "$spec" "spec/SKILL.md pause 3: Board line, the Approach architecture"
 

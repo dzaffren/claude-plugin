@@ -176,7 +176,8 @@ shows only these, in this order:
 
 1. The `Board` line, as "Idea board" prints it.
 2. The Interface map, in ASCII.
-3. The question prompt.
+3. The preview link, when the slice has a preview.
+4. The question prompt.
 
 With no board, give the preview link and name which design system the tokens
 came from.
