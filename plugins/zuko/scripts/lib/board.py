@@ -668,10 +668,15 @@ def steps(root, shape, names):
         main = next((name for name in ("main", "master") if present(root, name)), None)
     found, note = squashed(root, git(root, "rev-list", "--first-parent", "--no-merges",
                                      main or "HEAD", "--", *paths).split())
-    commits = []
+    # A PR merged by rebase or fast-forward names each of its commits on main:
+    # its commits go in at the first one, and the rest add nothing.
+    commits, swapped = [], set()
     for commit in listed(root, main or "HEAD", "--", *paths):
         pr, theirs = found.get(commit[0]), []
+        if pr and pr["pr"] in swapped:
+            continue
         if pr:
+            swapped.add(pr["pr"])
             base = git(root, "merge-base", pr["head"], commit[0] + "^").strip()
             theirs = [c + (pr["pr"],) for c in listed(root, "%s..%s" % (base, pr["head"]), "--", *paths)]
         commits += theirs or [commit + (None,)]
