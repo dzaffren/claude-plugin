@@ -222,6 +222,14 @@ Single chunk.
 
 Recorded as D75, D76.
 
+## Review
+
+2026-10-26 · 4 raw findings, 3 survived, 3 fixed.
+
+- coverage · `plugins/zuko/scripts/verify-gates.sh:23` · a test that a Shipped spec with a broken fence fails the gate · `3de3bfb`
+- coverage · `plugins/zuko/scripts/tests/test-fence.sh:77` · a test that an unclosed indented fence is found · `792d8fa`
+- correctness · `plugins/zuko/scripts/lib/fence.py:38` · line numbers count newlines only, as an editor does · `a79ce19`
+
 ## Open items
 
 | ID  | What | Type | Raised at | Owner | Status | Answer |
