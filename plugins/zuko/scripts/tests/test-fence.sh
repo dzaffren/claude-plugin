@@ -93,3 +93,14 @@ printf '# odd\n\n**Version:** v1 · **Status:** Draft\n\n## Open items\n' >"$bad
 printf '\xff\xfe\n' >>"$bad/docs/specs/odd.md"
 gate "$bad"
 expect_match '^- the fence check could not run: fence\.py: cannot read .*odd\.md' "$gate_out" "could not run: the gate says so"
+
+# --- any Status (D76): a Shipped spec with a broken fence fails too ---
+shipped="$work/shipped"
+mkdir -p "$shipped/docs/specs"
+printf '# ledger\n\n**Version:** v1 · **Status:** Shipped · **Type:** Feature\n\n```text\nopen\n\n## Open items\n' \
+  >"$shipped/docs/specs/ledger.md"
+gate "$shipped"
+expect_exit 2 "$gate_status" "any Status: a Shipped spec with a broken fence fails the gate"
+expect_match "$(line_of "- $shipped/docs/specs/ledger.md: the \`\`\`text block that line 5 opened never closes. Close it.")" \
+  "$gate_out" "any Status: names the Shipped spec"
+
