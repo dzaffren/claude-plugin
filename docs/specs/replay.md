@@ -171,7 +171,7 @@ sequenceDiagram
   B->>G: rev-list --first-parent --no-merges origin/main -- same paths
   B->>C: look up caf25a7, 0ae3124, 2f594f4
   alt not in the cache
-    B->>H: gh api repos/{owner}/{repo}/commits/caf25a7.../pulls
+    B->>H: gh api commits/caf25a7.../pulls
     H-->>B: 104
     B->>H: git fetch origin refs/pull/104/head
     B->>C: write caf25a7 → 104, e25a7c8
@@ -194,7 +194,7 @@ On a cached run, the `alt` block does not run, and the render touches no network
 | Main | `git symbolic-ref --short refs/remotes/origin/HEAD`, else `main`, else `master`. None: main is `HEAD`, and no branch is in flight |
 | Steps from main | `git rev-list --reverse <main> -- <paths>`. This includes the commits of a branch merged with a merge commit |
 | Squash candidates | `git rev-list --first-parent --no-merges <main> -- <paths>` |
-| PR of a candidate | The cache, else `gh api repos/{owner}/{repo}/commits/<sha>/pulls --jq '[.[] \| select(.merged_at)][0].number'`. An answer that is not a whole number counts as no PR. No PR is cached as `null`, and the commit stays one step |
+| PR of a candidate | The cache, else `gh api` on the repo's `commits/<sha>/pulls`, with gh filling the owner and repo from the remote, and `--jq '[.[] \| select(.merged_at)][0].number'`. An answer that is not a whole number counts as no PR. No PR is cached as `null`, and the commit stays one step |
 | PR commits | `git fetch origin refs/pull/<n>/head`, only when `git cat-file -e <head>` fails. Then `git rev-list --reverse $(git merge-base <head> <sha>^)..<head> -- <paths>`, in place of the squash commit |
 | Branch in flight | `git rev-list --reverse <main>..HEAD -- <paths>`, after the rest |
 | A step | `at` from `%ad` as `%Y-%m-%d %H:%M`, `hash` as `%h`, `subject` as `%s`, `pr` or null, `stages` by slice, `moved`, `changed` by file |
@@ -291,7 +291,7 @@ Recorded as D71, D72, D73, D74.
 | O1  | Replay rebuilds frames from git history, but a spec is often written in one commit, so it may have only one or two frames. On `main`, gate-card, pr-gate and library are one squash commit each. Where do the lost frames come from? (from shape O9) | question | shape | user | Resolved | Main, plus each squash-merged PR's commits read from GitHub (`refs/pull/N/head`). Offline or with no GitHub remote, each squash-merged slice shows as one step. 2026-10-26 |
 | O2  | What does a frame show: the stage of each slice and what changed, or the whole board as it was at that commit, with its diagrams and panels? | question | spec p1 | user | Resolved | The stage of each slice, the commit, and what changed since the frame before, with the gate card's tags. 2026-10-26 |
 | O3  | Approved scenario 2 said the stage rail shows each slice as it was at that step. The step card now shows each slice's stage in its own chips, and the rest of the board stays at now, so it never mixes past and present. Is that right? | question | spec p2 | user | Resolved | Yes. The step card shows the stages, and the rest of the board stays at now. 2026-10-26 |
-| O4  | How does `board.py` find which PR a squash commit on `main` came from? | question | spec p3 | user | Resolved | `gh api repos/{owner}/{repo}/commits/<sha>/pulls`. With no `gh`, or `gh` not logged in, the board shows the "PR commits not read" note. 2026-10-26 |
+| O4  | How does `board.py` find which PR a squash commit on `main` came from? | question | spec p3 | user | Resolved | `gh api` on the repo's `commits/<sha>/pulls`. With no `gh`, or `gh` not logged in, the board shows the "PR commits not read" note. 2026-10-26 |
 | O5  | Where does `board.py` keep the PR lookups, so it does not ask GitHub at every render? | question | spec p3 | user | Resolved | `docs/specs/.pages/replay-prs.json`, git-ignored. A head that `git gc` drops is fetched again. 2026-10-26 |
 | O6  | A render reaches GitHub when `main` has a squash commit that the cache does not know. Each call has a timeout: 10 s for `gh`, 30 s for `fetch`. | flag | spec p3 | user | Accepted risk | Only a new squash commit costs a call, about 0.6 s each here. Later renders read the cache. 2026-10-26 |
 | O7  | The plan's proof line said `38 None`. The real repo gives 42, because the branch gained 4 more spec commits after the plan. | flag | build | user | Decided alone | Chose: the proof line names the count as a moving number, 42 at build. Other: keep 38. Undo: edit the Proof it works row. 2026-10-26 |
