@@ -670,10 +670,11 @@ def steps(root, shape, names):
                                      main or "HEAD", "--", *paths).split())
     commits = []
     for commit in listed(root, main or "HEAD", "--", *paths):
-        pr = found.get(commit[0])
-        theirs = listed(root, "%s..%s" % (git(root, "merge-base", pr["head"], commit[0] + "^").strip(), pr["head"]),
-                        "--", *paths) if pr else []
-        commits += [c + (pr["pr"],) for c in theirs] or [commit + (None,)]
+        pr, theirs = found.get(commit[0]), []
+        if pr:
+            base = git(root, "merge-base", pr["head"], commit[0] + "^").strip()
+            theirs = [c + (pr["pr"],) for c in listed(root, "%s..%s" % (base, pr["head"]), "--", *paths)]
+        commits += theirs or [commit + (None,)]
     if main:
         commits += [c + (None,) for c in listed(root, "%s..HEAD" % main, "--", *paths)]
     texts = blobs(root, [(c[0], path) for c in commits for path in paths])

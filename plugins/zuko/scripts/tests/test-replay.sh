@@ -214,7 +214,7 @@ squash=$(full "$author" main)
 pr=(); for rev in s-two~1 s-two; do pr+=("$(short "$author" "$rev")"); done
 bin pr "case \"\$*\" in *$squash*) echo 1 ;; *) echo null ;; esac"
 
-clone() { git clone -q "$origin" "$work/$1"; }
+clone() { git clone -q --no-local "$origin" "$work/$1"; }
 
 clone swap
 render pr "$work/swap"
