@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - At each /spec pause and at the end of /shape, the board shows a gate card: what waits for your approval, what you already agreed to, and what changed since the last stop. The terminal then prints only the board link, one picture and the questions.
 - Each built slice on the board now shows its scenarios next to the tests and files its spec names, and the choices made without you. Each PR body links the board.
 - The hub page now lists every idea with its board link, how many of its slices shipped, and a mark for each slice. /shape publishes the hub too, so a new idea shows the same day.
+- Each board now has a Replay strip. It steps through every commit that changed the idea's shape or specs, oldest first, and shows when each slice moved and what changed. For a squash-merged PR, it reads the PR's own commits from GitHub.
 
 ### Fixed
 
