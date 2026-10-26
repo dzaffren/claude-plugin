@@ -1,6 +1,6 @@
 # Replay
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** idea-board
@@ -235,7 +235,7 @@ Reusing: `stage()` (`board.py:133`), `raw_sections()` (`:257`), `changed()` (`:3
 | **Load**             | One render per stage. living-board today: 38 steps, 15 KB of JSON, 3 squash commits, 228 file reads |
 | **Breaks first**     | At 10×, 380 steps give about 150 KB of JSON and 2,300 reads in one process: still under a second. The slider then has 380 stops. Thin the ticks before the data |
 | **Security surface** | Runs where the user runs the stage. Trusts commit subjects and spec text from git, which can come from PR authors: the JSON goes through `blob()`, and the page escapes each value with `esc()`. The PR number from `gh` must be a whole number before it reaches `git fetch`. Uses the user's existing `gh` login and git remote. Stores commit hashes and PR numbers in a git-ignored file |
-| **Proof it works**   | `python3 board.py data docs/specs/living-board/shape.md --by x \| python3 -c 'import json,sys; r=json.load(sys.stdin)["replay"]; print(len(r["steps"]), r["note"])'` prints `38 None` on this branch with GitHub reached |
+| **Proof it works**   | `python3 board.py data docs/specs/living-board/shape.md --by x \| python3 -c 'import json,sys; r=json.load(sys.stdin)["replay"]; print(len(r["steps"]), r["note"])'` prints the step count and `None` with GitHub reached: 42 on this branch at build, because each commit that changes `docs/specs/replay.md` adds a step |
 | **Rollout**          | No flag. The strip ships with the next release of zuko. Rollback: revert the commit, and the board draws as before. A stale `replay-prs.json` is harmless and can be deleted |
 
 ### Test plan
@@ -283,6 +283,11 @@ Recorded as D71, D72, D73, D74.
 | O4  | How does `board.py` find which PR a squash commit on `main` came from? | question | spec p3 | user | Resolved | `gh api repos/{owner}/{repo}/commits/<sha>/pulls`. With no `gh`, or `gh` not logged in, the board shows the "PR commits not read" note. 2026-10-26 |
 | O5  | Where does `board.py` keep the PR lookups, so it does not ask GitHub at every render? | question | spec p3 | user | Resolved | `docs/specs/.pages/replay-prs.json`, git-ignored. A head that `git gc` drops is fetched again. 2026-10-26 |
 | O6  | A render reaches GitHub when `main` has a squash commit that the cache does not know. Each call has a timeout: 10 s for `gh`, 30 s for `fetch`. | flag | spec p3 | user | Accepted risk | Only a new squash commit costs a call, about 0.6 s each here. Later renders read the cache. 2026-10-26 |
+| O7  | The plan's proof line said `38 None`. The real repo gives 42, because the branch gained 4 more spec commits after the plan. | flag | build | user | Decided alone | Chose: the proof line names the count as a moving number, 42 at build. Other: keep 38. Undo: edit the Proof it works row. 2026-10-26 |
+| O8  | The plan did not say what happens to other squash commits after one `gh` call fails. | flag | build | user | Decided alone | Chose: no more `gh` calls in that render, so offline costs one 10 s timeout. Other: try each squash commit. Undo: delete the `if note and not good(entry): continue` check in `squashed()`, in commit 56d1993. 2026-10-26 |
+| O9  | The plan did not say whether to trust the cache file as written. | flag | build | user | Decided alone | Chose: an entry counts only when it is `null`, or has a whole-number `pr` and a hex `head`. A broken file counts as empty. Other: trust it. Undo: delete `good()` in `board.py`. 2026-10-26 |
+| O10 | The plan did not say what happens to a merged PR whose commits change none of the idea's files. | flag | build | user | Decided alone | Chose: its squash commit stays one step. Other: drop it. Undo: change `theirs or [commit + (None,)]` in `steps()`. 2026-10-26 |
+| O11 | The Interface did not cover no steps with a `Replay not read` note, or JSON with no `replay` key. | flag | build | user | Decided alone | Chose: no steps with a note shows the heading and the note only. No `replay` key draws no strip. Other: also show "No commits yet", and draw an empty section. Undo: `replayStrip()` and `renderIdea()` in `board.html`, commit 36c92c0. 2026-10-26 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
