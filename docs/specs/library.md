@@ -1,6 +1,6 @@
 # Library
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** idea-board
@@ -258,6 +258,7 @@ Recorded as D70.
 | O5  | The v3-release-and-hosts shape names two slices that match no spec file, so the idea reads 3 of 5 shipped when all of it shipped. What do we do? | question | spec p1 | user | Resolved | Fix that shape's Slices table to one row per spec, as a data fix in this slice, 2026-10-26 |
 | O6  | At `/shape`, the overview may have no hub link yet. Does `/shape` skip the hub, or create it? | assumption | spec p1 | user | Resolved | `/shape` creates the hub and adds the link to the More line, 2026-10-26 |
 | O7  | The published hub says "Updated 2026-10-06" and lists 26 slices, but 44 shipped. The last `/ship` runs did not republish it. Assuming this slice republishes it once at its own `/ship`, and the cause is not this slice's problem. | flag | spec p1 | user | Accepted risk | This slice's `/ship` republishes the hub, which fixes the content. The cause of the skipped republish stays out of scope, 2026-10-26 |
+| O8  | The v3-release-and-hosts shape's slice-map diagram still draws the old five slices, while its Slices table now has 14 rows. | flag | build | user | Decided alone | Chose: leave the diagram as the shape drew it, since only the table feeds the board and the hub. Other: redraw it with 14 boxes. Undo: redraw the `## Slices` diagram in `docs/specs/v3-release-and-hosts/shape.md`. 2026-10-26 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
