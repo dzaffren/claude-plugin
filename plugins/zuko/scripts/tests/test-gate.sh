@@ -233,6 +233,23 @@ same '["The card", "The terminal"]' "$(pick 'G["settled"][1]["parts"]')" \
 same '[{"kind": "added", "what": "Technical plan"}]' "$(pick 'G["changed"]["items"]')" \
   "pause 3: added Technical plan; the D-entry headings in its fence are not sections"
 
+# --- pause 3 again, after a change, with Status already Refined (review A1) ---
+pause3 >"$copy"
+pause3 | sed 's/\*\*Status:\*\* Draft/**Status:** Refined/; s/reads the spec, not the diff/reads the spec and the diff/' >"$specs/pr-gate.md"
+gate "$specs/pr-gate.md"
+same "3" "$(pick 'G and G["pause"]')" "pause 3 again: a Refined spec at a stop still gets the pause 3 card"
+same '[{"kind": "changed", "what": "Technical plan"}]' "$(pick 'G["changed"]["items"]')" \
+  "pause 3 again: the edited plan shows as changed"
+
+# --- the light path's one pause (review A2, A3) ---
+rm -f "$copy"
+pause3 | sed 's/^\/ship puts a PR gate card on the board\.$/&\n\n## Slice test\n\n**Path:** light — a copy change in one file./' \
+  | awk '/^## Interface$/{skip=1; next} /^## /{skip=0} !skip' >"$specs/pr-gate.md"
+gate "$specs/pr-gate.md"
+same "3" "$(pick 'G["pause"]')" "light path: its one pause is pause 3"
+same '[]' "$(pick 'G["settled"]')" "light path: nothing is settled at its one pause"
+same '{"state": "first", "since": null, "items": []}' "$(pick 'G["changed"]')" "light path: no copy is the first stop, not a lost copy"
+
 # --- scenario 3: a change asked at pause 1 ---
 pause1 fork "one PR card for each slice at /ship, forks too." >"$copy"
 pause1 >"$specs/pr-gate.md"

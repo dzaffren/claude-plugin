@@ -394,7 +394,8 @@ def gate(path, shape, root, rows, slices):
         name = next((name for name, _, _ in rows
                      if real == os.path.realpath(os.path.join(root, "docs", "specs", name + ".md"))), None)
         # A Refined spec at a stop is pause 3 again: /build has not run yet.
-        pause = min(stage(text, found), 3) if name else 0
+        pause = stage(text, found) if name else 0
+        pause = 3 if pause == 4 else pause
         if not 1 <= pause <= 3:
             return None
         kind, copy, recommended = "pause", os.path.join(pages, name + "-last.md"), None
