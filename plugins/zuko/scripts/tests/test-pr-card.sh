@@ -84,6 +84,7 @@ Scenario: a later one
 | \`src/cli.py:7\` | \`run|data\` flag | Scenarios 1 to 3 |
 | \`src/quote.py\` | Quotes | The Interface section |
 | \`src/cli.py:10-20\` | A range | Scenario 1 |
+| \`src/dash.py\` | Dashes | scenarios 2–3 |
 
 ### Test plan
 
@@ -93,6 +94,7 @@ Scenario: a later one
 | 2 empty | \`test_empty.py\` | \`pytest tests/test_empty.py\` |
 | 3 quoting | \`test_quote.py\` | \`pytest tests/test_quote.py\` |
 | 5 later | \`test_later.py\` | \`pytest tests/test_later.py\` |
+| 2–3 (dash) | \`test_dash.py\` | \`pytest tests/test_dash.py\` |
 | The page | \`test_page.py\` | \`pytest tests/test_page.py\` |
 
 **E2E:** none.
@@ -114,7 +116,8 @@ same '[{"test": "test_export.py: writes a file", "command": "pytest tests/test_e
   "proof: a Test plan row joins the scenario its first cell starts with, backticks taken off"
 same '["src/export.py", "src/cli.py"]' "$(pick 'P["rows"][0]["files"]')" \
   "proof: files from Why cells in table order, line numbers and ranges such as :10-20 taken off, once each; a | inside backticks keeps the Why cell"
-same '["src/export.py", "src/cli.py"]' "$(pick 'P["rows"][1]["files"]')" "proof: 'Scenarios 1 to 3' and 'Scenario 2' both reach scenario 2"
+same '["src/export.py", "src/cli.py", "src/dash.py"]' "$(pick 'P["rows"][1]["files"]')" "proof: 'Scenarios 1 to 3', 'Scenario 2' and 'scenarios 2–3' all reach scenario 2"
+same '["test_quote.py", "test_dash.py"]' "$(pick '[t["test"] for t in P["rows"][2]["tests"]]')" "proof: a Test plan row '2–3 (dash)' reaches scenario 3"
 same '["src/export.py"]' "$(pick 'P["rows"][4]["files"]')" "proof: '1, 2 and 5' reaches scenario 5"
 same '[{"id": "O2", "what": "The spec did not say the file name.", "chose": "`ledger.csv`.", "undo": "rename it in `src/export.py`."}]' \
   "$(pick 'P["alone"]')" "proof: the Decided alone rows with Chose and Undo, the date taken off"

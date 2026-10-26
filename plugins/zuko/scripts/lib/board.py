@@ -58,7 +58,7 @@ SCENARIO = re.compile(r"^\s*Scenario:\s*(.+?)\s*$")
 LEAD_IN = re.compile(r"^\*\*([^*]+)\*\*$")
 IN_LINE = re.compile(r"^\*\*In:\*\*\s*(.*)$")
 LIGHT = re.compile(r"^\*\*Path:\*\*\s*light\b", re.M)
-LIST = r"(\d+(?:\s*(?:,|\band\b|\bto\b)\s*\d+)*)"
+LIST = r"(\d+(?:\s*(?:,|\band\b|\bto\b|[–-])\s*\d+)*)"
 LISTED = re.compile(r"^\s*" + LIST)
 NAMED = re.compile(r"\bscenarios?\s+" + LIST, re.I)
 CODE = re.compile(r"`([^`]+)`")
@@ -445,10 +445,10 @@ def code_cells(line):
 
 
 def numbers(listed):
-    """{1, 2, 5} from "1, 2 and 5", {1, 2, 3} from "1 to 3"."""
+    """{1, 2, 5} from "1, 2 and 5", {1, 2, 3} from "1 to 3" or "1–3"."""
     out = set()
     for part in re.split(r"\s*(?:,|\band\b)\s*", listed):
-        span = re.match(r"(\d+)(?:\s+to\s+(\d+))?$", part.strip())
+        span = re.match(r"(\d+)(?:\s*(?:\bto\b|[–-])\s*(\d+))?$", part.strip())
         if span:
             out |= set(range(int(span.group(1)), int(span.group(2) or span.group(1)) + 1))
     return out
