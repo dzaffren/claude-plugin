@@ -104,3 +104,8 @@ expect_exit 2 "$gate_status" "any Status: a Shipped spec with a broken fence fai
 expect_match "$(line_of "- $shipped/docs/specs/ledger.md: the \`\`\`text block that line 5 opened never closes. Close it.")" \
   "$gate_out" "any Status: names the Shipped spec"
 
+# --- an indented fence opens a block ---
+printf 'Text.\n\n   ```text\nkept\n' >"$cases/indented-open.md"
+expect_match "$(line_of "$cases/indented-open.md	the \`\`\`text block that line 3 opened never closes. Close it.")" \
+  "$(python3 "$fence" check "$cases/indented-open.md")" "indented: an unclosed fence indented 3 spaces is found"
+
