@@ -261,3 +261,75 @@ render nogh "$work/broken"
 expect_exit 0 "$status" "other error: render still exits 0"
 same "[]" "$(pick 'R["steps"]')" "other error: no steps"
 expect_match '^Replay not read: .+' "$(pick 'R["note"]')" "other error: the note says replay was not read"
+
+# --- a PR merged by rebase or fast-forward gives each of its commits once ---
+# GitHub names the same PR for each commit that reached main this way, so
+# each one is a candidate. The PR is swapped in at the first and dropped at
+# the rest.
+merged() {  # merged <name> rebase|ff: s-two's two pause commits on main, PR 1 on origin
+  local repo="$work/$1-author" bare="$work/$1.git"
+  git init -q -b main "$repo"
+  shape "$repo"
+  commit "$repo" "docs(spec): add idea shape"
+  git -C "$repo" checkout -q -b s-two
+  spec "$repo" s-two p1
+  commit "$repo" "docs(spec): s-two pause 1"
+  spec "$repo" s-two p2
+  commit "$repo" "docs(spec): s-two pause 2"
+  git -C "$repo" checkout -q main
+  if [ "$2" = ff ]; then
+    git -C "$repo" merge -q --ff-only s-two
+  else
+    for rev in s-two~1 s-two; do
+      GIT_COMMITTER_DATE='2026-10-01T10:00:00+0000' git -C "$repo" -c user.name=Test -c user.email=test@example.com \
+        -c commit.gpgsign=false cherry-pick "$rev" >/dev/null
+    done
+  fi
+  git init -q --bare -b main "$bare"
+  git -C "$repo" push -q "$bare" main s-two:refs/pull/1/head
+  git clone -q --no-local "$bare" "$work/$1"
+  bin "$1" "case \"\$*\" in *$(full "$repo" main~1)*|*$(full "$repo" main)*) echo 1 ;; *) echo null ;; esac"
+}
+for how in rebase ff; do
+  merged "$how-merge" "$how"
+  render "$how-merge" "$work/$how-merge"
+  same "null" "$(pick 'R["note"]')" "$how: no note"
+  same "3" "$(pick 'len(H)')" "$how: the shape commit and s-two's two commits, each once"
+  same "[0, 1, 2]" "$(pick '[s["stages"]["s-two"] for s in R["steps"]]')" "$how: s-two never moves backward"
+done
+
+# --- a PR forked before another slice moved on main ---
+# s-two forks while s-one is at Pause 1. s-one ships on main, then s-two is
+# squash-merged. A PR step reads only the files the PR changed.
+stale="$work/stale-author"
+git init -q -b main "$stale"
+shape "$stale"
+spec "$stale" s-one p1
+commit "$stale" "docs(spec): add idea shape and s-one pause 1"
+git -C "$stale" checkout -q -b s-two
+spec "$stale" s-two p1
+commit "$stale" "docs(spec): s-two pause 1"
+git -C "$stale" checkout -q main
+spec "$stale" s-one shipped
+commit "$stale" "docs(spec): ship s-one"
+git -C "$stale" merge -q --squash s-two >/dev/null
+commit "$stale" "feat(spec): s-two"
+git init -q --bare -b main "$work/stale.git"
+git -C "$stale" push -q "$work/stale.git" main s-two:refs/pull/1/head
+git clone -q --no-local "$work/stale.git" "$work/stale"
+bin stale "case \"\$*\" in *$(full "$stale" main)*) echo 1 ;; *) echo null ;; esac"
+render stale "$work/stale"
+same "[1, 7, 7]" "$(pick '[s["stages"]["s-one"] for s in R["steps"]]')" "stale fork: s-one stays Shipped at the PR step"
+same "[\"s-two\"]" "$(pick '[m["slice"] for m in R["steps"][2]["moved"]]')" "stale fork: only s-two moves at the PR step"
+same "[\"docs/specs/s-two.md\"]" "$(pick '[c["file"] for c in R["steps"][2]["changed"]]')" "stale fork: only s-two's spec changed at the PR step"
+
+# --- a subject with a line separator in it ---
+sep="$work/sep"
+git init -q -b main "$sep"
+shape "$sep"
+commit "$sep" "docs(spec): add idea shape"
+spec "$sep" s-one p1
+commit "$sep" "$(printf 'docs: pasted two words')"
+render none "$sep"
+same "2" "$(pick 'len(H)')" "separator: a U+2028 in a subject still gives one step per commit"
+same "$(printf 'docs: pasted two words')" "$(pick 'R["steps"][1]["subject"]')" "separator: the subject reads back whole"
