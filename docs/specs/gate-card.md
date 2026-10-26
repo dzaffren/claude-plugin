@@ -202,16 +202,7 @@ The copy is written after the publish, also when the publish fails. The stop too
 | Which stop | `--gate` names the shape given to `render`: a shape gate. `--gate` names `docs/specs/<name>.md` for a slice of the shape: a slice gate at `stage()` 1, 2 or 3, and a `Refined` spec counts as pause 3. Any other stage, or a spec that is not a slice of the shape: no card, and the board renders as before |
 | Waiting | The ledger rows whose Status is `Open`: ID, Type and What. At pause 3, also the `## D<n> · <date> · <title>` lines inside the fences under `### Decisions to record` (O6). At a shape gate, the first slice in the table that is not Shipped, with its `Why this order` cell |
 | Settled | Each pause below the current one that the spec has reached. Pause 1: the `Scenario:` names in the fence under `## Acceptance criteria`, and the `**In:**` line of `## Scope`. Pause 2, only when `## Interface` exists: its `###` headings and its lines that are only a bold lead-in. On the light path (`**Path:** light`), nothing is settled. Then the count of rows that `answers()` returns. A shape gate counts its rows that are not `Open` |
-| Changed | No copy: `first` at pause 1, a shape or the light path's one pause, `missing` at pause 2 or 3. A copy: compare each `##` section, fences included, by its lines with blank lines dropped and spaces squeezed. Text above the first `##` is not compared, so a Status change is not news. `## Acceptance criteria` is compared by scenario name, and `## Review
-
-2026-10-26 · 5 raw findings, 4 survived, 4 fixed.
-
-- correctness · `plugins/zuko/skills/spec/SKILL.md:85` · the short pause print names the failed-publish line too · `cf05856`
-- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · a Refined spec at a stop gets the pause 3 card · `f5579f8`
-- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · no copy at the light path's one pause is a first stop · `02821c9`
-- correctness · `plugins/zuko/scripts/lib/board.py:319` in `settled` · nothing settled at the light path's one pause · `02821c9`
-
-## Open items` by row: a new ID is `new row`, and a row that left `Open` is tagged with its new Status. Nothing differs: `none` |
+| Changed | No copy: `first` at pause 1, a shape or the light path's one pause, `missing` at pause 2 or 3. A copy: compare each `##` section, fences included, by its lines with blank lines dropped and spaces squeezed. Text above the first `##` is not compared, so a Status change is not news. `## Acceptance criteria` is compared by scenario name, and `## Open items` by row: a new ID is `new row`, and a row that left `Open` is tagged with its new Status. Nothing differs: `none` |
 | Since | The copy's own `stage()` and its modified time, as `pause 1, 2026-10-26 14:02` |
 
 ### Changes
@@ -283,6 +274,15 @@ Reusing: `pr_body.sections`, `pr_body.FENCE`, `pr_body.ROW` and `pr_body.CELL` (
 ### Decisions to record
 
 Recorded as D65, D66, D67.
+
+## Review
+
+2026-10-26 · 5 raw findings, 4 survived, 4 fixed.
+
+- correctness · `plugins/zuko/skills/spec/SKILL.md:85` · the short pause print names the failed-publish line too · `cf05856`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · a Refined spec at a stop gets the pause 3 card · `f5579f8`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · no copy at the light path's one pause is a first stop · `02821c9`
+- correctness · `plugins/zuko/scripts/lib/board.py:319` in `settled` · nothing settled at the light path's one pause · `02821c9`
 
 ## Open items
 
