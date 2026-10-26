@@ -21,6 +21,13 @@ docs/specs/.pages/{name}-last.md, or {idea}-shape-last.md for the shape. Any
 other file, and no --gate, gives a null gate. The rules are in
 docs/specs/gate-card.md, "How the script builds the gate".
 
+The JSON's "replay" is the idea's history: one step for each commit that
+changed the shape or a slice spec, with the commits of each squash-merged PR
+in place of its squash commit. render and data run git, and for a squash
+commit that docs/specs/.pages/replay-prs.json does not know, gh api and git
+fetch. A failure there is a note in the JSON, never an exit code. The rules
+are in docs/specs/replay.md, "How replay() builds the steps".
+
   render  board.html with its JSON slot filled: the page to publish
   data    only the JSON, for the tests
   serve   serves <dir> on 127.0.0.1:4751 until stopped. Any Host header but
@@ -42,7 +49,9 @@ import http.server
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
 
 import decisions
 import pr_body
@@ -73,10 +82,18 @@ CODE = re.compile(r"`([^`]+)`")
 CODE_PATH = re.compile(r"docs/specs/\S+?\.md")
 STAGES = ("Not started", "Pause 1", "Pause 2", "Pause 3", "Refined", "Built", "Reviewed", "Shipped")
 NOT_PROSE = ("#", "|", "```", "~~~", "- ", "* ", "+ ", ">", "<", "**")
+PRS = "replay-prs.json"
+SHA = re.compile(r"^[0-9a-f]{40,64}$")
+WHOLE = re.compile(r"^[1-9][0-9]*$")
+SQUASHED = "PR commits not read: %s. Squash-merged slices show as one step."
 
 
 class Refused(Exception):
     pass
+
+
+class Unread(Exception):
+    """A git or gh call that failed, with the reason it gave."""
 
 
 def read(path):
@@ -525,6 +542,171 @@ def one_slice(n, name, ships, root, names, entries):
             "rows": answers(found.get("Open items", [])), "proof": proof(text, found, stage(text, found))}
 
 
+def run(args, root, timeout=30, stdin=b""):
+    """The output of one git or gh call that never asks for a password."""
+    try:
+        done = subprocess.run(args, cwd=root, input=stdin, capture_output=True, timeout=timeout,
+                              env=dict(os.environ, GIT_TERMINAL_PROMPT="0", GH_PROMPT_DISABLED="1"))
+    except FileNotFoundError:
+        raise Unread("%s is not installed" % args[0])
+    except subprocess.TimeoutExpired:
+        raise Unread("%s timed out after %d s" % (" ".join(args[:2]), timeout))
+    if done.returncode:
+        said = done.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise Unread(said[0] if said else "%s exited %d" % (" ".join(args[:2]), done.returncode))
+    return done.stdout
+
+
+def git(root, *args):
+    return run(("git",) + args, root).decode("utf-8", "replace")
+
+
+def present(root, rev):
+    try:
+        run(("git", "cat-file", "-e", rev + "^{commit}"), root)
+        return True
+    except Unread:
+        return False
+
+
+def listed(root, *args):
+    """(sha, short hash, date and time, subject) for each commit rev-list
+    gives, oldest first."""
+    out = git(root, "rev-list", "--reverse", "--format=%h%x00%ad%x00%s",
+              "--date=format:%Y-%m-%d %H:%M", *args).splitlines()
+    return [(out[i].split()[1],) + tuple(out[i + 1].split("\0")) for i in range(0, len(out), 2)]
+
+
+def blobs(root, wanted):
+    """{(sha, path): text, or None when the commit has no such file}, read
+    by one cat-file --batch."""
+    keys = list(dict.fromkeys(wanted))
+    out = run(("git", "cat-file", "--batch"), root, stdin="".join("%s:%s\n" % key for key in keys).encode())
+    found, at = {}, 0
+    for key in keys:
+        end = out.index(b"\n", at)
+        head = out[at:end].split()
+        if head[-1] == b"missing":
+            found[key], at = None, end + 1
+        else:
+            size = int(head[2])
+            found[key], at = out[end + 1:end + 1 + size].decode("utf-8", "replace"), end + 2 + size
+    return found
+
+
+def good(entry):
+    """A cache entry to trust: null, or a PR number and a full head sha."""
+    return entry is None or (isinstance(entry, dict) and type(entry.get("pr")) is int
+                             and isinstance(entry.get("head"), str) and bool(SHA.match(entry["head"])))
+
+
+def pr_of(root, sha, entry):
+    """{pr, head} for the merged PR squashed into sha, or None. Asks gh when
+    the cache has no entry, and fetches the head when the repo lacks it."""
+    if not good(entry):
+        said = run(("gh", "api", "repos/{owner}/{repo}/commits/%s/pulls" % sha,
+                    "--jq", "[.[] | select(.merged_at)][0].number"), root, timeout=10)
+        said = said.decode("utf-8", "replace").strip()
+        entry = {"pr": int(said), "head": None} if WHOLE.match(said) else None
+    if entry is None:
+        return None
+    head = entry["head"]
+    if head is None or not present(root, head):
+        run(("git", "fetch", "origin", "refs/pull/%d/head" % entry["pr"]), root, timeout=30)
+        head = git(root, "rev-parse", "FETCH_HEAD").strip()
+    return {"pr": entry["pr"], "head": head}
+
+
+def squashed(root, squashes):
+    """({sha: {pr, head}} for each squash commit with a merged PR, the note).
+    After one failure, only the cache is read."""
+    path = os.path.join(root, "docs", "specs", ".pages", PRS)
+    try:
+        with open(path, encoding="utf-8") as handle:
+            known = json.load(handle)
+    except (OSError, ValueError):
+        known = {}
+    known = known if isinstance(known, dict) else {}
+    found, note, wrote = {}, None, False
+    for sha in squashes:
+        entry = known.get(sha, False)
+        if note and not good(entry):
+            continue
+        try:
+            entry = pr_of(root, sha, entry)
+        except Unread as reason:
+            note = note or SQUASHED % reason
+            continue
+        if known.get(sha, False) != entry:
+            known[sha], wrote = entry, True
+        if entry:
+            found[sha] = entry
+    if wrote:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", dir=os.path.dirname(path), suffix=".tmp", delete=False) as handle:
+            json.dump(known, handle, indent=1, sort_keys=True)
+        os.replace(handle.name, path)
+    return found, note
+
+
+def compared(now, last, what):
+    if last is None:
+        return [{"kind": "added", "what": what}]
+    if now is None:
+        return [{"kind": "removed", "what": what}]
+    return changed(raw_sections(now), raw_sections(last))
+
+
+def steps(root, shape, names):
+    if not present(root, "HEAD"):
+        return {"steps": [], "note": None}
+    paths = [os.path.relpath(os.path.realpath(shape), os.path.realpath(root))] + \
+        ["docs/specs/%s.md" % name for name in names]
+    try:
+        main = git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").strip()
+    except Unread:
+        main = next((name for name in ("main", "master") if present(root, name)), None)
+    found, note = squashed(root, git(root, "rev-list", "--first-parent", "--no-merges",
+                                     main or "HEAD", "--", *paths).split())
+    commits = []
+    for commit in listed(root, main or "HEAD", "--", *paths):
+        pr = found.get(commit[0])
+        theirs = listed(root, "%s..%s" % (git(root, "merge-base", pr["head"], commit[0] + "^").strip(), pr["head"]),
+                        "--", *paths) if pr else []
+        commits += [c + (pr["pr"],) for c in theirs] or [commit + (None,)]
+    if main:
+        commits += [c + (None,) for c in listed(root, "%s..HEAD" % main, "--", *paths)]
+    texts = blobs(root, [(c[0], path) for c in commits for path in paths])
+    out, before, was = [], dict.fromkeys(paths), dict.fromkeys(names, 0)
+    for sha, short, at, subject, pr in commits:
+        now = {path: texts[sha, path] for path in paths}
+        stages = {name: stage(now[path], pr_body.sections(now[path])) if now[path] is not None else 0
+                  for name, path in zip(names, paths[1:])}
+        out.append({"at": at, "hash": short, "subject": subject, "pr": pr, "stages": stages,
+                    "moved": [{"slice": name, "from": was[name], "to": stages[name]}
+                              for name in names if stages[name] != was[name]],
+                    "changed": [{"file": path, "items": compared(now[path], before[path],
+                                                                 "the shape" if path == paths[0] else "the spec")}
+                                for path in paths if now[path] != before[path]]})
+        before, was = now, stages
+    return {"steps": out, "note": note}
+
+
+def replay(root, shape, names):
+    """{steps, note}. No steps and no note when the root is not the top of a
+    git repo, so a fixture inside another repo never reads that repo."""
+    try:
+        top = git(root, "rev-parse", "--show-toplevel").strip()
+    except Unread:
+        top = None
+    if top is None or os.path.realpath(top) != os.path.realpath(root):
+        return {"steps": [], "note": None}
+    try:
+        return steps(root, shape, names)
+    except Exception as error:
+        return {"steps": [], "note": "Replay not read: %s" % error}
+
+
 def board(shape, by, card=None):
     text = read(shape)
     found = pr_body.sections(text)
@@ -547,6 +729,7 @@ def board(shape, by, card=None):
         "updated": {"by": by, "date": datetime.date.today().isoformat()},
         "slices": slices,
         "gate": gate(card, shape, root, rows, slices) if card is not None else None,
+        "replay": replay(root, shape, names),
     }
 
 
