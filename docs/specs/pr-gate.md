@@ -83,6 +83,45 @@ Scenario: a spec with no board
 - A board for a spec with no shape: **library**.
 - Stepping back through older PRs: **replay**.
 
+## Interface
+
+**Preview:** https://claude.ai/artifact/94oQVZH4y75WTmfKPmgaFP. It is built from the real `living-board` board and the real gate-card spec. Its two buttons show gate-card as built, and gate-card with one test and one file taken out, so the amber notes show. The buttons exist only in the preview.
+
+```mermaid
+flowchart TB
+  P["Paper card: slice, stamp, opening text"] --> C["PR card: one row per scenario"]
+  C --> R["Row: number, scenario name, tests with commands, files"]
+  C --> D["Decided without you: ID, What, Chose, Undo"]
+  C --> F["Diagrams, as before"]
+  B[PR body last line] -- link --> P
+```
+
+The PR card sits on the paper, under the opening text and above the diagrams. Each row reads from left to right: the scenario, the tests that prove it, and the files that change for it.
+
+**The card**
+
+It shows for a slice at Built, Reviewed or Shipped, on every render.
+
+| Part | What it shows | From |
+| --- | --- | --- |
+| Heading | `PR card · what meets each scenario`, and on the right `from Test plan and Changes` | — |
+| Row | The scenario number, its name, each test with its command under it, and each file | `Scenario:` lines; Test plan rows whose first cell starts with that number; Changes rows whose Why cell names that scenario |
+| No test | `No test named in the Test plan`, in amber, in the Tests column | — |
+| No file | `No file named in Changes`, in amber, in the Files column | — |
+| Decided without you | `Decided without you · <n>`, then each row with a violet edge: its ID and What, then `Chose` and `Undo` | Decided alone rows, split as `pr_body.py` splits them |
+
+A file shows once per row, without its line number: `board.py:244` and `board.py` are one file. A Changes row whose Why cell names no scenario, such as `The Interface section`, joins no row. On a narrow screen, the Tests and Files columns move under the scenario name.
+
+**The PR body**
+
+The last line gains the board link when the spec's shape has a `**Board:**` line:
+
+```
+Spec: docs/specs/gate-card.md · Board: https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs
+```
+
+With a `**Page:**` line too, the order is `Spec · Page · Board`. With no board, the line is as today.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
