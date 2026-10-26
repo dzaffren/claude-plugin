@@ -226,21 +226,7 @@ Single chunk.
 
 ### Decisions to record
 
-```text
-## D68 · 2026-10-26 · The PR card reads the spec's Test plan and Changes tables, not the branch diff
-
-Why: the card must still show what met each scenario after the merge, when the branch is gone (pr-gate O1). The spec's Test plan names a test per scenario, and each Changes row names its scenarios, so the spec alone ties each scenario to its tests and files.
-Rejected: the spec checked against the branch diff (works only while the branch exists), the diff alone (it cannot tell which scenario a file serves).
-Source: specs/pr-gate.md
-Status: active
-
-## D69 · 2026-10-26 · The PR card shows on every render for a slice at Built or later
-
-Why: a shipped slice keeps a record of what met each scenario, which is the shape's "what a shipped slice changed" pain (pr-gate O2). The card reads only the spec, so any stage can draw it.
-Rejected: the card only on the render that /ship makes (the next stage's render would drop the record).
-Source: specs/pr-gate.md
-Status: active
-```
+Recorded as D68, D69.
 
 ## Open items
 
