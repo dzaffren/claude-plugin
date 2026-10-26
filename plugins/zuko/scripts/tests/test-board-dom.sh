@@ -286,3 +286,28 @@ with_replay 'null' "$dir/none.html"
 dom=$(drawn "$dir/none.html")
 expect_no_match 'id="replay"' "$dom" "replay: JSON with no replay draws no strip"
 expect_match 'id="map"' "$dom" "replay: with no replay, the rest of the board draws"
+
+# A probe at step 3 reads what the strip draws: the size of each control, and
+# the colour of a Not started chip. It then presses back to step 1 from the
+# keyboard, and reads where focus went.
+{ cat "$dir/replay.html"; cat <<'PROBE'; } >"$dir/rp-probe.html"
+<script>
+const b = document.body.dataset, box = id => document.getElementById(id).getBoundingClientRect();
+b.prev = Math.floor(box("rp-prev").width) + "x" + Math.floor(box("rp-prev").height);
+b.next = Math.floor(box("rp-next").width) + "x" + Math.floor(box("rp-next").height);
+b.range = String(Math.floor(box("rp-range").height));
+b.off = getComputedStyle(document.querySelector(".rp-slices .k-off")).color;
+const prev = document.getElementById("rp-prev");
+prev.focus(); prev.click(); prev.click();
+b.focus = document.activeElement.id || document.activeElement.tagName;
+</script>
+PROBE
+dom=$(drawn "$dir/rp-probe.html")
+size() { python3 -c 'import re, sys
+m = re.search(r"data-%s=\"(\d+)x(\d+)\"" % sys.argv[1], sys.stdin.read())
+print("ok" if m and int(m.group(1)) >= 44 and int(m.group(2)) >= 44 else "small: %s" % (m and m.group(0)))' "$1" <<<"$dom"; }
+expect_match '^ok$' "$(size prev)" "replay: back is at least 44 by 44 px"
+expect_match '^ok$' "$(size next)" "replay: forward is at least 44 by 44 px"
+expect_match 'data-range="(4[4-9]|[5-9][0-9])"' "$dom" "replay: the slider is at least 44 px tall"
+expect_match 'data-off="rgb\(138, 143, 156\)"' "$dom" "replay: a Not started chip uses the muted text colour, 5.7:1 on the panel"
+expect_match 'data-focus="rp-range"' "$dom" "replay: focus moves to the slider when back turns off"
