@@ -87,8 +87,8 @@ Scenario: a doc this work did not change is not judged
 
 | ID  | What | Type | Raised at | Owner | Status | Answer |
 | --- | ---- | ---- | --------- | ----- | ------ | ------ |
-| O1  | Does the check judge a changed spec at every Status, Shipped included, or only Draft and Refined, as the glossary check does? | question | spec p1 | user | Open | — |
-| O2  | Does the ship gate run the fence check too, or only the Stop hook? | question | spec p1 | user | Open | — |
+| O1  | Does the check judge a changed spec at every Status, Shipped included, or only Draft and Refined, as the glossary check does? | question | spec p1 | user | Resolved | Every Status. Only the docs this work changed are judged, so an old spec never fails a turn. 2026-10-26 |
+| O2  | Does the ship gate run the fence check too, or only the Stop hook? | question | spec p1 | user | Resolved | Only the Stop hook. Each turn that touched the spec already passed it. 2026-10-26 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
