@@ -149,7 +149,9 @@ The body has three parts, in this order:
 2. **What ships**, in two to four sentences. Then **Verify by hand**: each
    command, and what it gives. Then **Flag and rollback**.
 3. One last line: `Spec: docs/specs/{slice}.md`. Add ` · Page: ` and the link
-   only when the spec has a `**Page:**` line.
+   only when the spec has a `**Page:**` line. Then add ` · Board: ` and the
+   link only when the spec's shape has a `**Board:**` line. The order is
+   Spec, Page, Board.
 
 Do not list the scenarios. The spec line links to them.
 

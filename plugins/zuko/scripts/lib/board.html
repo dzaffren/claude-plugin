@@ -135,6 +135,7 @@ button { font: inherit; color: inherit; }
 
 /* gate card */
 .gate { border: 1px solid var(--amber); border-radius: 10px; background: linear-gradient(180deg, var(--amber-soft), var(--panel) 70%); box-shadow: 0 0 0 4px var(--amber-glow); display: grid; }
+.gate[hidden] { display: none; }
 .gate > header { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 14px 18px 12px; border-bottom: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); }
 .gate > header .caps { color: var(--amber); font-weight: 700; }
 .gate > header h2 { margin: 0; font-family: var(--mono); font-size: 17px; letter-spacing: .06em; }
@@ -159,6 +160,25 @@ button { font: inherit; color: inherit; }
 .gate .rec { font-size: 13.5px; } .gate .rec b { font-family: var(--mono); color: var(--amber); }
 .gate a { color: var(--blue); }
 .frame .fgate { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; color: var(--bg); background: var(--amber); border-radius: 4px; padding: 0 6px; justify-self: start; }
+/* PR card, on the paper */
+.prc { border-top: 1px dashed var(--paper-line); padding-top: 16px; display: grid; gap: 10px; }
+.prc h3 { margin: 0; font-family: var(--type); font-size: 15px; letter-spacing: .1em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.prc h3 span { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); letter-spacing: .12em; }
+.prc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border: 1px solid var(--paper-line); border-radius: 4px; overflow: hidden; }
+.prc li { display: grid; grid-template-columns: 30px minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 10px 12px; border-top: 1px solid var(--paper-line); background: rgba(255,250,240,.55); font-size: 13px; }
+.prc li:first-child { border-top: 0; }
+.prc li.hd { background: transparent; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); padding-block: 6px; }
+@media (max-width: 760px) { .prc li { grid-template-columns: 30px minmax(0, 1fr); } .prc li > :nth-child(n+3) { grid-column: 2; } .prc li.hd { display: none; } }
+.prc .n { font-family: var(--mono); color: var(--ink-2); }
+.prc .sc { font-family: var(--type); font-size: 14px; color: var(--ink); }
+.prc code { font-family: var(--mono); font-size: 11.5px; color: var(--ink); overflow-wrap: anywhere; }
+.prc .cmd { display: block; color: var(--ink-2); font-size: 11px; }
+.prc .gap { font-family: var(--mono); font-size: 11.5px; color: #9a5a0c; background: #f6dfb6; border-radius: 3px; padding: 1px 6px; justify-self: start; }
+.prc .cell { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.prc .alone { display: grid; gap: 6px; }
+.prc .alone div { border-left: 3px solid #8e5bb5; padding: 4px 10px; font-size: 12.5px; background: rgba(255,250,240,.55); }
+.prc .alone b { font-family: var(--mono); font-size: 11.5px; color: #6f3f96; margin-right: 6px; }
+.prc .alone .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-right: 4px; }
 </style>
 
 <div class="wrap">
@@ -288,6 +308,7 @@ button { font: inherit; color: inherit; }
     document.getElementById("paper").innerHTML = `${stamp}
       <h2>${esc(s.name)}</h2><div class="meta">slice ${s.n} · ${esc(STAGES[s.stage])} · ${s.diagrams.length} diagrams</div>
       <p class="lede">${esc(s.text)}</p>
+      ${prCard(s)}
       ${s.diagrams.length ? s.diagrams.map((g, i) => `<section class="fig"><h3>${esc(g.caption || "Diagram")} <span>click to zoom</span></h3><div class="dia" data-i="${i}" role="button" tabindex="0" aria-label="Zoom ${esc(g.caption)}"></div>${g.say ? `<p class="say">${esc(g.say)}</p>` : ""}</section>`).join("") : '<p class="blank">No diagrams in this spec yet.</p>'}`;
     document.querySelectorAll("#paper .dia").forEach(el => draw(el, s.diagrams[+el.dataset.i].src));
     document.getElementById("side").innerHTML = `
@@ -339,6 +360,16 @@ button { font: inherit; color: inherit; }
       if (f) f.insertAdjacentHTML("afterbegin", '<span class="fgate">GATE</span>');
       pick(g.slice);
     }
+  }
+  function prCard(s) {
+    const p = s.proof;
+    if (!p || s.stage < 5) return "";
+    const rows = p.rows.map(r => `<li><span class="n">${esc(r.n)}</span><span class="sc">${esc(r.name)}</span>
+      <span class="cell">${r.tests.length ? r.tests.map(t => `<code>${esc(t.test)}</code><span class="cmd">${esc(t.command)}</span>`).join("") : '<span class="gap">No test named in the Test plan</span>'}</span>
+      <span class="cell">${r.files.length ? r.files.map(f => `<code>${esc(f)}</code>`).join("") : '<span class="gap">No file named in Changes</span>'}</span></li>`).join("");
+    const alone = p.alone.length ? `<div class="alone"><span class="caps" style="color:var(--ink-2)">Decided without you · ${p.alone.length}</span>${p.alone.map(a => `<div><b>${esc(a.id)}</b>${esc(a.what)}<br><span class="k">Chose</span>${esc(a.chose)}<br><span class="k">Undo</span>${esc(a.undo)}</div>`).join("")}</div>` : "";
+    return `<section class="prc"><h3>PR card · what meets each scenario <span>from Test plan and Changes</span></h3>
+      <ol><li class="hd"><span>#</span><span>Scenario</span><span>Tests</span><span>Files</span></li>${rows}</ol>${alone}</section>`;
   }
   function zoom(el) {
     const svg = el.querySelector("svg"); if (!svg) return;

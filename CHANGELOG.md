@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Each idea now has one board page that shows its slices in order, where each one stands, its diagrams and the choices it made, and every stage keeps it current.
 - At each /spec pause and at the end of /shape, the board shows a gate card: what waits for your approval, what you already agreed to, and what changed since the last stop. The terminal then prints only the board link, one picture and the questions.
+- Each built slice on the board now shows its scenarios next to the tests and files its spec names, and the choices made without you. Each PR body links the board.
 
 ## [2.4.3] - 2026-10-13
 

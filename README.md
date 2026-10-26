@@ -214,6 +214,7 @@ projects.
 - /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge
 - Each idea gets one claude.ai board with its slices in order, each slice's stage, diagrams and decisions; every stage republishes it
 - At each /spec pause and the end of /shape, the board shows what waits for you, what is settled and what changed since the last stop; the terminal prints only the board link, one picture and the questions
+- The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board
 
 ## Docs
 
