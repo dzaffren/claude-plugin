@@ -150,7 +150,7 @@ button { font: inherit; color: inherit; }
 .gate li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: baseline; }
 .gate .id { font-family: var(--mono); font-size: 11.5px; color: var(--amber); }
 .gate .ty { font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-right: 4px; }
-.gate .mk { font-family: var(--mono); font-size: 10.5px; padding: 0 6px; border-radius: 4px; white-space: nowrap; }
+.gate .mk, .rp-step .mk { font-family: var(--mono); font-size: 10.5px; padding: 0 6px; border-radius: 4px; white-space: nowrap; }
 .mk.add { color: var(--green); background: var(--green-soft); } .mk.rem { color: var(--red); background: #2c1515; }
 .mk.chg { color: var(--blue); background: var(--blue-soft); } .mk.row { color: var(--amber); background: var(--amber-soft); }
 .mk.res { color: var(--green); background: var(--green-soft); }
@@ -179,6 +179,34 @@ button { font: inherit; color: inherit; }
 .prc .alone div { border-left: 3px solid #8e5bb5; padding: 4px 10px; font-size: 12.5px; background: rgba(255,250,240,.55); }
 .prc .alone b { font-family: var(--mono); font-size: 11.5px; color: #6f3f96; margin-right: 6px; }
 .prc .alone .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-right: 4px; }
+/* replay strip */
+.replay { display: grid; gap: 10px; }
+.rp-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.rp-bar button { background: var(--panel); border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 12px; cursor: pointer; font-family: var(--mono); font-size: 13px; }
+.rp-bar button:disabled { color: var(--faint); cursor: default; }
+.rp-bar input { width: 100%; accent-color: var(--amber); }
+.rp-bar .caps { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rp-ticks { display: grid; grid-auto-flow: column; gap: 2px; height: 8px; }
+.rp-ticks span { border-radius: 2px; background: var(--line-2); }
+.rp-ticks span.mv { background: var(--amber); } .rp-ticks span.on { outline: 1px solid var(--fg); outline-offset: 1px; }
+.rp-step { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: grid; }
+.rp-step > header { display: grid; gap: 2px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.rp-step .rp-at { font-family: var(--mono); font-size: 11.5px; color: var(--muted); letter-spacing: .06em; }
+.rp-step .rp-subj { font-family: var(--mono); font-size: 14px; color: var(--fg); overflow-wrap: anywhere; }
+.rp-step section { padding: 12px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.rp-step section:last-child { border-bottom: 0; }
+.rp-step h3 { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.rp-step .rp-none { margin: 0; color: var(--muted); font-size: 13px; }
+.rp-moved { font-family: var(--mono); font-size: 13.5px; } .rp-moved b { color: var(--amber); } .rp-moved .ar { color: var(--faint); }
+.rp-slices { display: flex; flex-wrap: wrap; gap: 6px; }
+.rp-slices span { font-family: var(--mono); font-size: 11.5px; border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 10px; }
+.rp-slices .k-pause { color: var(--amber); } .rp-slices .k-flight { color: var(--blue); } .rp-slices .k-shipped { color: var(--green); } .rp-slices .k-off { color: var(--faint); border-style: dashed; }
+.rp-slices .mv { border-color: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
+.rp-step ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.rp-step li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: baseline; }
+.rp-step .rp-file { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.rp-note { margin: 0; color: var(--amber); font-size: 13px; }
+.rp-empty { margin: 0; color: var(--faint); font-size: 13px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
 </style>
 
 <div class="wrap">
@@ -205,7 +233,7 @@ button { font: inherit; color: inherit; }
   };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  let seq = 0, idea = null, picked = null;
+  let seq = 0, idea = null, picked = null, rp = null, rpAt = 0;
 
   if (window.mermaid) mermaid.initialize({
     startOnLoad: false, securityLevel: "strict", theme: "base", fontFamily: css("--sans"),
@@ -277,8 +305,10 @@ button { font: inherit; color: inherit; }
         <div class="film" id="film">${d.slices.map(frame).join("")}</div>
         <div class="perf"></div>
         <div class="mapbox"><div class="caps" style="margin-bottom:6px">Slice map · needs links from each spec</div><div class="dia" id="map"></div></div>
-      </section></div>`;
+      </section>
+      ${d.replay ? '<section class="replay" id="replay" aria-label="Replay"></section>' : ""}</div>`;
     draw(document.getElementById("map"), mapSrc(d));
+    if (d.replay) replayStrip(d.replay);
     const first = d.slices.find(s => s.stage >= 1 && s.stage <= 6) || [...d.slices].reverse().find(s => s.stage === 7);
     if (first) pick(first.name);
     else document.getElementById("paper").innerHTML = '<h2>No spec yet</h2><p class="blank">No slice has a spec yet. Run /spec on the first slice.</p>';
@@ -370,6 +400,44 @@ button { font: inherit; color: inherit; }
     const alone = p.alone.length ? `<div class="alone"><span class="caps" style="color:var(--ink-2)">Decided without you · ${p.alone.length}</span>${p.alone.map(a => `<div><b>${esc(a.id)}</b>${esc(a.what)}<br><span class="k">Chose</span>${esc(a.chose)}<br><span class="k">Undo</span>${esc(a.undo)}</div>`).join("")}</div>` : "";
     return `<section class="prc"><h3>PR card · what meets each scenario <span>from Test plan and Changes</span></h3>
       <ol><li class="hd"><span>#</span><span>Scenario</span><span>Tests</span><span>Files</span></li>${rows}</ol>${alone}</section>`;
+  }
+  function replayStrip(r) {
+    rp = r;
+    const box = document.getElementById("replay"), n = r.steps.length;
+    const head = `<span class="caps">Replay · step through the idea's commits</span>`;
+    const note = r.note ? `<p class="rp-note">${esc(r.note)}</p>` : "";
+    if (!n) {
+      box.innerHTML = `<div class="striphead">${head}</div>${note || '<p class="rp-empty">No commits yet for this idea. Replay starts after the first commit.</p>'}`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="striphead">${head}<span class="caps">${n} steps · ${r.note ? "from main and this branch" : "from main, the merged PRs and this branch"}</span></div>
+      ${note}
+      <div class="rp-bar"><button type="button" id="rp-prev" aria-label="Step back">◀</button>
+        <input type="range" id="rp-range" min="1" max="${n}" value="${n}" aria-label="Step">
+        <button type="button" id="rp-next" aria-label="Step forward">▶</button><span class="caps" id="rp-count"></span></div>
+      <div class="rp-ticks" aria-hidden="true">${r.steps.map(s => `<span class="${s.moved.length ? "mv" : ""}"></span>`).join("")}</div>
+      <article class="rp-step" id="rp-step" aria-live="polite"></article>`;
+    document.getElementById("rp-range").addEventListener("input", ev => showStep(+ev.target.value - 1));
+    document.getElementById("rp-prev").addEventListener("click", () => showStep(rpAt - 1));
+    document.getElementById("rp-next").addEventListener("click", () => showStep(rpAt + 1));
+    showStep(n - 1);
+  }
+  function showStep(i) {
+    const n = rp.steps.length;
+    rpAt = Math.max(0, Math.min(n - 1, i));
+    const s = rp.steps[rpAt], moved = new Set(s.moved.map(m => m.slice));
+    document.getElementById("rp-range").value = rpAt + 1;
+    document.getElementById("rp-prev").disabled = rpAt === 0;
+    document.getElementById("rp-next").disabled = rpAt === n - 1;
+    document.getElementById("rp-count").textContent = `step ${rpAt + 1} of ${n}`;
+    document.querySelectorAll(".rp-ticks span").forEach((t, j) => t.classList.toggle("on", j === rpAt));
+    const none = t => `<p class="rp-none">${t}</p>`;
+    document.getElementById("rp-step").innerHTML = `
+      <header><span class="rp-at">${esc(s.at)} · ${esc(s.hash)}${s.pr ? ` · from PR #${esc(s.pr)}` : ""}</span><span class="rp-subj">${esc(s.subject)}</span></header>
+      <section><h3>Moved</h3>${s.moved.length ? s.moved.map(m => `<div class="rp-moved"><b>${esc(m.slice)}</b>: ${esc(STAGES[m.from])} <span class="ar">→</span> ${esc(STAGES[m.to])}</div>`).join("") : none("No slice changed stage.")}
+        <div class="rp-slices">${idea.slices.map(x => `<span class="k-${AT[s.stages[x.name]][3]}${moved.has(x.name) ? " mv" : ""}">${esc(x.name)} · ${esc(STAGES[s.stages[x.name]])}</span>`).join("")}</div></section>
+      <section><h3>Changed since step ${rpAt}</h3>${s.changed.length ? s.changed.map(c => `<span class="rp-file">${esc(c.file)}</span>${c.items.length ? `<ul>${c.items.map(it => `<li><span class="mk ${MK[it.kind] || "res"}">${esc(it.kind)}</span><span>${esc(it.what)}</span></li>`).join("")}</ul>` : none("Only the Status line changed.")}`).join("") : none("No change to the shape or a slice spec.")}</section>`;
   }
   function zoom(el) {
     const svg = el.querySelector("svg"); if (!svg) return;

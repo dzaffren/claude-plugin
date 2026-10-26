@@ -220,3 +220,69 @@ expect_match 'No test named in the Test plan' "$dom" "pr card: the amber note fo
 expect_match 'No file named in Changes' "$dom" "pr card: the amber note for a scenario with no file"
 expect_match 'Decided without you · 1' "$dom" "pr card: the Decided alone rows are counted"
 expect_match '<span class="k">Chose</span>`a.py`.' "$dom" "pr card: a Decided alone row shows its Chose"
+
+# --- the Replay strip ---
+# The page draws DATA.replay as board.py gives it. This test writes its own
+# replay into the JSON, so it does not need a git history.
+python3 "$scripts/lib/board.py" data "$dir/docs/specs/dom/shape.md" --by "/spec drafty pause 3" >"$dir/dom.json" 2>"$dir/err"
+expect_exit 0 "$?" "replay: data exits 0"
+with_replay() {        # with_replay <replay JSON> <page>
+  python3 - "$scripts/lib" "$dir/dom.json" "$1" "$2" <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import board
+data = json.load(open(sys.argv[2]))
+data["replay"] = json.loads(sys.argv[3])
+open(sys.argv[4], "w").write(open(board.TEMPLATE).read().replace(board.SLOT, board.blob(data), 1))
+PY
+}
+# The dump holds the page's own script, which spells out the strip's texts,
+# so the scripts come out before any check.
+drawn() {              # drawn <page>
+  "$chrome" --headless=new --disable-gpu --virtual-time-budget=15000 --dump-dom "file://$1" 2>/dev/null \
+    | python3 -c 'import re, sys; print(re.sub(r"<script.*?</script>", "", sys.stdin.read(), flags=re.S))'
+}
+with_replay '{"note": null, "steps": [
+  {"at": "2026-10-26 09:59", "hash": "aaaa111", "subject": "docs(spec): draft evil pause 1", "pr": null,
+   "stages": {"evil": 1, "later": 0, "drafty": 0}, "moved": [{"slice": "evil", "from": 0, "to": 1}],
+   "changed": [{"file": "docs/specs/evil.md", "items": [{"kind": "added", "what": "the spec"}]}]},
+  {"at": "2026-10-26 10:20", "hash": "bbbb222", "subject": "docs(spec): bump evil status", "pr": 104,
+   "stages": {"evil": 1, "later": 0, "drafty": 0}, "moved": [],
+   "changed": [{"file": "docs/specs/evil.md", "items": []}]},
+  {"at": "2026-10-26 10:56", "hash": "cccc333", "subject": "docs: <img src=x onerror=\"document.body.dataset.pwned=1\"> evil built", "pr": 104,
+   "stages": {"evil": 5, "later": 0, "drafty": 3}, "moved": [{"slice": "evil", "from": 1, "to": 5}],
+   "changed": [{"file": "docs/specs/evil.md", "items": [{"kind": "resolved", "what": "O1"}]}]}]}' "$dir/replay.html"
+dom=$(drawn "$dir/replay.html")
+expect_match 'id="rp-count">step 3 of 3<' "$dom" "replay: the board opens on the last step"
+expect_match 'id="rp-next" aria-label="Step forward" disabled="">' "$dom" "replay: forward is off at the last step"
+expect_no_match 'data-pwned' "$dom" "replay: no onerror from a commit subject runs"
+expect_match 'class="rp-subj">docs: &lt;img src=x onerror="document.body.dataset.pwned=1"&gt; evil built<' "$dom" \
+  "replay: a commit subject shows its markup as text"
+expect_match '2026-10-26 10:56 · cccc333 · from PR #104' "$dom" "replay: the head shows the time, hash and PR"
+expect_match '<b>evil</b>: Pause 1 <span class="ar">→</span> Built' "$dom" "replay: the moved line names the slice and both stages"
+expect_match 'class="k-pause">drafty · Pause 3<' "$dom" "replay: each slice shows its stage at the step"
+expect_match 'Changed since step 2' "$dom" "replay: the changes are since the step before"
+expect_match '3 steps · from main, the merged PRs and this branch' "$dom" "replay: the heading counts the steps"
+order=$(python3 -c 'import sys
+dom = sys.stdin.read()
+mapbox, replay = dom.find("class=\"mapbox\""), dom.find("id=\"replay\"")
+print("under" if -1 < mapbox < replay else "not under")' <<<"$dom")
+expect_match '^under$' "$order" "replay: the strip sits under the slice map"
+
+# A probe script presses back once, as the user would.
+{ cat "$dir/replay.html"; printf '<script>document.getElementById("rp-prev").click();</script>'; } >"$dir/back.html"
+dom=$(drawn "$dir/back.html")
+expect_match 'id="rp-count">step 2 of 3<' "$dom" "replay: back shows the step before"
+expect_match 'No slice changed stage\.' "$dom" "replay: a step with no move says so"
+expect_match 'Only the Status line changed\.' "$dom" "replay: a file with no item past its Status line says so"
+expect_match 'id="rp-next" aria-label="Step forward">' "$dom" "replay: forward is on again"
+
+with_replay '{"steps": [], "note": null}' "$dir/empty.html"
+dom=$(drawn "$dir/empty.html")
+expect_match 'No commits yet for this idea\. Replay starts after the first commit\.' "$dom" \
+  "replay: with no commits, the strip says when replay starts"
+
+with_replay 'null' "$dir/none.html"
+dom=$(drawn "$dir/none.html")
+expect_no_match 'id="replay"' "$dom" "replay: JSON with no replay draws no strip"
+expect_match 'id="map"' "$dom" "replay: with no replay, the rest of the board draws"
