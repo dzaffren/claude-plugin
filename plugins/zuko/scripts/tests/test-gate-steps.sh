@@ -45,7 +45,7 @@ expect_exit 3 "$(grep -oE -e "For the board at this stop, pass \`--gate docs/spe
   "spec/SKILL.md: each of the three pointers passes --gate"
 
 # --- /spec: each "Then stop" prints the shorter terminal (O4, D67) ---
-shows='When "Idea board" printed a `Board` line, the terminal shows only these, in this order: 1\. The `Board` line, as "Idea board" prints it\.'
+shows='When "Idea board" printed a `Board:` line or a `Board not published:` line, the terminal shows only these, in this order: 1\. That line, as "Idea board" prints it\.'
 expect_match "pause 1\"\`\..*That print is for a spec with no board\. $shows 2\. The Flow diagram, in ASCII\. 3\. The question prompt\.[^#]*## Pause 2" \
   "$spec" "spec/SKILL.md pause 1: Board line, the Flow diagram, the prompt"
 expect_match "pause 2\"\`\. \*\*Then stop\.\*\* $shows 2\. The Interface map, in ASCII\. 3\. The preview link, when the slice has a preview\. 4\. The question prompt\." \
@@ -75,5 +75,5 @@ expect_match 'Then, in the terminal: - The `Board:` line\. - The slice map, in A
   "$shape" "shape/SKILL.md step 6: Board line, slice map, design-system note, then the prompt"
 expect_match 'Print nothing else before the prompt\. The board shows the problem, the slices and the open items\.' \
   "$shape" "shape/SKILL.md step 6: nothing else before the prompt"
-expect_match 'When "Idea board" printed no `Board` line, print the problem in two sentences, the slice list with the diagram, and any open items\.' \
+expect_match 'When "Idea board" printed neither a `Board:` line nor a `Board not published:` line, print the problem in two sentences, the slice list with the diagram, and any open items\.' \
   "$shape" "shape/SKILL.md step 6: with no board, prints as before"

@@ -164,7 +164,7 @@ Publish the idea board, as
 
 Then, in the terminal:
 
-- The `Board:` line.
+- The `Board:` line, or the `Board not published:` line.
 - The slice map, in ASCII.
 - **If the project type is web UI and no design system exists** — say so:
   `/design-system` should run once, before the first UI slice, and takes
@@ -173,8 +173,9 @@ Then, in the terminal:
   recommended slice first, and say why in its description.
 
 Print nothing else before the prompt. The board shows the problem, the slices
-and the open items. When "Idea board" printed no `Board` line, print the
-problem in two sentences, the slice list with the diagram, and any open items.
+and the open items. When "Idea board" printed neither a `Board:` line nor a
+`Board not published:` line, print the problem in two sentences, the slice
+list with the diagram, and any open items.
 Print them before the design-system note.
 
 STOP. Do not write a spec. Do not write code.

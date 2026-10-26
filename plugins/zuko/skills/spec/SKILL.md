@@ -82,10 +82,11 @@ spec has a `**Shape doc:**` line, republish the idea board, as
 open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Do not continue until the user approves.
 
-That print is for a spec with no board. When "Idea board" printed a `Board`
-line, the terminal shows only these, in this order:
+That print is for a spec with no board. When "Idea board" printed a `Board:`
+line or a `Board not published:` line, the terminal shows only these, in this
+order:
 
-1. The `Board` line, as "Idea board" prints it.
+1. That line, as "Idea board" prints it.
 2. The Flow diagram, in ASCII.
 3. The question prompt.
 
@@ -171,10 +172,10 @@ spec has a `**Shape doc:**` line, republish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
 `--by "/spec {slice} pause 2"`.
 
-**Then stop.** When "Idea board" printed a `Board` line, the terminal
-shows only these, in this order:
+**Then stop.** When "Idea board" printed a `Board:` line or a
+`Board not published:` line, the terminal shows only these, in this order:
 
-1. The `Board` line, as "Idea board" prints it.
+1. That line, as "Idea board" prints it.
 2. The Interface map, in ASCII.
 3. The preview link, when the slice has a preview.
 4. The question prompt.
@@ -253,10 +254,11 @@ spec has a `**Shape doc:**` line, republish the idea board, as
 `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
 `--by "/spec {slice} pause 3"`.
 
-**Then stop.** Set Status to `Refined`. When "Idea board" printed a `Board`
-line, the terminal shows only these, in this order:
+**Then stop.** Set Status to `Refined`. When "Idea board" printed a `Board:`
+line or a `Board not published:` line, the terminal shows only these, in this
+order:
 
-1. The `Board` line, as "Idea board" prints it.
+1. That line, as "Idea board" prints it.
 2. The Approach architecture diagram, in ASCII.
 3. The spec path, the page link, and the plan's riskiest choice, in one line.
 4. `/build` is next.
