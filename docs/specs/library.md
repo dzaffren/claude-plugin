@@ -1,6 +1,6 @@
 # Library
 
-**Version:** v1 · **Status:** Draft · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/living-board/shape.md
 **Depends on:** idea-board
@@ -113,7 +113,7 @@ flowchart TB
 
 The section is a heading, a note, a legend and one table. Each shape gives one row, or one error row when the hub cannot read it.
 
-**Row order.** Ideas with a slice that is not Shipped come first. Then the ideas with every slice Shipped. In each group, the rows go in the order of the shape folder names.
+**Row order.** Error rows come first. Then the ideas with a slice that is not Shipped. Then the ideas with every slice Shipped. In each group, the rows go in the order of the shape folder names.
 
 **Each row:**
 
@@ -135,6 +135,124 @@ The section is a heading, a note, a legend and one table. Each shape gives one r
 **No shapes.** With no `docs/specs/*/shape.md`, the hub has no Ideas section. It shows no empty heading.
 
 **Preview:** https://claude.ai/artifact/AcXaSBvFM98p8tbTeee6bt, from `docs/specs/.pages/library-preview.html`
+
+## Technical plan
+
+### Approach
+
+A new `board.py library <root>` command reads every `docs/specs/*/shape.md` under `<root>` and prints the Ideas section as one HTML fragment. It reuses the board's shape reader: `slice_rows` for the Slices table and `stage` for each spec. `/ship`, `/release` and now `/shape` paste that fragment into the hub as it is, between Architecture and Slices. The rest of the hub stays hand-written, as today.
+
+Relies on: D50 (one parser for the rows), D62 (a script renders what reads many files; Claude only publishes), D63 (pages are claude.ai pages), D70 (drafted below).
+
+```mermaid
+flowchart TB
+  subgraph repo[target repo]
+    SH["docs/specs/*/shape.md"]
+    SP["docs/specs/{slice}.md"]
+    OV["OVERVIEW.md More line"]
+  end
+  subgraph lib[plugins/zuko/scripts/lib]
+    LB["board.py library"] -->|slice_rows, stage| PB[pr_body.sections]
+  end
+  SH -->|title, Board line, Slices rows| LB
+  SP -->|Status line, sections| LB
+  LB -->|Ideas section fragment on stdout| ST["/shape, /ship, /release hub step"]
+  ST -->|pastes fragment, writes| HUB["docs/specs/.pages/_hub.html"]
+  HUB -->|Artifact publish| PAGE[Hub page on claude.ai]
+  ST -->|first publish: hub page link| OV
+```
+
+The script reads the shapes and specs and prints the fragment. The stage's hub step pastes it into `_hub.html` and publishes that file.
+
+```mermaid
+sequenceDiagram
+  participant S as /shape
+  participant B as board.py
+  participant F as docs/specs
+  participant A as Artifact tool
+  participant O as OVERVIEW.md
+  S->>A: publish living-board board
+  S->>O: read More line
+  S->>B: library .
+  B->>F: glob docs/specs/*/shape.md, read each spec it names
+  B-->>S: Ideas fragment, exit 0
+  S->>A: publish _hub.html with the fragment
+  alt no hub link on the More line
+    A-->>S: new URL
+    S->>O: add "hub page: {url}"
+  end
+```
+
+At the end of `/shape`, the stage publishes the board, gets the fragment, and publishes the hub. On a first publish it writes the hub link to the overview.
+
+### Changes
+
+| File | What changes | Why |
+| ---- | ------------ | --- |
+| `plugins/zuko/scripts/lib/board.py:51` | Add `BOARD` (the `**Board:**` line), `STAGES` (the eight stage names that `board.html:193` uses) and `import html` | Scenarios 1, 2 |
+| `plugins/zuko/scripts/lib/board.py:518` | New `library(root)`: for each `docs/specs/*/shape.md` in folder-name order, read it with `read`, take its rows with `slice_rows`, and give each slice its stage with `stage`, or 0 when the spec file is missing. A `Refused` from `read`, or no rows, gives an error row. Sort error rows, then ideas in flight, then finished ideas | Scenarios 1, 2, 3, 5 |
+| `plugins/zuko/scripts/lib/board.py:543` | New `library_html(ideas)`: the fragment of the Interface section. It has its own `<style>` with classes under `.zuko-ideas` and its own light and dark colours. Every text goes through `html.escape`. A Board URL that does not start with `https://` gives "no board yet". No shapes gives an empty output | Scenarios 1 to 3; Interface |
+| `plugins/zuko/scripts/lib/board.py:585` | `main` takes `library <root>`: prints the fragment and exits 0, or exits 2 when `<root>` is not a directory. The docstring and `USAGE` gain the line | Scenarios 1 to 4 |
+| `plugins/zuko/references/visual-page.md:175` | "Hub page": `/shape` also builds it. The order list gains item 4, **Ideas**: run `board.py library .`, and paste its output as it is. Do not edit it. No output means no section. Slices and Links become 5 and 6 | Scenarios 1 to 4 |
+| `plugins/zuko/skills/shape/SKILL.md:160` | After the board publish: publish the hub per `visual-page.md` › "Hub page". With no `hub page:` link on the overview's More line, add the link that the publish returns | Scenario 4; O4, O6 |
+| `docs/specs/v3-release-and-hosts/shape.md:36` | The Slices table gets one row for each of its 14 specs. The Slice cells name the spec files | Scenario 5; O5 |
+| `plugins/zuko/scripts/tests/test-library.sh` | New. Unit cases for `library`, and text checks for `visual-page.md` and the `/shape` step | Scenarios 3, 4, 5 |
+| `plugins/zuko/scripts/tests/test-e2e-library.sh` | New. The e2e walk, below | Scenarios 1, 2, 3 |
+
+Reusing: `read`, `Refused`, `slice_rows`, `spec_name`, `stage` and `pr_body.sections` from `board.py` and `pr_body.py`. The `section` and `flat` helpers from `test-idea-board.sh` for the text checks. `/ship` and `/release` need no edit: their hub steps already follow `visual-page.md` › "Hub page".
+
+### Earn-it
+
+| Added | Triggered by |
+| ----- | ------------ |
+| `board.py library` | Scenarios 1 to 5, and D62: the rows must look the same at each stage, and a test must prove them |
+| A `<style>` inside the fragment | The hub is hand-written at each stage, so its class names can change between runs. The fragment must draw the same in any hub |
+| The `https://` check on the Board URL | The fragment goes into a page. A `javascript:` link in a shape file must not become a live link |
+
+### Non-functionals
+
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | 4 shapes and 27 specs in this repo. One run reads about 31 files, in well under a second |
+| **Breaks first**     | At 10×, 40 shapes and 270 specs, the run is still under a second. A 14-mark rail wraps to two lines on a phone, which the flex layout allows |
+| **Security surface** | Only the stage calls it, on the user's own repo. It trusts no text: every value is escaped, and only an `https://` Board URL becomes a link. No secrets. It stores nothing; the stage writes `_hub.html`, which is git-ignored |
+| **Proof it works**   | The published hub shows an "Ideas" heading with 4 rows, and the v3 row says `14 of 14 shipped` |
+| **Rollout**          | No flag. The next `/ship`, `/release` or `/shape` after the merge adds the section. Rollback: revert the commits. The next hub publish then has no Ideas section |
+
+### Test plan
+
+| Scenario | Test | Command |
+| -------- | ---- | ------- |
+| 1. The hub lists each idea with its board and progress | `test-e2e-library.sh`: the living-board row has the board link, `3 of 5 shipped`, 3 Shipped and 2 Not started marks, and no row for the loose spec | `bash plugins/zuko/scripts/tests/run.sh e2e-library` |
+| 2. An idea with no board yet still shows | `test-e2e-library.sh`: the ask-up-front row says `no board yet` with its shape path, and `5 of 5 shipped` | `bash plugins/zuko/scripts/tests/run.sh e2e-library` |
+| 3. A shape the hub cannot read does not stop the hub | `test-e2e-library.sh`: the billing-export error row comes first, and the run exits 0. `test-library.sh`: an unreadable shape, a `javascript:` Board URL, a title with `<script>`, and no shapes | `bash plugins/zuko/scripts/tests/run.sh library` |
+| 4. The first `/shape` in a repo creates the hub | `test-library.sh`: the text checks on `visual-page.md` › "Hub page" and the `/shape` step. The real publish is checked by hand at this slice's `/ship` | `bash plugins/zuko/scripts/tests/run.sh library` |
+| 5. The v3 release idea counts every spec it became | `test-library.sh`: `board.py library` on this repo prints `14 of 14 shipped` for v3-release-and-hosts | `bash plugins/zuko/scripts/tests/run.sh library` |
+
+**E2E:** `test-e2e-library.sh`. A fixture repo with three shapes (living-board with a Board line, ask-up-front without one, billing-export with no Slices table), a loose spec and an `OVERVIEW.md`. It runs `board.py library`, pastes the fragment into a hub page, and checks every row and the row order in that page.
+
+### Chunks
+
+Single chunk.
+
+### Risks
+
+| Risk | Mitigation |
+| ---- | ---------- |
+| A stage edits the fragment while it pastes it, so the rows drift from the files | `visual-page.md` says to paste it as it is. The proof line in Non-functionals is checked at this slice's `/ship` |
+| `/shape` now publishes two pages, which adds about a minute | Accepted at pause 1 (O4) |
+| An old shape names slices that match no spec, as v3 did | The row shows hollow marks, so the gap is seen. The fix is a data fix in that shape, as in scenario 5 |
+
+### Decisions to record
+
+```text
+## D70 · 2026-10-26 · A script renders the hub's Ideas section; the rest of the hub stays hand-written
+
+Why: the Ideas rows read every shape and every spec they name, about 31 files today. They must read them as the board does (D62), and a test must prove each row.
+Rejected: Claude writes the rows at each stage (the same misreads that D62 stops, and no test), a script renders the whole hub (about twice the work, better as its own slice).
+Source: specs/library.md
+Status: active
+```
 
 ## Open items
 
