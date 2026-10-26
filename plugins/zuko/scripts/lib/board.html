@@ -428,8 +428,12 @@ button { font: inherit; color: inherit; }
     rpAt = Math.max(0, Math.min(n - 1, i));
     const s = rp.steps[rpAt], moved = new Set(s.moved.map(m => m.slice));
     document.getElementById("rp-range").value = rpAt + 1;
-    document.getElementById("rp-prev").disabled = rpAt === 0;
-    document.getElementById("rp-next").disabled = rpAt === n - 1;
+    const prev = document.getElementById("rp-prev"), next = document.getElementById("rp-next");
+    // A button that turns off while it has focus drops focus to the body.
+    if ((rpAt === 0 && document.activeElement === prev) || (rpAt === n - 1 && document.activeElement === next))
+      document.getElementById("rp-range").focus();
+    prev.disabled = rpAt === 0;
+    next.disabled = rpAt === n - 1;
     document.getElementById("rp-count").textContent = `step ${rpAt + 1} of ${n}`;
     document.querySelectorAll(".rp-ticks span").forEach((t, j) => t.classList.toggle("on", j === rpAt));
     const none = t => `<p class="rp-none">${t}</p>`;
