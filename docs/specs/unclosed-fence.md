@@ -1,6 +1,6 @@
 # Unclosed fence
 
-**Version:** v1 · **Status:** Draft · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -116,6 +116,125 @@ Spec gate check failed:
 | The fix part | Line one says "Close the block from line M first, or open it with a longer fence." Line two says "Close it." |
 
 A doc that passes adds no line. When the fence check cannot read a doc, the gate fails with `- the fence check could not run: <error>`, as the glossary check does.
+
+## Technical plan
+
+### Approach
+
+A new `lib/fence.py` walks each doc's fences with the close rule the readers use, `board.closes()` (`board.py:126`). It prints one line for the first problem in each doc. `verify-gates.sh` collects every doc in scope, at any Status, and runs `fence.py check` on them, as it runs `glossary.py missing` on the live docs.
+
+Relies on: D35 (Stop hooks judge only the zuko docs this work changed), D36 (a zuko spec is known by its Version and Status line). Drafted below: D75, D76.
+
+```mermaid
+flowchart TB
+  H["hooks.json: Stop"] -- runs --> V["verify-gates.sh"]
+  V -- "project dir" --> S["stop_scope.py: docs this work changed"]
+  S -- "paths, any Status" --> V
+  V -- "fence.py check paths" --> F["fence.py: new"]
+  F -- "same close rule" --> B["board.closes(): board.py:126"]
+  F -- "path TAB message, first problem per doc" --> V
+  V -- "Spec gate check failed: ... exit 2" --> C[Claude]
+```
+
+`verify-gates.sh` asks `stop_scope.py` which docs this work changed. It then hands all of them to `fence.py`, which reads each one with the board's close rule and reports its first problem.
+
+```mermaid
+sequenceDiagram
+  participant H as Stop hook
+  participant V as verify-gates.sh
+  participant S as stop_scope.py
+  participant F as fence.py
+  H->>V: turn ends, stdin JSON
+  V->>S: project dir
+  S-->>V: ./docs/specs/idea-board.md
+  V->>V: status and Open items checks; collect every doc
+  V->>F: check ./docs/specs/idea-board.md
+  F->>F: line 47 opens, line 55 opens inside it: first problem
+  F-->>V: path, TAB, "line 55 opens a ```mermaid block inside the block that line 47 opened. ..."
+  V-->>H: "Spec gate check failed:" then the line, exit 2
+```
+
+**How `fence.py` reads a doc**
+
+| Part | Rule |
+| --- | --- |
+| A fence | `pr_body.FENCE`: up to 3 spaces, then 3 or more backticks or tildes |
+| Opening | A fence while no block is open. Its language name is the first word after the marker |
+| Closing | `board.closes()`: the same character, at least as long, nothing after it |
+| Opener inside a block | A fence inside an open block that has a language name, the same character, and at least the open fence's length. Problem: `line <N> opens a <fence><lang> block inside the block that line <M> opened. Close the block from line <M> first, or open it with a longer fence.` |
+| Open at end | The file ends with a block open. Problem: `the <fence><lang> block that line <M> opened never closes. Close it.` |
+| Output | `<path>\t<problem>` for the first problem in each doc, in the order given. Nothing for a doc that passes |
+| Exit | 0 printed. 2 bad usage or a doc that cannot be read, with `fence.py: cannot read <path>: <reason>` on stderr |
+
+`verify-gates.sh` joins the two parts as `- <path> <problem>` for an opener inside a block, and `- <path>: <problem>` for a block open at the end. So the lines read as the Interface shows.
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `plugins/zuko/scripts/lib/fence.py` | New. `check <path>...`, a `first_problem(text)` walker, and a docstring with the rules above | Scenarios 1, 2 and 3 |
+| `plugins/zuko/scripts/verify-gates.sh:22` | The scope loop adds every doc to a new `docs` array, specs at any Status and shapes. After the glossary block, run `fence.py check "${docs[@]}"` and add one `- ` line for each line it prints. On a non-zero exit, add `- the fence check could not run: <error>` | Scenarios 1, 2 and 4 |
+| `plugins/zuko/scripts/tests/test-fence.sh` | New. Each scenario, against `verify-gates.sh` with `CLAUDE_PROJECT_DIR` set to a fixture project. Also `fence.py` alone: a tilde fence, an indented fence, an opener with no language name, and a doc that cannot be read | Scenarios 1 to 4 |
+| `plugins/zuko/scripts/tests/fixtures/fence/idea-board-a5cb93f.md` | New. The real broken spec, copied from `git show a5cb93f:docs/specs/idea-board.md` | Scenario 1 |
+
+Reusing: `board.closes()` (`board.py:126`) and `pr_body.FENCE` (`pr_body.py:30`) for the fence rules, `stop_scope.py` for the scope, and the glossary block's shape in `verify-gates.sh:47` for the call and its error line.
+
+### Earn-it
+
+| Added | Triggered by |
+| --- | --- |
+| `fence.py` | Scenarios 1 and 2. `glossary.py` is about jargon, and `pr_body.py` reads rows for the ship gate and the PR body (D50). A fence check in either one would mix two jobs |
+| The fixture file | Scenario 1 names the real broken file. A made-up example could miss what made the real one pass every other check |
+
+### Non-functionals
+
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | One run per turn end, over the docs this work changed: usually 1 or 2 files of up to 400 lines |
+| **Breaks first**     | At 10×, 20 docs of 4,000 lines is one linear pass each, well under a second. Nothing breaks first |
+| **Security surface** | Runs locally in the Stop hook. Reads only the docs `stop_scope.py` lists. Prints file paths and line numbers. Writes nothing, touches no secret, makes no network call |
+| **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh fence` passes, and a turn that writes an unclosed fence ends with `Spec gate check failed:` and the fence line |
+| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert the commit, and the gate runs as before |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 1. A fence that opens inside an open block fails the turn | `test-fence.sh`, with the fixture copy of the a5cb93f spec | `bash plugins/zuko/scripts/tests/run.sh fence` |
+| 2. A fence still open at the end of the file fails the turn | `test-fence.sh` | `bash plugins/zuko/scripts/tests/run.sh fence` |
+| 3. A block nested inside a longer fence passes | `test-fence.sh`: a copy of `docs/specs/decision-pr.md`, and a loop over every spec and shape in the repo through `fence.py check` | `bash plugins/zuko/scripts/tests/run.sh fence` |
+| 4. A doc this work did not change is not judged | `test-fence.sh`: a fixture git repo with a broken spec on `main` and a branch that changes another spec | `bash plugins/zuko/scripts/tests/run.sh fence` |
+
+**E2E:** the scenario 1 case in `test-fence.sh` runs `verify-gates.sh` as the Stop hook runs it, with stdin JSON and `CLAUDE_PROJECT_DIR`, on a project that holds the real broken spec. It checks the exit code and the exact line. The full suite: `bash plugins/zuko/scripts/tests/run.sh`.
+
+### Chunks
+
+Single chunk.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| A spec shows a nested example with a fence of the same length as the outer one, which the rule flags | The message says to open the outer block with a longer fence, which is the correct fix in Markdown too. No doc in the repo does this today |
+| The close rule drifts from the readers' rule | `fence.py` calls `board.closes()` itself, so a change to the rule reaches both |
+
+### Decisions to record
+
+```markdown
+## D75 · 2026-10-26 · The fence check flags a fence that opens inside an open block, not only a block left open
+
+Why: idea-board.md at a5cb93f lost its Acceptance criteria section to an unclosed fence, yet its fences paired up again later and the file ended with no block open. A fence with a language name, opened inside a block with the same or longer marker, catches it, and no doc in the repo trips it.
+Rejected: flag only a block still open at the end of the file (passes the real broken spec), flag a "## " heading inside a block (flags 22 docs and skill files that show headings in examples).
+Source: specs/unclosed-fence.md
+Status: active
+
+## D76 · 2026-10-26 · The fence check runs in the Stop hook on each changed doc at any Status, and not in the ship gate
+
+Why: a broken fence hides sections from the board and the PR body at any Status, and D35 already keeps an untouched doc out of the check. Each turn that touched a spec passed the Stop hook, so the ship gate would only check it again.
+Rejected: Draft and Refined only, as the glossary check (a Shipped spec edited by /ship could carry a broken fence), the ship gate too (a second place to keep the same rule).
+Source: specs/unclosed-fence.md
+Status: active
+```
 
 ## Open items
 
