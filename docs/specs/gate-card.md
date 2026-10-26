@@ -132,8 +132,8 @@ The pause names and the approve lines:
 
 The Changed part has three fixed messages:
 
-- No copy and pause 1: `First stop for this slice.`
-- No copy at pause 2 or 3: `No copy of the last stop on this machine, so changes cannot be shown.`
+- No copy at pause 1, or at the light path's one pause: `First stop for this slice.`
+- No copy at pause 2 or 3 of the full path: `No copy of the last stop on this machine, so changes cannot be shown.`
 - A copy that matches: `Nothing changed since the last stop.`
 
 **The copy**
@@ -199,10 +199,19 @@ The copy is written after the publish, also when the publish fails. The stop too
 
 | Part | Rule |
 | --- | --- |
-| Which stop | `--gate` names the shape given to `render`: a shape gate. `--gate` names `docs/specs/<name>.md` for a slice of the shape: a slice gate at `stage()` 1, 2 or 3. Any other stage, or a spec that is not a slice of the shape: no card, and the board renders as before |
+| Which stop | `--gate` names the shape given to `render`: a shape gate. `--gate` names `docs/specs/<name>.md` for a slice of the shape: a slice gate at `stage()` 1, 2 or 3, and a `Refined` spec counts as pause 3. Any other stage, or a spec that is not a slice of the shape: no card, and the board renders as before |
 | Waiting | The ledger rows whose Status is `Open`: ID, Type and What. At pause 3, also the `## D<n> · <date> · <title>` lines inside the fences under `### Decisions to record` (O6). At a shape gate, the first slice in the table that is not Shipped, with its `Why this order` cell |
-| Settled | Each pause below the current one that the spec has reached. Pause 1: the `Scenario:` names in the fence under `## Acceptance criteria`, and the `**In:**` line of `## Scope`. Pause 2, only when `## Interface` exists: its `###` headings and its lines that are only a bold lead-in. Then the count of rows that `answers()` returns. A shape gate counts its rows that are not `Open` |
-| Changed | No copy: `first` at pause 1 or a shape, `missing` at pause 2 or 3. A copy: compare each `##` section, fences included, by its lines with blank lines dropped and spaces squeezed. Text above the first `##` is not compared, so a Status change is not news. `## Acceptance criteria` is compared by scenario name, and `## Open items` by row: a new ID is `new row`, and a row that left `Open` is tagged with its new Status. Nothing differs: `none` |
+| Settled | Each pause below the current one that the spec has reached. Pause 1: the `Scenario:` names in the fence under `## Acceptance criteria`, and the `**In:**` line of `## Scope`. Pause 2, only when `## Interface` exists: its `###` headings and its lines that are only a bold lead-in. On the light path (`**Path:** light`), nothing is settled. Then the count of rows that `answers()` returns. A shape gate counts its rows that are not `Open` |
+| Changed | No copy: `first` at pause 1, a shape or the light path's one pause, `missing` at pause 2 or 3. A copy: compare each `##` section, fences included, by its lines with blank lines dropped and spaces squeezed. Text above the first `##` is not compared, so a Status change is not news. `## Acceptance criteria` is compared by scenario name, and `## Review
+
+2026-10-26 · 5 raw findings, 4 survived, 4 fixed.
+
+- correctness · `plugins/zuko/skills/spec/SKILL.md:85` · the short pause print names the failed-publish line too · `cf05856`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · a Refined spec at a stop gets the pause 3 card · `f5579f8`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · no copy at the light path's one pause is a first stop · `02821c9`
+- correctness · `plugins/zuko/scripts/lib/board.py:319` in `settled` · nothing settled at the light path's one pause · `02821c9`
+
+## Open items` by row: a new ID is `new row`, and a row that left `Open` is tagged with its new Status. Nothing differs: `none` |
 | Since | The copy's own `stage()` and its modified time, as `pause 1, 2026-10-26 14:02` |
 
 ### Changes
@@ -290,6 +299,8 @@ Recorded as D65, D66, D67.
 | O9 | Pause 2 with a board printed only the Board line, the Interface map and the prompt (D67), so a web UI slice lost its preview link, which the board does not carry. | flag | build | user | Decided alone | Chose: the pause 2 print lists the preview link as item 3, when the slice has a preview. Other: three items only, as D67 words it. Undo: `git revert` the commit "keep the preview link in the pause 2 print with a board". 2026-10-26 |
 | O10 | O6 named the spec path and the riskiest choice for the pause 3 line; the old line also had the page link. | flag | build | user | Decided alone | Chose: keep the page link in that line. Other: spec path and riskiest choice only. Undo: drop "the page link" from item 3 of pause 3 in `skills/spec/SKILL.md` and from `test-gate-steps.sh`. 2026-10-26 |
 | O11 | `test-idea-board.sh` and `test-pause-questions.sh` pin the old pointer and pause 1 sentences word for word, so the new text had to fit around them. | flag | build | user | Decided alone | Chose: `--gate` sits in a sentence before each board pointer, and pause 1 keeps its no-board print first, then the board print. Pauses 2 and 3 put the board print first. Other: loosen those two tests and use one order at all three pauses. Undo: change the two pinned checks, then move the text. 2026-10-26 |
+| O12 | Review: the gate rule gave no card to a `Refined` spec, so a second stop at pause 3 after a change lost its card. | flag | review | user | Decided alone | Chose: `board.py` treats a `Refined` spec at a stop as pause 3, and the rule in "How the script builds the gate" says so. Other: have `/spec` set `Refined` only after the last stop. Undo: `git revert 23c8e5d f5579f8`. 2026-10-26 |
+| O13 | Review: the light path's one pause read as pause 3, so Settled claimed pause 1 was approved and a missing copy read as lost. | flag | review | user | Decided alone | Chose: `board.py` reads the `**Path:** light` line: nothing settled, and no copy is a first stop. The Interface and the gate rules say so. Other: keep the rule as approved. Undo: `git revert 02821c9`. 2026-10-26 |
 
 ## Glossary
 
