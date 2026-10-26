@@ -58,7 +58,7 @@ Scenario: a later pause shows what changed since the last stop
   Given pr-gate was approved at pause 1 with 4 scenarios
   And pause 2 has added the Interface section and Open rows O4 and O5, and resolved O1 to O3
   When /spec pr-gate stops at pause 2
-  Then the card's "Settled" part shows pause 1 approved, with the names of its 4 scenarios
+  Then the card's "Settled" part shows pause 1 approved, with the names of its 4 scenarios and its Scope In line
   And its "Changed" part shows "Added: Interface", "New rows: O4, O5" and "Resolved: O1, O2, O3"
 
 Scenario: a change asked at a pause shows on the next card
@@ -97,11 +97,11 @@ Scenario: no copy of the last stop exists
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | "What changed since the last pause" needs the spec as it was at the last stop, but the spec is not committed between pauses. Where does that copy come from? (from shape O6) | question | shape | user | Open | — |
-| O2 | What does the "Changed" part list: a summary by section, scenario and ledger row, or a full line diff? | question | spec p1 | user | Open | — |
-| O3 | What does the "Settled" part list for each approved pause? | question | spec p1 | user | Open | — |
-| O4 | With a board, the terminal at a pause prints only the Board line, one ASCII picture and the questions. The scenarios, slice test and Open rows leave the terminal. Is that right? | question | spec p1 | user | Open | — |
-| O5 | The spec file does not record an approval. After the user approves pause 1, the board still shows pause 1 waiting until pause 2 stops and republishes. | flag | spec p1 | user | Open | — |
+| O1 | "What changed since the last pause" needs the spec as it was at the last stop, but the spec is not committed between pauses. Where does that copy come from? (from shape O6) | question | shape | user | Resolved | Each stop saves `docs/specs/.pages/{slice}-last.md` (a shape: `{idea}-shape-last.md`). It is git-ignored, so it lives on this machine only, and scenario 5 covers a missing copy, 2026-10-26 |
+| O2 | What does the "Changed" part list: a summary by section, scenario and ledger row, or a full line diff? | question | spec p1 | user | Resolved | A summary: sections added, removed or changed; scenarios added, removed or changed, by name; ledger rows new or resolved, 2026-10-26 |
+| O3 | What does the "Settled" part list for each approved pause? | question | spec p1 | user | Resolved | Each approved pause with its parts: pause 1 the scenario names and the Scope In line, pause 2 the interface parts. Then a count of answered rows that links to the Answers panel, 2026-10-26 |
+| O4 | With a board, the terminal at a pause prints only the Board line, one ASCII picture and the questions. The scenarios, slice test and Open rows leave the terminal. Is that right? | question | spec p1 | user | Resolved | Yes. The board carries the detail, and the question prompt still asks every Open row, 2026-10-26 |
+| O5 | The spec file does not record an approval. After the user approves pause 1, the board still shows pause 1 waiting until pause 2 stops and republishes. | flag | spec p1 | user | Accepted risk | The next stop republishes, usually within minutes. An approval field in the spec would be one more thing for every gate to read, 2026-10-26 |
 
 ## Glossary
 
