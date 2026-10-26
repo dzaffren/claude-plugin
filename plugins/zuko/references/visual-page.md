@@ -173,10 +173,12 @@ it again. The next stage tries the publish again.
 ## Hub page
 
 One page for the whole project; each slice's page links from it. Built by
-`/shape` after the board, or by `/ship` before the push, in the slice's own
-PR, whichever runs first. Republished by both, and by `/release`, from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
+`/ship` before the push, in the slice's own PR, and republished by
+`/release`, from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, plus
 `DECISIONS.md` and `CHANGELOG.md` when they exist. The Markdown wins: the
-hub is regenerated from those files, never edited beside them.
+hub is regenerated from those files, never edited beside them. `/shape`
+also publishes it, after the board. When no hub exists yet, `/shape` builds
+it.
 
 In this order:
 
