@@ -279,10 +279,10 @@ Recorded as D65, D66, D67.
 
 2026-10-26 · 5 raw findings, 4 survived, 4 fixed.
 
-- correctness · `plugins/zuko/skills/spec/SKILL.md:85` · the short pause print names the failed-publish line too · `cf05856`
-- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · a Refined spec at a stop gets the pause 3 card · `f5579f8`
-- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · no copy at the light path's one pause is a first stop · `02821c9`
-- correctness · `plugins/zuko/scripts/lib/board.py:319` in `settled` · nothing settled at the light path's one pause · `02821c9`
+- correctness · `plugins/zuko/skills/spec/SKILL.md:85` · the short pause print names the failed-publish line too · `876f420`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · a Refined spec at a stop gets the pause 3 card · `39a755a`
+- correctness · `plugins/zuko/scripts/lib/board.py:380` in `gate` · no copy at the light path's one pause is a first stop · `7fdca48`
+- correctness · `plugins/zuko/scripts/lib/board.py:319` in `settled` · nothing settled at the light path's one pause · `7fdca48`
 
 ## Open items
 
@@ -299,8 +299,8 @@ Recorded as D65, D66, D67.
 | O9 | Pause 2 with a board printed only the Board line, the Interface map and the prompt (D67), so a web UI slice lost its preview link, which the board does not carry. | flag | build | user | Decided alone | Chose: the pause 2 print lists the preview link as item 3, when the slice has a preview. Other: three items only, as D67 words it. Undo: `git revert` the commit "keep the preview link in the pause 2 print with a board". 2026-10-26 |
 | O10 | O6 named the spec path and the riskiest choice for the pause 3 line; the old line also had the page link. | flag | build | user | Decided alone | Chose: keep the page link in that line. Other: spec path and riskiest choice only. Undo: drop "the page link" from item 3 of pause 3 in `skills/spec/SKILL.md` and from `test-gate-steps.sh`. 2026-10-26 |
 | O11 | `test-idea-board.sh` and `test-pause-questions.sh` pin the old pointer and pause 1 sentences word for word, so the new text had to fit around them. | flag | build | user | Decided alone | Chose: `--gate` sits in a sentence before each board pointer, and pause 1 keeps its no-board print first, then the board print. Pauses 2 and 3 put the board print first. Other: loosen those two tests and use one order at all three pauses. Undo: change the two pinned checks, then move the text. 2026-10-26 |
-| O12 | Review: the gate rule gave no card to a `Refined` spec, so a second stop at pause 3 after a change lost its card. | flag | review | user | Decided alone | Chose: `board.py` treats a `Refined` spec at a stop as pause 3, and the rule in "How the script builds the gate" says so. Other: have `/spec` set `Refined` only after the last stop. Undo: `git revert 23c8e5d f5579f8`. 2026-10-26 |
-| O13 | Review: the light path's one pause read as pause 3, so Settled claimed pause 1 was approved and a missing copy read as lost. | flag | review | user | Decided alone | Chose: `board.py` reads the `**Path:** light` line: nothing settled, and no copy is a first stop. The Interface and the gate rules say so. Other: keep the rule as approved. Undo: `git revert 02821c9`. 2026-10-26 |
+| O12 | Review: the gate rule gave no card to a `Refined` spec, so a second stop at pause 3 after a change lost its card. | flag | review | user | Decided alone | Chose: `board.py` treats a `Refined` spec at a stop as pause 3, and the rule in "How the script builds the gate" says so. Other: have `/spec` set `Refined` only after the last stop. Undo: `git revert 98763f4 39a755a`. 2026-10-26 |
+| O13 | Review: the light path's one pause read as pause 3, so Settled claimed pause 1 was approved and a missing copy read as lost. | flag | review | user | Decided alone | Chose: `board.py` reads the `**Path:** light` line: nothing settled, and no copy is a first stop. The Interface and the gate rules say so. Other: keep the rule as approved. Undo: `git revert 7fdca48`. 2026-10-26 |
 
 ## Glossary
 
