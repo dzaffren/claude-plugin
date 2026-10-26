@@ -802,3 +802,31 @@ Why: the Ideas rows read every shape and every spec they name, about 31 files to
 Rejected: Claude writes the rows at each stage (the same misreads that D62 stops, and no test), a script renders the whole hub (about twice the work, better as its own slice).
 Source: specs/library.md
 Status: active
+
+## D71 · 2026-10-26 · Replay finds a squash commit's PR with gh api, and reads its commits from refs/pull/N/head
+
+Why: in this repo, gate-card, pr-gate and library each reached main as one squash commit, and only their PRs hold the pause commits. The squash subjects carry no PR number, and gh api names the PR exactly (caf25a7 → 104 in 0.6 s).
+Rejected: main only (each squash-merged slice is one step), a stop log in each spec (every spec gains a section), matching PR heads by file content through git ls-remote (a guess when two PRs hold the same file).
+Source: specs/replay.md
+Status: active
+
+## D72 · 2026-10-26 · A replay step holds the stages and the changes, not the whole board
+
+Why: the user steps through how the idea moved. The stages and the gate card's change tags show that in about 0.4 KB a step, 15 KB for living-board's 38 steps.
+Rejected: the whole board at each commit, with diagrams and panels (about 40 KB a step, 1.5 MB for 38).
+Source: specs/replay.md
+Status: active
+
+## D73 · 2026-10-26 · A replay step changes only the Replay strip
+
+Why: the board above shows the idea as it is now. A step card with its own stage chips never mixes past and present on one page.
+Rejected: restaging the filmstrip and the rail at each step (the reader cannot tell at a glance which parts show the past).
+Source: specs/replay.md
+Status: active
+
+## D74 · 2026-10-26 · Replay keeps its PR lookups in a git-ignored file, not in git refs
+
+Why: a cached run touches no network. A file in docs/specs/.pages/ adds nothing to the user's repo, and a head that git gc drops is fetched again.
+Rejected: refs under refs/zuko/pr/ (they show in git log --all and stay until removed by hand), no cache (one gh call per squash commit at every render).
+Source: specs/replay.md
+Status: active
