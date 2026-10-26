@@ -32,8 +32,12 @@ USAGE = "usage: fence.py check <path>..."
 
 def first_problem(text):
     """The first problem in text, or None."""
-    fence, opened, start = "", "", 0
-    for n, line in enumerate(text.splitlines(), 1):
+    # Lines split as the readers split them, so a fence pairs as they pair it.
+    # An editor counts only newlines, so n does too.
+    fence, opened, start, n = "", "", 0, 1
+    for raw in text.splitlines(True):
+        line, at = raw.splitlines()[0], n
+        n += raw.count("\n")
         marker = pr_body.FENCE.match(line)
         if fence:
             if board.closes(line, fence):
@@ -41,9 +45,9 @@ def first_problem(text):
             elif marker and line[marker.end():].strip() and marker.group(1)[0] == fence[0] \
                     and len(marker.group(1)) >= len(fence):
                 return ("line %d opens a %s block inside the block that line %d opened. Close the block "
-                        "from line %d first, or open it with a longer fence." % (n, line.strip(), start, start))
+                        "from line %d first, or open it with a longer fence." % (at, line.strip(), start, start))
         elif marker:
-            fence, opened, start = marker.group(1), line.strip(), n
+            fence, opened, start = marker.group(1), line.strip(), at
     if fence:
         return "the %s block that line %d opened never closes. Close it." % (opened, start)
     return None

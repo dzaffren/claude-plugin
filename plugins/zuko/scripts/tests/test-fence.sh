@@ -109,3 +109,11 @@ printf 'Text.\n\n   ```text\nkept\n' >"$cases/indented-open.md"
 expect_match "$(line_of "$cases/indented-open.md	the \`\`\`text block that line 3 opened never closes. Close it.")" \
   "$(python3 "$fence" check "$cases/indented-open.md")" "indented: an unclosed fence indented 3 spaces is found"
 
+# --- line numbers are the editor's, also after a U+2028 or a form feed ---
+printf 'Text\xe2\x80\xa8more.\n\n```mermaid\nflow\n' >"$cases/sep.md"
+printf 'Text\x0cmore.\n\n```mermaid\nflow\n' >"$cases/ff.md"
+out=$(python3 "$fence" check "$cases/sep.md" "$cases/ff.md")
+expect_match "$(line_of "$cases/sep.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
+  "line numbers: a U+2028 does not shift the line"
+expect_match "$(line_of "$cases/ff.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
+  "line numbers: a form feed does not shift the line"
