@@ -83,6 +83,40 @@ Scenario: a doc this work did not change is not judged
 - The ship gate. A spec reaches `/ship` only through turns that each passed the Stop hook.
 - Old commits. History stays as it is. Replay keeps showing the 2 broken steps of idea-board as they were.
 
+## Interface
+
+The check adds two kinds of line to the spec gate's failure message. The message keeps its form: `Spec gate check failed:` on stderr, then one `- ` line for each problem, and exit 2. The path is printed as the gate prints it for every other problem, as `stop_scope.py` gives it.
+
+```mermaid
+flowchart TB
+  V[verify-gates.sh] -- "each doc in scope, any Status" --> C["fence check: first problem in the file"]
+  C -- "opener inside a block" --> M1["- path line N opens a ```lang block inside the block that line M opened"]
+  C -- "open at end" --> M2["- path: the block that line M opened never closes"]
+  C -- none --> P[no line]
+  M1 --> E["Spec gate check failed: ... exit 2"]
+  M2 --> E
+```
+
+The gate runs the check on each doc in scope. A doc gets one line at most, for its first problem, and the gate exits 2 when any doc has one.
+
+**The two lines**
+
+```text
+Spec gate check failed:
+
+- ./docs/specs/idea-board.md line 55 opens a ```mermaid block inside the block that line 47 opened. Close the block from line 47 first, or open it with a longer fence.
+- ./docs/specs/refunds.md: the ```gherkin block that line 40 opened never closes. Close it.
+```
+
+| Part | Rule |
+| --- | --- |
+| Which problem | The first one in the file, from the top. After a block swallows text, each later fence pairs with the wrong partner, so a second line would name the wrong lines |
+| The fence in the line | As written in the file, with its language name: ```` ```mermaid ````, ```` ~~~gherkin ````. An opener with no language name is printed as its fence only |
+| Line numbers | 1-based, as an editor shows them |
+| The fix part | Line one says "Close the block from line M first, or open it with a longer fence." Line two says "Close it." |
+
+A doc that passes adds no line. When the fence check cannot read a doc, the gate fails with `- the fence check could not run: <error>`, as the glossary check does.
+
 ## Open items
 
 | ID  | What | Type | Raised at | Owner | Status | Answer |
