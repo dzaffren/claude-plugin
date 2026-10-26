@@ -162,6 +162,11 @@ Publish the idea board, as
 `--by "/shape {idea}"` and `--gate docs/specs/{idea}/shape.md`. The copy is
 `docs/specs/.pages/{idea}-shape-last.md`.
 
+Then publish the hub page, as
+`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Hub page" says. When
+there is no `hub page:` link on the overview's `## More` line, the publish
+makes a new hub. Then add the `hub page: {url}` that it returns to that line.
+
 Then, in the terminal:
 
 - The `Board:` line, or the `Board not published:` line.
