@@ -1,6 +1,6 @@
 # dzafran-claude-plugins · architecture
 
-**Status:** Active · **Updated:** 2026-10-26 by /ship idea-board
+**Status:** Active · **Updated:** 2026-10-26 by /ship gate-card
 
 ## Context
 
@@ -25,4 +25,4 @@ flowchart LR
 | references | `plugins/zuko/references/` | shared rules the stages read: voice, slicing, ledger, onboarding, OWASP |
 | agents     | `plugins/zuko/agents/`     | subagents for build chunks, blind review verification, and the release pentest |
 | hooks      | `plugins/zuko/hooks/`      | binds scripts to Claude Code events (SessionStart, PreToolUse, Stop)  |
-| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the idea board renderer (`lib/board.py`), and a bash test harness |
+| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the idea board renderer with its gate card (`lib/board.py`), and a bash test harness |
