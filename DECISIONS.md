@@ -844,3 +844,10 @@ Why: a broken fence hides sections from the board and the PR body at any Status,
 Rejected: Draft and Refined only, as the glossary check (a Shipped spec edited by /ship could carry a broken fence), the ship gate too (a second place to keep the same rule).
 Source: specs/unclosed-fence.md
 Status: active
+
+## D77 · 2026-10-27 · board.py refuses a shape whose slice name has a / or \, and does not skip the row
+
+Why: a Slice cell with `../` made board.py read a .md file outside docs/specs into a published board (pentest P1, v2.5.0). A refusal names the slice, so the shape is fixed in one edit.
+Rejected: skipping the row and rendering the rest (the slice would vanish from the board with no sign), resolving the path and checking it stays under docs/specs (no real slice name needs a /).
+Source: specs/slice-name-path.md
+Status: active
