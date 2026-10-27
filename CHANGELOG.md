@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-10-27
+
 ### Added
 
 - Each idea now has one board page that shows its slices in order, where each one stands, its diagrams and the choices it made, and every stage keeps it current.
@@ -18,6 +20,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - The v3 release idea no longer shows five shipped slices as Not started on its board. Its shape now names each of its 14 specs.
+
+### Security
+
+- Known low issue: A01:2025 Broken Access Control in plugins/zuko/scripts/lib/board.py; see docs/security/v2.5.0/report.md.
 
 ## [2.4.3] - 2026-10-13
 
@@ -127,7 +133,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...v2.5.0
 [2.4.3]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...v2.4.2
 [2.4.1]: https://github.com/dzaffren/claude-plugin/compare/v2.4.0...v2.4.1
