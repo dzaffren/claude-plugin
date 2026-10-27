@@ -830,3 +830,17 @@ Why: a cached run touches no network. A file in docs/specs/.pages/ adds nothing 
 Rejected: refs under refs/zuko/pr/ (they show in git log --all and stay until removed by hand), no cache (one gh call per squash commit at every render).
 Source: specs/replay.md
 Status: active
+
+## D75 · 2026-10-26 · The fence check flags a fence that opens inside an open block, not only a block left open
+
+Why: idea-board.md at a5cb93f lost its Acceptance criteria section to an unclosed fence, yet its fences paired up again later and the file ended with no block open. A fence with a language name, opened inside a block with the same or longer marker, catches it, and no doc in the repo trips it.
+Rejected: flag only a block still open at the end of the file (passes the real broken spec), flag a "## " heading inside a block (flags 22 docs and skill files that show headings in examples).
+Source: specs/unclosed-fence.md
+Status: active
+
+## D76 · 2026-10-26 · The fence check runs in the Stop hook on each changed doc at any Status, and not in the ship gate
+
+Why: a broken fence hides sections from the board and the PR body at any Status, and D35 already keeps an untouched doc out of the check. Each turn that touched a spec passed the Stop hook, so the ship gate would only check it again.
+Rejected: Draft and Refined only, as the glossary check (a Shipped spec edited by /ship could carry a broken fence), the ship gate too (a second place to keep the same rule).
+Source: specs/unclosed-fence.md
+Status: active

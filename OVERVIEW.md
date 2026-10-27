@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.4.3 · **Updated:** 2026-10-26 by /ship replay
+**Status:** Active · **Release:** v2.4.3 · **Updated:** 2026-10-27 by /ship unclosed-fence
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -76,6 +76,7 @@ projects.
 | pr-gate | Shipped | The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board | — |
 | library | Shipped | The hub page lists every idea with its board link, how many of its slices shipped and a mark per slice; /shape now publishes the hub too | — |
 | replay | Shipped | The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step | — |
+| unclosed-fence | Shipped | The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body | — |
 
 ## More
 
