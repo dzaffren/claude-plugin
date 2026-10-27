@@ -173,7 +173,7 @@ sequenceDiagram
 | File | What changes | Why |
 | --- | --- | --- |
 | `plugins/zuko/scripts/lib/fence.py` | New. `check <path>...`, a `first_problem(text)` walker, and a docstring with the rules above | Scenarios 1, 2 and 3 |
-| `plugins/zuko/scripts/verify-gates.sh:22` | The scope loop adds every doc to a new `docs` array, specs at any Status and shapes. After the glossary block, run `fence.py check "${docs[@]}"` and add one `- ` line for each line it prints. On a non-zero exit, add `- the fence check could not run: <error>` | Scenarios 1, 2 and 4 |
+| `plugins/zuko/scripts/verify-gates.sh:22` | The scope loop adds every doc to a new `docs` array, specs at any Status and shapes. After the glossary block, run `fence.py check` on that array and add one `- ` line for each line it prints. On a non-zero exit, add a line that starts `- the fence check could not run:` and ends with the error | Scenarios 1, 2 and 4 |
 | `plugins/zuko/scripts/tests/test-fence.sh` | New. Each scenario, against `verify-gates.sh` with `CLAUDE_PROJECT_DIR` set to a fixture project. Also `fence.py` alone: a tilde fence, an indented fence, an opener with no language name, and a doc that cannot be read | Scenarios 1 to 4 |
 | `plugins/zuko/scripts/tests/fixtures/fence/idea-board-a5cb93f.md` | New. The real broken spec, copied from `git show a5cb93f:docs/specs/idea-board.md` | Scenario 1 |
 
