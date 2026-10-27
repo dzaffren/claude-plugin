@@ -217,6 +217,7 @@ projects.
 - The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board
 - The hub page lists every idea with its board link, how many of its slices shipped and a mark per slice; /shape now publishes the hub too
 - The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step
+- The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body
 
 ## Docs
 
