@@ -11,7 +11,7 @@ published board. Found by the v2.5.0 pentest (P1).
 ## Problem
 
 `board.py` builds each slice's spec path from the Slice cell of the shape's
-Slices table: `docs/specs/{name}.md`. `spec_name()` (`board.py:115`) only
+Slices table: `docs/specs/` plus the name plus `.md`. `spec_name()` (`board.py:115`) only
 lowercases the cell and removes a leading `/`, so `../` stays in the name.
 `one_slice()` (`board.py:533`) then opens the file that the path names, and
 puts its first paragraph into the board's JSON. The board is published to
