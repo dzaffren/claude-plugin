@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- A shape's slice name can no longer make the idea board read a file outside docs/specs and publish part of it. The board now refuses a slice name with a / or \, and says which one.
+
 ## [2.5.0] - 2026-10-27
 
 ### Added
