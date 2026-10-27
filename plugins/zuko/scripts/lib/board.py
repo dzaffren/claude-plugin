@@ -9,10 +9,11 @@ Usage: board.py render <shape.md> --by <text> [--gate <file>]
 The shape is docs/specs/{idea}/shape.md, so the project root is three folders
 above the shape's folder. Each row of the first table under "## Slices" that
 has a Slice column is a slice, and the cell names its spec,
-docs/specs/{name}.md. Sections and ledger rows are read with pr_body.py's
-parser and entries with decisions.py's, so the board reads them as the gates
-do. The rule for each part is in docs/specs/idea-board.md, "How the script
-reads each part".
+docs/specs/{name}.md. A name with a / or \\ is refused, so no slice
+reads a file outside docs/specs. Sections and ledger rows are read with
+pr_body.py's parser and entries with decisions.py's, so the board reads them
+as the gates do. The rule for each part is in docs/specs/idea-board.md,
+"How the script reads each part".
 
 --gate names the file at a stop: the shape itself, or the spec of one of its
 slices at pause 1, 2 or 3. The JSON then has a "gate" for the card, built by
@@ -135,6 +136,8 @@ def slice_rows(lines):
             continue
         at = dict(zip(header, found))
         name = spec_name(at.get("Slice", ""))
+        if "/" in name or "\\" in name:
+            raise Refused("slice %s in the Slices table is not a file name in docs/specs" % name)
         if name:
             rows.append((name, at.get("What ships", ""), at.get("Why this order", "")))
     return rows

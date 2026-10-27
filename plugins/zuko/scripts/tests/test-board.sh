@@ -131,6 +131,25 @@ run data "$dir/fenced.md" --by x
 expect_exit 2 "$status" "refuse: a Slices table inside a code fence is no table"
 expect_match "Slices" "$err" "refuse: the fenced table's message names the Slices table"
 
+mkdir -p "$dir/escape/docs/specs/idea" "$dir/escape/outside"
+printf 'Text from outside docs/specs.\n' >"$dir/escape/outside/secret.md"
+printf '# Escape\n\n## Slices\n\n| # | Slice | What ships |\n| --- | --- | --- |\n| 1 | ../../outside/secret | b |\n' >"$dir/escape/docs/specs/idea/shape.md"
+run data "$dir/escape/docs/specs/idea/shape.md" --by x
+expect_exit 2 "$status" "refuse: a slice name with a / is not a spec in docs/specs"
+expect_match '\.\./\.\./outside/secret' "$err" "refuse: the message names the slice"
+expect_no_match "Text from outside" "$out" "refuse: the file outside docs/specs is not read"
+for other in billing payroll; do
+  mkdir -p "$dir/escape/docs/specs/$other"
+  printf '# %s\n\n## Slices\n\n| # | Slice | What ships |\n| --- | --- | --- |\n| 1 | %s-export | b |\n' \
+    "$other" "$other" >"$dir/escape/docs/specs/$other/shape.md"
+done
+hub=$(cd "$dir/escape" && python3 "$board" library . 2>"$dir/err")
+expect_exit 0 "$?" "library: a shape with a refused slice name still exits 0"
+expect_match 'data-idea="idea".*slice \.\./\.\./outside/secret in the Slices table' "$hub" "library: the refused idea is an error row that names the slice"
+expect_match 'data-idea="billing".*billing-export' "$hub" "library: the other ideas render as before"
+expect_match 'data-idea="payroll".*payroll-export' "$hub" "library: every other idea renders"
+expect_no_match "Text from outside" "$hub" "library: the file outside docs/specs is not read"
+
 run data "$dir/absent.md" --by x
 expect_exit 2 "$status" "refuse: a shape that cannot be read exits 2"
 expect_match "absent.md" "$err" "refuse: the message names the file"
