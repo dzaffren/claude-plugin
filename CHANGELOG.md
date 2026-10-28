@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-10-28
+
 ### Security
 
 - A shape's slice name can no longer make the idea board read a file outside docs/specs and publish part of it. The board now refuses a slice name with a / or \, and says which one.
@@ -137,7 +139,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.5.0...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/dzaffren/claude-plugin/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...v2.5.0
 [2.4.3]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...v2.4.3
 [2.4.2]: https://github.com/dzaffren/claude-plugin/compare/v2.4.1...v2.4.2

@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.0 · **Updated:** 2026-10-27 by /ship slice-name-path
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-10-27 by /ship slice-name-path
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
