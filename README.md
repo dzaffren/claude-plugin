@@ -33,6 +33,49 @@ Five stages in the line, six helpers reached whenever needed.
 | `/status` | Where every slice sits: version, status, open items, next command |
 | `/learn` | Audit, consolidate, and remove lessons. Capture is automatic. |
 
+## Enforced by scripts, guided by prompts
+
+Most of zuko is instructions to Claude. The rules that matter most are also
+bash scripts. A script gives the same answer every time, and Claude cannot
+talk its way past it.
+
+**Hooks.** Claude Code runs these itself. They block the action.
+
+| Hook | Runs | Blocks |
+| ---- | ---- | ------ |
+| block-dangerous | before every shell command | force pushes, `rm -rf` on top-level or home paths, commits on main |
+| secret-scan | before `git commit` | a staged diff with key, token, or password patterns |
+| block-attribution | before a commit, tag, release, or PR | a message that signs Claude's name |
+| scope-verifier-bash | before each finding-verifier command | anything but read-only `git diff`, `show`, `log`, and `ls-files` |
+| scope-pentester-bash | before each pentester command | anything but read-only git and work in its own scratch copy |
+| block-pentest-target | before every shell command, during a live pentest | a network call to any host but the one target |
+| verify-gates | at the end of every turn | an invalid spec status, a versioned spec outside `archive/`, or a missing ledger |
+| check-open-items | at the end of every turn | a shape marked Shaped, or a spec marked Refined, Built or Shipped, while an item is still Open |
+
+`auto-format` also runs after each edit. It formats with the repo's own
+formatter, only if one is configured, and never blocks.
+
+**Gate scripts.** A stage runs these and stops on a failure. The verdict is
+fixed. The call to the script is a prompt step, so the Stop hooks above back up
+the ones that matter most.
+
+| Script | Run by | Fails on |
+| ------ | ------ | -------- |
+| check-open-items | `/build`, before it starts | any Open row in the spec |
+| check-design-drift | `/spec`, `/design`, `/review` | raw hex, arbitrary values, layout animation, emoji, placeholder text, unknown tokens, or no files scanned |
+| verify-ship-gates | `/ship` | the mechanical pre-ship checks. `/ship` checks the rest by hand. |
+
+**Guided.** These are Claude's judgement, and no script checks them:
+
+- where to cut a slice, and whether it passes the four tests
+- whether a review finding is real (verifiers vote, but a model casts each vote)
+- the quality of the spec, the tests, and the code
+- which lessons to capture
+
+That is why zuko stops for you. `/spec` has three pauses. `/build` and
+`/review` record each choice they make alone in the ledger, and you read them
+at the PR. Read the PR before you merge it. zuko does not replace that.
+
 ## One spec = one vertical slice
 
 A spec is one thin cut through every layer it touches — interface, logic,
@@ -125,16 +168,6 @@ shown the reasoning agrees with it — and defaults to false-positive.
 Diffs of five files or fewer get one reviewer and one verifier per finding.
 Larger diffs get a reviewer per chunk and three verifiers per finding with a
 2-of-3 majority. Breadth scales with the diff. The verification bar never does.
-
-## Guardrails
-
-| Hook | Blocks |
-| ---- | ------ |
-| block-dangerous | force pushes, `rm -rf` on top-level or home paths, commits on main |
-| secret-scan | commits whose staged diff contains key, token, or password patterns |
-| auto-format | nothing — runs the repo's own formatter after edits, only if configured |
-| verify-gates | turns ending with an invalid spec status, a versioned spec outside `archive/`, or a missing ledger |
-| check-open-items | turns ending with a shape marked Shaped, or a spec marked Refined, Built or Shipped, while an item is still Open |
 
 ## Voice
 
