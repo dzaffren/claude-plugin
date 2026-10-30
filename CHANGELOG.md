@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- zuko is now under the MIT licence: anyone may use, change and share it, as long as the licence and copyright notice stay with it.
+
 ## [2.5.1] - 2026-10-28
 
 ### Security

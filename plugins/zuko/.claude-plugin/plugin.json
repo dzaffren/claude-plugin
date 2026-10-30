@@ -8,5 +8,6 @@
     "email": "ahmaddzafranmohamadbustaman@gmail.com"
   },
   "repository": "https://github.com/dzaffren/claude-plugin",
+  "license": "MIT",
   "keywords": ["workflow", "spec", "vertical-slice", "design-system", "code-review", "security"]
 }
