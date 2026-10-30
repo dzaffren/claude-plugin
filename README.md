@@ -267,3 +267,7 @@ projects.
 zuko is a clean rebuild of the former `shipwright` plugin. The marketplace
 carries a rename, so an existing install migrates. `/spec` reads an old
 shipwright spec and offers to migrate it rather than choking on it.
+
+## Licence
+
+[MIT](LICENSE)
