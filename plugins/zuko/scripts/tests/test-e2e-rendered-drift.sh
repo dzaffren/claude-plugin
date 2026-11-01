@@ -1,0 +1,93 @@
+# The rendered-drift-check slice, end to end: check-rendered-drift.sh opens
+# the Invoices fixture in a real headless browser, light then dark, and judges
+# each element's computed style against the fixture's tokens.css.
+# Sourced by run.sh, which provides $scripts, $work and the expect_* helpers.
+#
+# It needs Node 22 and Chrome, Edge or Chromium. When either is missing, the
+# test fails and says which: a slice e2e that could not run is not a pass.
+
+fx="$scripts/tests/fixtures/rendered-drift"
+proj="$fx/project"
+rd() {   # rd <project-dir> <args...>: run the gate from that project, stderr too
+  local p="$1"; shift
+  (cd "$p" && CLAUDE_PROJECT_DIR="$p" bash "$scripts/check-rendered-drift.sh" "$@" 2>&1)
+}
+
+have_node=0
+if command -v node >/dev/null 2>&1 || { [ -n "${PROGRAMFILES:-}" ] && [ -x "$PROGRAMFILES/nodejs/node.exe" ]; }; then
+  have_node=1
+fi
+if [ "$have_node" -eq 0 ]; then
+  record FAIL "the e2e needs Node 22: install it, then run e2e-rendered-drift again"
+  return 0
+fi
+
+# Scenario 1: rgb() passes the source check and fails the rendered one.
+(cd "$proj" && CLAUDE_PROJECT_DIR="$proj" bash "$scripts/check-design-drift.sh" drift.html >/dev/null 2>&1)
+expect_exit 0 "$?" "scenario 1: check-design-drift.sh passes on drift.html"
+start=$(date +%s)
+out=$(rd "$proj" drift.html)
+code=$?
+took=$(( $(date +%s) - start ))
+expect_exit 1 "$code" "scenario 1: an off-token rgb() colour exits 1"
+expect_match '^Rendered drift check FAILED: 3 values over 1 page are not design system tokens\.$' "$out" "scenario 1: the report counts the values and the pages"
+expect_match '^  both +td\.overdue +color +rgb\(220, 38, 38\) +x2 +nearest --danger #b42318$' "$out" "scenario 1: the rgb() colour is reported with its nearest token"
+expect_match '^  both +h2\.section-title +font-size +22px +nearest --text-lg 20px$' "$out" "an off-token font size fails in both modes"
+expect_match '^Fix these with tokens and re-render before showing the user\.' "$out" "a FAIL ends with the fix line"
+expect_exit 0 "$([ "$took" -lt 15 ]; echo $?)" "one page renders and exits in under 15 s (took ${took} s)"
+
+# Scenario 3: a colour set for dark mode only.
+expect_match '^  dark +div\.invoice-total +background-color +rgb\(51, 51, 51\) +nearest --surface #111111$' "$out" "scenario 3: a dark-only drift is reported as dark"
+
+# Scenario 3, class-based dark mode: the .dark class is set for the dark render.
+out=$(rd "$proj" dark-class.html)
+expect_exit 1 "$?" "a .dark-class drift exits 1"
+expect_match '^  dark +div\.badge +background-color +rgb\(77, 77, 77\) ' "$out" "the dark render sets class=\"dark\" on <html>"
+
+# Scenario 2: only token values pass, with the scope in the line. The svg's
+# crimson fill is skipped, and the web font request is blocked and named.
+out=$(rd "$proj" clean.html)
+expect_exit 0 "$?" "scenario 2: a preview that uses only tokens exits 0"
+expect_match '^Rendered drift check passed: [0-9]+ elements over 1 page, light and dark, against 8 token values\.$' "$out" "scenario 2: the pass line names its scope"
+expect_no_match 'crimson|circle' "$out" "the contents of an svg are not judged"
+expect_match '^Rendered drift check blocked 1 request to other hosts: fonts\.googleapis\.com\.$' "$out" "a request to another host is blocked and named"
+
+# A folder renders each .html file in it.
+out=$(rd "$proj" .)
+expect_exit 1 "$?" "a folder with a drifted page exits 1"
+expect_match 'over 4 pages' "$out" "a folder renders each of its .html files"
+
+# Scenario 5 and the other ways of having nothing to compare against.
+out=$(rd "$fx/no-tokens" preview.html)
+expect_exit 1 "$?" "scenario 5: no token file exits 1"
+expect_match '^Rendered drift check has nothing to compare against: no design system token file found\.$' "$out" "scenario 5: no token file prints E7"
+out=$(rd "$proj" unlinked.html)
+expect_exit 1 "$?" "a page that loads none of the tokens exits 1"
+expect_match '^Rendered drift check has nothing to compare against: unlinked\.html loads none of the 8 tokens in tokens\.css\.$' "$out" "a page that loads none of the tokens prints E8"
+out=$(rd "$fx/tailwind-only" preview.html)
+expect_exit 2 "$?" "tokens only in tailwind.config exit 2"
+expect_match '^Rendered drift check could not run: the tokens live in tailwind\.config\.js, not in CSS variables\.$' "$out" "tokens only in tailwind.config print E9"
+
+# Scenario 4 with a browser path that holds nothing: CHROME_PATH is used alone.
+out=$(cd "$proj" && CHROME_PATH=/no/chrome CLAUDE_PROJECT_DIR="$proj" bash "$scripts/check-rendered-drift.sh" clean.html 2>&1)
+expect_exit 2 "$?" "scenario 4: a CHROME_PATH with no browser exits 2, never 0"
+# Git Bash hands a native Node the path as C:/Program Files/Git/no/chrome.
+expect_match '^Rendered drift check could not run: CHROME_PATH is (/|[A-Z]:/.*/)no/chrome, and no browser is there\.$' "$out" "scenario 4: a wrong CHROME_PATH prints E3"
+
+# Hosts: only localhost and 127.0.0.1, compared exactly.
+for url in https://staging.example.com/invoices http://localhost.evil.example/ http://127.0.0.1@evil.example/; do
+  out=$(rd "$proj" "$url")
+  expect_exit 2 "$?" "$url is refused with exit 2"
+  expect_match "^Rendered drift check refused .*: only localhost and 127\\.0\\.0\\.1 may be opened\\.$" "$out" "$url prints E4"
+done
+out=$(rd "$proj" http://127.0.0.1:9/invoices)
+expect_exit 2 "$?" "a local URL that does not answer exits 2"
+expect_match '^Rendered drift check could not load http://127\.0\.0\.1:9/invoices: ' "$out" "a local URL that does not answer prints E6"
+
+# Nothing to render.
+out=$(rd "$proj")
+expect_exit 2 "$?" "no target exits 2"
+expect_match '^Rendered drift check rendered NOTHING: ' "$out" "no target prints E5"
+out=$(rd "$proj" tokens.css missing.html)
+expect_exit 2 "$?" "a .css file and a missing path render nothing and exit 2"
+expect_match '^Rendered drift check rendered NOTHING: no \.html file or localhost URL in tokens\.css missing\.html\.$' "$out" "a target with no page prints E5 with the targets"

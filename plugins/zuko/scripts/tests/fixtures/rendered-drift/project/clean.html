@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoices</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-base); }
+  h1 { font-size: var(--text-lg); }
+  .card { border: 1px solid var(--line); border-radius: var(--radius-md); }
+  .overdue { color: var(--danger); }
+</style>
+</head>
+<body>
+  <h1>Invoices</h1>
+  <div class="card">
+    <table>
+      <tr><td>INV-2041</td><td>Harbour Coffee Ltd</td><td class="overdue">Overdue 12 days</td></tr>
+      <tr><td>INV-2042</td><td>Marsh &amp; Reed</td><td>Paid 28 Oct 2026</td></tr>
+    </table>
+  </div>
+  <svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="crimson"/></svg>
+</body>
+</html>

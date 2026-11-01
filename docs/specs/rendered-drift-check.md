@@ -61,7 +61,7 @@ Scenario: A colour that the source check cannot see fails the rendered check
   And check-design-drift.sh passes on docs/design/invoices/preview.html
   When the rendered check runs on docs/design/invoices/preview.html
   Then it exits 1
-  And it reports "light  td.overdue  color  rgb(220, 38, 38)" as a value that is not a token
+  And it reports "both  td.overdue  color  rgb(220, 38, 38)" as a value that is not a token
   And it names the nearest token, "nearest --danger #b42318"
 
 Scenario: A preview that uses only token values passes, and says what it checked
@@ -206,7 +206,7 @@ A drift prints the pages, one line for each distinct value, and a fix line:
 Rendered drift check FAILED: 3 values over 1 page are not design system tokens.
 
 docs/design/invoices/preview.html
-  light  td.overdue            color             rgb(220, 38, 38)  x4  nearest --danger #b42318
+  both   td.overdue            color             rgb(220, 38, 38)  x4  nearest --danger #b42318
   dark   div.invoice-total     background-color  rgb(51, 51, 51)       nearest --surface #111111
   both   h2.section-title      font-size         22px              x3  nearest --text-lg 20px
 
@@ -445,6 +445,8 @@ Recorded as D81, D82, D83, D84, D85, D86, D87, D88.
 | O8  | Which runtime drives the browser? Every zuko script today is bash or Python.                                                       | question | spec p3   | user  | Resolved | Node 22 or newer, with no package: a port of the MIT `cdp.mjs` from v2. 2026-11-01 |
 | O9  | Does the rendered page load fonts and images from other hosts?                                                                     | question | spec p3   | user  | Resolved | No. Each request that is not to `localhost`, `127.0.0.1`, `file:` or `data:` is blocked, and the hosts are named on stderr. 2026-11-01 |
 | O10 | How does the dark render switch the page to dark?                                                                                  | question | spec p3   | user  | Resolved | It emulates `prefers-color-scheme: dark`, and sets `class="dark"` and `data-theme="dark"` on `<html>`. 2026-11-01 |
+| O11 | The plan split the build into chunk A (scripts, tests) and chunk B (stage text), each for a chunk-builder agent in a worktree. | flag | build | user | Decided alone | Chose: build both chunks in this session, in order. Chunk B is four text edits, and docs/learnings records worktree agents that did not commit. Other: two chunk-builder agents in worktrees. Undo: none needed; the files and commits are the same. 2026-11-01 |
+| O12 | Scenario 1 said "Then it reports "light  td.overdue  color  rgb(220, 38, 38)"". The colour is off-token in dark mode too, so the merge rule of the Interface reports it as both. | flag | build | user | Decided alone | Chose: change scenario 1, the Interface example and the e2e to `both`. Other: report each mode on its own line. Undo: drop the merge in `merge()` of `lib/rendered-drift.mjs`, and put back `light` in scenario 1. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
