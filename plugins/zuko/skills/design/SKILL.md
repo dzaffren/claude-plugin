@@ -36,7 +36,12 @@ that exists.
    quick exploration the user can decline, but say the result will not be
    reusable.
 2. Compose from the system's primitives. The composition-only rule from
-   `craft.md` applies exactly as it does in `/spec` pause 2.
+   `craft.md` applies exactly as it does in `/spec` pause 2. Load the craft
+   chain as `/spec` pause 2 does: first run
+   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-skill-pin.sh" design-taste-frontend`
+   and show any line it prints. For `design-taste-frontend`, follow the
+   "taste-skill v2" section of `craft.md`: its house rules and its inspector
+   only.
 3. Pick the motion tier.
 4. Build the preview — real components behind a preview route if the repo runs,
    otherwise one self-contained HTML file with every state and real motion.
@@ -44,6 +49,8 @@ that exists.
    `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-design-drift.sh" <paths>` — then
    the two checks from `craft.md`. With no paths it only looks at
    `docs/design` and will miss components written into the repo itself.
+   When `design-taste-frontend` v2 is installed, also run its inspector on
+   the preview, as the "taste-skill v2" section of `craft.md` says.
 6. Show it and stop.
 
 ## Iteration

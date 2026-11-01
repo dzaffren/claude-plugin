@@ -851,3 +851,34 @@ Why: a Slice cell with `../` made board.py read a .md file outside docs/specs in
 Rejected: skipping the row and rendering the rest (the slice would vanish from the board with no sign), resolving the path and checking it stays under docs/specs (no real slice name needs a /).
 Source: specs/slice-name-path.md
 Status: active
+
+## D78 · 2026-11-01 · The vendored taste skill is pinned to a tag, and design stages announce newer releases
+
+Why: an unpinned lock swapped v1 for v2 without a choice (#121). A tag pin stops that,
+and a notice at the start of each design stage tells the user that a newer release
+exists (spec O2, O5).
+Rejected: follow upstream main (the silent swap comes back), check at every session
+start (a network call when no design work happens), show it only in `/status` (the
+user sees it only when they ask).
+Source: specs/taste-skill-upgrade.md
+Status: active
+
+## D79 · 2026-11-01 · Only /design-system deals directions from the taste skill
+
+Why: one design system is the product's identity (D22). v2 directions belong where the
+look is chosen, at pause B. `/spec` pause 2 and `/design` use the v2 house rules and the
+inspector only, so a slice cannot drift from the system (spec O1).
+Rejected: all design stages deal directions (a slice drifts from the system), no stage
+deals them (pause B keeps a weaker direction test).
+Source: specs/taste-skill-upgrade.md
+Status: active
+
+## D80 · 2026-11-01 · A missing Node is installed on request, and a skip is always announced
+
+Why: the v2 inspector needs Node 22 and Chrome, Edge or Chromium. The user picks
+install or skip, and a skip prints its reason and still runs `check-design-drift.sh`,
+so a skipped check never reads as a pass (spec O3, O7).
+Rejected: stop the stage until Node exists (blocks design work for a check), skip in
+silence (reads as a pass), print instructions only (the user asked for an install).
+Source: specs/taste-skill-upgrade.md
+Status: active

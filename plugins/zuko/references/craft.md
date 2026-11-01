@@ -124,6 +124,116 @@ project doesn't already have without saying so and why.
 | Cross-page transitions | View Transitions API, with a fallback |
 | Component library already present | shadcn/ui — follow the shadcn skill's conventions |
 
+## taste-skill v2
+
+`design-taste-frontend` v2 has a direction library, a house style and a
+browser inspector. Each design stage uses one part of it (D79). In the
+commands below, `<skill>` is the folder that holds the skill's `SKILL.md`.
+
+| Stage | Uses |
+| --- | --- |
+| `/design-system` pause B | `draw.mjs` deals the candidate directions |
+| `/spec` pause 2, `/design` | The house rules and `inspect.mjs` |
+
+**At `/design-system` pause B:** Deal three candidates from the brief. Pick
+the sector from the list that `draw.mjs` prints when `--sector` is missing:
+
+```
+node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --options 3
+```
+
+This prints three directions and writes no file. For each candidate that
+the user wants built, deal it in full:
+
+```
+node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --direction <id> --out .taste-skill/pause-b/<id>
+```
+
+The `--out` folder is not optional. `inspect.mjs` reads
+`.taste-skill/direction.json` on every later run and warns on any font that
+the sheet did not deal. A sheet left there would argue with the design
+system's tokens long after pause B.
+
+**In `/spec` and `/design`:** Do not run `draw.mjs`. The design system
+already chose the direction. When a v2 house rule and a design-system token
+disagree, the token wins.
+
+Run the inspector on the preview in the mode that fits the screen:
+
+```
+node <skill>/scripts/inspect.mjs <preview>
+node <skill>/scripts/inspect.mjs <preview> --app
+```
+
+Use `--app` for a screen that people work in: a dashboard, a table, a form
+or settings. Page mode asks for pictures, a focal headline and motion that
+such a screen does not need.
+
+**An inspector FAIL** stops the preview, as a drift-check failure does. Fix
+it with the system's primitives and tokens, then run the inspector again.
+When the fix needs a token or a component that the system does not have,
+offer the two options from "Composition only". When a rule does not fit
+this screen, pass `--allow <rule>`, and tell the user the rule and the
+reason. Do not show a preview that has an open FAIL.
+
+**Before any v2 script runs**, check that it can run (D80):
+
+1. Run `node --version`. `draw.mjs` needs Node 18 or newer. `inspect.mjs`
+   needs Node 22 or newer. On Windows, when `node` is not found, also try
+   `"C:\Program Files\nodejs\node.exe" --version`. winget puts Node on the
+   machine PATH, and a shell that was open before the install does not see
+   it. When that path works, use it in place of `node` for the rest of the
+   stage. Do not ask to install a Node that is already there.
+2. For `inspect.mjs` only, look for Chrome, Edge or Chromium. The script
+   finds them itself, and `CHROME_PATH` overrides the search.
+
+At pause B, a skip means that the directions come from the brief, as when
+v2 is not installed.
+
+When a part is missing, ask the user in the question prompt. Do not skip
+in silence:
+
+- Question: "The v2 inspector needs Node. Node is not installed. Install it
+  now?" When Node is too old, say "needs Node 22 or newer" and name the
+  installed version.
+- Answers: "Install Node (Recommended)" and "Skip the inspector".
+
+zuko installs no browser. When Node is ready but no browser is found, do
+not ask. Print `install Chrome, Edge or Chromium, or set CHROME_PATH`, then
+skip.
+
+On "Install", use the installer for the system:
+
+| System | Installer |
+| --- | --- |
+| Windows | `winget install --id OpenJS.NodeJS.LTS -e` |
+| macOS | `brew install node` |
+| Other, or no `winget` or `brew` | None. Print `install Node 22 or newer with your package manager`, then skip. |
+
+After a winget install, run Node by its full path,
+`"C:\Program Files\nodejs\node.exe"`, as step 1 says. Then run the
+inspector on the preview. On every skip, print this line with
+the real reason:
+
+```
+v2 inspector skipped: <reason>. check-design-drift.sh ran on <paths>.
+```
+
+| The missing part | `<reason>` |
+| --- | --- |
+| No Node | `Node not found` |
+| Node too old | `Node v20.11.0 is older than 22`, with the installed version |
+| No browser | `no browser found` |
+
+When the installer fails, print this line, then skip:
+
+```
+Node install failed: <last line of the installer output>. v2 inspector skipped.
+```
+
+`check-design-drift.sh` runs on the preview in every case. A skipped
+inspector is never a pass.
+
 ## The two checks, before anything reaches the user
 
 Run both. Failing either means revise, not ship.

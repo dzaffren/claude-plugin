@@ -204,3 +204,6 @@ One line per lesson. Loaded into every session in this repo.
 - When a plan edits prompt text that another test pins word for word, give that
   test to the same chunk.
   ([detail](pinned-sentences-bend-new-text.md))
+- Python stdio is cp1252 on Windows, and print() ends lines with `\r\n`. Set
+  UTF-8 for text that crosses a pipe, and strip `\r` in bash.
+  ([detail](python-stdio-is-not-utf8-on-windows.md))
