@@ -1,0 +1,3 @@
+# The skills CLI hashes vendored skill files byte for byte (skills-lock.json),
+# so git must not rewrite their line endings on checkout.
+.agents/skills/** -text

@@ -15,7 +15,7 @@ change without anyone choosing it. Issue #121.
   2026-10-05. That is before upstream 2.0.0 on 2026-10-13.
 - `skills-lock.json` points at `Leonxlnx/taste-skill`, `skills/taste-skill/SKILL.md`.
   That path holds v2.1.5 today, so the lock hash and the upstream file do not agree.
-- A re-run of the skills tool replaces v1 with v2 silently. v2 is 40 files and 2.4 MB,
+- A re-run of the skills tool replaces v1 with v2 silently. v2 is 39 files and 2.4 MB,
   with Node scripts and a direction library. No zuko stage was written for it.
 - Only `plugins/zuko/skills/spec/SKILL.md:130` names the skill. `/design` and
   `/design-system` do not name it.
@@ -61,7 +61,7 @@ for the part it uses. When Node is missing, the stage asks to install it or to s
 Scenario: The vendored skill is v2.1.5 and the lock agrees
   Given skills-lock.json pins Leonxlnx/taste-skill at tag v2.1.5
   When the lock check runs on .agents/skills/design-taste-frontend
-  Then the folder holds the 40 files of skills/taste-skill at v2.1.5
+  Then the folder holds the 39 files of skills/taste-skill at v2.1.5
   And the hash in skills-lock.json matches those files
 
 Scenario: A new upstream release is announced, not installed
@@ -176,7 +176,7 @@ Relies on: D78, D79, D80 (drafted below). D22 and D26 stay as they are.
 flowchart TB
     subgraph repo["repo root"]
         LOCK["skills-lock.json<br/>ref v2.1.5"]
-        VEND[".agents/skills/design-taste-frontend/<br/>40 files, -text"]
+        VEND[".agents/skills/design-taste-frontend/<br/>39 files, -text"]
     end
     subgraph zuko["plugins/zuko"]
         PIN["scripts/check-skill-pin.sh"]
@@ -226,7 +226,7 @@ inspector and the static drift check.
 
 | File | What changes | Why |
 | ---- | ------------ | --- |
-| `.agents/skills/design-taste-frontend/` | Replaced by `npx skills add Leonxlnx/taste-skill#v2.1.5 --skill design-taste-frontend`. 40 files, 2.4 MB. | Scenario 1 |
+| `.agents/skills/design-taste-frontend/` | Replaced by `npx skills add Leonxlnx/taste-skill#v2.1.5 --skill design-taste-frontend`. 39 files, 2.4 MB. | Scenario 1 |
 | `skills-lock.json:3-8` | The CLI writes `"ref": "v2.1.5"` and the new `computedHash`. | Scenarios 1, 2 |
 | `.gitattributes` (new) | `.agents/skills/** -text`. Git stores and checks out the bytes as they are. | Scenario 1: `src/local-lock.ts:194` hashes raw bytes, and this checkout turns LF into CRLF |
 | `plugins/zuko/scripts/check-skill-pin.sh` (new) | Arg: a skill name. Reads its `source` and `ref` from `skills-lock.json` with `python3 -c`. Calls `gh api repos/{source}/releases/latest`. Prints M1 when the tag differs. Prints nothing and exits 0 when there is no entry, no `ref`, no `gh`, or no network. | Scenario 2 |
@@ -299,10 +299,12 @@ Recorded as D78, D79, D80.
 | O1  | v2 deals its own directions. Which stages use the direction library, and which use only the house rules and the inspector?    | question | spec p1   | user  | Resolved | Only `/design-system` pause B uses the direction library. `/spec` pause 2 and `/design` use only the house rules and the inspector. 2026-11-01 |
 | O2  | Does the lock pin tag v2.1.5, or does it follow upstream main?                                                                 | question | spec p1   | user  | Resolved | Pin tag v2.1.5. The user must also be told when upstream has a newer release. 2026-11-01 |
 | O3  | The v2 inspector needs Node and Chrome. When they are missing, does the stage skip the inspector with a message, or stop?      | question | spec p1   | user  | Resolved | Ask the user to install or to skip. On install, install and run. On skip, print a message and run the static drift check. 2026-11-01 |
-| O4  | v2 is 2.4 MB in 40 files, including an 869 KB `sites.json`. Is that size acceptable in the repo?                               | flag     | spec p1   | user  | Accepted risk | The v2 scripts read the library at run time. The copy is repo-local and does not ship to zuko users. 2026-11-01 |
+| O4  | v2 is 2.4 MB in 39 files, including an 869 KB `sites.json`. Is that size acceptable in the repo?                               | flag     | spec p1   | user  | Accepted risk | The v2 scripts read the library at run time. The copy is repo-local and does not ship to zuko users. 2026-11-01 |
 | O5  | When does the update check from O2 run and tell the user?                                                                      | question | spec p1   | user  | Resolved | When a design stage starts: `/design-system`, `/spec` pause 2 and `/design` check before the craft chain loads. No notice when offline. 2026-11-01 |
-| O6  | A Python copy of the CLI's `computeSkillFolderHash` gives the same hash. The CLI sorts paths with JS `localeCompare`.          | unproven | spec p3   | build | Accepted risk | `/build` runs the real CLI first, so the test matches the CLI-written hash or fails at once. A failure is a fix in one test function. 2026-11-01 |
+| O6  | A Python copy of the CLI's `computeSkillFolderHash` gives the same hash. The CLI sorts paths with JS `localeCompare`.          | unproven | spec p3   | build | Accepted risk | `/build` runs the real CLI first, so the test matches the CLI-written hash or fails at once. A failure is a fix in one test function. 2026-11-01. Settled in build: the bytes agreed, the sort did not; JS `localeCompare` ignores case, so the test sorts by casefold. |
 | O7  | Which installer does M2 run on each OS?                                                                                        | question | spec p3   | user  | Resolved | Windows: `winget install OpenJS.NodeJS.LTS`. macOS: `brew install node`. Other systems, or no `winget` or `brew`: print "install Node 22 or newer with your package manager" and take the M4 path. 2026-11-01 |
+| O8  | `.gitignore` (bdb9494) ignores `.agents/skills/` as machine-local installs, but the spec vendors v2 into git. | flag | build | user | Decided alone | Chose: `git add -f` the 39 v2 files, as O4 accepted, so a fresh checkout and CI can run the hash test. Other: keep only `skills-lock.json` in git and untrack the folder. Undo: `git rm -r --cached .agents/skills/design-taste-frontend`, drop `.gitattributes` and the scenario 1 checks. 2026-11-01 |
+| O9  | Run in place, the CLI cloned with `core.autocrlf=true` (CRLF bytes, a Windows-only hash) and copied into `.claude/skills/` over the tracked link, not into `.agents/skills/`. | flag | build | user | Decided alone | Chose: run the CLI in a scratch repo with `core.autocrlf=false`, copy its folder to `.agents/skills/` and its lock entry to `skills-lock.json`, and restore the `.claude/skills` link. Other: commit the CLI's in-place CRLF output. Undo: re-run `npx skills add Leonxlnx/taste-skill#v2.1.5` in place. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
