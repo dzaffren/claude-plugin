@@ -1,6 +1,6 @@
 # Rendered drift check
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 **Depends on:** taste-skill-upgrade
 **Page:** https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo
 
@@ -448,8 +448,7 @@ Recorded as D81, D82, D83, D84, D85, D86, D87, D88.
 | O11 | The plan split the build into chunk A (scripts, tests) and chunk B (stage text), each for a chunk-builder agent in a worktree. | flag | build | user | Decided alone | Chose: build both chunks in this session, in order. Chunk B is four text edits, and docs/learnings records worktree agents that did not commit. Other: two chunk-builder agents in worktrees. Undo: none needed; the files and commits are the same. 2026-11-01 |
 | O12 | Scenario 1 said "Then it reports "light  td.overdue  color  rgb(220, 38, 38)"". The colour is off-token in dark mode too, so the merge rule of the Interface reports it as both. | flag | build | user | Decided alone | Chose: change scenario 1, the Interface example and the e2e to `both`. Other: report each mode on its own line. Undo: drop the merge in `merge()` of `lib/rendered-drift.mjs`, and put back `light` in scenario 1. 2026-11-01 |
 | O13 | Suites stay red on Windows: ascii-terminal (1), render-readme-block (22), e2e-readme (1), glossary (9), fence (8), gate-steps (13), pause-questions (7) and idea-board (7) failed. | flag | build | user | Decided alone | Chose: ship with them red. Each gives the same count on `main` (worktree at 4b27b6d), so this slice adds no failure. The slice's own `rendered-drift` (16) and `e2e-rendered-drift` (36) pass, and `design-drift` (7) still passes after the token-file move. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work. 2026-11-01 |
-| O14 | The Test plan said `/build` checks the scenario 4 prompt once by hand, with Node's folder renamed for one run of `/design`. | flag | build | user | Decided alone | Chose: not run. Renaming `C:Program Files
-odejs` needs admin rights, and a skill edited this session does not load until a new session (docs/learnings). `test-rendered-drift.sh` proves E1 and E2 exit 2 with no Node. Other: rename the folder and run `/design` in a new session. Undo: do that check at `/review` or at the next UI slice. 2026-11-01 |
+| O14 | The Test plan said `/build` checks the scenario 4 prompt once by hand, with Node's folder renamed for one run of `/design`. | flag | build | user | Decided alone | Chose: not run. Renaming `C:\Program Files\nodejs` needs admin rights, and a skill edited this session does not load until a new session (docs/learnings). `test-rendered-drift.sh` proves E1 and E2 exit 2 with no Node. Other: rename the folder and run `/design` in a new session. Undo: do that check at `/review` or at the next UI slice. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

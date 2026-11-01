@@ -207,3 +207,9 @@ One line per lesson. Loaded into every session in this repo.
 - Python stdio is cp1252 on Windows, and print() ends lines with `\r\n`. Set
   UTF-8 for text that crosses a pipe, and strip `\r` in bash.
   ([detail](python-stdio-is-not-utf8-on-windows.md))
+- Git Bash rewrites a path-like argument or env value for a native program;
+  pass Windows paths you made with `cygpath -m`, and match echoed paths by tail.
+  ([detail](git-bash-rewrites-paths-for-native-programs.md))
+- A Node script that drives a browser must `process.exit` after its output
+  flushes, and its e2e needs a wall-clock limit.
+  ([detail](node-cdp-scripts-exit-explicitly.md))
