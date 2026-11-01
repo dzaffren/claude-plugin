@@ -78,3 +78,7 @@ done
 # candidates, without --options.
 expect_match 'draw\.mjs --sector <sector> --brief "<one line>" --options 3' "$(cat "$craft")" "craft.md gives draw.mjs its sector, brief and --options 3"
 expect_match 'craft\.md' "$(cat "$ds")" "/design-system pause B points at the craft.md section for the draw command"
+
+# F4: a sheet at .taste-skill/direction.json is read by every later
+# inspect.mjs run and warns on fonts the design system replaced.
+expect_match 'draw.mjs .*--direction <id> --out \.taste-skill/pause-b/<id>' "$(cat "$craft")" "pause B writes each sheet out of the inspector's default path"

@@ -146,8 +146,13 @@ This prints three directions and writes no file. For each candidate that
 the user wants built, deal it in full:
 
 ```
-node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --direction <id>
+node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --direction <id> --out .taste-skill/pause-b/<id>
 ```
+
+The `--out` folder is not optional. `inspect.mjs` reads
+`.taste-skill/direction.json` on every later run and warns on any font that
+the sheet did not deal. A sheet left there would argue with the design
+system's tokens long after pause B.
 
 **In `/spec` and `/design`:** Do not run `draw.mjs`. The design system
 already chose the direction. When a v2 house rule and a design-system token
