@@ -242,6 +242,22 @@ async function main() {
   page.on('Network.responseReceived', (p) => {
     if (p.type === 'Document' && p.frameId === page.targetId) docStatus = p.response.status;
   });
+  // A script that does not run leaves a page that is not the preview: an empty
+  // root passes every check. A failed script or an uncaught error is E6.
+  let pageErrors = [];
+  const urls = new Map();
+  page.on('Network.requestWillBeSent', (p) => urls.set(p.requestId, p.request.url));
+  page.on('Network.loadingFailed', (p) => {
+    if (p.type !== 'Script') return;
+    const url = urls.get(p.requestId) || 'a script';
+    pageErrors.push(/BLOCKED_BY_CLIENT/.test(p.errorText)
+      ? `the script ${url} was blocked, because it is not on localhost (D87)`
+      : `the script ${url} did not load (${(p.errorText || '').replace(/^net::/, '')})`);
+  });
+  page.on('Runtime.exceptionThrown', (p) => {
+    const d = p.exceptionDetails || {};
+    pageErrors.push('the page threw ' + ((d.exception?.description || d.text || '').split('\n')[0]));
+  });
   await page.send('Network.enable');
 
   let code = 0, judged = 0, loaded = 0;
@@ -253,9 +269,11 @@ async function main() {
       for (const mode of ['light', 'dark']) {
         await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: mode }] });
         docStatus = 0;
+        pageErrors = [];
         await page.goto(target.url);
         if (docStatus >= 400) throw new Error(`HTTP ${docStatus}`);
         result[mode] = await page.eval(judge, { names: tokens.names, dark: mode === 'dark' });
+        if (pageErrors.length) throw new Error(pageErrors[0]);
       }
     } catch (e) {
       say(`Rendered drift check could not load ${target.label}: ${e.message.replace(/^net::/, '')}.`);

@@ -118,3 +118,26 @@ code=$?
 kill "$server_pid" 2>/dev/null
 expect_exit 2 "$code" "a localhost page that answers 404 exits 2, never 0"
 expect_match "^Rendered drift check could not load http://127\.0\.0\.1:$server_port/preview/invoicez: HTTP 404\.\$" "$out" "a 404 page prints E6 with its status"
+
+# Review A2: when the page's own script does not run, the page on screen is not
+# the preview. A module script under a file: URL is refused by the browser, and
+# a script from another host is blocked (D87). Either leaves an empty root that
+# would pass.
+mod="$work/rendered-module"
+mkdir -p "$mod"
+cp "$proj/tokens.css" "$mod/"
+printf 'document.getElementById("root").innerHTML = "<p style=\\"color: rgb(220, 38, 38)\\">Overdue 12 days</p>";\n' >"$mod/app.js"
+page_with() {   # page_with <script tag>: a preview whose UI comes from that script
+  printf '<!doctype html><html><head><link rel="stylesheet" href="tokens.css"></head><body style="background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-base); margin: 0"><div id="root"></div>%s</body></html>\n' "$1"
+}
+page_with '<script type="module" src="app.js"></script>' >"$mod/module.html"
+page_with '<script src="https://cdn.example.com/app.js"></script>' >"$mod/cdn.html"
+page_with '<script src="app.js"></script>' >"$mod/classic.html"
+out=$(rd "$mod" module.html)
+expect_exit 2 "$?" "a module script that does not load exits 2, never 0"
+expect_match '^Rendered drift check could not load module\.html: the script .*app\.js did not load' "$out" "a module script that does not load prints E6 with the script"
+out=$(rd "$mod" cdn.html)
+expect_exit 2 "$?" "a script from another host exits 2, never 0"
+expect_match '^Rendered drift check could not load cdn\.html: the script https://cdn\.example\.com/app\.js was blocked' "$out" "a blocked script prints E6 with the script"
+out=$(rd "$mod" classic.html)
+expect_exit 1 "$?" "the same UI from a classic script is judged, and fails"
