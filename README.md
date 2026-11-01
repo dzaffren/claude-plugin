@@ -63,6 +63,7 @@ the ones that matter most.
 | ------ | ------ | -------- |
 | check-open-items | `/build`, before it starts | any Open row in the spec |
 | check-design-drift | `/spec`, `/design`, `/review` | raw hex, arbitrary values, layout animation, emoji, placeholder text, unknown tokens, or no files scanned |
+| check-rendered-drift | `/spec`, `/design` | a rendered colour, font size, font family or corner radius that is not a token value, in light or dark, or no page rendered |
 | verify-ship-gates | `/ship` | the mechanical pre-ship checks. `/ship` checks the rest by hand. |
 
 **Guided.** These are Claude's judgement, and no script checks them:

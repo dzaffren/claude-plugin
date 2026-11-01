@@ -158,6 +158,13 @@ the project type — see the table in `slicing.md`:
    when that happens, but the fix is to pass the paths. It fails → fix and
    re-render. The user only ever sees previews that already conform.
 
+   Then run the rendered drift check on the preview, as the "Rendered drift
+   check" section of `craft.md` says:
+
+   ```
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-rendered-drift.sh" <preview>
+   ```
+
    When `design-taste-frontend` v2 is installed, also run its inspector on
    the preview, as the "taste-skill v2" section of `craft.md` says.
 

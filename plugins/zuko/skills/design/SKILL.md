@@ -49,6 +49,8 @@ that exists.
    `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-design-drift.sh" <paths>` — then
    the two checks from `craft.md`. With no paths it only looks at
    `docs/design` and will miss components written into the repo itself.
+   Then run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-rendered-drift.sh" <preview>`
+   on the preview, as the "Rendered drift check" section of `craft.md` says.
    When `design-taste-frontend` v2 is installed, also run its inspector on
    the preview, as the "taste-skill v2" section of `craft.md` says.
 6. Show it and stop.

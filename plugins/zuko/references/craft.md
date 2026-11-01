@@ -234,6 +234,53 @@ Node install failed: <last line of the installer output>. v2 inspector skipped.
 `check-design-drift.sh` runs on the preview in every case. A skipped
 inspector is never a pass.
 
+## Rendered drift check
+
+`check-design-drift.sh` reads the source text. `check-rendered-drift.sh`
+opens the preview in headless Chrome, Edge or Chromium, once in light and
+once in dark. It fails any computed colour, font size, font family or
+corner radius that is not a token value (D81). Run it after the static
+check, on the preview:
+
+```
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-rendered-drift.sh" <preview>
+```
+
+`<preview>` is `docs/design/{slice}/preview.html`. On the dev-server path,
+it is the preview route URL on `localhost` or `127.0.0.1`. The check opens
+no other host, and it blocks each request that the page makes to another
+host (D84, D87).
+
+The tokens are the CSS custom properties in the token files. A length
+token whose name holds `radius` or `rounded` is a radius token. Every
+other length token is a size token. The contents of `img`, `svg`, `video`,
+`canvas` and `iframe` are not judged (D83).
+
+| Exit | Means | Do |
+| --- | --- | --- |
+| 0 | Every value is a token. The line names how many elements it judged. | Go on. |
+| 1 | Drift, or nothing to compare against. | Fix with the system's tokens and re-render, as for a static FAIL. Do not show the preview. |
+| 2 | Node, a browser or the page is not there. | See below. |
+
+On exit 2, read the message:
+
+- **Node not found, or Node older than 22.** Ask to install or skip, with
+  the prompt and the installers of "taste-skill v2" above. Say "the
+  rendered drift check" in place of "the v2 inspector".
+- **No browser, or a wrong `CHROME_PATH`.** Do not ask. Print
+  `install Chrome, Edge or Chromium, or set CHROME_PATH`, then skip.
+- **The tokens live in `tailwind.config.js`.** Do not ask. Skip (D85).
+- **Refused, rendered NOTHING, or could not load.** Fix the call, or
+  start the dev server. Then run the check again.
+
+On every skip, print this line with the real reason:
+
+```
+Rendered drift check skipped: <reason>. check-design-drift.sh ran on <paths>.
+```
+
+A skipped rendered check is never a pass (D82).
+
 ## The two checks, before anything reaches the user
 
 Run both. Failing either means revise, not ship.
