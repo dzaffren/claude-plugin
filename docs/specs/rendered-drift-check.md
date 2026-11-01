@@ -1,6 +1,6 @@
 # Rendered drift check
 
-**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Feature · **Project type:** CLI/Library
 **Depends on:** taste-skill-upgrade
 **Page:** https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo
 

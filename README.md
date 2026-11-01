@@ -253,6 +253,7 @@ projects.
 - The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step
 - The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body
 - The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board
+- /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token
 - The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out
 
 ## Docs
