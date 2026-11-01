@@ -96,3 +96,7 @@ expect_match 'draw\.mjs` needs Node 18 or newer' "$(cat "$craft")" "craft.md nam
 # F7: "Install Chrome" was offered, but every installer row installs Node.
 expect_match 'install Chrome, Edge or Chromium, or set CHROME_PATH' "$(cat "$craft")" "a missing browser gets guidance, not a Node installer"
 expect_no_match 'same text with "Chrome"' "$(cat "$craft")" "craft.md no longer offers an install for the browser"
+
+# F5: winget adds Node to the machine PATH, which a shell that is already
+# open never reads, so `node` stayed "command not found" after the install.
+expect_match 'C:\Program Files\nodejs' "$(cat "$craft")" "craft.md finds a winget Node that the open shell's PATH does not have"

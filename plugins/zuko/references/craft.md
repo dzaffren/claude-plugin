@@ -161,7 +161,11 @@ disagree, the token wins.
 **Before any v2 script runs**, check that it can run (D80):
 
 1. Run `node --version`. `draw.mjs` needs Node 18 or newer. `inspect.mjs`
-   needs Node 22 or newer.
+   needs Node 22 or newer. On Windows, when `node` is not found, also try
+   `"C:\Program Files\nodejs\node.exe" --version`. winget puts Node on the
+   machine PATH, and a shell that was open before the install does not see
+   it. When that path works, use it in place of `node` for the rest of the
+   stage. Do not ask to install a Node that is already there.
 2. For `inspect.mjs` only, look for Chrome, Edge or Chromium. The script
    finds them itself, and `CHROME_PATH` overrides the search.
 
@@ -188,7 +192,9 @@ On "Install", use the installer for the system:
 | macOS | `brew install node` |
 | Other, or no `winget` or `brew` | None. Print `install Node 22 or newer with your package manager`, then skip. |
 
-Then run the inspector on the preview. On every skip, print this line with
+After a winget install, run Node by its full path,
+`"C:\Program Files\nodejs\node.exe"`, as step 1 says. Then run the
+inspector on the preview. On every skip, print this line with
 the real reason:
 
 ```
