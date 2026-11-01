@@ -13,12 +13,11 @@ rd() {   # rd <project-dir> <args...>: run the gate from that project, stderr to
   (cd "$p" && CLAUDE_PROJECT_DIR="$p" bash "$scripts/check-rendered-drift.sh" "$@" 2>&1)
 }
 
-have_node=0
-if command -v node >/dev/null 2>&1 || { [ -n "${PROGRAMFILES:-}" ] && [ -x "$PROGRAMFILES/nodejs/node.exe" ]; }; then
-  have_node=1
-fi
-if [ "$have_node" -eq 0 ]; then
-  record FAIL "the e2e needs Node 22: install it, then run e2e-rendered-drift again"
+# One run first. When it cannot render (no Node 22, or no browser), record one
+# FAIL that names the missing part, in the gate's own words (E1, E2 or E3).
+preflight=$(rd "$proj" clean.html)
+if [ $? -eq 2 ]; then
+  record FAIL "the e2e could not run, so it proves nothing: ${preflight##*$'\n'}"
   return 0
 fi
 
