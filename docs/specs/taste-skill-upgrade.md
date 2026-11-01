@@ -155,7 +155,7 @@ only when it is installed.
 | M3 | The user skips                          | `v2 inspector skipped: Node not found. check-design-drift.sh ran on docs/design/invoices/preview.html.`   |
 | M4 | The install fails                       | `Node install failed: <installer output, last line>. v2 inspector skipped.` The drift check still runs.   |
 
-M2, M3 and M4 use the same text with "Chrome" when Chrome is the missing part. When
+M2 and M4 are about Node only: zuko installs no browser. When no browser is found, the stage prints `install Chrome, Edge or Chromium, or set CHROME_PATH` and skips (review F7). When
 Node is older than 22, M2 says "The v2 inspector needs Node 22 or newer. Node v20.11.0
 is installed." When the check is offline or `gh` is missing, no message shows and the
 stage goes on.
@@ -306,6 +306,7 @@ Recorded as D78, D79, D80.
 | O8  | `.gitignore` (bdb9494) ignores `.agents/skills/` as machine-local installs, but the spec vendors v2 into git. | flag | build | user | Decided alone | Chose: `git add -f` the 39 v2 files, as O4 accepted, so a fresh checkout and CI can run the hash test. Other: keep only `skills-lock.json` in git and untrack the folder. Undo: `git rm -r --cached .agents/skills/design-taste-frontend`, drop `.gitattributes` and the scenario 1 checks. 2026-11-01 |
 | O9  | Run in place, the CLI cloned with `core.autocrlf=true` (CRLF bytes, a Windows-only hash) and copied into `.claude/skills/` over the tracked link, not into `.agents/skills/`. | flag | build | user | Decided alone | Chose: run the CLI in a scratch repo with `core.autocrlf=false`, copy its folder to `.agents/skills/` and its lock entry to `skills-lock.json`, and restore the `.claude/skills` link. Other: commit the CLI's in-place CRLF output. Undo: re-run `npx skills add Leonxlnx/taste-skill#v2.1.5` in place. 2026-11-01 |
 | O10 | The full suite is red on Windows: 30 test files fail and 4 time out. | flag | build | user | Decided alone | Chose: ship with it red. The same 34 files fail the same way on `main` (worktree at bd36d9a, same 120 s limit). This slice adds no failure, and its own `e2e-taste-skill` (17) and `skill-pin` (19) pass. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work, starting with the Python UTF-8 slice from /debug. 2026-11-01 |
+| O11 | Interface said "M2, M3 and M4 use the same text with Chrome when Chrome is the missing part". No installer row installs a browser, so "Install Chrome" ran the Node installer. | flag | review | user | Decided alone | Chose: no install prompt for a browser; print `install Chrome, Edge or Chromium, or set CHROME_PATH` and skip. Other: add browser installers (`winget install --id Google.Chrome -e`, `brew install --cask google-chrome`). Undo: put the Chrome form back in M2 and add those installer rows to craft.md. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

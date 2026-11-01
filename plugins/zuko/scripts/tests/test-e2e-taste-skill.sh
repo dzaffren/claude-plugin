@@ -87,3 +87,7 @@ expect_match 'draw.mjs .*--direction <id> --out \.taste-skill/pause-b/<id>' "$(c
 # failed with a bare "command not found".
 expect_match '^\*\*Before any v2 script runs\*\*' "$(cat "$craft")" "the Node check covers every v2 script"
 expect_match 'draw\.mjs` needs Node 18 or newer' "$(cat "$craft")" "craft.md names draw.mjs's own Node floor"
+
+# F7: "Install Chrome" was offered, but every installer row installs Node.
+expect_match 'install Chrome, Edge or Chromium, or set CHROME_PATH' "$(cat "$craft")" "a missing browser gets guidance, not a Node installer"
+expect_no_match 'same text with "Chrome"' "$(cat "$craft")" "craft.md no longer offers an install for the browser"

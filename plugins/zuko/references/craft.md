@@ -174,8 +174,11 @@ in silence:
 - Question: "The v2 inspector needs Node. Node is not installed. Install it
   now?" When Node is too old, say "needs Node 22 or newer" and name the
   installed version.
-- Answers: "Install Node (Recommended)" and "Skip the inspector". Use the
-  same text with "Chrome" when the browser is the missing part.
+- Answers: "Install Node (Recommended)" and "Skip the inspector".
+
+zuko installs no browser. When Node is ready but no browser is found, do
+not ask. Print `install Chrome, Edge or Chromium, or set CHROME_PATH`, then
+skip.
 
 On "Install", use the installer for the system:
 
