@@ -82,3 +82,8 @@ expect_match 'craft\.md' "$(cat "$ds")" "/design-system pause B points at the cr
 # F4: a sheet at .taste-skill/direction.json is read by every later
 # inspect.mjs run and warns on fonts the design system replaced.
 expect_match 'draw.mjs .*--direction <id> --out \.taste-skill/pause-b/<id>' "$(cat "$craft")" "pause B writes each sheet out of the inspector's default path"
+
+# F2: the Node check covered only the inspector, so pause B's draw.mjs
+# failed with a bare "command not found".
+expect_match '^\*\*Before any v2 script runs\*\*' "$(cat "$craft")" "the Node check covers every v2 script"
+expect_match 'draw\.mjs` needs Node 18 or newer' "$(cat "$craft")" "craft.md names draw.mjs's own Node floor"

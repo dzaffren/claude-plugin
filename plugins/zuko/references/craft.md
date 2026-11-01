@@ -158,11 +158,15 @@ system's tokens long after pause B.
 already chose the direction. When a v2 house rule and a design-system token
 disagree, the token wins.
 
-**Before the inspector runs**, check that it can run (D80):
+**Before any v2 script runs**, check that it can run (D80):
 
-1. Run `node --version`. The inspector needs Node 22 or newer.
-2. Look for Chrome, Edge or Chromium. `inspect.mjs` finds them itself, and
-   `CHROME_PATH` overrides the search.
+1. Run `node --version`. `draw.mjs` needs Node 18 or newer. `inspect.mjs`
+   needs Node 22 or newer.
+2. For `inspect.mjs` only, look for Chrome, Edge or Chromium. The script
+   finds them itself, and `CHROME_PATH` overrides the search.
+
+At pause B, a skip means that the directions come from the brief, as when
+v2 is not installed.
 
 When a part is missing, ask the user in the question prompt. Do not skip
 in silence:
