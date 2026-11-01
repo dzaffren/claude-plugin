@@ -188,11 +188,18 @@ On "Install", use the installer for the system:
 | macOS | `brew install node` |
 | Other, or no `winget` or `brew` | None. Print `install Node 22 or newer with your package manager`, then skip. |
 
-Then run the inspector on the preview. On "Skip", print this line:
+Then run the inspector on the preview. On every skip, print this line with
+the real reason:
 
 ```
-v2 inspector skipped: Node not found. check-design-drift.sh ran on <paths>.
+v2 inspector skipped: <reason>. check-design-drift.sh ran on <paths>.
 ```
+
+| The missing part | `<reason>` |
+| --- | --- |
+| No Node | `Node not found` |
+| Node too old | `Node v20.11.0 is older than 22`, with the installed version |
+| No browser | `no browser found` |
 
 When the installer fails, print this line, then skip:
 

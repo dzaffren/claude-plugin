@@ -59,7 +59,12 @@ de="$scripts/../skills/design/SKILL.md"
 
 expect_match '^## taste-skill v2$' "$(cat "$craft")" "craft.md has the taste-skill v2 section"
 expect_match 'Do not run `draw\.mjs`' "$(cat "$craft")" "craft.md tells /spec and /design not to deal directions"
-expect_match 'v2 inspector skipped: Node not found' "$(cat "$craft")" "craft.md carries the skip message"
+# F6: the skip line was fixed to "Node not found", also when Node was too
+# old or the browser was missing.
+expect_match '^v2 inspector skipped: <reason>\. check-design-drift\.sh ran on <paths>\.$' "$(cat "$craft")" "the skip line carries the real reason"
+for reason in 'Node not found' 'Node v20\.11\.0 is older than 22' 'no browser found'; do
+  expect_match "\| \`$reason\`" "$(cat "$craft")" "craft.md lists the skip reason: $reason"
+done
 
 for f in "$ds" "$sp" "$de"; do
   stage=$(basename "$(dirname "$f")")
