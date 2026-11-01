@@ -91,3 +91,21 @@ expect_match '^Rendered drift check rendered NOTHING: ' "$out" "no target prints
 out=$(rd "$proj" tokens.css missing.html)
 expect_exit 2 "$?" "a .css file and a missing path render nothing and exit 2"
 expect_match '^Rendered drift check rendered NOTHING: no \.html file or localhost URL in tokens\.css missing\.html\.$' "$out" "a target with no page prints E5 with the targets"
+
+# Review A4 (D87): a WebSocket to a host that is not local must not connect.
+# 127.0.0.2 is not on the list, so it stands in for a far host.
+start_server() {   # start_server <mode> <host> <name>: sets server_pid and server_port
+  rm -f "$work/$3.port"
+  python3 "$fx/server.py" "$1" "$2" "$work/$3.port" "$work/$3.log" >/dev/null 2>&1 &
+  server_pid=$!
+  for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$work/$3.port" ] && break; sleep 0.3; done
+  server_port=$(cat "$work/$3.port" 2>/dev/null)
+}
+ws="$work/rendered-ws"
+mkdir -p "$ws"
+cp "$proj/tokens.css" "$ws/"
+start_server listen 127.0.0.2 far
+printf '<!doctype html><html><head><link rel="stylesheet" href="tokens.css"></head><body style="background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-base); margin: 0"><p>Invoices</p><script>new WebSocket("ws://127.0.0.2:%s/live");</script></body></html>\n' "$server_port" >"$ws/ws.html"
+out=$(rd "$ws" ws.html)
+kill "$server_pid" 2>/dev/null
+expect_exit 0 "$([ ! -s "$work/far.log" ]; echo $?)" "a WebSocket to a host that is not local does not connect"

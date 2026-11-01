@@ -85,7 +85,12 @@ export class Browser {
       '--no-first-run', '--no-default-browser-check', '--mute-audio', '--hide-scrollbars',
       '--disable-background-timer-throttling', '--disable-renderer-backgrounding',
       '--disable-backgrounding-occluded-windows', '--disable-features=Translate,MediaRouter',
-      '--force-color-profile=srgb', `--window-size=${width},${height}`, 'about:blank',
+      '--force-color-profile=srgb', `--window-size=${width},${height}`,
+      // The Fetch domain never pauses a WebSocket handshake, so each connection
+      // also goes to a proxy on a dead port. Only localhost and 127.0.0.1 bypass
+      // it; `<-loopback>` drops Chrome's own bypass for the rest of 127.0.0.0/8.
+      '--proxy-server=127.0.0.1:9', '--proxy-bypass-list=<-loopback>;localhost;127.0.0.1',
+      'about:blank',
     ];
     const proc = spawn(exe, args, { stdio: ['ignore', 'ignore', 'pipe'] });
     pid = proc.pid;
