@@ -109,3 +109,12 @@ printf '<!doctype html><html><head><link rel="stylesheet" href="tokens.css"></he
 out=$(rd "$ws" ws.html)
 kill "$server_pid" 2>/dev/null
 expect_exit 0 "$([ ! -s "$work/far.log" ]; echo $?)" "a WebSocket to a host that is not local does not connect"
+
+# Review A1: a localhost URL that answers with an HTTP error is not the preview.
+# The fixture's not-found page uses only tokens, so judging it would pass.
+start_server http404 127.0.0.1 nf
+out=$(rd "$ws" "http://127.0.0.1:$server_port/preview/invoicez")
+code=$?
+kill "$server_pid" 2>/dev/null
+expect_exit 2 "$code" "a localhost page that answers 404 exits 2, never 0"
+expect_match "^Rendered drift check could not load http://127\.0\.0\.1:$server_port/preview/invoicez: HTTP 404\.\$" "$out" "a 404 page prints E6 with its status"

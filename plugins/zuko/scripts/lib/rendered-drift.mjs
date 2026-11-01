@@ -237,6 +237,12 @@ async function main() {
     return page.send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'BlockedByClient' }).catch(() => {});
   });
   await page.send('Fetch.enable', { patterns: [{ urlPattern: '*' }] });
+  // A 404 from the dev server is a page that loaded, but it is not the preview.
+  let docStatus = 0;
+  page.on('Network.responseReceived', (p) => {
+    if (p.type === 'Document' && p.frameId === page.targetId) docStatus = p.response.status;
+  });
+  await page.send('Network.enable');
 
   let code = 0, judged = 0, loaded = 0;
   const report = [];
@@ -246,7 +252,9 @@ async function main() {
     try {
       for (const mode of ['light', 'dark']) {
         await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: mode }] });
+        docStatus = 0;
         await page.goto(target.url);
+        if (docStatus >= 400) throw new Error(`HTTP ${docStatus}`);
         result[mode] = await page.eval(judge, { names: tokens.names, dark: mode === 'dark' });
       }
     } catch (e) {
