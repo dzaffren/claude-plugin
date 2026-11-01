@@ -189,7 +189,8 @@ so a token in `oklch()` or one that points at another token is compared by its f
 | `border-*-radius` | each corner over 0 | it equals a radius token |
 
 The contents of `img`, `svg`, `video`, `canvas` and `iframe` are not judged (D83). A
-colour matches when it is within 1 unit in each RGB channel, so `oklch()` rounding does
+token in shadcn's channel form, such as `--background: 0 0% 100%`, is a colour token: it is read
+as `hsl(0 0% 100%)`. A colour matches when it is within 1 unit in each RGB channel, so `oklch()` rounding does
 not fail a token.
 
 ### Output
@@ -237,7 +238,7 @@ Each error goes to stderr and starts with `Rendered drift check`.
 | E3 | `CHROME_PATH` is set, and no file is there | 2 | `Rendered drift check could not run: CHROME_PATH is /opt/chrome/chrome, and no browser is there.` |
 | E4 | A URL on another host | 2 | `Rendered drift check refused https://staging.example.com/invoices: only localhost and 127.0.0.1 may be opened.` |
 | E5 | No target can be rendered | 2 | `Rendered drift check rendered NOTHING: no .html file or localhost URL in docs/design/invoices/card.css.` |
-| E6 | A page does not load | 2 | `Rendered drift check could not load http://localhost:3000/preview/invoices: connection refused.` |
+| E6 | A page does not load, answers with HTTP 400 or more, or one of its scripts does not run or throws | 2 | `Rendered drift check could not load http://localhost:3000/preview/invoices: connection refused.` Or `...: HTTP 404.`, or `...: the script https://cdn.example.com/app.js was blocked, because it is not on localhost (D87).` |
 | E7 | No token file | 1 | `Rendered drift check has nothing to compare against: no design system token file found.` |
 | E8 | Token files found, but the page loads none of their tokens | 1 | `Rendered drift check has nothing to compare against: docs/design/invoices/preview.html loads none of the 18 tokens in docs/design/tokens.css.` |
 | E9 | A `tailwind.config.*` is found, and no CSS file defines a custom property | 2 | `Rendered drift check could not run: the tokens live in tailwind.config.js, not in CSS variables.` |
@@ -432,6 +433,17 @@ Chunk B names only the command and its exit codes, so it does not wait for the c
 
 Recorded as D81, D82, D83, D84, D85, D86, D87, D88.
 
+## Review
+
+2026-11-02 · 7 raw findings, 6 survived, 6 fixed.
+
+- A06 Insecure Design · `plugins/zuko/scripts/lib/cdp.mjs:92` · send each WebSocket to a dead local proxy, so a preview cannot reach a far host · `40551dc`
+- correctness · `plugins/zuko/scripts/lib/rendered-drift.mjs:277` · a localhost page with HTTP 400 or more is E6, not a pass · `41a1f31`
+- correctness · `plugins/zuko/scripts/lib/rendered-drift.mjs:253` · a script that does not run, or an uncaught page error, is E6 · `16a4352`
+- correctness · `plugins/zuko/scripts/lib/rendered-drift.mjs:119` · read shadcn channel tokens as colours, and compare RGB only · `301c6fb`
+- correctness · `plugins/zuko/references/craft.md:263` · skip and point at /design-system on E7, in place of a fix loop · `0b018d9`
+- coverage · `plugins/zuko/scripts/tests/test-e2e-rendered-drift.sh:18` · one named FAIL when Node 22 or a browser is missing · `6856c13`
+
 ## Open items
 
 | ID  | What                                                                                                                              | Type     | Raised at | Owner | Status   | Answer |
@@ -451,6 +463,8 @@ Recorded as D81, D82, D83, D84, D85, D86, D87, D88.
 | O13 | Suites stay red on Windows: ascii-terminal (1), render-readme-block (22), e2e-readme (1), glossary (9), fence (8), gate-steps (13), pause-questions (7) and idea-board (7) failed. | flag | build | user | Decided alone | Chose: ship with them red. Each gives the same count on `main` (worktree at 4b27b6d), so this slice adds no failure. The slice's own `rendered-drift` (16) and `e2e-rendered-drift` (36) pass, and `design-drift` (7) still passes after the token-file move. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work. 2026-11-01 |
 | O14 | The Test plan said `/build` checks the scenario 4 prompt once by hand, with Node's folder renamed for one run of `/design`. | flag | build | user | Decided alone | Chose: not run. Renaming `C:\Program Files\nodejs` needs admin rights, and a skill edited this session does not load until a new session (docs/learnings). `test-rendered-drift.sh` proves E1 and E2 exit 2 with no Node. Other: rename the folder and run `/design` in a new session. Undo: do that check at `/review` or at the next UI slice. 2026-11-01 |
 | O15 | Review B1: the Stage text sent every exit 1 to "fix with tokens and re-render". With E7 there is no token file, so `/design`, after the user declines `/design-system` for a quick exploration, looped and never showed the preview. | flag | review | user | Decided alone | Chose: E7 gets its own rule in craft.md and the Stage text: skip, announce `Rendered drift check skipped: no design system token file.`, and point at `/design-system`. The script still exits 1, so it is never a pass (D82). Other: make E7 exit 2 in the script. Undo: delete the E7 row and skip line from the "Rendered drift check" section of craft.md. 2026-11-02 |
+| O16 | Review A1, A2: E6 said "A page does not load". A dev-server 404 page and a page whose script did not run both loaded, so the gate judged them and exited 0. | flag | review | user | Decided alone | Chose: E6 also covers a main document with HTTP 400 or more, a script that fails to load (a module under `file:`, or one blocked by D87), and an uncaught page error. Each exits 2 and names the cause. Other: judge such a page and let it pass. Undo: `git revert 41a1f31 16a4352`. 2026-11-02 |
+| O17 | Review A3: "What it judges" counted a token as a colour only when the browser read it as one. shadcn's `--background: 0 0% 100%` is not, so each colour of a shadcn page failed. | flag | review | user | Decided alone | Chose: a token that is a colour inside `hsl()` is a colour token, and colours compare on the RGB channels only, as the Interface says, so `hsl(var(--primary) / 0.9)` matches `--primary`. Other: send a channel-only token set to the E9 skip. Undo: `git revert 301c6fb`. 2026-11-02 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
