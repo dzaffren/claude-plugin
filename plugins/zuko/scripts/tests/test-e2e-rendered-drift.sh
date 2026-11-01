@@ -141,3 +141,12 @@ expect_exit 2 "$?" "a script from another host exits 2, never 0"
 expect_match '^Rendered drift check could not load cdn\.html: the script https://cdn\.example\.com/app\.js was blocked' "$out" "a blocked script prints E6 with the script"
 out=$(rd "$mod" classic.html)
 expect_exit 1 "$?" "the same UI from a classic script is judged, and fails"
+
+# Review A3: shadcn tokens are bare HSL channels (--background: 0 0% 100%),
+# used as hsl(var(--background)) and, with an alpha, hsl(var(--primary) / 0.9).
+out=$(rd "$fx/shadcn" preview.html)
+expect_exit 0 "$?" "a preview on shadcn channel tokens passes"
+expect_match 'against 7 token values\.$' "$out" "shadcn channel tokens are counted as colours"
+out=$(rd "$fx/shadcn" drift.html)
+expect_exit 1 "$?" "an off-token colour still fails beside shadcn tokens"
+expect_match '^  both +p\.muted +color +rgb\(128, 128, 128\) +nearest --' "$out" "the off-token colour is reported with a channel token as nearest"

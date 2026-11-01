@@ -115,6 +115,8 @@ async function judge({ names, dark }) {
     if (!raw) continue;
     loaded++;
     if (CSS.supports('color', raw)) { colours.push({ name, raw, px: rgba(raw) }); continue; }
+    // shadcn on Tailwind v3 keeps a colour as bare channels, used as hsl(var(--x)).
+    if (CSS.supports('color', `hsl(${raw})`)) { colours.push({ name, raw, px: rgba(`hsl(${raw})`) }); continue; }
     const isRadius = /radius|rounded/i.test(name);
     if (/%$/.test(raw) && isRadius) { radii.push({ name, raw, pct: raw }); continue; }
     if (CSS.supports('width', raw) && !/%/.test(raw)) {
@@ -133,7 +135,8 @@ async function judge({ names, dark }) {
   const checkColour = (sel, prop, v) => {
     const px = rgba(v);
     if (px[3] === 0) return;
-    if (colours.some((t) => t.px.every((c, i) => Math.abs(c - px[i]) <= 1))) return;
+    // The RGB channels only: hsl(var(--primary) / 0.9) is the token at an alpha.
+    if (colours.some((t) => t.px.slice(0, 3).every((c, i) => Math.abs(c - px[i]) <= 1))) return;
     const near = nearestBy(colours, (t) => Math.hypot(t.px[0] - px[0], t.px[1] - px[1], t.px[2] - px[2]));
     found.push({ sel, prop, value: v, nearest: label(near) });
   };
