@@ -292,6 +292,19 @@ commit, or the hash test fails between commits.
 
 Recorded as D78, D79, D80.
 
+## Review
+
+2026-11-01 · 8 raw findings, 8 survived, 7 fixed, 1 recorded (A03 low, O12).
+
+- A03 Software Supply Chain Failures · `skills-lock.json:6` · no change; the hash pins the bytes, recorded as O12 · `8ce43b8`
+- correctness · `plugins/zuko/references/craft.md:135` · give `draw.mjs` its sector, brief and `--options 3` · `fb68d85`
+- correctness · `plugins/zuko/references/craft.md:138` · deal pause B sheets with `--out .taste-skill/pause-b/<id>` · `52eac91`
+- correctness · `plugins/zuko/references/craft.md:142` · run the Node check before any v2 script · `81ae58b`
+- correctness · `plugins/zuko/references/craft.md:155` · no browser install; print how to get one and skip · `9341d0a`
+- correctness · `plugins/zuko/references/craft.md:168` · give the skip line its real reason · `3a277da`
+- correctness · `plugins/zuko/references/craft.md:161` · find a winget Node by its full path · `401fb7b`, `aff8174`
+- correctness · `plugins/zuko/references/craft.md:136` · inspect app screens with `--app`, and say what a FAIL means · `73413b1`
+
 ## Open items
 
 | ID  | What                                                                                                                           | Type     | Raised at | Owner | Status | Answer |
@@ -307,6 +320,7 @@ Recorded as D78, D79, D80.
 | O9  | Run in place, the CLI cloned with `core.autocrlf=true` (CRLF bytes, a Windows-only hash) and copied into `.claude/skills/` over the tracked link, not into `.agents/skills/`. | flag | build | user | Decided alone | Chose: run the CLI in a scratch repo with `core.autocrlf=false`, copy its folder to `.agents/skills/` and its lock entry to `skills-lock.json`, and restore the `.claude/skills` link. Other: commit the CLI's in-place CRLF output. Undo: re-run `npx skills add Leonxlnx/taste-skill#v2.1.5` in place. 2026-11-01 |
 | O10 | The full suite is red on Windows: 30 test files fail and 4 time out. | flag | build | user | Decided alone | Chose: ship with it red. The same 34 files fail the same way on `main` (worktree at bd36d9a, same 120 s limit). This slice adds no failure, and its own `e2e-taste-skill` (17) and `skill-pin` (19) pass. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work, starting with the Python UTF-8 slice from /debug. 2026-11-01 |
 | O11 | Interface said "M2, M3 and M4 use the same text with Chrome when Chrome is the missing part". No installer row installs a browser, so "Install Chrome" ran the Node installer. | flag | review | user | Decided alone | Chose: no install prompt for a browser; print `install Chrome, Edge or Chromium, or set CHROME_PATH` and skip. Other: add browser installers (`winget install --id Google.Chrome -e`, `brew install --cask google-chrome`). Undo: put the Chrome form back in M2 and add those installer rows to craft.md. 2026-11-01 |
+| O12 | Review F8 (A03:2025 low): the lock moves `design-taste-frontend` to tag v2.1.5, adding 39 files of third-party code with Node scripts. No advisory is known for v2.1.5. | flag | review | user | Decided alone | Chose: no code change. `computedHash` pins the exact bytes, and `test-e2e-taste-skill.sh` fails when the vendored files differ from it. Other: also record the commit SHA of v2.1.5, because a tag can be moved. Undo: add the SHA as the `ref` and re-run the skills CLI. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
