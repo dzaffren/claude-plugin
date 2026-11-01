@@ -882,3 +882,81 @@ Rejected: stop the stage until Node exists (blocks design work for a check), ski
 silence (reads as a pass), print instructions only (the user asked for an install).
 Source: specs/taste-skill-upgrade.md
 Status: active
+
+## D81 · 2026-11-01 · The rendered drift check judges colour, type and radius, in light and dark at 1440px
+
+Why: a token defines these values one to one, so an off-token value is drift. A colour set
+only under `prefers-color-scheme: dark` is a real drift that one light render misses
+(spec O1, O2).
+Rejected: spacing (flex and auto margins compute off-scale values that are not drift),
+light only (misses a dark-only colour), a second render at 390px (doubles the renders for
+a rare media-query drift; overflow at 390px belongs to `rendered-floors`).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D82 · 2026-11-01 · A rendered drift FAIL stops the preview, and a render that cannot run never exits 0
+
+Why: the user sees only previews that conform, as with `check-design-drift.sh`. A gate that
+rendered nothing must never read as a pass (lesson gate-scanned-nothing-is-not-a-pass).
+Rejected: warn and show the preview (the drift reaches the user), stop the pause when Node
+or a browser is missing (blocks design work; D80 already asks install or skip).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D83 · 2026-11-01 · The rendered drift check has no allow attribute; it skips only media contents
+
+Why: craft.md says that a value the system lacks is a proposal to the system, not a one-off.
+The contents of `img`, `svg`, `video`, `canvas` and `iframe` are not CSS-styled UI (spec O5).
+Rejected: a `data-drift-allow` attribute with a reason (an escape hatch that a stage can use
+in place of a proposal to the system).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D84 · 2026-11-01 · The rendered drift check opens files and localhost URLs only
+
+Why: the dev-server path needs a URL, and a gate must not send requests to a host that it
+was pointed at by text in a spec (spec O6).
+Rejected: files only (the dev-server path stays unchecked), any URL (the gate makes network
+requests to any host).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D85 · 2026-11-01 · Tokens only in tailwind.config make the rendered check skip, announced
+
+Why: the browser resolves CSS variables only. A Tailwind v3 project has no CSS token, so
+the check cannot judge it, and D82 would stop each preview of that project (spec O7).
+Rejected: exit 1 and stop the preview (forces the project to move its tokens before any
+preview passes), load `tailwind.config.js` with Node (the gate runs the project's own code
+and its plugins).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D86 · 2026-11-01 · The rendered drift check drives the browser from Node 22, with no package
+
+Why: only a browser computes styles, and Node 22 has the WebSocket that the DevTools protocol
+needs. A spike on this machine rendered light and dark in 1.9 s (spec O8). D80 already covers
+a missing Node.
+Rejected: Python with a hand-written WebSocket client (about 100 lines of framing to own and
+test), Playwright (a package and a browser download of about 150 MB for each user), the v2
+`cdp.mjs` in place (v2 is repo-local and does not ship with zuko).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D87 · 2026-11-01 · The rendered drift check blocks each request to a host that is not local
+
+Why: D84 keeps the page local, and a preview can still name a CDN for fonts or images. With
+the block, the check sends no request off the machine, and its result does not depend on the
+network (spec O9).
+Rejected: let subresources through (the gate sends requests to each host that the preview
+names).
+Source: specs/rendered-drift-check.md
+Status: active
+
+## D88 · 2026-11-01 · The dark render sets the media query, a .dark class and data-theme="dark"
+
+Why: design systems switch to dark in three common ways, and shadcn and Tailwind use a class.
+With the media query only, a class-based system gets two light renders, and its dark drift is
+missed (spec O10).
+Rejected: the media query only (misses class-based dark mode).
+Source: specs/rendered-drift-check.md
+Status: active
