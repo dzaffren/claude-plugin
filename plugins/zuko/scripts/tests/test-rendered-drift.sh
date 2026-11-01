@@ -56,3 +56,10 @@ chmod +x "$old/node"
 out=$(cd "$tok" && PATH="$old:$PATH" CLAUDE_PROJECT_DIR="$tok" "$stage_bash" "$scripts/check-rendered-drift.sh" docs/design/p.html 2>&1)
 expect_exit 2 "$?" "Node older than 22 exits 2"
 expect_match '^Rendered drift check could not run: Node v20\.11\.0 is older than 22\.$' "$out" "an old Node prints E2 with its version"
+
+# Review B1: with no token file there is nothing to fix with, so the stage text
+# must not send E7 to the "fix and re-render" loop. It announces a skip.
+craft="$scripts/../references/craft.md"
+section=$(sed -n '/^## Rendered drift check$/,/^## The two checks/p' "$craft")
+expect_match 'no design system token file found' "$section" "craft.md gives E7 its own rule"
+expect_match 'Rendered drift check skipped: no design system token file\. check-design-drift\.sh ran on' "$section" "craft.md announces the E7 skip with its reason"

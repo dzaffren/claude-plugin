@@ -266,7 +266,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-rendered-drift.sh" <preview>
 ```
 
 `<preview>` is `docs/design/{slice}/preview.html`, or the preview route URL on the
-dev-server path. Exit 1 → fix with tokens and re-render, as for a static FAIL. Exit 2 with
+dev-server path. Exit 1 → fix with tokens and re-render, as for a static FAIL. Exit 1 with E7 → skip with
+the reason `no design system token file`, and say that `/design-system` makes the tokens. Exit 2 with
 E1, E2 or E3 → the install-or-skip prompt of the "taste-skill v2" section of `craft.md`,
 with "the rendered drift check" in place of "the v2 inspector". On a skip, print:
 
@@ -449,6 +450,7 @@ Recorded as D81, D82, D83, D84, D85, D86, D87, D88.
 | O12 | Scenario 1 said "Then it reports "light  td.overdue  color  rgb(220, 38, 38)"". The colour is off-token in dark mode too, so the merge rule of the Interface reports it as both. | flag | build | user | Decided alone | Chose: change scenario 1, the Interface example and the e2e to `both`. Other: report each mode on its own line. Undo: drop the merge in `merge()` of `lib/rendered-drift.mjs`, and put back `light` in scenario 1. 2026-11-01 |
 | O13 | Suites stay red on Windows: ascii-terminal (1), render-readme-block (22), e2e-readme (1), glossary (9), fence (8), gate-steps (13), pause-questions (7) and idea-board (7) failed. | flag | build | user | Decided alone | Chose: ship with them red. Each gives the same count on `main` (worktree at 4b27b6d), so this slice adds no failure. The slice's own `rendered-drift` (16) and `e2e-rendered-drift` (36) pass, and `design-drift` (7) still passes after the token-file move. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work. 2026-11-01 |
 | O14 | The Test plan said `/build` checks the scenario 4 prompt once by hand, with Node's folder renamed for one run of `/design`. | flag | build | user | Decided alone | Chose: not run. Renaming `C:\Program Files\nodejs` needs admin rights, and a skill edited this session does not load until a new session (docs/learnings). `test-rendered-drift.sh` proves E1 and E2 exit 2 with no Node. Other: rename the folder and run `/design` in a new session. Undo: do that check at `/review` or at the next UI slice. 2026-11-01 |
+| O15 | Review B1: the Stage text sent every exit 1 to "fix with tokens and re-render". With E7 there is no token file, so `/design`, after the user declines `/design-system` for a quick exploration, looped and never showed the preview. | flag | review | user | Decided alone | Chose: E7 gets its own rule in craft.md and the Stage text: skip, announce `Rendered drift check skipped: no design system token file.`, and point at `/design-system`. The script still exits 1, so it is never a pass (D82). Other: make E7 exit 2 in the script. Undo: delete the E7 row and skip line from the "Rendered drift check" section of craft.md. 2026-11-02 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

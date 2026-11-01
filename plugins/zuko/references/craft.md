@@ -259,7 +259,8 @@ other length token is a size token. The contents of `img`, `svg`, `video`,
 | Exit | Means | Do |
 | --- | --- | --- |
 | 0 | Every value is a token. The line names how many elements it judged. | Go on. |
-| 1 | Drift, or nothing to compare against. | Fix with the system's tokens and re-render, as for a static FAIL. Do not show the preview. |
+| 1 | Drift, or the page loads none of the tokens. | Fix with the system's tokens and re-render, as for a static FAIL. Do not show the preview. |
+| 1 | `no design system token file found` | Do not loop: there are no tokens to fix with. Skip, and say that `/design-system` makes the tokens. |
 | 2 | Node, a browser or the page is not there. | See below. |
 
 On exit 2, read the message:
@@ -277,6 +278,12 @@ On every skip, print this line with the real reason:
 
 ```
 Rendered drift check skipped: <reason>. check-design-drift.sh ran on <paths>.
+```
+
+For the E7 skip, the line is:
+
+```
+Rendered drift check skipped: no design system token file. check-design-drift.sh ran on <paths>.
 ```
 
 A skipped rendered check is never a pass (D82).
