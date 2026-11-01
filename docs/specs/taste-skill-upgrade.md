@@ -229,7 +229,7 @@ inspector and the static drift check.
 | `.agents/skills/design-taste-frontend/` | Replaced by `npx skills add Leonxlnx/taste-skill#v2.1.5 --skill design-taste-frontend`. 39 files, 2.4 MB. | Scenario 1 |
 | `skills-lock.json:3-8` | The CLI writes `"ref": "v2.1.5"` and the new `computedHash`. | Scenarios 1, 2 |
 | `.gitattributes` (new) | `.agents/skills/** -text`. Git stores and checks out the bytes as they are. | Scenario 1: `src/local-lock.ts:194` hashes raw bytes, and this checkout turns LF into CRLF |
-| `plugins/zuko/scripts/check-skill-pin.sh` (new) | Arg: a skill name. Reads its `source` and `ref` from `skills-lock.json` with `python3 -c`. Calls `gh api repos/{source}/releases/latest`. Prints M1 when the tag differs. Prints nothing and exits 0 when there is no entry, no `ref`, no `gh`, or no network. | Scenario 2 |
+| `plugins/zuko/scripts/check-skill-pin.sh` (new) | Arg: a skill name. Reads its `source` and `ref` from `skills-lock.json` with `python3 -c`. Calls `gh api "repos/$source/releases/latest"`. Prints M1 when the tag differs. Prints nothing and exits 0 when there is no entry, no `ref`, no `gh`, or no network. | Scenario 2 |
 | `plugins/zuko/references/craft.md:93` | New section "taste-skill v2", after "References": which stage uses which part, the Node 22 and browser check, M2 to M4, and the installers from O7. | Scenarios 4, 5 |
 | `plugins/zuko/skills/spec/SKILL.md:128-130` | Step 5: run `check-skill-pin.sh design-taste-frontend` first. For v2, use the "taste-skill v2" section of `craft.md`, and do not run `draw.mjs`. | Scenarios 2, 4 |
 | `plugins/zuko/skills/design/SKILL.md:37-38` | Step 2 gets the same two lines as `/spec` step 5. | Scenarios 2, 4 |
