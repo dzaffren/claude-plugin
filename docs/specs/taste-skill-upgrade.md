@@ -1,6 +1,6 @@
 # Taste skill upgrade
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 **Depends on:** None
 **Page:** https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf
 
