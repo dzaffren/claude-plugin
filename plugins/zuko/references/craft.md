@@ -132,8 +132,22 @@ commands below, `<skill>` is the folder that holds the skill's `SKILL.md`.
 
 | Stage | Uses |
 | --- | --- |
-| `/design-system` pause B | `node <skill>/scripts/draw.mjs` deals the candidate directions |
-| `/spec` pause 2, `/design` | The house rules and `node <skill>/scripts/inspect.mjs` |
+| `/design-system` pause B | `draw.mjs` deals the candidate directions |
+| `/spec` pause 2, `/design` | The house rules and `inspect.mjs` |
+
+**At `/design-system` pause B:** Deal three candidates from the brief. Pick
+the sector from the list that `draw.mjs` prints when `--sector` is missing:
+
+```
+node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --options 3
+```
+
+This prints three directions and writes no file. For each candidate that
+the user wants built, deal it in full:
+
+```
+node <skill>/scripts/draw.mjs --sector <sector> --brief "<one line>" --direction <id>
+```
 
 **In `/spec` and `/design`:** Do not run `draw.mjs`. The design system
 already chose the direction. When a v2 house rule and a design-system token

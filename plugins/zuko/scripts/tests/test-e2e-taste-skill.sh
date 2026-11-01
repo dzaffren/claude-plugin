@@ -71,3 +71,10 @@ for f in "$sp" "$de"; do
   expect_match '"taste-skill v2" section of' "$(cat "$f")" "/$stage reads the taste-skill v2 section of craft.md"
   expect_no_match 'node [^ ]*draw\.mjs' "$(cat "$f")" "/$stage never runs draw.mjs"
 done
+
+# --- Review fixes ----------------------------------------------------------
+
+# F1: draw.mjs exits 2 without --sector, and deals one direction, not
+# candidates, without --options.
+expect_match 'draw\.mjs --sector <sector> --brief "<one line>" --options 3' "$(cat "$craft")" "craft.md gives draw.mjs its sector, brief and --options 3"
+expect_match 'craft\.md' "$(cat "$ds")" "/design-system pause B points at the craft.md section for the draw command"
