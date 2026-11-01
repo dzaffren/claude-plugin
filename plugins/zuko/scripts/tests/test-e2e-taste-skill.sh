@@ -100,3 +100,8 @@ expect_no_match 'same text with "Chrome"' "$(cat "$craft")" "craft.md no longer 
 # F5: winget adds Node to the machine PATH, which a shell that is already
 # open never reads, so `node` stayed "command not found" after the install.
 expect_match 'Program Files.nodejs.node\.exe" --version' "$(cat "$craft")" "craft.md finds a winget Node that the open shell's PATH does not have"
+
+# F3: page mode fails a token-built app screen on pictures and motion that
+# composition-only forbids, and nothing said what a FAIL means.
+expect_match 'inspect\.mjs <preview> --app' "$(cat "$craft")" "an app screen is inspected in app mode"
+expect_match '^\*\*An inspector FAIL\*\*' "$(cat "$craft")" "craft.md says what an inspector FAIL means for the stage"

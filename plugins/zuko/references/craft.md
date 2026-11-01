@@ -158,6 +158,24 @@ system's tokens long after pause B.
 already chose the direction. When a v2 house rule and a design-system token
 disagree, the token wins.
 
+Run the inspector on the preview in the mode that fits the screen:
+
+```
+node <skill>/scripts/inspect.mjs <preview>
+node <skill>/scripts/inspect.mjs <preview> --app
+```
+
+Use `--app` for a screen that people work in: a dashboard, a table, a form
+or settings. Page mode asks for pictures, a focal headline and motion that
+such a screen does not need.
+
+**An inspector FAIL** stops the preview, as a drift-check failure does. Fix
+it with the system's primitives and tokens, then run the inspector again.
+When the fix needs a token or a component that the system does not have,
+offer the two options from "Composition only". When a rule does not fit
+this screen, pass `--allow <rule>`, and tell the user the rule and the
+reason. Do not show a preview that has an open FAIL.
+
 **Before any v2 script runs**, check that it can run (D80):
 
 1. Run `node --version`. `draw.mjs` needs Node 18 or newer. `inspect.mjs`
