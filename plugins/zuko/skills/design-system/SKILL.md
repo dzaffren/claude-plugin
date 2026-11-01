@@ -96,6 +96,15 @@ Write `docs/design/system-brief.md`. **Stop for approval.**
 
 # Pause B — direction test
 
+First run
+`bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-skill-pin.sh" design-taste-frontend`
+and show any line it prints. When `design-taste-frontend` v2 is installed,
+let it deal the candidate directions from the brief:
+`node <skill>/scripts/draw.mjs`, as the "taste-skill v2" section of
+`${CLAUDE_PLUGIN_ROOT}/references/craft.md` says. Build each candidate the
+user wants to see. When v2 is not installed, propose the directions from
+the brief as before.
+
 Build three things only: a button, an input, and one composed element that
 uses both. Enough to feel the direction. Cheap to throw away.
 

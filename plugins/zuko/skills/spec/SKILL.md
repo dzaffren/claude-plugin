@@ -128,7 +128,11 @@ the project type — see the table in `slicing.md`:
 
 5. **Load the craft chain**, whichever are installed, in this order:
    `frontend-design` (official) → `design-taste-frontend` → `shadcn` when the
-   repo uses it. None installed → `craft.md` alone is enough.
+   repo uses it. None installed → `craft.md` alone is enough. First run
+   `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-skill-pin.sh" design-taste-frontend`
+   and show any line it prints. For `design-taste-frontend`, follow the
+   "taste-skill v2" section of `craft.md`: its house rules and its inspector
+   only.
 
 6. **Build the preview.** Two levels — pick automatically:
    - **The repo has a runnable dev server** → build the real components in
@@ -153,6 +157,9 @@ the project type — see the table in `slicing.md`:
    `app/` — it would scan nothing. It exits 1 rather than passing silently
    when that happens, but the fix is to pass the paths. It fails → fix and
    re-render. The user only ever sees previews that already conform.
+
+   When `design-taste-frontend` v2 is installed, also run its inspector on
+   the preview, as the "taste-skill v2" section of `craft.md` says.
 
 8. **Run the two checks from `craft.md`** — the generic-model test and the
    named-reference test. Failing either means revise, not ship.

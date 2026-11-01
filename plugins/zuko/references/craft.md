@@ -124,6 +124,59 @@ project doesn't already have without saying so and why.
 | Cross-page transitions | View Transitions API, with a fallback |
 | Component library already present | shadcn/ui — follow the shadcn skill's conventions |
 
+## taste-skill v2
+
+`design-taste-frontend` v2 has a direction library, a house style and a
+browser inspector. Each design stage uses one part of it (D79). In the
+commands below, `<skill>` is the folder that holds the skill's `SKILL.md`.
+
+| Stage | Uses |
+| --- | --- |
+| `/design-system` pause B | `node <skill>/scripts/draw.mjs` deals the candidate directions |
+| `/spec` pause 2, `/design` | The house rules and `node <skill>/scripts/inspect.mjs` |
+
+**In `/spec` and `/design`:** Do not run `draw.mjs`. The design system
+already chose the direction. When a v2 house rule and a design-system token
+disagree, the token wins.
+
+**Before the inspector runs**, check that it can run (D80):
+
+1. Run `node --version`. The inspector needs Node 22 or newer.
+2. Look for Chrome, Edge or Chromium. `inspect.mjs` finds them itself, and
+   `CHROME_PATH` overrides the search.
+
+When a part is missing, ask the user in the question prompt. Do not skip
+in silence:
+
+- Question: "The v2 inspector needs Node. Node is not installed. Install it
+  now?" When Node is too old, say "needs Node 22 or newer" and name the
+  installed version.
+- Answers: "Install Node (Recommended)" and "Skip the inspector". Use the
+  same text with "Chrome" when the browser is the missing part.
+
+On "Install", use the installer for the system:
+
+| System | Installer |
+| --- | --- |
+| Windows | `winget install --id OpenJS.NodeJS.LTS -e` |
+| macOS | `brew install node` |
+| Other, or no `winget` or `brew` | None. Print `install Node 22 or newer with your package manager`, then skip. |
+
+Then run the inspector on the preview. On "Skip", print this line:
+
+```
+v2 inspector skipped: Node not found. check-design-drift.sh ran on <paths>.
+```
+
+When the installer fails, print this line, then skip:
+
+```
+Node install failed: <last line of the installer output>. v2 inspector skipped.
+```
+
+`check-design-drift.sh` runs on the preview in every case. A skipped
+inspector is never a pass.
+
 ## The two checks, before anything reaches the user
 
 Run both. Failing either means revise, not ship.

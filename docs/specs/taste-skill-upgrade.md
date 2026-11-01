@@ -1,6 +1,6 @@
 # Taste skill upgrade
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 **Depends on:** None
 **Page:** https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf
 
@@ -305,6 +305,7 @@ Recorded as D78, D79, D80.
 | O7  | Which installer does M2 run on each OS?                                                                                        | question | spec p3   | user  | Resolved | Windows: `winget install OpenJS.NodeJS.LTS`. macOS: `brew install node`. Other systems, or no `winget` or `brew`: print "install Node 22 or newer with your package manager" and take the M4 path. 2026-11-01 |
 | O8  | `.gitignore` (bdb9494) ignores `.agents/skills/` as machine-local installs, but the spec vendors v2 into git. | flag | build | user | Decided alone | Chose: `git add -f` the 39 v2 files, as O4 accepted, so a fresh checkout and CI can run the hash test. Other: keep only `skills-lock.json` in git and untrack the folder. Undo: `git rm -r --cached .agents/skills/design-taste-frontend`, drop `.gitattributes` and the scenario 1 checks. 2026-11-01 |
 | O9  | Run in place, the CLI cloned with `core.autocrlf=true` (CRLF bytes, a Windows-only hash) and copied into `.claude/skills/` over the tracked link, not into `.agents/skills/`. | flag | build | user | Decided alone | Chose: run the CLI in a scratch repo with `core.autocrlf=false`, copy its folder to `.agents/skills/` and its lock entry to `skills-lock.json`, and restore the `.claude/skills` link. Other: commit the CLI's in-place CRLF output. Undo: re-run `npx skills add Leonxlnx/taste-skill#v2.1.5` in place. 2026-11-01 |
+| O10 | The full suite is red on Windows: 30 test files fail and 4 time out. | flag | build | user | Decided alone | Chose: ship with it red. The same 34 files fail the same way on `main` (worktree at bd36d9a, same 120 s limit). This slice adds no failure, and its own `e2e-taste-skill` (17) and `skill-pin` (19) pass. Other: fix the Windows failures first. Undo: none needed; the Windows suite is its own work, starting with the Python UTF-8 slice from /debug. 2026-11-01 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
