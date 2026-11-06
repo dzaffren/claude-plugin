@@ -365,7 +365,7 @@ two results into one report.
 | `README.md:65` | A `check-rendered-drift` row in the table of what the scripts enforce. | The README names each gate |
 | `plugins/zuko/scripts/tests/test-rendered-drift.sh` (new) | No browser. The entry point parses under `/bin/bash`. `-h` exits 0. E1: a `PATH` with no `node`, and `PROGRAMFILES` set to an empty folder. E2: a stub `node` that prints `v20.11.0`. `find_token_files` gives the list that `check-design-drift.sh` uses. | Scenario 4, E1, E2 |
 | `plugins/zuko/scripts/tests/test-e2e-rendered-drift.sh` (new) | Real Node and browser: scenarios 1, 2, 3 and 5. Also E3 with a wrong `CHROME_PATH`, E4 for `http://localhost.evil.example/` and `http://127.0.0.1@evil.example/`, E5, E8 and E9. Also: `svg` contents are skipped, a `.dark`-class drift is caught, a blocked font request is named, and a run takes less than 15 s. When Node 22 or a browser is missing, the test records a FAIL that names the missing part. | The slice e2e |
-| `plugins/zuko/scripts/tests/fixtures/rendered-drift/` (new) | `tokens.css` (light, dark media and `.dark`), `drift.html`, `clean.html`, `dark-class.html`, `no-tokens/`, `tailwind-only/`. | The e2e fixtures |
+| `plugins/zuko/scripts/tests/fixtures/rendered-drift/` (new) | `project/` holds `tokens.css` (light, dark media and `.dark`), `drift.html`, `clean.html`, `dark-class.html` and `unlinked.html`. Also `no-tokens/`, `tailwind-only/`, `shadcn/` for the channel tokens (review A3), and `server.py`, which serves an HTTP 404 page and logs the connections to a far host (review A1, A4). | The e2e fixtures |
 
 Reusing: the `find` and skip list of `check-design-drift.sh`; v2's `cdp.mjs` under its MIT
 licence; `run.sh` with `expect_exit`, `expect_match` and `expect_no_match`; the stub on
