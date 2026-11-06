@@ -11,6 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - zuko is now under the MIT licence: anyone may use, change and share it, as long as the licence and copyright notice stay with it.
 - The design stages use taste skill v2.1.5: /design-system deals its candidate directions from the skill's direction library, and /spec and /design check each preview with its browser inspector. When Node is missing, zuko offers to install it, and a skipped inspector always says why.
 - The taste skill stays pinned to its tag, and each design stage says when a newer release is out, so the skill moves only when you edit skills-lock.json.
+- /spec and /design now open each preview in a headless browser, in light and dark, and stop it when a colour, font size, font family or corner radius is not one of your design system's tokens. This catches what the source check cannot see, such as rgb() colours, shadcn classes and styles that a script sets.
 
 ## [2.5.1] - 2026-10-28
 

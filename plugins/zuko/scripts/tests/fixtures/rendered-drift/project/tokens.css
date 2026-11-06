@@ -1,0 +1,15 @@
+/* The design system of the Invoices fixture: 8 tokens. */
+:root {
+  --ink: #1a1a1a;
+  --surface: #ffffff;
+  --danger: #b42318;
+  --line: #d0d5dd;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --radius-md: 8px;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #eeeeee; --surface: #111111; }
+}
+.dark { --ink: #eeeeee; --surface: #111111; }

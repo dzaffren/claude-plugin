@@ -1,0 +1,10 @@
+/* shadcn on Tailwind v3 keeps colour tokens as bare HSL channels. */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --radius: 0.5rem;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --text-base: 16px;
+}

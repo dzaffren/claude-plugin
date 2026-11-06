@@ -68,3 +68,13 @@ So when writing tests for a check, cover three cases, not two:
 
 A suite that only asks "does it detect the bad thing" never catches "was it
 even looking".
+
+## Third case: a render that loaded the wrong page
+
+**Added:** 2026-11-02 · **From:** /review rendered-drift-check
+
+The rendered drift gate passed a dev-server 404 page and a preview whose
+module script never ran. Both pages loaded, so nothing looked empty, but the
+gate judged a page that was not the preview. For a gate that renders, "it
+scanned something" is not enough: check the main document's status, and
+fail when a script did not load or the page threw.

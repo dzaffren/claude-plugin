@@ -19,10 +19,8 @@ if [ ${#targets[@]} -eq 0 ]; then
 fi
 
 # Find the token definitions the project actually uses.
-token_files=$(find "$dir" \
-  -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' -not -path '*/build/*' \
-  \( -name 'tokens*.css' -o -name 'theme.css' -o -name 'globals.css' -o -name 'tailwind.config.*' -o -name 'components.json' \) \
-  2>/dev/null | head -20)
+. "$(dirname "${BASH_SOURCE[0]}")/lib/token-files.sh"
+token_files=$(find_token_files "$dir")
 
 known_tokens=""
 if [ -n "$token_files" ]; then

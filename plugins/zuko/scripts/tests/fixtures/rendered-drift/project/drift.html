@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoices</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-base); }
+  .overdue { color: rgb(220, 38, 38); }
+  .section-title { font-size: 22px; }
+  @media (prefers-color-scheme: dark) {
+    .invoice-total { background: hsl(0 0% 20%); }
+  }
+</style>
+</head>
+<body>
+  <h2 class="section-title">October</h2>
+  <table>
+    <tr><td>INV-2041</td><td class="overdue">Overdue 12 days</td></tr>
+    <tr><td>INV-2043</td><td class="overdue">Overdue 3 days</td></tr>
+  </table>
+  <div class="invoice-total">Total due: 1,840.00 GBP</div>
+</body>
+</html>

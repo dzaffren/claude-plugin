@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-01 by /ship taste-skill-upgrade
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-02 by /ship rendered-drift-check
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -78,6 +78,7 @@ projects.
 | replay | Shipped | The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step | — |
 | unclosed-fence | Shipped | The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body | — |
 | slice-name-path | Shipped | The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board | — |
+| rendered-drift-check | Shipped | /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token | https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo |
 | taste-skill-upgrade | Shipped | The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out | https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf |
 
 ## More
