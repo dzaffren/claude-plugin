@@ -152,19 +152,7 @@ Single chunk.
 
 ### Decisions to record
 
-```markdown
-## D89 · 2026-11-07 · zuko's repo checks out every text file with LF, on every OS
-
-Why: Git for Windows sets core.autocrlf=true, and 366 of 414 tracked files reached
-the Windows work tree as CRLF, the installed plugin included. One rule in
-.gitattributes overrides it for every clone.
-Rejected: asking each user to set core.autocrlf=false (a setting on each machine, and
-it changes every other repo of theirs), making each script and test strip \r (dozens
-of readers, and a new one forgets), `* text eol=lf` without auto (git would treat the
-PNG files as text unless each one is listed).
-Source: specs/lf-checkout.md
-Status: active
-```
+Recorded as D89.
 
 ## Open items
 
