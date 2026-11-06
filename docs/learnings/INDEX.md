@@ -213,3 +213,6 @@ One line per lesson. Loaded into every session in this repo.
 - A Node script that drives a browser must `process.exit` after its output
   flushes, and its e2e needs a wall-clock limit.
   ([detail](node-cdp-scripts-exit-explicitly.md))
+- Git Bash's grep strips a CR before it matches, so a grep for `\r` passes
+  on CRLF text; test for a CR with a bash pattern.
+  ([detail](git-bash-grep-cannot-see-cr.md))

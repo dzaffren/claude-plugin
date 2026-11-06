@@ -1,6 +1,6 @@
 # LF checkout
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
@@ -52,7 +52,7 @@ Scenario: Vendored files arrive byte for byte
   Then each file is identical, including .agents/skills/shadcn/assets/shadcn.png
 
 Scenario: A CRLF file goes into the index as LF
-  Given the same clone, and docs/specs/refunds.md written with CRLF line ends
+  Given the same clone, git's default core.autocrlf=false, and docs/specs/refunds.md written with CRLF line ends
   When the user runs git add docs/specs/refunds.md
   Then the staged blob of docs/specs/refunds.md has no CR byte
 ```
@@ -100,7 +100,7 @@ sequenceDiagram
     T->>W: git -c core.autocrlf=true clone S
     T->>W: git ls-files --eol (no w/crlf), grep for CR in 3 named files
     T->>W: cmp each .agents/skills/ file with git cat-file blob
-    T->>W: write refunds.md with CRLF, git add, read the staged blob
+    T->>W: write refunds.md with CRLF, git -c core.autocrlf=false add, read the staged blob
 ```
 
 ### Changes
@@ -159,6 +159,8 @@ Recorded as D89.
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | A pull leaves an existing Windows clone CRLF. How does an existing install, such as this machine's marketplace clone, get the fix? | question | spec p1 | user | Resolved | The CHANGELOG line that /ship writes tells Windows users to remove and re-add the marketplace once, so that a fresh clone replaces the CRLF one. No new code, 2026-11-07 |
+| O2 | Scenario 3 said "Given the same clone", which has core.autocrlf=true. Then git strips the CR on add without the rule, so the scenario passed before the fix. | flag | build | user | Decided alone | **Chose:** stage the file with `core.autocrlf=false`, git's default on Linux and macOS, where only the rule removes the CR. **Other:** keep autocrlf=true, and the scenario proves nothing. **Undo:** drop `-c core.autocrlf=false` from the `git add` in `test-e2e-lf-checkout.sh`, and the Given line here. 2026-11-07 |
+| O3 | The full suite stays red on Windows: 546 failures in 32 files, run in a fresh LF clone of this branch. | flag | build | user | Decided alone | **Chose:** build with them red. Each file fails as often as on `main` at 03962c3 or less (596 failures in 38 files there), and 50 failures are fixed, 6 files green. The two new rows are `e2e-lf-checkout` (9) and no other. `e2e-board` hung on its `board.py serve` servers, as on `main`, and was stopped by hand. **Other:** fix the other causes here. **Undo:** none needed; `guard-paths`, `utf8-stdio` and `portable-suite` own them. 2026-11-07 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
