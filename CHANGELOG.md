@@ -16,6 +16,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - On Windows, a new install of zuko now gets its scripts and skills with LF line ends, as on Linux and macOS. An install made before this fix keeps its CRLF files after an update: remove the marketplace and add it again once, with `/plugin marketplace remove dzafran-claude-plugins` and then `/plugin marketplace add dzaffren/claude-plugin`.
+- On Windows, the commit guards now read Git Bash paths such as `/tmp/...` and `/c/...`, so a Claude trailer in a message file and a commit straight onto `main` in another repo are blocked, as on Linux and macOS.
+- The attribution guard blocks a commit, tag, release or PR message that it cannot read, on every OS: a missing file, a `$VAR` path, a file that the same command writes, or a message from stdin. Write the file in a separate Bash call, or give the message inline.
+- On Windows, the pentester can run its proofs in its scratch copy, so a Windows release pentest can prove a finding.
+
+### Security
+
+- On Windows, a secret staged in a repo that a commit reached through `cd /tmp/...` or `git -C /c/...` was not scanned. The secret scan now checks it.
 
 ## [2.5.1] - 2026-10-28
 

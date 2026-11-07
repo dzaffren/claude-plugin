@@ -256,6 +256,7 @@ projects.
 - /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token
 - The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out
 - A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only
+- On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it
 
 ## Docs
 
