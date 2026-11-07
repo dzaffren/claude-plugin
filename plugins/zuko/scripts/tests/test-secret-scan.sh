@@ -18,13 +18,13 @@ key="AKIA""ABCDEFGHIJKLMNOP"
 echo "aws=$key" >"$wt/creds.txt"
 git -C "$wt" add creds.txt
 
-scan() {   # scan <shell command> [<cwd>]; sets $scan_status
+scan() {   # scan <shell command> [<cwd>]; sets $scan_status $scan_err
   local payload
   payload=$(ZUKO_CMD="$1" ZUKO_CWD="${2:-}" python3 -c 'import json,os
 p={"tool_input":{"command":os.environ["ZUKO_CMD"]}}
 if os.environ["ZUKO_CWD"]: p["cwd"]=os.environ["ZUKO_CWD"]
 print(json.dumps(p))')
-  printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/secret-scan.sh" >/dev/null 2>&1
+  scan_err=$(printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" bash "$scripts/secret-scan.sh" 2>&1 >/dev/null)
   scan_status=$?
 }
 
@@ -49,6 +49,22 @@ expect_exit 0 "$scan_status" "a clean staged diff in the session's own repo pass
 
 scan "git -C $repo commit -m x" "$wt"
 expect_exit 0 "$scan_status" "a commit pointed away from the secret's worktree passes"
+
+# A mktemp -d repo is a Git Bash path on Windows, /tmp/tmp.X, which native
+# Python could not place, so the scan read only the clean session repo and
+# passed (guard-paths).
+staged_repo=$(mktemp -d)
+git -C "$staged_repo" init -q -b feat/refund-cap
+printf 'aws_key = "%s"\n' "AKIA""IOSFODNN7EXAMPLE" >"$staged_repo/config.py"
+git -C "$staged_repo" add config.py
+
+scan "cd $staged_repo && git commit -m 'feat: cap refunds'" "$repo"
+expect_exit 2 "$scan_status" "a secret staged in a mktemp -d repo a cd moves to is blocked"
+expect_match 'aws_key = "AKIA' "$scan_err" "the cd block names the staged line"
+
+scan "git -C $staged_repo commit -m x" "$repo"
+expect_exit 2 "$scan_status" "a secret staged in a mktemp -d repo -C points at is blocked"
+rm -rf "$staged_repo"
 
 # Move the secret into the project repo. A commit that reaches it through a
 # move the walk cannot follow must still have it scanned.
