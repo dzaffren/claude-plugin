@@ -146,6 +146,7 @@ expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_
 
 run_hook "git commit -F msg.txt" "$gitbash"
 expect_exit 2 "$hook_status" "a relative -F file is read from the payload cwd"
+expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the payload-cwd block is the attribution one, not an unread file"
 
 run_hook "gh pr create -t 'fix: refund cap' --body-file msg.txt" "$gitbash"
 expect_exit 2 "$hook_status" "a relative gh --body-file is read from the payload cwd"
