@@ -1,3 +1,7 @@
+# Every text file is LF in the index and in each work tree, on every OS. Git
+# for Windows sets core.autocrlf=true, and this rule overrides it (D89).
+* text=auto eol=lf
+
 # The skills CLI hashes vendored skill files byte for byte (skills-lock.json),
 # so git must not rewrite their line endings on checkout.
 .agents/skills/** -text
