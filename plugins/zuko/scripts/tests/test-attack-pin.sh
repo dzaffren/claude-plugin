@@ -86,11 +86,14 @@ out=$(pin)
 expect_exit 0 "$?" "a gh error exits 0"
 expect_exit 0 "$([ -z "$out" ]; echo $?)" "a gh error prints nothing"
 
-# No gh at all: PATH keeps every directory except the ones that hold a gh.
-nogh=""
-IFS=: read -ra dirs <<<"$PATH"
-for d in "${dirs[@]}"; do
-  [ -n "$d" ] && [ ! -e "$d/gh" ] && [ ! -e "$d/gh.exe" ] && nogh="${nogh:+$nogh:}$d"
+# No gh at all: PATH is one directory that holds only the tools the script
+# calls. Filtering the real PATH would also drop dirname wherever gh sits
+# beside it, as /usr/bin/gh does on Linux.
+nogh="$work/nogh"
+mkdir -p "$nogh"
+for tool in dirname grep; do
+  printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v "$tool")" >"$nogh/$tool"
+  chmod +x "$nogh/$tool"
 done
 gh_files skills/security-audit/AI-AND-LLM.md
 expect_exit 1 "$(PATH="$nogh" command -v gh >/dev/null 2>&1; echo $?)" "the no-gh PATH has no gh on it"
