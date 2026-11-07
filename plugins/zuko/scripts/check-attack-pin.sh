@@ -23,7 +23,8 @@ done <"$copy/README.md"
 [[ $pin =~ ^[0-9a-f]{40}$ ]] || exit 0
 
 command -v gh >/dev/null 2>&1 || exit 0
-changed=$(gh api "repos/cloudflare/security-audit-skill/compare/$pin...main" --jq '.files[].filename' 2>/dev/null) || exit 0
+# A rename lists the new path as filename and the old one as previous_filename.
+changed=$(gh api "repos/cloudflare/security-audit-skill/compare/$pin...main" --jq '.files[] | .filename, (.previous_filename // empty)' 2>/dev/null) || exit 0
 changed=${changed//$'\r'/}   # gh ends each line with \r\n on Windows
 
 # The glob sorts in C order, so the names come out sorted.

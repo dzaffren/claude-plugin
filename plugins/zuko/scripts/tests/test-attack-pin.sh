@@ -15,7 +15,18 @@ cat >"$work/bin/gh" <<'GH'
 printf '%s\n' "$*" >>"$FAKE_GH/calls"
 if [ -f "$FAKE_GH/api-error" ]; then cat "$FAKE_GH/api-error" >&2; exit 1; fi
 case "$1 $2" in
-  "api repos/cloudflare/security-audit-skill/compare/"*) cat "$FAKE_GH/files" ;;
+  "api repos/cloudflare/security-audit-skill/compare/"*)
+    cat "$FAKE_GH/files"
+    # A renamed file: GitHub lists the new path as filename, and the old one
+    # only as previous_filename, which --jq prints only when it asks for it.
+    if [ -f "$FAKE_GH/renamed" ]; then
+      while read -r old new; do
+        printf '%s
+' "$new"
+        case "$*" in *previous_filename*) printf '%s
+' "$old" ;; esac
+      done <"$FAKE_GH/renamed"
+    fi ;;
   *) echo "fake gh: unexpected call: $*" >&2; exit 1 ;;
 esac
 GH
@@ -25,6 +36,11 @@ PATH="$work/bin:$PATH"
 gh_files() {    # gh_files <path>...: the file names the compare returns
   rm -rf "$FAKE_GH"; mkdir -p "$FAKE_GH"
   printf '%s\r\n' "$@" >"$FAKE_GH/files"
+}
+gh_renamed() {  # gh_renamed <old path> <new path>: the compare returns one rename
+  gh_files README.md
+  printf '%s %s
+' "$1" "$2" >"$FAKE_GH/renamed"
 }
 pin() { bash "$scripts/check-attack-pin.sh" 2>&1; }
 
@@ -47,12 +63,17 @@ gh_files README.md skills/security-audit/AI-AND-LLM.md
 out=$(pin)
 expect_exit 0 "$?" "a changed copied file exits 0: it is a notice, not a gate"
 expect_exit 0 "$([ "$out" = "attack-classes: upstream changed AI-AND-LLM.md after c1c8a8c. This pentest uses the pinned copy." ]; echo $?)" "a changed copied file prints exactly the notice line"
-expect_exit 0 "$([ "$(cat "$FAKE_GH/calls" 2>/dev/null)" = "api repos/cloudflare/security-audit-skill/compare/$pin_sha...main --jq .files[].filename" ]; echo $?)" "it makes one compare call from the pin in the real README"
+expect_exit 0 "$([ "$(cat "$FAKE_GH/calls" 2>/dev/null)" = "api repos/cloudflare/security-audit-skill/compare/$pin_sha...main --jq .files[] | .filename, (.previous_filename // empty)" ]; echo $?)" "it makes one compare call from the pin in the real README"
 
 # Two copied files changed: one line, names in sorted order.
 gh_files skills/security-audit/SUPPLY-CHAIN-AND-RELEASE.md README.md skills/security-audit/AI-AND-LLM.md
 out=$(pin)
 expect_exit 0 "$([ "$out" = "attack-classes: upstream changed AI-AND-LLM.md, SUPPLY-CHAIN-AND-RELEASE.md after c1c8a8c. This pentest uses the pinned copy." ]; echo $?)" "two changed copied files give one line with a sorted comma list"
+
+# A copied file renamed upstream is a change to it, so it gets the notice too.
+gh_renamed skills/security-audit/AI-AND-LLM.md skills/security-audit/AI-AND-AGENTS.md
+out=$(pin)
+expect_exit 0 "$([ "$out" = "attack-classes: upstream changed AI-AND-LLM.md after c1c8a8c. This pentest uses the pinned copy." ]; echo $?)" "a copied file renamed upstream prints the notice with its old name"
 
 # Scenario 5: only files that are not copied changed.
 gh_files README.md skills/security-audit/HUNTING.md vendor/skills/security-audit/AI-AND-LLM.md
