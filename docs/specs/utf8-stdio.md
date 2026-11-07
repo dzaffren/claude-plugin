@@ -1,6 +1,6 @@
 # UTF-8 stdio
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
@@ -238,6 +238,7 @@ Recorded as D98, D99.
 | O4 | How does each Python process get UTF-8 with LF: the same loop in each process, a shared `lib/utf8.py`, or `PYTHONUTF8=1` in the hooks? | question | spec p3 | user | Resolved | The same `reconfigure` loop in each process, enforced by `test-utf8-stdio.sh`. Drafted as D98, 2026-11-08 |
 | O5 | On Linux and macOS, `print()` never writes CRLF, so the e2e no-CR checks prove nothing there. | flag | spec p3 | user | Accepted risk | Proven on this Windows machine at `/build` and `/ship`, and by `windows-ci` from slice 5. Moving `windows-ci` first breaks the shape's order, 2026-11-08 |
 | O6 | Scenario 3 said "Given the spec docs/specs/lf-checkout.md, whose rows hold "·" and "—"" and "Then "·" is the bytes C2 B7 and "—" is the bytes E2 80 94". The PR body of that spec holds `·` but no `—`. | flag | build | user | Decided alone | Chose: check `·` only, from the real spec. Other: write a fixture spec whose Decided alone rows hold `—`. Undo: add a `—` to a Chose cell of `tests/fixtures/utf8-stdio/lf-checkout.md`, and put back the `—` check in `test-e2e-utf8-stdio.sh`. 2026-11-08 |
+| O7 | O3 needs the full suite on Windows, compared file by file with `main` in fresh worktrees. Claude Code stopped both full runs because the machine ran low on memory. | flag | build | user | Decided alone | Chose: set Built on the files measured. In fresh worktrees, 9 files ran on both: `block-attribution` went from 3 failures to 0, `board` from 10 to 2, `changelog` from 9 to 0 and `check-open-items` from 1 to 0, and the other five stayed green. `scope-pentester-bash` passes 256 of 256, as on `main`. In this old checkout, `decisions` went from 17 to 1, `pr-body` from 3 to 0, `gate` from 2 to 0, `glossary` from 9 to 5 and `render-readme-block` from 22 to 15, and `fence` stayed at 8. `e2e-utf8-stdio` passes 18 of 18 and `utf8-stdio` 23 of 23. Not measured: `test-verify-ship-gates.sh`, the files after it, and `test-release.sh`, which ran past 300 s on `main` too. Other: hold Built until a full run finishes. Undo: run `bash plugins/zuko/scripts/tests/run.sh` in a fresh worktree of this branch. If a file fails more often than on `main`, or `verify-ship-gates` or `release` miss the O3 counts, set Status back to Draft. 2026-11-08 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
