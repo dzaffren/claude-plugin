@@ -21,10 +21,8 @@ case "$1 $2" in
     # only as previous_filename, which --jq prints only when it asks for it.
     if [ -f "$FAKE_GH/renamed" ]; then
       while read -r old new; do
-        printf '%s
-' "$new"
-        case "$*" in *previous_filename*) printf '%s
-' "$old" ;; esac
+        printf '%s\r\n' "$new"
+        case "$*" in *previous_filename*) printf '%s\r\n' "$old" ;; esac
       done <"$FAKE_GH/renamed"
     fi ;;
   *) echo "fake gh: unexpected call: $*" >&2; exit 1 ;;
