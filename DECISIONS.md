@@ -972,3 +972,37 @@ of readers, and a new one forgets), `* text eol=lf` without auto (git would trea
 PNG files as text unless each one is listed).
 Source: specs/lf-checkout.md
 Status: active
+
+## D95 · 2026-11-07 · A message that the attribution guard cannot read is blocked, on every OS
+
+Why: a message file that the guard could not open passed on every OS: a missing file, a
+`$VAR` path, `-F -` from a heredoc, and on Windows every Git Bash path. Each one let a
+Claude trailer through, which D31 forbids for a payload.
+Rejected: blocking on Windows only (the `$VAR`, stdin and same-command cases stay open
+on Linux and macOS), reading the heredoc body for `-F -` (a pipe into stdin still cannot
+be read), keeping the pass (the guard stays fail-open).
+Source: specs/guard-paths.md
+Status: active
+
+## D96 · 2026-11-07 · The hooks convert a Git Bash path with cygpath, and only on Windows
+
+Why: Git Bash converts a path only when it passes it as an argument, and a hook gets the
+command as text inside JSON. `cygpath -m` reads Git Bash's own mount table, so `/tmp`,
+`/c/...` and `/usr` all convert as bash sees them.
+Rejected: a hand-written map of `/c/` to `C:/` (misses `/tmp`, `/usr` and any custom
+mount), setting MSYS2 environment variables (they change argument conversion, not text
+inside the payload), converting on every OS (Linux and macOS have no cygpath and need no
+change).
+Source: specs/guard-paths.md
+Status: active
+
+## D97 · 2026-11-07 · The pentester fence compares its paths with POSIX rules on every OS
+
+Why: the fence judges the text that Git Bash runs, such as `cd /tmp/tmp.Zr93Np`. Windows
+`os.path.normpath` turned `/` into `\`, so no scratch path passed and every proof was
+blocked (attack-classes O11).
+Rejected: converting each path with cygpath before the compare (the fence then judges a
+path that bash never sees, and `/tmp/..` folds differently), leaving it blocked (no
+Windows pentest can prove a finding).
+Source: specs/guard-paths.md
+Status: active
