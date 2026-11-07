@@ -342,42 +342,7 @@ No shared files. The e2e test in chunk B reads the files of chunk A, so it goes 
 
 ### Decisions to record
 
-```markdown
-## D90 · 2026-11-07 · The pentester reads a pinned copy of Cloudflare's attack-class files from the plugin
-
-Why: the pentester runs in every project, so the files ship with zuko. A pin at `c1c8a8c` keeps the link to upstream fixes. `ATTACK-CLASSES.md` and 9 companions are copied with the MIT licence (spec O1, shape O4).
-Rejected: each project installs the Cloudflare skill (zuko stages do not hand work to another plugin), rewrite the files in zuko's words (loses the link to upstream fixes), all 15 files (the four phase docs describe phases that zuko does not run), RESOURCE-EXHAUSTION-AND-AVAILABILITY.md (D5 excludes every DoS finding).
-Source: specs/attack-classes.md
-Status: active
-
-## D91 · 2026-11-07 · The pentester picks companion files from the upstream index, against the release range
-
-Why: the index gives each companion a target line, and the range is what the pentest hunts. A companion is read only when the range touches its kind of code, and each one gets an Assessed or Not assessed line (spec O2, O5).
-Rejected: a fixed map by project type (a CLI with a Dockerfile misses CLOUD-AND-DEPLOYMENT), read every file on each release (uses turns on classes with no code to hunt), match against the whole repo (more Assessed lines for the same hunt).
-Source: specs/attack-classes.md
-Status: active
-
-## D92 · 2026-11-07 · Where a class file and zuko's rules disagree, zuko's rules win
-
-Why: the class files only add places to look. The Never-a-finding list (D5), the severity grid (D4), a proof that the pentester ran, and no network stay. A lead that Cloudflare calls needs_validation is dropped until slice needs-validation (spec O3).
-Rejected: Cloudflare's rules win for its own classes (conflicts with D4, D5 and the proof rule, and each needs a superseding entry).
-Source: specs/attack-classes.md
-Status: active
-
-## D93 · 2026-11-07 · The attack-class pin check speaks only when upstream changed a copied file
-
-Why: the check runs once for each release. A notice for a README-only commit is noise, and the user stops reading it. Like D78, it only tells and never copies (spec O4).
-Rejected: a notice for any newer commit (README and phase-doc commits are noise), an automatic update of the copy (D78: a silent swap of prompt text).
-Source: specs/attack-classes.md
-Status: active
-
-## D94 · 2026-11-07 · Class files report in the Assessed lists, and a class finding keeps an OWASP category
-
-Why: one line for each class file, under the headings that exist, keeps `release.py cut` unchanged. `CATEGORY` reads `A0N:2025 name · class`, so the blind verifier still reads its OWASP section (spec O6, O7, O8).
-Rejected: one line for each class (40 or more lines in a report), a new report section (cut must learn it), a class-only category (the verifier must learn to read class files).
-Source: specs/attack-classes.md
-Status: active
-```
+Recorded as D90, D91, D92, D93, D94.
 
 ## Open items
 
