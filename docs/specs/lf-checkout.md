@@ -98,7 +98,7 @@ sequenceDiagram
     participant W as Windows-style clone
     T->>S: git clone the repo, copy in the work tree's .gitattributes, commit
     T->>W: git -c core.autocrlf=true clone S
-    T->>W: git ls-files --eol (no w/crlf), grep for CR in 3 named files
+    T->>W: git ls-files --eol (no w/crlf), check 3 named files for a CR byte
     T->>W: cmp each .agents/skills/ file with git cat-file blob
     T->>W: write refunds.md with CRLF, git -c core.autocrlf=false add, read the staged blob
 ```
