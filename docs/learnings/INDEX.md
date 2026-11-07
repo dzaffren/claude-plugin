@@ -219,3 +219,6 @@ One line per lesson. Loaded into every session in this repo.
 - Write a Decided alone row's Chose, Other and Undo labels as plain text —
   pr_body.py leaves a bold label's `**` in the PR table.
   ([detail](decided-alone-labels-are-plain.md))
+- On Windows, compare test counts in a fresh worktree — an old clone keeps its
+  CRLF files after the LF rule, and they fail checks the code passes.
+  ([detail](old-clone-keeps-crlf.md))

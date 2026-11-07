@@ -1,6 +1,6 @@
 # Guard paths
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
@@ -322,7 +322,12 @@ Recorded as D95, D96, D97. D90 to D94 are taken on `feat/attack-classes`, which 
 | O8 | The Interface said the unread files print first, then the attribution lines. | flag | build | user | Decided alone | Chose: the unread file and stdin problems print in command order, then the attribution lines. The Interface rule now says so. Other: sort the unread files before stdin. Undo: sort `problems` with `!unread` first in `block-attribution.sh`. 2026-11-07 |
 | O9 | `test-decision-pr.sh:55` matched the old `/ship` sentence "reads as a miss" word for word. The plan did not name that file. | flag | build | user | Decided alone | Chose: the regex now reads "is blocked", to match `skills/ship/SKILL.md:181`. Other: none, as the old text is gone. Undo: revert the change on line 55 of `test-decision-pr.sh`. 2026-11-07 |
 | O10 | The plan said a `>` or `>>` redirect that writes the message file's name blocks it. | flag | build | user | Decided alone | Chose: every redirect with a `>` counts, `>&`, `&>` and `2>` too, so `2>&1` adds the name `1`, which no message file has. `>|` and `tee` are not covered. Other: `>` and `>>` only. Undo: limit the `WRITTEN` test in `block-attribution.sh` to `redirect in (">", ">>")`. 2026-11-07 |
-| O11 | Three Windows details that the plan did not settle in `block-attribution.sh` and `git-command.py`. | flag | build | user | Decided alone | Chose: the payload `cwd` also goes through `native_path()`, because the `$PWD` fallback is a `/c/...` path. A trailing `` is stripped from each `!` line, as `check-skill-pin.sh:35` does. A `GIT_DIR=` prefix sets the directory to None for git only, so a `gh` call keeps its directory. Other: leave each one as it is. Undo: `base = sys.argv[2]`; delete the `typed=${typed%$''}` line; make `where()` in `invocations_with_dirs` return None for every program after the prefix. 2026-11-07 |
+| O11 | Three Windows details that the plan did not settle in `block-attribution.sh` and `git-command.py`. | flag | build | user | Decided alone | Chose: the payload `cwd` also goes through `native_path()`, because the `$PWD` fallback is a `/c/...` path. A trailing `
+` is stripped from each `!` line, as `check-skill-pin.sh:35` does. A `GIT_DIR=` prefix sets the directory to None for git only, so a `gh` call keeps its directory. Other: leave each one as it is. Undo: `base = sys.argv[2]`; delete the `typed=${typed%$'
+'}` line; make `where()` in `invocations_with_dirs` return None for every program after the prefix. 2026-11-07 |
+| O12 | After the merge, `test-block-attribution.sh` has 4 red checks in the main checkout: 203 passed, 4 failed. | flag | build | user | Decided alone | Chose: leave them red. Three of them fail on `main` too, from the `
+` that Python's `print()` writes on Windows, which slice 3 `utf8-stdio` owns: the two line-continuation checks and the heredoc commit form. The fourth, the `git-naming.md` check, fails only because this old checkout still has that file as CRLF. In a fresh worktree it passes, 204 passed and 3 failed. `e2e-guard-paths` passes 15 of 15. Other: fix the `
+` here. Undo: none needed; slice 3 owns it. 2026-11-07 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
