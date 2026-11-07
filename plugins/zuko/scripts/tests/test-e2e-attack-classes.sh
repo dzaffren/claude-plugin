@@ -77,6 +77,7 @@ expect_match '^ +\{class file\} \(Cloudflare \{pin\}\) — \{one-line reason\}' 
 expect_match 'The `\{pin\}` in each class-file line is the first 7 characters of the commit after `Pinned: `' "$agent_flat" "pentester: {pin} is the first 7 characters of the pinned commit"
 expect_exit 0 "$(sed -n 's/^Pinned: //p' <<<"$readme" | cut -c1-7 | grep -qx c1c8a8c; echo $?)" "pentester: the README's pinned commit gives c1c8a8c, as the examples show"
 expect_match '^CATEGORY: \{A0N:2025 name\}, or \{A0N:2025 name\} · \{class file\} \{class\}$' "$agent_text" "pentester: CATEGORY can carry a class after the OWASP name"
+expect_match 'Put the OWASP lines first in each list, then the class-file lines\.' "$agent_flat" "pentester: lists OWASP lines before class-file lines (D94)"
 expect_match '^ +AI-AND-LLM \(Cloudflare c1c8a8c\) — no model call, prompt or agent in the range$' "$agent_text" "pentester: the example skips AI-AND-LLM and says why"
 expect_match '^ +CLIENT-SIDE \(Cloudflare c1c8a8c\) — no browser code in the range$' "$agent_text" "pentester: the example skips CLIENT-SIDE and says why"
 skill_text=$(cat "$skill")
@@ -86,6 +87,8 @@ dispatch_at=$(grep -n 'Dispatch the `zuko:pentester` agent' "$skill" | head -n 1
 expect_exit 0 "$?" "release skill: runs the pin check before it dispatches the pentester"
 expect_match 'bash "\$\{CLAUDE_PLUGIN_ROOT\}/scripts/check-attack-pin\.sh"' "$skill_text" "release skill: runs check-attack-pin.sh from the plugin"
 expect_match '^   - AI-AND-LLM \(Cloudflare c1c8a8c\) — ' "$skill_text" "release skill: the report example has a class-file line"
+skill_flat=$(tr '\n' ' ' <<<"$skill_text" | tr -s ' ')
+expect_match 'Put the OWASP lines first, then the class-file lines \(D94\)\.' "$skill_flat" "release skill: lists OWASP lines before class-file lines (D94)"
 expect_match '· [0-9]+ class files$' "$skill_text" "release skill: the summary counts the class files read"
 expect_match 'class files not read: [0-9]+ — no matching code in the range' "$skill_text" "release skill: the summary says which class files were not read"
 
@@ -177,7 +180,8 @@ security='- Known medium issue: A05:2025 Injection · AI-AND-LLM tool-argument i
 grep -qxF -e "$security" <<<"$(git -C "$bare" show main:CHANGELOG.md)"
 expect_exit 0 "$?" "attack-class report: the CHANGELOG Security line carries the OWASP name and the class"
 
-# D94: in each list, the OWASP lines come first and the class-file lines after.
+# D94 in the fixture: in each list, the OWASP lines come first and the
+# class-file lines after. Section 3 checks the rule in the two prompts.
 for heading in "## Assessed" "## Not assessed"; do
   items=$(awk -v h="$heading" '$0 == h { f = 1; next } /^## / { f = 0 } f && /^- /' "$fixtures/report.md" | tr '\n' '|')
   expect_match '\(Cloudflare c1c8a8c\)' "$items" "attack-class report: $heading has class-file lines"
