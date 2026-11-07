@@ -228,6 +228,12 @@ Single chunk. Each edit is the same loop in a different file, and both tests rea
 
 Recorded as D98, D99.
 
+## Review
+
+2026-11-08 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/tests/test-e2e-utf8-stdio.sh:113` · compare the session list and the PR body with golden files of main's output · `da1f5f0`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
