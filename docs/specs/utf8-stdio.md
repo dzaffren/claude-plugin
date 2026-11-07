@@ -72,10 +72,10 @@ Scenario: The session start shows the decisions correctly
   And no line ends with a CR byte
 
 Scenario: The PR body is UTF-8 with LF
-  Given the spec docs/specs/lf-checkout.md, whose rows hold "·" and "—"
+  Given the spec docs/specs/lf-checkout.md, whose PR body holds "·"
   And Python's stdio is cp1252
   When /ship runs pr_body.py render docs/specs/lf-checkout.md
-  Then "·" is the bytes C2 B7 and "—" is the bytes E2 80 94
+  Then "·" is the bytes C2 B7
   And the output has 13 lines and no CR byte
 
 Scenario: The release guard reads a non-ASCII file name from git
@@ -237,6 +237,7 @@ Recorded as D98, D99.
 | O3 | What counts as done for the existing suite on Windows? | question | spec p1 | user | Resolved | The new e2e passes on Windows and Linux. No test file fails more often than on `main`. `test-decisions.sh`, `test-verify-ship-gates.sh` and `test-release.sh` fail 1, 2 and 150 times or fewer, as with `PYTHONUTF8=1` today, 2026-11-08 |
 | O4 | How does each Python process get UTF-8 with LF: the same loop in each process, a shared `lib/utf8.py`, or `PYTHONUTF8=1` in the hooks? | question | spec p3 | user | Resolved | The same `reconfigure` loop in each process, enforced by `test-utf8-stdio.sh`. Drafted as D98, 2026-11-08 |
 | O5 | On Linux and macOS, `print()` never writes CRLF, so the e2e no-CR checks prove nothing there. | flag | spec p3 | user | Accepted risk | Proven on this Windows machine at `/build` and `/ship`, and by `windows-ci` from slice 5. Moving `windows-ci` first breaks the shape's order, 2026-11-08 |
+| O6 | Scenario 3 said "Given the spec docs/specs/lf-checkout.md, whose rows hold "·" and "—"" and "Then "·" is the bytes C2 B7 and "—" is the bytes E2 80 94". The PR body of that spec holds `·` but no `—`. | flag | build | user | Decided alone | Chose: check `·` only, from the real spec. Other: write a fixture spec whose Decided alone rows hold `—`. Undo: add a `—` to a Chose cell of `tests/fixtures/utf8-stdio/lf-checkout.md`, and put back the `—` check in `test-e2e-utf8-stdio.sh`. 2026-11-08 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

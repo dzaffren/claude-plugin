@@ -18,6 +18,9 @@ has_bytes() {  # has_bytes <" e2 86 92 "> <file> <description>
     *) record FAIL "$3" "no$1in $2" ;;
   esac
 }
+same() {       # same <expected> <actual> <description>
+  if [ "$2" = "$1" ]; then record PASS "$3"; else record FAIL "$3" "expected [$1], got [$2]"; fi
+}
 no_cr() {      # no_cr <file> <description>
   local n; n=$(crs "$1")
   if [ "$n" = 0 ]; then record PASS "$2"; else record FAIL "$2" "$n CR bytes in $1"; fi
@@ -64,3 +67,12 @@ expect_exit 0 $? "session: load-decisions.sh exits 0"
 grep '^  D4 ' "$dir/session.txt" >"$dir/d4.txt"
 has_bytes " 33 20 c3 97 20 33 " "$dir/d4.txt" "session: × in the D4 line is the bytes C3 97"
 no_cr "$dir/session.txt" "session: no line ends with a CR byte"
+
+# --- Scenario 3: the PR body is UTF-8 with LF ---
+# A copy of the shipped spec docs/specs/lf-checkout.md, whose PR body holds ·.
+pr_spec="$scripts/tests/fixtures/utf8-stdio/lf-checkout.md"
+PYTHONIOENCODING=cp1252 python3 "$lib/pr_body.py" render "$pr_spec" >"$dir/pr.txt" 2>"$dir/pr.err"
+expect_exit 0 $? "pr body: render exits 0 with cp1252 stdio"
+has_bytes " c2 b7 " "$dir/pr.txt" "pr body: · is the bytes C2 B7"
+same 13 "$(wc -l <"$dir/pr.txt" | tr -d ' ')" "pr body: the output has 13 lines"
+no_cr "$dir/pr.txt" "pr body: the output has no CR byte"
