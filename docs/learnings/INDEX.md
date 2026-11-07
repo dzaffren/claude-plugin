@@ -225,3 +225,6 @@ One line per lesson. Loaded into every session in this repo.
 - Write code that holds a backslash with the Write tool — the Bash tool turns
   a `\\` into one `\` before bash sees it, even in a quoted heredoc.
   ([detail](bash-tool-collapses-double-backslash.md))
+- Run a seeded pentester run on Linux or macOS — on Windows the fence blocks
+  every proof, so judge only the scope block there.
+  ([detail](seeded-pentest-runs-need-a-posix-host.md))
