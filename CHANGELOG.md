@@ -19,6 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - On Windows, the commit guards now read Git Bash paths such as `/tmp/...` and `/c/...`, so a Claude trailer in a message file and a commit straight onto `main` in another repo are blocked, as on Linux and macOS.
 - The attribution guard blocks a commit, tag, release or PR message that it cannot read, on every OS: a missing file, a `$VAR` path, a file that the same command writes, or a message from stdin. Write the file in a separate Bash call, or give the message inline.
 - On Windows, the pentester can run its proofs in its scratch copy, so a Windows release pentest can prove a finding.
+- On Windows, zuko's scripts now write UTF-8 with LF line ends, as on Linux and macOS. The board renders instead of crashing, the PR body and the session-start decisions show `·`, `×` and `→` correctly, and the release guard reads file names with accents.
 
 ### Security
 
