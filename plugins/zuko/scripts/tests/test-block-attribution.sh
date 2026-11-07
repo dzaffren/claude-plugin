@@ -12,9 +12,12 @@ echo one >"$repo/a.txt"
 git -C "$repo" add a.txt
 git -C "$repo" commit -q -m "feat(repo): first commit" --no-verify
 
-run_hook() {   # run_hook <shell command>; sets $hook_out $hook_err $hook_status
+run_hook() {   # run_hook <shell command> [<cwd>]; sets $hook_out $hook_err $hook_status
   local payload
-  payload=$(ZUKO_CMD="$1" python3 -c 'import json,os; print(json.dumps({"tool_input":{"command":os.environ["ZUKO_CMD"]}}))')
+  payload=$(ZUKO_CMD="$1" ZUKO_CWD="${2:-}" python3 -c 'import json,os
+p={"tool_input":{"command":os.environ["ZUKO_CMD"]}}
+if os.environ["ZUKO_CWD"]: p["cwd"]=os.environ["ZUKO_CWD"]
+print(json.dumps(p))')
   # perl's alarm, not coreutils timeout: macOS ships perl but not timeout.
   hook_out=$(printf '%s' "$payload" | CLAUDE_PROJECT_DIR="$repo" perl -e 'alarm shift; exec @ARGV' 5 bash "$scripts/block-attribution.sh" 2>"$work/err")
   hook_status=$?
@@ -100,6 +103,68 @@ run_hook "git commit -F $gitbash/commit-msg.txt"
 expect_exit 2 "$hook_status" "blocks a trailer in a -F file at a mktemp -d path"
 expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the mktemp -d block names the commit message"
 
+# A message file the guard cannot read is blocked on every OS: it did not
+# check the text (guard-paths O1). The path is shown as typed.
+run_hook "gh pr create --title 'fix: refund cap' --body-file $gitbash/missing-msg.txt"
+expect_exit 2 "$hook_status" "a missing --body-file is blocked"
+expect_match "^Blocked: the guard could not read the PR body file $gitbash/missing-msg\\.txt, so it did not check the text\\.\$" "$hook_err" "the missing-file block names the file as typed"
+expect_match '^Write the file in a separate Bash call, before this command\. Or give the message with --body\.$' "$hook_err" "the missing-file block offers --body"
+
+run_hook 'git commit -F "$TMPDIR/msg"'
+expect_exit 2 "$hook_status" "a -F path the guard cannot expand is blocked"
+expect_match '^Blocked: the guard could not read the commit message file \$TMPDIR/msg, so it did not check the text\.$' "$hook_err" "the unexpanded-path block names \$TMPDIR/msg"
+expect_match 'Or give the message with -m\.$' "$hook_err" "the unexpanded-path block offers -m"
+
+run_hook "git commit -F - <<'EOF'
+fix: round refunds
+EOF"
+expect_exit 2 "$hook_status" "a -F - with a heredoc is blocked"
+expect_match '^Blocked: the commit message comes from stdin \(-F -\)\. The guard cannot read stdin, so it did not check the text\.$' "$hook_err" "the stdin block says the guard cannot read stdin"
+
+# The same command writes the file, so the copy on disk may be the last
+# commit's message. Here a clean stale copy hides the signed one.
+printf 'fix: an older clean message\n' >"$gitbash/m.txt"
+run_hook "cat > $gitbash/m.txt <<'EOF' && git commit -F $gitbash/m.txt
+fix: round refunds
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+EOF"
+expect_exit 2 "$hook_status" "a -F file that a redirect in the same command writes is blocked"
+expect_match "^Blocked: the guard could not read the commit message file $gitbash/m\\.txt," "$hook_err" "the redirect block names the file"
+
+run_hook "cat >> $gitbash/m.txt <<'EOF'
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+EOF
+git commit -F m.txt" "$gitbash"
+expect_exit 2 "$hook_status" "a relative -F file that a >> redirect on an earlier line writes is blocked"
+
+# A relative path is read from where git runs: the payload cwd, moved by cd.
+printf 'fix: round refunds\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n' >"$gitbash/msg.txt"
+run_hook "cd $gitbash && git commit -F msg.txt" "$repo"
+expect_exit 2 "$hook_status" "a relative -F file after cd is read from the cd target"
+expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the relative-after-cd block is the attribution one"
+
+run_hook "git commit -F msg.txt" "$gitbash"
+expect_exit 2 "$hook_status" "a relative -F file is read from the payload cwd"
+
+run_hook "gh pr create -t 'fix: refund cap' --body-file msg.txt" "$gitbash"
+expect_exit 2 "$hook_status" "a relative gh --body-file is read from the payload cwd"
+expect_match '^Blocked: the PR body carries Claude attribution\.' "$hook_err" "the relative gh block names the PR body"
+
+run_hook 'cd "$R" && git commit -F msg.txt' "$gitbash"
+expect_exit 2 "$hook_status" "a relative -F file after a cd the guard cannot place is blocked"
+expect_match '^Blocked: the guard could not read the commit message file msg\.txt,' "$hook_err" "the unplaced block names the file as typed"
+
+printf 'fix: round refunds\n' >"$gitbash/clean.txt"
+run_hook "git commit -F clean.txt" "$gitbash"
+expect_exit 0 "$hook_status" "a clean relative -F file in the payload cwd passes"
+
+# Each problem prints, the unread file first, then the attribution, once.
+run_hook "git commit -F $gitbash/missing-msg.txt -m 'Co-Authored-By: Claude <noreply@anthropic.com>'"
+expect_exit 2 "$hook_status" "an unread file and a trailer in one command block"
+expect_match '^Blocked: the guard could not read the commit message file' "$hook_err" "the two-problem block names the unread file"
+expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the two-problem block names the trailer"
+
 run_hook 'git commit -am "feat(ship): staged and signed
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"'
@@ -132,9 +197,18 @@ run_hook 'git commit -m "feat(ship): footer
 Generated with [Claude Code](https://claude.com/claude-code)"'
 expect_exit 2 "$hook_status" "blocks the claude.com footer link"
 
+# A fifo is never opened: the open would wait for a writer, and the alarm
+# would kill the hook with 142 instead of the guard's own 2. Git Bash makes a
+# fifo as a small file that native Windows programs, git among them, read as
+# a regular file, so there the guard reads the same bytes git would.
 mkfifo "$work/never-written"
 run_hook "git commit -F $work/never-written"
-expect_exit 0 "$hook_status" "a -F target that is not a regular file is skipped, not waited on"
+if [ "$(python3 -c 'import os,sys; print(os.path.isfile(sys.argv[1]))' "$work/never-written")" = True ]; then
+  expect_exit 0 "$hook_status" "a Git Bash fifo that Python reads as a file is read, not waited on"
+else
+  expect_exit 2 "$hook_status" "a -F target that is not a regular file is blocked, not waited on"
+  expect_match '^Blocked: the guard could not read the commit message file .*/never-written, so it did not check the text\.$' "$hook_err" "the fifo block names the file"
+fi
 
 run_hook 'git log --grep="Co-Authored-By: Claude" --oneline'
 expect_exit 0 "$hook_status" "allows the trailer as a search argument to git log"
@@ -196,7 +270,9 @@ run_hook "git tag -a v2.2.0 -F $work/tag-clean.txt"
 expect_exit 0 "$hook_status" "allows a clean git tag -F file"
 
 run_hook 'git tag -a v2.2.0 -F -'
-expect_exit 0 "$hook_status" "a git tag -F - reads stdin and is skipped"
+expect_exit 2 "$hook_status" "a git tag -F - reads stdin and is blocked"
+expect_match '^Blocked: the tag message comes from stdin \(-F -\)\. The guard cannot read stdin, so it did not check the text\.$' "$hook_err" "the git tag stdin block names the tag message"
+expect_match '^Give the message with -m\. Or write it to a file in a separate Bash call, before this command\.$' "$hook_err" "the git tag stdin block offers -m"
 
 # Release notes and titles: every option form gh release create reads them from.
 run_hook 'gh release create v2.2.0 --verify-tag -t v2.2.0 -n "- feat: cut a version
@@ -255,7 +331,9 @@ expect_exit 0 "$hook_status" "allows a clean gh release create"
 expect_no_match '.' "$hook_out$hook_err" "a clean gh release create prints nothing"
 
 run_hook 'gh release create v2.2.0 -F -'
-expect_exit 0 "$hook_status" "a gh release -F - reads stdin and is skipped"
+expect_exit 2 "$hook_status" "a gh release -F - reads stdin and is blocked"
+expect_match '^Blocked: the release notes come from stdin \(-F -\)\.' "$hook_err" "the gh release stdin block names the release notes"
+expect_match '^Give the message with --notes\.' "$hook_err" "the gh release stdin block offers --notes"
 
 # Every other option of gh release create that takes a value takes it too
 # (gh 2.101.0, gh release create --help). Else --target -t reads -n as the
@@ -450,7 +528,12 @@ run_hook 'gh pr create --fill'
 expect_exit 0 "$hook_status" "allows gh pr create --fill"
 
 run_hook 'gh pr create -t "feat(export): write ledger csv" -F -'
-expect_exit 0 "$hook_status" "a gh pr -F - reads stdin and is skipped"
+expect_exit 2 "$hook_status" "a gh pr -F - reads stdin and is blocked"
+
+run_hook 'gh pr create -t "feat(export): write ledger csv" --body-file -'
+expect_exit 2 "$hook_status" "a gh pr --body-file - reads stdin and is blocked"
+expect_match '^Blocked: the PR body comes from stdin \(--body-file -\)\.' "$hook_err" "the gh pr stdin block names the option as typed"
+expect_match '^Give the message with --body\.' "$hook_err" "the gh pr stdin block offers --body"
 
 run_hook 'gh pr create --web'
 expect_exit 0 "$hook_status" "allows gh pr create --web"
