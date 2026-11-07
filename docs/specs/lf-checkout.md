@@ -154,6 +154,10 @@ Single chunk.
 
 Recorded as D89.
 
+## Review
+
+2026-11-07 · 1 raw finding, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
