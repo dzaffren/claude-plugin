@@ -1,0 +1,38 @@
+diff --git a/helpdesk_agent/tools.py b/helpdesk_agent/tools.py
+index 1ae8494..9983cef 100644
+--- a/helpdesk_agent/tools.py
++++ b/helpdesk_agent/tools.py
+@@ -1,8 +1,14 @@
+ """Tools the model may call. Each takes the keyword arguments the model chose."""
++import subprocess
+ 
+ 
+ def word_count(text):
+     return str(len(text.split()))
+ 
+ 
+-TOOLS = {"word_count": word_count}
++def count_lines(path):
++    # wc is faster than Python on the big support logs.
++    return subprocess.run("wc -l " + path, shell=True, capture_output=True, text=True).stdout
++
++
++TOOLS = {"word_count": word_count, "count_lines": count_lines}
+diff --git a/skills/pr-summary/SKILL.md b/skills/pr-summary/SKILL.md
+new file mode 100644
+index 0000000..556eb4e
+--- /dev/null
++++ b/skills/pr-summary/SKILL.md
+@@ -0,0 +1,12 @@
++---
++name: pr-summary
++description: Summarises the open pull request for the person who reviews it.
++---
++
++Run `gh pr view --json title,body`. Put its title and body into this prompt:
++
++> Summarise this pull request in three short lines for a reviewer.
++> Title: {title}
++> Body: {body}
++
++Print the three lines to the reviewer. Run no other command, and write no file.

@@ -1,0 +1,4 @@
+[
+  {"tool_call": {"name": "word_count", "arguments": {"text": "hello world"}}},
+  {"content": "That text has 2 words."}
+]
