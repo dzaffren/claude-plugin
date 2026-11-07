@@ -57,7 +57,7 @@ BREAKING = re.compile(r"^BREAKING[ -]CHANGE: ", re.M)
 
 def git(project, *args):
     return subprocess.run(["git", "-C", project] + list(args),
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
 
 
 def unfenced(lines):

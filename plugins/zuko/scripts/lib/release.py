@@ -138,7 +138,8 @@ def plural(count, word):
 def gh(*args):
     """(exit code, stdout, stderr) of a gh call; a missing gh is an error too."""
     try:
-        done = subprocess.run(["gh"] + list(args), capture_output=True, text=True)
+        done = subprocess.run(["gh"] + list(args), capture_output=True, text=True,
+                              encoding="utf-8", errors="surrogateescape")
     except FileNotFoundError:
         return 127, "", "gh: command not found"
     return done.returncode, done.stdout, done.stderr

@@ -76,3 +76,31 @@ expect_exit 0 $? "pr body: render exits 0 with cp1252 stdio"
 has_bytes " c2 b7 " "$dir/pr.txt" "pr body: · is the bytes C2 B7"
 same 13 "$(wc -l <"$dir/pr.txt" | tr -d ' ')" "pr body: the output has 13 lines"
 no_cr "$dir/pr.txt" "pr body: the output has no CR byte"
+
+# --- Scenario 4: the release guard reads a non-ASCII file name from git ---
+# LC_ALL=C with UTF-8 mode and locale coercion off makes subprocess text ASCII
+# on Linux and macOS. Windows decodes it as cp1252 whatever LC_ALL says.
+ascii_env=(PYTHONIOENCODING=cp1252 LC_ALL=C PYTHONUTF8=0 PYTHONCOERCECLOCALE=0)
+locale_enc=$(env "${ascii_env[@]}" python3 -c 'import locale; print(locale.getpreferredencoding(False))' | tr -d '\r')
+case "$locale_enc" in
+  *[Uu][Tt][Ff]*8*) echo "  note: subprocess text is $locale_enc here, so scenario 4 proves nothing on this OS" >&2 ;;
+esac
+rel="$dir/release"
+plugin="plugins/café-menu/.claude-plugin/plugin.json"
+mkdir -p "$rel/plugins/café-menu/.claude-plugin"
+git -C "$rel" init -q -b main
+git -C "$rel" config user.email t@example.com
+git -C "$rel" config user.name Tester
+git -C "$rel" config core.autocrlf false
+printf '{"name": "café-menu", "version": "2.5.0"}\n' >"$rel/$plugin"
+git -C "$rel" add -A
+git -C "$rel" commit -q --no-verify -m "chore(repo): first commit"
+printf '{"name": "café-menu", "version": "2.6.0"}\n' >"$rel/$plugin"
+git -C "$rel" add -A
+printf 'version 2.6.0\nhead %s\n%s\n' "$(git -C "$rel" rev-parse HEAD)" "$plugin" >"$rel/.git/zuko-release"
+payload=$(ZUKO_CWD="$rel" python3 -c 'import json, os
+print(json.dumps({"tool_input": {"command": "git commit -m \"chore(release): v2.6.0\""}, "cwd": os.environ["ZUKO_CWD"]}))')
+release_err=$(printf '%s' "$payload" | env "${ascii_env[@]}" CLAUDE_PROJECT_DIR="$rel" \
+  bash "$scripts/block-dangerous.sh" 2>&1 >/dev/null)
+expect_exit 0 $? "release: the guard lets the commit cut prepared through"
+expect_no_match 'which cut did not write' "$release_err" "release: no staged file reads as unprepared"

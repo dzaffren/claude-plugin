@@ -236,7 +236,7 @@ def history(recorded, entries):
 
 def git(project, *args):
     return subprocess.run(["git", "-C", project] + list(args),
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
 
 
 def check(project, base, label):
