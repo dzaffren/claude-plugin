@@ -42,6 +42,7 @@ def emit(label, kind, value):
     if kind is None:
         return                      # an option's value that is not message text
     if kind == "file":
+        value = git_command.native_path(value)
         if not os.path.isfile(value):
             return                  # stdin, a fifo, a device: never readable
         try:

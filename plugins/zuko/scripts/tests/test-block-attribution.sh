@@ -92,6 +92,14 @@ printf 'feat(ship): from a clean file\n\nWhy it changed.\n' >"$work/clean.txt"
 run_hook "git commit -F $work/clean.txt"
 expect_exit 0 "$hook_status" "allows a clean -F message file"
 
+# A mktemp -d path is a Git Bash path on Windows, /tmp/tmp.X. The hook gets it
+# as text, so native Python read it as \tmp\tmp.X and passed (guard-paths).
+gitbash=$(mktemp -d)
+printf 'fix(refunds): stop a refund above the order total\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n' >"$gitbash/commit-msg.txt"
+run_hook "git commit -F $gitbash/commit-msg.txt"
+expect_exit 2 "$hook_status" "blocks a trailer in a -F file at a mktemp -d path"
+expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the mktemp -d block names the commit message"
+
 run_hook 'git commit -am "feat(ship): staged and signed
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"'
@@ -505,3 +513,5 @@ expect_exit 2 "$hook_status" "heredoc commit form: a trailer in the body is bloc
 expect_match '^Blocked: the commit message carries Claude attribution' "$hook_err" "heredoc commit form: the body is read as the commit message"
 run_hook "$heredoc_commit"
 expect_exit 0 "$hook_status" "heredoc commit form: a body with no trailer is allowed"
+
+rm -rf "$gitbash"

@@ -22,6 +22,8 @@ Exit 4 when it is over the length limit.
 import os
 import re
 import shlex
+import shutil
+import subprocess
 import sys
 
 # <<EOF, <<-EOF, <<'EOF', <<"EOF".
@@ -275,6 +277,26 @@ def subcommand_args(args):
         else:
             break
     return rest
+
+
+def native_path(path):
+    """`path` as this Python can open it.
+
+    Git Bash converts `/tmp/x` to `C:/.../Temp/x` only when it passes a path to
+    a program as an argument. A hook gets the command as text, so native
+    Windows Python reads `/tmp/x` as `\\tmp\\x` on the current drive. On Windows
+    a path that starts with `/` goes through `cygpath -m`, as one argument with
+    no shell. Any failure, and every other OS, gives the path back unchanged.
+    """
+    if os.name != "nt" or not path.startswith("/") or not shutil.which("cygpath"):
+        return path
+    try:
+        result = subprocess.run(["cygpath", "-m", "--", path], capture_output=True,
+                                encoding="utf-8", timeout=5)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return path
+    converted = result.stdout.strip()
+    return converted if result.returncode == 0 and converted else path
 
 
 def resolve(current, path):
