@@ -3,7 +3,7 @@
 # Only formats when the repo actually has the tool configured — never installs.
 set -uo pipefail
 
-file=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null) || exit 0
+file=$(python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("tool_input",{}).get("file_path",""))' 2>/dev/null) || exit 0
 [ -f "$file" ] || exit 0
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
 

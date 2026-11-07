@@ -104,3 +104,20 @@ release_err=$(printf '%s' "$payload" | env "${ascii_env[@]}" CLAUDE_PROJECT_DIR=
   bash "$scripts/block-dangerous.sh" 2>&1 >/dev/null)
 expect_exit 0 $? "release: the guard lets the commit cut prepared through"
 expect_no_match 'which cut did not write' "$release_err" "release: no staged file reads as unprepared"
+
+# --- Scenario 5: output with UTF-8 stdio is the same, byte for byte ---
+# Linux and macOS start with UTF-8 stdio. The loop must change nothing there.
+python3 "$lib/board.py" render "$shape" --by "/spec utf8-stdio pause 1" >"$dir/board-utf8.html" 2>/dev/null
+cmp -s "$dir/board.html" "$dir/board-utf8.html"
+expect_exit 0 $? "same bytes: the board with UTF-8 stdio"
+CLAUDE_PROJECT_DIR="$dec_repo" bash "$scripts/load-decisions.sh" </dev/null >"$dir/session-utf8.txt" 2>&1
+cmp -s "$dir/session.txt" "$dir/session-utf8.txt"
+expect_exit 0 $? "same bytes: the session-start decisions with UTF-8 stdio"
+python3 "$lib/pr_body.py" render "$pr_spec" >"$dir/pr-utf8.txt" 2>/dev/null
+cmp -s "$dir/pr.txt" "$dir/pr-utf8.txt"
+expect_exit 0 $? "same bytes: the PR body with UTF-8 stdio"
+
+# --- O2 (D99): a byte that is not UTF-8 goes out as it came ---
+printf 'git commit -m "caf\xff"' | python3 "$lib/git-command.py" >"$dir/raw.txt" 2>/dev/null
+expect_exit 0 $? "raw byte: git-command.py reads a command with a byte that is not UTF-8"
+has_bytes " 63 61 66 ff 0a " "$dir/raw.txt" "raw byte: 0xFF comes back as 0xFF, then LF"
