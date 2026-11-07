@@ -307,7 +307,7 @@ def resolve(current, path):
     """
     if not path or any(ch in path for ch in "$`"):
         return None
-    path = os.path.expanduser(path)
+    path = native_path(os.path.expanduser(path))
     if not os.path.isabs(path):
         if current is None:
             return None
