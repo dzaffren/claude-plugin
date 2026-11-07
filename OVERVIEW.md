@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-02 by /ship rendered-drift-check
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-07 by /ship lf-checkout
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -80,6 +80,7 @@ projects.
 | slice-name-path | Shipped | The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board | — |
 | rendered-drift-check | Shipped | /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token | https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo |
 | taste-skill-upgrade | Shipped | The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out | https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf |
+| lf-checkout | Shipped | A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only | https://claude.ai/artifact/JUtcu8GLjCzgejTUDXxWFg |
 
 ## More
 

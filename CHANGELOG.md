@@ -13,6 +13,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The taste skill stays pinned to its tag, and each design stage says when a newer release is out, so the skill moves only when you edit skills-lock.json.
 - /spec and /design now open each preview in a headless browser, in light and dark, and stop it when a colour, font size, font family or corner radius is not one of your design system's tokens. This catches what the source check cannot see, such as rgb() colours, shadcn classes and styles that a script sets.
 
+### Fixed
+
+- On Windows, a new install of zuko now gets its scripts and skills with LF line ends, as on Linux and macOS. An install made before this fix keeps its CRLF files after an update: remove the marketplace and add it again once, with `/plugin marketplace remove dzafran-claude-plugins` and then `/plugin marketplace add dzaffren/claude-plugin`.
+
 ## [2.5.1] - 2026-10-28
 
 ### Security

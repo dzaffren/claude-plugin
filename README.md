@@ -255,6 +255,7 @@ projects.
 - The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board
 - /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token
 - The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out
+- A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only
 
 ## Docs
 
