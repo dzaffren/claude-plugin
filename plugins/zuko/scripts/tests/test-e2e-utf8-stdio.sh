@@ -34,3 +34,33 @@ PYTHONIOENCODING=cp1252 python3 "$lib/board.py" render "$shape" --by "/spec utf8
 expect_exit 0 $? "board: render exits 0 with cp1252 stdio"
 has_bytes " e2 86 92 " "$dir/board.html" "board: → is the bytes E2 86 92"
 no_cr "$dir/board.html" "board: the HTML has no CR byte"
+
+# --- Scenario 2: the session start shows the decisions correctly ---
+dec_repo="$dir/decisions"
+mkdir -p "$dec_repo"
+cat >"$dec_repo/DECISIONS.md" <<'MD'
+# Decisions
+
+Append-only. A changed decision is a new entry that supersedes the old one; only an
+old entry's Status line ever changes.
+
+## D3 · 2026-09-25 · No feat, fix or breaking commit means no proposed release
+
+Why: a version number promises a change.
+Rejected: proposing a patch anyway (a release with nothing in it).
+Source: specs/release.md
+Status: active
+
+## D4 · 2026-09-27 · Security severity is a 3 × 3 exploitability × impact grid
+
+Why: one scale for every finding — the reviewer and the pentester share it.
+Rejected: CVSS (too many inputs for a code review).
+Source: specs/owasp-lens.md
+Status: active
+MD
+PYTHONIOENCODING=cp1252 CLAUDE_PROJECT_DIR="$dec_repo" bash "$scripts/load-decisions.sh" \
+  </dev/null >"$dir/session.txt" 2>&1
+expect_exit 0 $? "session: load-decisions.sh exits 0"
+grep '^  D4 ' "$dir/session.txt" >"$dir/d4.txt"
+has_bytes " 33 20 c3 97 20 33 " "$dir/d4.txt" "session: × in the D4 line is the bytes C3 97"
+no_cr "$dir/session.txt" "session: no line ends with a CR byte"
