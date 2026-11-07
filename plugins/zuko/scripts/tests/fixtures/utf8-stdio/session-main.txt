@@ -1,0 +1,3 @@
+Active decisions (DECISIONS.md) — check before proposing; supersede, don't contradict:
+  D3  No feat, fix or breaking commit means no proposed release
+  D4  Security severity is a 3 × 3 exploitability × impact grid

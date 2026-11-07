@@ -1,0 +1,13 @@
+## Your call
+
+3 things were decided without you. Each one can be undone.
+
+| ID | What | Chose | Other | Undo |
+| --- | --- | --- | --- | --- |
+| O2 | Scenario 3 said "Given the same clone", which has core.autocrlf=true. Then git strips the CR on add without the rule, so the scenario passed before the fix. | stage the file with `core.autocrlf=false`, git's default on Linux and macOS, where only the rule removes the CR. | keep autocrlf=true, and the scenario proves nothing. | drop `-c core.autocrlf=false` from the `git add` in `test-e2e-lf-checkout.sh`, and the Given line here. |
+| O3 | The full suite stays red on Windows: 546 failures in 32 files, run in a fresh LF clone of this branch. | build with them red. Each file fails as often as on `main` at 03962c3 or less (596 failures in 38 files there), and 50 failures are fixed, 6 files green. The only new test file, `e2e-lf-checkout`, passes its 9 checks. `e2e-board` hung on its `board.py serve` servers, as on `main`, and was stopped by hand. | fix the other causes here. | none needed; `guard-paths`, `utf8-stdio` and `portable-suite` own them. |
+| O4 | At ship, the full suite is red on Windows: 2493 passed, 546 failed, run in a fresh LF clone of this branch at f0a11f6. | ship with it red. The count equals the build run, every red file is red on `main` at 03962c3 too (596 failures there), and `e2e-lf-checkout` passes its 9 checks. `e2e-board` hung on its `board.py serve` servers, as on `main`, and was stopped by hand. | hold the PR until `portable-suite` makes the suite green. | none needed; `guard-paths`, `utf8-stdio` and `portable-suite` own the failures. |
+
+## Review
+
+2026-11-07 · 1 raw finding, 0 survived. Clean.

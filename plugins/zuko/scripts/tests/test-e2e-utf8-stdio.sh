@@ -41,26 +41,8 @@ no_cr "$dir/board.html" "board: the HTML has no CR byte"
 # --- Scenario 2: the session start shows the decisions correctly ---
 dec_repo="$dir/decisions"
 mkdir -p "$dec_repo"
-cat >"$dec_repo/DECISIONS.md" <<'MD'
-# Decisions
-
-Append-only. A changed decision is a new entry that supersedes the old one; only an
-old entry's Status line ever changes.
-
-## D3 · 2026-09-25 · No feat, fix or breaking commit means no proposed release
-
-Why: a version number promises a change.
-Rejected: proposing a patch anyway (a release with nothing in it).
-Source: specs/release.md
-Status: active
-
-## D4 · 2026-09-27 · Security severity is a 3 × 3 exploitability × impact grid
-
-Why: one scale for every finding — the reviewer and the pentester share it.
-Rejected: CVSS (too many inputs for a code review).
-Source: specs/owasp-lens.md
-Status: active
-MD
+# D4 holds "3 × 3", as the real DECISIONS.md does.
+cp "$scripts/tests/fixtures/utf8-stdio/DECISIONS.md" "$dec_repo/DECISIONS.md"
 PYTHONIOENCODING=cp1252 CLAUDE_PROJECT_DIR="$dec_repo" bash "$scripts/load-decisions.sh" \
   </dev/null >"$dir/session.txt" 2>&1
 expect_exit 0 $? "session: load-decisions.sh exits 0"
@@ -107,6 +89,15 @@ expect_no_match 'which cut did not write' "$release_err" "release: no staged fil
 
 # --- Scenario 5: output with UTF-8 stdio is the same, byte for byte ---
 # Linux and macOS start with UTF-8 stdio. The loop must change nothing there.
+# session-main.txt and pr-body-main.txt are what main at cce247e wrote for these
+# fixtures with UTF-8 stdio, made on Windows with PYTHONUTF8=1 and CRLF turned
+# into LF: the bytes a Linux run of main writes. The board holds today's date,
+# so it is compared run against run instead.
+golden="$scripts/tests/fixtures/utf8-stdio"
+cmp -s "$golden/session-main.txt" "$dir/session.txt"
+expect_exit 0 $? "same bytes as main: the session-start decisions"
+cmp -s "$golden/pr-body-main.txt" "$dir/pr.txt"
+expect_exit 0 $? "same bytes as main: the PR body"
 python3 "$lib/board.py" render "$shape" --by "/spec utf8-stdio pause 1" >"$dir/board-utf8.html" 2>/dev/null
 cmp -s "$dir/board.html" "$dir/board-utf8.html"
 expect_exit 0 $? "same bytes: the board with UTF-8 stdio"
