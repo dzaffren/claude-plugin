@@ -72,6 +72,10 @@ expect_match 'Never write `needs_validation`' "$agent_flat" "pentester: never re
 expect_match 'RESOURCE-EXHAUSTION-AND-AVAILABILITY\.md` is not in the plugin' "$agent_flat" "pentester: knows the resource-exhaustion file is left out"
 expect_match '^ +\{class file\} \(Cloudflare \{pin\}\) — \{classes used\}: \{files\}' "$agent_text" "pentester: the SCOPE template has an assessed class-file line"
 expect_match '^ +\{class file\} \(Cloudflare \{pin\}\) — \{one-line reason\}' "$agent_text" "pentester: the SCOPE template has a not-assessed class-file line"
+# {pin} is the commit after "Pinned: ", never the line's own first 7 characters,
+# which are the word "Pinned:".
+expect_match 'The `\{pin\}` in each class-file line is the first 7 characters of the commit after `Pinned: `' "$agent_flat" "pentester: {pin} is the first 7 characters of the pinned commit"
+expect_exit 0 "$(sed -n 's/^Pinned: //p' <<<"$readme" | cut -c1-7 | grep -qx c1c8a8c; echo $?)" "pentester: the README's pinned commit gives c1c8a8c, as the examples show"
 expect_match '^CATEGORY: \{A0N:2025 name\}, or \{A0N:2025 name\} · \{class file\} \{class\}$' "$agent_text" "pentester: CATEGORY can carry a class after the OWASP name"
 expect_match '^ +AI-AND-LLM \(Cloudflare c1c8a8c\) — no model call, prompt or agent in the range$' "$agent_text" "pentester: the example skips AI-AND-LLM and says why"
 expect_match '^ +CLIENT-SIDE \(Cloudflare c1c8a8c\) — no browser code in the range$' "$agent_text" "pentester: the example skips CLIENT-SIDE and says why"
