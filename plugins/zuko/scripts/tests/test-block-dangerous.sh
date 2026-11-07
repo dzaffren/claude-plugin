@@ -568,4 +568,19 @@ git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
 
+# The session sits on a feature branch. A mktemp -d repo on main is a Git Bash
+# path on Windows, /tmp/tmp.X, which native Python could not place, so the
+# guard checked only the session's branch and passed (guard-paths).
+on_main=$(mktemp -d)
+git -C "$on_main" init -q -b main
+git -C "$on_main" -c user.email=t@example.com -c user.name=Tester commit -q --allow-empty --no-verify -m "chore(repo): first commit"
+
+run_hook "git -C $on_main commit -m 'fix: round refunds'" "$repo"
+expect_exit 2 "$hook_status" "a commit with -C into a mktemp -d repo on main is blocked"
+expect_match '^Blocked: committing directly on main\. Create a branch first\.' "$hook_err" "the -C block says to create a branch"
+
+run_hook "cd $on_main && git commit -m x" "$repo"
+expect_exit 2 "$hook_status" "a commit after cd into a mktemp -d repo on main is blocked"
+rm -rf "$on_main"
+
 rm -rf "$work"

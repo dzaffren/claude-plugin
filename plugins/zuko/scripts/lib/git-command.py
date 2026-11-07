@@ -22,6 +22,8 @@ Exit 4 when it is over the length limit.
 import os
 import re
 import shlex
+import shutil
+import subprocess
 import sys
 
 # <<EOF, <<-EOF, <<'EOF', <<"EOF".
@@ -277,6 +279,26 @@ def subcommand_args(args):
     return rest
 
 
+def native_path(path):
+    """`path` as this Python can open it.
+
+    Git Bash converts `/tmp/x` to `C:/.../Temp/x` only when it passes a path to
+    a program as an argument. A hook gets the command as text, so native
+    Windows Python reads `/tmp/x` as `\\tmp\\x` on the current drive. On Windows
+    a path that starts with `/` goes through `cygpath -m`, as one argument with
+    no shell. Any failure, and every other OS, gives the path back unchanged.
+    """
+    if os.name != "nt" or not path.startswith("/") or not shutil.which("cygpath"):
+        return path
+    try:
+        result = subprocess.run(["cygpath", "-m", "--", path], capture_output=True,
+                                encoding="utf-8", timeout=5)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return path
+    converted = result.stdout.strip()
+    return converted if result.returncode == 0 and converted else path
+
+
 def resolve(current, path):
     """`current` moved to `path`, or None when the text cannot say where.
 
@@ -285,7 +307,7 @@ def resolve(current, path):
     """
     if not path or any(ch in path for ch in "$`"):
         return None
-    path = os.path.expanduser(path)
+    path = native_path(os.path.expanduser(path))
     if not os.path.isabs(path):
         if current is None:
             return None
@@ -308,8 +330,9 @@ def git_dir(args, current):
     return current
 
 
-def invocations_with_dirs(tokens, base):
-    """(directory, arguments) for every bare `git` token.
+def invocations_with_dirs(tokens, base, program="git"):
+    """(directory, arguments) for every bare `program` token, `git` unless
+    told otherwise. git's own options and a GIT_DIR= prefix apply to git only.
 
     A move is trusted only where the shell is sure to keep it for the git call:
     a `cd` or `pushd` that starts a command in a plain `&&` chain from the start
@@ -319,6 +342,11 @@ def invocations_with_dirs(tokens, base):
     and a `cd` or `pushd` anywhere the walk does not track, such as after `{`
     or `then`. None is never a guess: the caller checks every candidate.
     """
+    def where(args):
+        if program != "git":
+            return current
+        return None if overridden else git_dir(args, current)
+
     found = []
     current = base
     moved = False
@@ -331,8 +359,7 @@ def invocations_with_dirs(tokens, base):
             if moving:
                 current = None                    # a bare `cd` goes home
             if args is not None:
-                where = None if overridden else git_dir(args, current)
-                found.append((where, subcommand_args(args)))
+                found.append((where(args), subcommand_args(args)))
                 args = None
             if moved and token != "&&":
                 current = None
@@ -348,14 +375,13 @@ def invocations_with_dirs(tokens, base):
                 moving = moved = True
             else:
                 current, moved = None, True
-        elif token == "git":
+        elif token == program:
             args = []
         elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
             overridden = True
         at_start = False
     if args is not None:
-        where = None if overridden else git_dir(args, current)
-        found.append((where, subcommand_args(args)))
+        found.append((where(args), subcommand_args(args)))
     return found
 
 

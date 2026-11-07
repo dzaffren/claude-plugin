@@ -178,7 +178,7 @@ Open the PR with whichever is available: the GitHub MCP tools
 (`mcp__github__create_pull_request`), with the file's text as the body, or
 `gh pr create --title "{subject}" --body-file {git-dir}/zuko-pr-body.md`.
 Give `--body-file` the literal absolute path. The attribution hook reads the
-path as written, and a `$(…)` that it cannot expand reads as a miss.
+path as written, and a `$(…)` that it cannot expand is blocked.
 
 **No PR possible.** On a GitLab origin, or with neither `gh` nor the GitHub
 tools, open nothing. Print this, and never claim a PR exists that you did not

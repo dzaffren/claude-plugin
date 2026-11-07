@@ -5,8 +5,14 @@
 # repos that do not use Conventional Commits.
 set -uo pipefail
 
-cmd=$(python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
+input=$(cat)
+cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
 [ -z "$cmd" ] && exit 0
+
+# Where the command starts, which places a relative message file: the hook's
+# cwd, which follows the session's cd.
+base=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
+[ -n "$base" ] || base="$PWD"
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
@@ -14,10 +20,12 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # body and title, and merge commit message on the command line, via lib/git-command.py so that a
 # trailer inside a quoted argument to some other command is text, not a
 # message. Each line comes out as "<what it is><tab><line>" so the block can
-# say which one carried it.
+# say which one carried it. A message the guard could not read comes out as
+# "!unread<tab><what it is><tab><path as typed>", and one from stdin as
+# "!stdin<tab><what it is><tab><option as typed>". Each blocks (D31).
 # Exit 3 means the command would not parse; matching the raw text then
 # over-blocks rather than under-blocks.
-messages=$(ZUKO_COMMAND="$cmd" python3 - "$here" <<'PY' 2>/dev/null
+messages=$(ZUKO_COMMAND="$cmd" python3 - "$here" "$base" <<'PY' 2>/dev/null
 import importlib.util
 import os
 import sys
@@ -37,23 +45,50 @@ try:
 except ValueError:
     sys.exit(3)
 
+# Where the command starts. $PWD from Git Bash is a /c/... path.
+base = git_command.native_path(sys.argv[2])
 
-def emit(label, kind, value):
+# The names a > or >> in this command writes. The write runs after this guard,
+# so a message file of that name may still hold the last commit's text.
+WRITTEN = {os.path.basename(target) for redirect, target in zip(tokens, tokens[1:])
+           if git_command.is_redirection(redirect) and ">" in redirect} - {""}
+
+
+def read_file(label, typed, option, where):
+    """The text of a message file, or None once the line that says why the
+    guard could not read it is printed. A line that starts with ! is a problem,
+    never message text: no label starts with !."""
+    if typed == "-":
+        print("!stdin\t%s\t%s" % (label, option))
+        return None
+    path = None
+    if not any(ch in typed for ch in "$`") and os.path.basename(typed) not in WRITTEN:
+        path = git_command.native_path(os.path.expanduser(typed))
+        if not os.path.isabs(path):
+            path = os.path.join(where, path) if where else None
+    # Only a regular file is opened: a fifo would make the guard wait.
+    if path and os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                return handle.read(MAX_MESSAGE_BYTES)
+        except OSError:
+            pass
+    print("!unread\t%s\t%s" % (label, typed))
+    return None
+
+
+def emit(label, kind, value, option, where):
     if kind is None:
         return                      # an option's value that is not message text
     if kind == "file":
-        if not os.path.isfile(value):
-            return                  # stdin, a fifo, a device: never readable
-        try:
-            with open(value, encoding="utf-8", errors="replace") as handle:
-                value = handle.read(MAX_MESSAGE_BYTES)
-        except OSError:
-            return                  # unreadable is a miss, not a crash
+        value = read_file(label, value, option, where)
+        if value is None:
+            return
     for line in value.split("\n"):
         print("%s\t%s" % (label, line))
 
 
-def short_options(token, rest, letters, drop_equals):
+def short_options(token, rest, letters, drop_equals, where):
     """git's rule for -am"x", which gh's -n"x" follows too: the letters before
     the one that takes a value are flags, everything after it is the value,
     and an empty tail takes the next argument. gh's flag parser also drops
@@ -66,9 +101,9 @@ def short_options(token, rest, letters, drop_equals):
         if drop_equals and tail.startswith("="):
             tail = tail[1:]
         if tail:
-            emit(label, kind, tail)
+            emit(label, kind, tail, "-" + letter, where)
         elif rest:
-            emit(label, kind, rest.pop(0))
+            emit(label, kind, rest.pop(0), "-" + letter, where)
         return
 
 
@@ -85,8 +120,10 @@ def long_option(name, longs, abbreviate):
     return None
 
 
-def read_options(rest, longs, letters, drop_equals=False, abbreviate=False):
-    """Emit every option value that is message text or names a message file."""
+def read_options(rest, longs, letters, where, drop_equals=False, abbreviate=False):
+    """Emit every option value that is message text or names a message file.
+    `where` is the directory the command runs in, which places a relative
+    message file, or None when the text cannot say."""
     while rest:
         token = rest.pop(0)
         name, equals, value = token.partition("=")
@@ -94,25 +131,25 @@ def read_options(rest, longs, letters, drop_equals=False, abbreviate=False):
         if meaning:
             label, kind = meaning
             if equals:
-                emit(label, kind, value)
+                emit(label, kind, value, name, where)
             elif rest:
-                emit(label, kind, rest.pop(0))
+                emit(label, kind, rest.pop(0), name, where)
         elif token.startswith("--"):
             continue
         elif token.startswith("-") and len(token) > 1:
-            short_options(token, rest, letters, drop_equals)
+            short_options(token, rest, letters, drop_equals, where)
 
 
 # git commit and git tag take a message through the same four options.
 GIT_LABELS = {"commit": "commit message", "tag": "tag message"}
 
-for args in git_command.invocations(tokens):
+for where, args in git_command.invocations_with_dirs(tokens, base):
     if args and args[0] in GIT_LABELS:
         label = GIT_LABELS[args[0]]
         read_options(
             args[1:],
             {"--message": (label, "text"), "--file": (label, "file")},
-            {"m": (label, "text"), "F": (label, "file")}, abbreviate=True)
+            {"m": (label, "text"), "F": (label, "file")}, where, abbreviate=True)
 
 # An option that takes a value which is not message text. It must still take
 # its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
@@ -125,13 +162,14 @@ TITLE = ("release title", "text")
 RELEASE_VALUES = ("--discussion-category", "--notes-start-tag", "--repo", "--target")
 
 # "new" is gh's own alias for "create" (gh release create --help).
-for args in git_command.invocations(tokens, program="gh"):
+for where, args in git_command.invocations_with_dirs(tokens, base, program="gh"):
     if args[:1] == ["release"] and args[1:2] in (["create"], ["new"]):
         read_options(
             args[2:],
             {"--notes": NOTES, "--notes-file": NOTES_FILE, "--title": TITLE,
              **dict.fromkeys(RELEASE_VALUES, VALUE)},
-            {"n": NOTES, "F": NOTES_FILE, "t": TITLE, "R": VALUE}, drop_equals=True)
+            {"n": NOTES, "F": NOTES_FILE, "t": TITLE, "R": VALUE}, where,
+            drop_equals=True)
 
 BODY = ("PR body", "text")
 BODY_FILE = ("PR body", "file")
@@ -164,7 +202,7 @@ def after_repo(args):
 # "new" is gh's own alias for "create" (gh pr create --help). edit replaces an
 # open PR's body and title the same way. merge writes the merge commit on the
 # base branch from --subject and --body (gh pr merge --help) (D54).
-for args in git_command.invocations(tokens, program="gh"):
+for where, args in git_command.invocations_with_dirs(tokens, base, program="gh"):
     if args[:1] != ["pr"]:
         continue
     args = after_repo(args[1:])
@@ -175,21 +213,21 @@ for args in git_command.invocations(tokens, program="gh"):
              **dict.fromkeys(CREATE_VALUES, VALUE)},
             {"b": BODY, "F": BODY_FILE, "t": PR_TITLE, "a": VALUE, "B": VALUE,
              "H": VALUE, "l": VALUE, "m": VALUE, "p": VALUE, "r": VALUE,
-             "T": VALUE, "R": VALUE}, drop_equals=True)
+             "T": VALUE, "R": VALUE}, where, drop_equals=True)
     elif args[:1] == ["edit"]:
         read_options(
             args[1:],
             {"--body": BODY, "--body-file": BODY_FILE, "--title": PR_TITLE,
              **dict.fromkeys(EDIT_VALUES, VALUE)},
             {"b": BODY, "F": BODY_FILE, "t": PR_TITLE, "B": VALUE, "m": VALUE,
-             "R": VALUE}, drop_equals=True)
+             "R": VALUE}, where, drop_equals=True)
     elif args[:1] == ["merge"]:
         read_options(
             args[1:],
             {"--body": MERGE, "--body-file": MERGE_FILE, "--subject": MERGE,
              **dict.fromkeys(MERGE_VALUES, VALUE)},
             {"b": MERGE, "F": MERGE_FILE, "t": MERGE, "A": VALUE, "R": VALUE},
-            drop_equals=True)
+            where, drop_equals=True)
 PY
 )
 case $? in
@@ -199,14 +237,48 @@ esac
 
 [ -z "$found" ] && exit 0
 
+# A ! line is a message the guard could not read. Every other line is text.
+problems=$(grep '^!' <<<"$found" || true)
+found=$(grep -v '^!' <<<"$found" || true)
+
 # The labels are fixed words, so matching the labelled line cannot misfire.
 banned='co-authored-by:.*(claude|noreply@anthropic\.com)|claude-session:|https://claude\.(ai/code|com/claude-code)|generated with \[?claude code'
 offending=$(printf '%s\n' "$found" | grep -iE "$banned" || true)
-[ -z "$offending" ] && exit 0
+[ -z "$problems$offending" ] && exit 0
+
+{
+  printed=""
+  while IFS=$'\t' read -r problem label typed; do
+    [ -n "$problem" ] || continue
+    typed=${typed%$'\r'}   # print() ends the line with \r\n on Windows
+    case $label in
+      "commit message" | "tag message") inline=-m ;;
+      "release notes") inline=--notes ;;
+      *) inline=--body ;;
+    esac
+    [ -n "$printed" ] && echo ""
+    printed=yes
+    if [ "$problem" = '!stdin' ]; then
+      case $label in
+        "release notes") comes=come ;;
+        *) comes=comes ;;
+      esac
+      echo "Blocked: the $label $comes from stdin ($typed -). The guard cannot read stdin, so it did not check the text."
+      echo ""
+      echo "Give the message with $inline. Or write it to a file in a separate Bash call, before this command."
+    else
+      echo "Blocked: the guard could not read the $label file $typed, so it did not check the text."
+      echo ""
+      echo "Write the file in a separate Bash call, before this command. Or give the message with $inline."
+    fi
+  done <<<"$problems"
+} >&2
+[ -z "$offending" ] && exit 2
 
 labels=$(printf '%s\n' "$offending" | cut -f1 | awk '!seen[$0]++')
 
 {
+  [ -n "$problems" ] && echo ""
   while IFS= read -r label; do
     case $label in
       "release notes") echo "Blocked: the release notes carry Claude attribution." ;;

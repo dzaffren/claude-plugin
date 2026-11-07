@@ -35,3 +35,10 @@ so "is this a bare `git` token" was enough. "Is this at a command position"
 modelled far more of the shell than the fix needed, and every part of that
 model that was wrong became a hole. Same reasoning as
 [[test-the-guard-where-it-fires]]: state what the guard actually depends on.
+
+**Again:** 2026-11-07 · /review guard-paths. The pentester fence swapped
+`os.path` for `posixpath` to stop blocking every scratch path on Windows. The
+same swap stopped folding `\..` and never saw `C:/` as absolute, and Git Bash
+honours both, so three escapes opened. The old matcher had blocked them only by
+accident. Feed the new matcher the old one's blocked inputs in the shell's own
+spellings (`\`, a drive letter, a leading `\`) before shipping.
