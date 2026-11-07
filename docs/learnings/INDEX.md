@@ -216,3 +216,6 @@ One line per lesson. Loaded into every session in this repo.
 - Git Bash's grep strips a CR before it matches, so a grep for `\r` passes
   on CRLF text; test for a CR with a bash pattern.
   ([detail](git-bash-grep-cannot-see-cr.md))
+- Write a Decided alone row's Chose, Other and Undo labels as plain text —
+  pr_body.py leaves a bold label's `**` in the PR table.
+  ([detail](decided-alone-labels-are-plain.md))
