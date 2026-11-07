@@ -301,12 +301,21 @@ Chunk B uses only `tokenise` and `strip_heredocs` from the parser, which chunk A
 | --- | --- |
 | The new blocks stop a pattern that works today: `-F -` with a heredoc, or a message file that the same command writes. | The message names the fix in one line. zuko's own skills write their files in a separate call (`skills/ship/SKILL.md:179`, `skills/release/SKILL.md:241`), and the e2e test runs the `/ship` and `/release` forms. |
 | `cygpath` is missing, or prints an error, in a hook. | `native_path()` then returns the path unchanged. The file does not open, so the attribution guard blocks. A directory turns to None, and the guards check the session and project directories, as today. |
-| The fence change lets a path out of the scratch copy on Windows. | `posixpath.normpath` folds `..` before the compare, as on Linux. The fence tests run each escape form on Windows: `..` after the scratch dir, a sibling `tmp.*` dir and `/tmp/../c/...`. On Linux and macOS the code is the same as before. |
+| The fence change lets a path out of the scratch copy on Windows. | `posixpath.normpath` folds `..` before the compare, as on Linux. The fence reads `\` as `/` and blocks a drive path (O13). The fence tests run each escape form on Windows: `..` after the scratch dir, a sibling `tmp.*` dir, `/tmp/../c/...`, a `\..` step, a leading `\`, and `C:/` and `C:\` paths. |
 | A redirect check by file name blocks a commit that writes a different file of the same name. | That is a false block and fails closed. The message says which name, so Claude writes the file in a separate call. |
 
 ### Decisions to record
 
 Recorded as D95, D96, D97. D90 to D94 are taken on `feat/attack-classes`, which is not merged yet.
+
+## Review
+
+2026-11-07 · 6 raw findings, 4 survived, 4 fixed.
+
+- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:125` · the fence judges each word with `/` in place of `\`, so a `\..` redirect target in the repo is blocked · `01e359e`
+- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:409` · a drive path such as `C:/Users/...` is blocked in every word, on every OS · `507c23c`
+- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:120` · the same backslash fix blocks a `\..` path inside the scratch dir · `01e359e`
+- correctness · `plugins/zuko/scripts/tests/test-block-attribution.sh:149` · the payload-cwd check now matches the attribution block, not only exit 2 · `6f8b206`
 
 ## Open items
 
@@ -321,13 +330,10 @@ Recorded as D95, D96, D97. D90 to D94 are taken on `feat/attack-classes`, which 
 | O7 | The fifo check expected exit 2 on every OS. Git Bash's `mkfifo` makes a small regular file that native Python and `git.exe` both read without a wait. | flag | build | user | Decided alone | Chose: the check expects exit 2 and the unread message where Python sees a fifo, and exit 0 where it sees a regular file. The guard then reads what git reads. Other: detect MSYS special files and block them. Undo: put back a plain `expect_exit 2` in the fifo check of `test-block-attribution.sh`. 2026-11-07 |
 | O8 | The Interface said the unread files print first, then the attribution lines. | flag | build | user | Decided alone | Chose: the unread file and stdin problems print in command order, then the attribution lines. The Interface rule now says so. Other: sort the unread files before stdin. Undo: sort `problems` with `!unread` first in `block-attribution.sh`. 2026-11-07 |
 | O9 | `test-decision-pr.sh:55` matched the old `/ship` sentence "reads as a miss" word for word. The plan did not name that file. | flag | build | user | Decided alone | Chose: the regex now reads "is blocked", to match `skills/ship/SKILL.md:181`. Other: none, as the old text is gone. Undo: revert the change on line 55 of `test-decision-pr.sh`. 2026-11-07 |
-| O10 | The plan said a `>` or `>>` redirect that writes the message file's name blocks it. | flag | build | user | Decided alone | Chose: every redirect with a `>` counts, `>&`, `&>` and `2>` too, so `2>&1` adds the name `1`, which no message file has. `>|` and `tee` are not covered. Other: `>` and `>>` only. Undo: limit the `WRITTEN` test in `block-attribution.sh` to `redirect in (">", ">>")`. 2026-11-07 |
-| O11 | Three Windows details that the plan did not settle in `block-attribution.sh` and `git-command.py`. | flag | build | user | Decided alone | Chose: the payload `cwd` also goes through `native_path()`, because the `$PWD` fallback is a `/c/...` path. A trailing `
-` is stripped from each `!` line, as `check-skill-pin.sh:35` does. A `GIT_DIR=` prefix sets the directory to None for git only, so a `gh` call keeps its directory. Other: leave each one as it is. Undo: `base = sys.argv[2]`; delete the `typed=${typed%$'
-'}` line; make `where()` in `invocations_with_dirs` return None for every program after the prefix. 2026-11-07 |
-| O12 | After the merge, `test-block-attribution.sh` has 4 red checks in the main checkout: 203 passed, 4 failed. | flag | build | user | Decided alone | Chose: leave them red. Three of them fail on `main` too, from the `
-` that Python's `print()` writes on Windows, which slice 3 `utf8-stdio` owns: the two line-continuation checks and the heredoc commit form. The fourth, the `git-naming.md` check, fails only because this old checkout still has that file as CRLF. In a fresh worktree it passes, 204 passed and 3 failed. `e2e-guard-paths` passes 15 of 15. Other: fix the `
-` here. Undo: none needed; slice 3 owns it. 2026-11-07 |
+| O10 | The plan said a `>` or `>>` redirect that writes the message file's name blocks it. | flag | build | user | Decided alone | Chose: every redirect with a `>` counts, `>&`, `&>` and `2>` too, so `2>&1` adds the name `1`, which no message file has. The noclobber redirect and `tee` are not covered. Other: `>` and `>>` only. Undo: limit the `WRITTEN` test in `block-attribution.sh` to `redirect in (">", ">>")`. 2026-11-07 |
+| O11 | Three Windows details that the plan did not settle in `block-attribution.sh` and `git-command.py`. | flag | build | user | Decided alone | Chose: the payload `cwd` also goes through `native_path()`, because the `$PWD` fallback is a `/c/...` path. A trailing CR is stripped from each `!` line, as `check-skill-pin.sh:35` does. A `GIT_DIR=` prefix sets the directory to None for git only, so a `gh` call keeps its directory. Other: leave each one as it is. Undo: `base = sys.argv[2]`; delete the line in `block-attribution.sh` that strips the CR from `typed`; make `where()` in `invocations_with_dirs` return None for every program after the prefix. 2026-11-07 |
+| O12 | After the merge, `test-block-attribution.sh` has 4 red checks in the main checkout: 203 passed, 4 failed. | flag | build | user | Decided alone | Chose: leave them red. Three of them fail on `main` too, from the CRLF that Python's `print()` writes on Windows, which slice 3 `utf8-stdio` owns: the two line-continuation checks and the heredoc commit form. The fourth, the `git-naming.md` check, fails only because this old checkout still has that file as CRLF. In a fresh worktree it passes, 204 passed and 3 failed. `e2e-guard-paths` passes 15 of 15. Other: fix the CRLF output here. Undo: none needed; slice 3 owns it. 2026-11-07 |
+| O13 | The review found that the fence, once a `cd` into the scratch dir passed on Windows, let three path forms out: a `\..` step, which Git Bash folds even through a dir that does not exist, a `C:/` or `C:\` drive path, and a leading `\`. D97 says the fence compares paths with POSIX rules, and POSIX has neither form. | flag | review | user | Decided alone | Chose: the fence judges each word with `/` in place of `\`, and blocks a drive path in any word, on every OS. On Linux and macOS a word with `\..` or `C:/` in it is now blocked too, which fails closed. D97 stays as written; its POSIX compare now runs on the words after that swap. Other: supersede D97 through `/spec` with an entry that names the Git Bash forms. Undo: revert `01e359e` and `507c23c`, which opens the three escapes again on Windows. 2026-11-07 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
