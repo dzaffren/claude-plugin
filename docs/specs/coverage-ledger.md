@@ -237,7 +237,7 @@ A new sibling module, `lib/coverage.py`, owns the unit list, the ledger file and
 
 D94 rejected a new report section for the class-file lines. `## Files checked` is a list that `cut` must read to mark the ledger, so it gets its own section, as `## Needs validation` did (D100).
 
-Relies on: D10, D12, D30, D94, D100, D101, D104, D105, D106
+Relies on: D10, D12, D30, D94, D100, D101, D109, D110, D111
 
 ```mermaid
 flowchart TB
@@ -375,28 +375,7 @@ No shared files. Chunk B's e2e test reads chunk A's fixtures and cuts with chunk
 
 ### Decisions to record
 
-```markdown
-## D104 · 2026-11-09 · A coverage unit is a tracked file outside tests, docs and root Markdown
-
-Why: `git ls-files` gives the list, a path stays the same across runs, and git says when it changed. zuko has 148 units. Prompt files under `plugins/` count, because agents obey them, and vendored `.agents/skills/` counts (spec O1, O2).
-Rejected: a function (a parser for each language, and a rename loses the history), Cloudflare's surface, boundary, subsystem and class units (a recon map each run, and the shape left out Cloudflare's phases), every tracked file (tests and docs use turns on nothing to attack), leaving out vendored skills (zuko loads them, and nothing would read them).
-Source: specs/coverage-ledger.md
-Status: active
-
-## D105 · 2026-11-09 · Each release pentest adds up to 10 old files, picked by release.py: leads, then resets, then path order
-
-Why: 10 files take zuko's 148 units through in about 15 releases and leave turns for the range. A script gives the same pick each run, so a test can predict it (spec O3, O5).
-Rejected: 5 files (about 30 releases), 20 files (a large range runs out of turns), the largest files first (vendored files crowd out small hooks), a random pick (no test can predict it), a pick in the prompt (prompt drift).
-Source: specs/coverage-ledger.md
-Status: active
-
-## D106 · 2026-11-09 · The coverage ledger is committed at docs/security/coverage.md, and cut refuses one it cannot read
-
-Why: the next release on any clone reads it, and the release commit carries it with the report. It names files, not holes. A ledger that cut cannot read stops the release, as a bad report does, so an empty ledger never reads as no coverage. `cut` prints the Coverage line, and the report stays as the skill wrote it (spec O4, O6).
-Rejected: a git-ignored ledger (lost on a new clone), a new ledger in place of a bad one (all history lost without a word), the Coverage line written into the report by cut (cut copies the report as it is).
-Source: specs/coverage-ledger.md
-Status: active
-```
+Recorded as D109, D110, D111. D104 to D108 are taken on `feat/portable-suite`, which is not merged yet.
 
 ## Open items
 
