@@ -391,12 +391,17 @@ expect_no_match 'Overview: row' "$gate_out" "an unknown status prints no scope l
 repo=$(new_repo feat/fixture)
 outside=$(mktemp -d -p "$work")
 mv "$repo/OVERVIEW.md" "$outside/OVERVIEW.md"
-ln -s "$outside/OVERVIEW.md" "$repo/OVERVIEW.md"
-commit_overview "$repo"
-gate "$repo"
-expect_exit 1 "$gate_status" "a symlinked overview fails the gate"
-expect_match '^- OVERVIEW\.md  is a symlink — the session loader will not load it$' "$gate_out" "a symlinked overview is named"
-expect_no_match 'Overview: row' "$gate_out" "a symlinked overview prints no scope line"
+if make_link "$outside/OVERVIEW.md" "$repo/OVERVIEW.md"; then
+  commit_overview "$repo"
+  gate "$repo"
+  expect_exit 1 "$gate_status" "a symlinked overview fails the gate"
+  expect_match '^- OVERVIEW\.md  is a symlink — the session loader will not load it$' "$gate_out" "a symlinked overview is named"
+  expect_no_match 'Overview: row' "$gate_out" "a symlinked overview prints no scope line"
+else
+  for check in "a symlinked overview fails the gate" "a symlinked overview is named" "a symlinked overview prints no scope line"; do
+    skip "$check" "ln -s made a copy, not a link"
+  done
+fi
 
 # A row inside a code fence is an example, not the table.
 repo=$(new_repo feat/fixture)
