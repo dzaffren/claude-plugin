@@ -29,7 +29,8 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          another version, carries a Proof column, or holds a critical or high
          finding; otherwise it is copied to docs/security/vX.Y.Z/report.md and
          each medium or low finding gets a line under the version's Security
-         section. --no-pentest takes the reason the user typed ("skip" or
+         section, and the Needs validation leads get one count line there.
+         --no-pentest takes the reason the user typed ("skip" or
          nothing is refused): it writes a skipped report, a Security line, and
          a D-entry in DECISIONS.md. Last, it writes the release marker
          block-dangerous.sh reads (D30): the version, HEAD, and every path
@@ -949,9 +950,14 @@ def sentence(text):
 def pentest_verdict(project, version, today, report, reason):
     """The Verdict for this cut; Refused when there is nothing cut may write."""
     if reason is None:
-        text, findings, _ = read_report(report, version)
-        return Verdict("pass", text, [known_issue(finding, version) for finding in findings
-                                      if finding["Severity"] not in BLOCKING])
+        text, findings, leads = read_report(report, version)
+        security = [known_issue(finding, version) for finding in findings
+                    if finding["Severity"] not in BLOCKING]
+        if leads:
+            security.append("- %s %s validation; see %s.\n"
+                            % (plural(leads, "lead"), "needs" if leads == 1 else "need",
+                               report_path(version)))
+        return Verdict("pass", text, security)
     reason = " ".join(reason.split())
     if not reason or reason.lower() == "skip":
         raise Refused("A skip needs a reason")

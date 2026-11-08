@@ -1246,3 +1246,33 @@ for shape in nosection noheader columns sixcells findingid; do
   expect_match "^$before\$" "$(snapshot "$repo")" "a bad Needs validation table ($shape): nothing written"
 done
 
+# 44. Leads never block. The Security section counts them in one line, after
+# the known issues. No leads means no line.
+repo=$(fixture)
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
+expect_exit 0 "$status" "no leads: an empty Needs validation table is taken"
+run notes "$repo" --version 1.5.0
+expect_no_match 'validation' "$out" "no leads: no count line"
+expect_no_match '^### Security$' "$out" "no leads: no Security section"
+
+repo=$(fixture)
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(leads_report pass "$lead_n1")"
+expect_exit 0 "$status" "one lead: exits 0"
+run notes "$repo" --version 1.5.0
+expect_match '^- 1 lead needs validation; see docs/security/v1\.5\.0/report\.md\.$' "$(last_line "$out")" "one lead: the count line is singular"
+
+repo=$(fixture)
+file=$(leads_report medium "$lead_n1
+$lead_n2
+$lead_n3")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$file"
+expect_exit 0 "$status" "three leads and a medium: exits 0"
+run notes "$repo" --version 1.5.0
+expected='### Security
+
+- Known medium issue: A05:2025 Injection in exporters/ledger.py; see docs/security/v1.5.0/report.md.
+- Known low issue: A03:2025 Software Supply Chain Failures in uv.lock; see docs/security/v1.5.0/report.md.
+- 3 leads need validation; see docs/security/v1.5.0/report.md.'
+[ "$(printf '%s\n' "$out" | sed -n '/^### Security$/,$p')" = "$expected" ]
+expect_exit 0 "$?" "three leads and a medium: the known issues, then the count line"
+expect_exit 0 "$(same "$repo/docs/security/v1.5.0/report.md" "$file")" "three leads and a medium: the report is committed as given"
