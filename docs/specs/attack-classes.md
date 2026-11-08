@@ -359,6 +359,10 @@ No shared files. The e2e test in chunk B reads the files of chunk A, so it goes 
 
 Recorded as D90, D91, D92, D93, D94.
 
+## Review
+
+2026-11-08 · 1 raw finding, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
