@@ -65,7 +65,7 @@ Scenario: the first release with a ledger checks 10 old files and seeds the ledg
   And the range v2.6.0..HEAD changes 3 files under plugins/zuko
   When the user runs /release, says yes to 2.7.0 and picks code-level
   Then the pentester checks the 3 range files and 10 other files that no run has checked
-  And the report's Coverage line reads "13 of 148 files checked by a pentest; 135 never checked"
+  And cut prints the line "Coverage   13 of 148 files checked by a pentest · 135 never checked"
   And cut writes the ledger with those 13 files marked "v2.7.0", and the other 135 marked unchecked
   And the terminal says that this release started the ledger
 
@@ -114,6 +114,120 @@ Scenario: a ledger that cut cannot read stops the release
 - A separate `/audit` command for the whole repo — not doing (shape O3).
 - Strix runs adding to the ledger — slice 4 `strix-code`.
 - Carrying a lead's text into the next report — not doing. The ledger keeps only the mark on the file.
+
+## Interface
+
+The slice adds one file, one `release.py` command and one report section, and it changes two terminal outputs.
+
+```mermaid
+flowchart LR
+  K["release.py pick"] -- "1. up to 10 OLD FILES, in O5 order" --> S["/release step 2"]
+  L[("2. docs/security/coverage.md")] -- "read" --> K
+  S -- "OLD FILES list" --> P["zuko:pentester"]
+  P -- "FILES CHECKED in SCOPE" --> S
+  S -- "3. ## Files checked" --> R["report.md"]
+  R -- "--pentest" --> C["release.py cut"]
+  C -- "marks, then rewrites" --> L
+  C -- "4. Coverage line" --> T["/release terminal"]
+  C -- "5. refusal" --> T
+```
+
+`release.py pick` reads the ledger and prints the old files for this release. `/release` hands them to the pentester, and writes each file that it checked into the report. `cut` marks those files in the ledger and prints the Coverage line.
+
+### 1. `release.py pick`
+
+```text
+python3 release.py pick <project-dir>
+```
+
+It reads `docs/security/coverage.md` and the tracked files, and leaves out each file that the range since the last tag changes, because the range checks those anyway. It prints up to 10 old files in O5 order, one in each line, with the mark that put it on the list. It writes nothing.
+
+```text
+Old files  10 of 135 not checked · docs/security/coverage.md
+  plugins/zuko/scripts/lib/git-command.py     lead in v2.7.0
+  plugins/zuko/scripts/lib/fence.py           reset in v2.8.0
+  .agents/skills/design-taste-frontend/SKILL.md  unchecked
+  ...
+```
+
+With no ledger, the first line reads `Old files  10 of 148 not checked · no ledger yet, cut starts one`. With nothing left to pick, it reads `Old files  0 · every unit is checked`. A ledger it cannot read gives the same refusal as `cut` (section 5) and exit 1.
+
+### 2. The ledger file
+
+`docs/security/coverage.md`, sorted by path, one row for each unit (O2):
+
+```text
+# Coverage
+
+**Updated:** v2.7.0 · 2026-11-20
+**Units:** 148 · **Checked:** 13 · **Lead:** 1 · **Not checked:** 134
+
+| File | Mark |
+| ---- | ---- |
+| .agents/skills/design-taste-frontend/SKILL.md | unchecked |
+| plugins/zuko/scripts/lib/fence.py | v2.7.0 |
+| plugins/zuko/scripts/lib/git-command.py | lead in v2.7.0 |
+| plugins/zuko/scripts/lib/release.py | reset in v2.8.0 |
+```
+
+| Mark | Means | Counts as |
+| --- | --- | --- |
+| `vX.Y.Z` | the pentest of that release checked it, with no lead | Checked |
+| `lead in vX.Y.Z` | that pentest checked it, and a lead on it is still open | Lead |
+| `reset in vX.Y.Z` | it changed in a release that shipped without a pentest | Not checked |
+| `unchecked` | no pentest has checked it | Not checked |
+
+`cut` writes the whole file each release. A new tracked file comes in as `unchecked`, and a deleted file goes out.
+
+### 3. The report section and the pentester's input
+
+`/release` gives the pentester an `OLD FILES:` list after `RANGE`. The pentester checks each old file as it checks a range file, with the same categories and class files. Its SCOPE block gets one more line, with every file that it read and hunted, from the range and from the list:
+
+```text
+FILES CHECKED: plugins/zuko/agents/pentester.md, plugins/zuko/scripts/lib/fence.py, plugins/zuko/scripts/lib/git-command.py
+```
+
+`/release` writes them into the report as a new section after `## Not assessed`, one file in each line:
+
+```text
+## Files checked
+
+- plugins/zuko/agents/pentester.md
+- plugins/zuko/scripts/lib/fence.py
+- plugins/zuko/scripts/lib/git-command.py
+```
+
+An old file that the pentester did not reach is not in the list, so it stays on the list for the next release.
+
+### 4. The terminal
+
+The step 2 summary gets one line after `needs validation:`:
+
+```text
+           old files: 10 picked, 9 checked
+```
+
+`cut` prints the Coverage line after the files it wrote, and the step 7 report repeats it:
+
+```text
+Coverage   13 of 148 files checked by a pentest · 135 never checked
+Coverage   13 of 148 files checked by a pentest · 135 never checked · ledger started
+```
+
+The second form is for the release that creates the ledger.
+
+### 5. The refusals
+
+`cut` and `pick` refuse and write nothing:
+
+```text
+Coverage ledger unreadable: line 14: plugins/zuko/scripts/lib/fence.py is listed twice
+Coverage ledger unreadable: line 9: the mark "v2.7" is not vX.Y.Z, lead in vX.Y.Z, reset in vX.Y.Z or unchecked
+Coverage ledger unreadable: no File and Mark table
+Pentest report unreadable: Files checked names plugins/zuko/agents/nobody.md, which is not a unit
+```
+
+A report without `## Files checked` is refused as `Pentest report unreadable: no Files checked list`. A skipped pentest (`--no-pentest`) has no report to read: `cut` marks each unit that the range changed as `reset in vX.Y.Z`, and leaves the rest as they are.
 
 ## Open items
 
