@@ -123,14 +123,14 @@ The pentester returns a LEAD block for each lead. `/release` sends each one to a
 After the findings, one block for each lead. A lead has no `SEVERITY` and no `PROOF`.
 
 ```text
-LEAD: {one sentence, the possible defect only}
-CATEGORY: {A0N:2025 name}, or {A0N:2025 name} · {class file} {class}
-FILE: {path:line}
-SYMBOL: {the function or class the line sits in}
-SNIPPET: {the line, as written}
-TRACE: {the input, then each file:line it passes, to the line where harm would happen}
-UNKNOWN: {the one fact that decides it, which no run in the scratch copy can observe}
-CHECK: {a safe check the user can run to settle the fact}
+LEAD: <one sentence, the possible defect only>
+CATEGORY: <A0N:2025 name>, or <A0N:2025 name> · <class file> <class>
+FILE: <path:line>
+SYMBOL: <the function or class the line sits in>
+SNIPPET: <the line, as written>
+TRACE: <the input, then each file:line it passes, to the line where harm would happen>
+UNKNOWN: <the one fact that decides it, which no run in the scratch copy can observe>
+CHECK: <a safe check the user can run to settle the fact>
 ```
 
 For example:
