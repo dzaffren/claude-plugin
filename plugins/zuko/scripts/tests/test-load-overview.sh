@@ -68,7 +68,7 @@ expect_match '^line 40$' "$load_out" "no status: file loaded"
 # 6. Unreadable: never blocks the session. (root reads anything, so skip there.)
 if [ "$(id -u)" != 0 ]; then
   dir=$(mktemp -d -p "$work"); write_overview "$dir" "$active" 10
-  chmod a-r "$dir/OVERVIEW.md"; load "$dir"; chmod u+r "$dir/OVERVIEW.md"
+  deny r "$dir/OVERVIEW.md"; load "$dir"; allow "$dir/OVERVIEW.md"
   expect_exit 0 "$load_status" "unreadable: exits 0"
   expect_match 'has no Status line — loaded as Draft' "$load_out" "unreadable: reported as no Status line"
 fi
@@ -91,10 +91,16 @@ expect_match '^Warning: OVERVIEW\.md is 151 lines; loaded the first 150\. Trim i
 # 9. A symlink is never followed out of the repo.
 dir=$(mktemp -d -p "$work"); outside=$(mktemp -d -p "$work")
 printf '%s\n' "$active" "SECRET-OUTSIDE-THE-REPO" >"$outside/target.md"
-ln -s "$outside/target.md" "$dir/OVERVIEW.md"; load "$dir"
-expect_exit 0 "$load_status" "symlink: exits 0"
-expect_match '^OVERVIEW\.md is a symlink — not loaded\.$' "$load_out" "symlink: says it was not loaded"
-expect_no_match 'SECRET-OUTSIDE-THE-REPO' "$load_out" "symlink: the target's content never reaches context"
+if make_link "$outside/target.md" "$dir/OVERVIEW.md"; then
+  load "$dir"
+  expect_exit 0 "$load_status" "symlink: exits 0"
+  expect_match '^OVERVIEW\.md is a symlink — not loaded\.$' "$load_out" "symlink: says it was not loaded"
+  expect_no_match 'SECRET-OUTSIDE-THE-REPO' "$load_out" "symlink: the target's content never reaches context"
+else
+  for check in "symlink: exits 0" "symlink: says it was not loaded" "symlink: the target's content never reaches context"; do
+    skip "$check" "ln -s made a copy, not a link"
+  done
+fi
 
 # 10. The cap is bytes as well as lines.
 dir=$(mktemp -d -p "$work")
