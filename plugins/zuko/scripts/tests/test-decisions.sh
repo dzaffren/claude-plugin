@@ -103,9 +103,16 @@ expect_exit 0 "$load_status" "loader empty: exits 0"
 expect_match '^DECISIONS\.md has no entries yet\.$' "$load_out" "loader empty: says so"
 
 # 4. A symlink could point anywhere; never follow one into context.
-dir=$(mktemp -d -p "$work"); header "$work/elsewhere.md"; ln -s "$work/elsewhere.md" "$dir/DECISIONS.md"; load "$dir"
-expect_exit 0 "$load_status" "loader symlink: exits 0"
-expect_match '^DECISIONS\.md is a symlink — not loaded\.$' "$load_out" "loader symlink: not loaded"
+dir=$(mktemp -d -p "$work"); header "$work/elsewhere.md"
+if make_link "$work/elsewhere.md" "$dir/DECISIONS.md"; then
+  load "$dir"
+  expect_exit 0 "$load_status" "loader symlink: exits 0"
+  expect_match '^DECISIONS\.md is a symlink — not loaded\.$' "$load_out" "loader symlink: not loaded"
+else
+  for check in "loader symlink: exits 0" "loader symlink: not loaded"; do
+    skip "$check" "ln -s made a copy, not a link"
+  done
+fi
 
 # 5. Headings inside a fence are examples, not entries.
 dir=$(mktemp -d -p "$work"); header "$dir/DECISIONS.md"
