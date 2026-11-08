@@ -100,6 +100,133 @@ Scenario: a report without the section is refused
 - A command that settles a lead. The user runs the check by hand. A confirmed one goes to `/debug`.
 - Leads in `/review` — not doing, as with the class files (shape O7).
 
+## Interface
+
+The slice changes six outputs. It adds no command and no flag.
+
+```mermaid
+flowchart LR
+  P["zuko:pentester"] -- "1. LEAD block" --> S["/release step 2"]
+  S -- "2. KIND: lead, no SEVERITY" --> V["finding-verifier"]
+  V -- "VERDICT: CONFIRMED or REJECTED" --> S
+  S -- "3. Needs validation table" --> R["docs/security/vX.Y.Z/report.md"]
+  S -- "4. summary line, then TRACE and CHECK" --> T["/release terminal"]
+  R -- "--pentest" --> C["release.py cut"]
+  C -- "5. one count line" --> L["CHANGELOG Security"]
+  C -- "6. refusal when the section is wrong" --> T
+```
+
+The pentester returns a LEAD block for each lead. `/release` sends each one to a blind verifier, marked as a lead. It writes the leads that hold into the report table and prints their trace and check. `cut` reads the table, adds one count line, and refuses a report whose section is missing or malformed.
+
+### 1. The pentester's LEAD block
+
+After the findings, one block for each lead. A lead has no `SEVERITY` and no `PROOF`.
+
+```text
+LEAD: {one sentence, the possible defect only}
+CATEGORY: {A0N:2025 name}, or {A0N:2025 name} · {class file} {class}
+FILE: {path:line}
+SYMBOL: {the function or class the line sits in}
+SNIPPET: {the line, as written}
+TRACE: {the input, then each file:line it passes, to the line where harm would happen}
+UNKNOWN: {the one fact that decides it, which no run in the scratch copy can observe}
+CHECK: {a safe check the user can run to settle the fact}
+```
+
+For example:
+
+```text
+LEAD: On Windows, a /c/ path in git -C may reach the main-branch guard without conversion.
+CATEGORY: A01:2025 Broken Access Control
+FILE: plugins/zuko/scripts/lib/git-command.py:291
+SYMBOL: native_path
+SNIPPET: if os.name != "nt" or not path.startswith("/") or not shutil.which("cygpath"):
+TRACE: "git -C /c/work/shop commit" → block-dangerous.sh:84 → git-command.py --dir → native_path("/c/work/shop") → cygpath -m → the guard reads the branch of the path it returns
+UNKNOWN: whether cygpath -m on Git Bash maps /c/work/shop to C:/work/shop
+CHECK: in Git Bash on Windows, run `cygpath -m -- /c/work/shop` and expect C:/work/shop
+```
+
+The rules that go into `pentester.md`:
+
+- A lead has exactly one `UNKNOWN`. The fact is out of reach of a run in the scratch copy: another OS, a hosted setting such as branch protection, a deployed config, the network, or what a model does with text (D6).
+- A lead is never a finding with its proof left out. When a run proves it, it is a finding.
+- A lead that is out of turns, or that needs more reading, is not a lead. Read more, or drop it.
+- The Never-a-finding list (D5) stops a lead. An untrusted-text lead needs a `TRACE` that reaches a tool call or a file write (D6).
+- The old rule "Never write `needs_validation`" goes. Cloudflare's `needs_validation` verdict becomes a LEAD block.
+
+### 2. A lead to the blind verifier
+
+`/release` sends each lead as it sends a finding, with `KIND: lead` first and no `SEVERITY`: `KIND`, the claim, `CATEGORY`, `FILE`, `SYMBOL`, `SNIPPET`, `TRACE`, `UNKNOWN` and `BASE`. It never sends `CHECK`.
+
+The verifier confirms a lead when each step of the `TRACE` is in the code as written, the diff introduced it, nothing upstream stops the input, and the repo does not answer the `UNKNOWN`. Any one it cannot establish → REJECT. Its output is the same, without the `SEVERITY`, `ATTACKER` and `GAIN` lines:
+
+```text
+VERDICT: CONFIRMED
+PATH: "/c/work/shop" reaches native_path unchanged from block-dangerous.sh:84; the result decides which repo's branch the guard reads.
+```
+
+### 3. The report table
+
+A new section between Findings and Assessed. It is always there. With no leads, the table has its header and no rows.
+
+```text
+## Needs validation
+
+| ID | Category | Where | Description | Unknown |
+| -- | -------- | ----- | ----------- | ------- |
+| N1 | A01:2025 Broken Access Control | plugins/zuko/scripts/lib/git-command.py:291 native_path | on Windows, a /c/ path in git -C may reach the main-branch guard without conversion | whether cygpath -m on Git Bash maps /c/work/shop to C:/work/shop |
+```
+
+`Where` is `FILE` then `SYMBOL`. `Description` is the `LEAD` sentence. `Unknown` is the `UNKNOWN` line. The table has no severity, trace or check (O2).
+
+### 4. The terminal
+
+The step 2 summary gets one line after the findings:
+
+```text
+Pentest    code-level · v2.5.1..a1b2c3d (9 commits) · 7 categories · 3 class files
+           no findings
+           needs validation: 1 lead (2 dropped by the verifier)
+           not assessed: A01, A07 — no running server (slice 5b)
+           class files not read: 7 — no matching code in the range
+```
+
+After each finding's `PROOF`, `/release` prints each lead:
+
+```text
+N1  plugins/zuko/scripts/lib/git-command.py:291 native_path
+    trace    "git -C /c/work/shop commit" → block-dangerous.sh:84 → git-command.py --dir → native_path → cygpath -m
+    unknown  whether cygpath -m on Git Bash maps /c/work/shop to C:/work/shop
+    check    in Git Bash on Windows, run `cygpath -m -- /c/work/shop` and expect C:/work/shop
+```
+
+The step 7 report names the count:
+
+```text
+  pentest   passed: 0 critical, 0 high, 0 medium, 0 low · 1 lead needs validation · docs/security/v2.6.0/report.md
+```
+
+### 5. The CHANGELOG line
+
+`cut` adds one line to the version's Security section, after the known-issue lines. With no leads, it adds nothing.
+
+```text
+- 1 lead needs validation; see docs/security/v2.6.0/report.md.
+- 3 leads need validation; see docs/security/v2.6.0/report.md.
+```
+
+### 6. The refusals
+
+`cut` refuses the report and writes nothing:
+
+```text
+Pentest report unreadable: no Needs validation section
+Pentest report unreadable: the Needs validation columns are ID, Severity, Category, Where, Description, not ID, Category, Where, Description, Unknown
+Pentest report unreadable: a Needs validation row has 6 cells, not 5: | N1 | ... |
+```
+
+A skipped pentest (`--no-pentest`) writes no Needs validation section, as it writes no Findings today.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
