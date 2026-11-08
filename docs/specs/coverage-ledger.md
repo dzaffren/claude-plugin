@@ -337,7 +337,7 @@ Not added: no flag, no JSON, no hash of each file (the range catches each change
 | -------------------- | ----------------------------------------------------------------------------- |
 | **Load**             | One `pick` and one `cut` each release. zuko has 148 units; `git ls-files` and one `git diff` take well under a second. |
 | **Breaks first**     | At 10 times the units, about 1,500, the ledger is 1,500 rows and still fast. Full coverage then takes about 150 releases at 10 a release. Raise the number per release before the format matters. |
-| **Security surface** | The ledger is public and names files, not holes. `cut` trusts the report's Files checked only for files that git tracks. A pentester that lists a file it did not read marks it checked: the prompt is the only guard (risk 1). No secret is read or stored. |
+| **Security surface** | The ledger is public and names files, not holes. `cut` trusts the report's Files checked only for files that git tracks or that the range deleted (O13). A pentester that lists a file it did not read marks it checked: the prompt is the only guard (risk 1). No secret is read or stored. |
 | **Proof it works**   | The release commit of the next zuko release carries `docs/security/coverage.md`, and `cut` prints `Coverage   N of 148 files checked by a pentest`. |
 | **Rollout**          | No flag. The first release after the installed plugin has this version starts the ledger. To roll back, revert the commits and delete `docs/security/coverage.md`. |
 
