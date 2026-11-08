@@ -436,4 +436,7 @@ def main():
 
 
 if __name__ == "__main__":
+    # UTF-8 with LF on every OS; a byte that is not UTF-8 goes out as it came (D98, D99).
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
     sys.exit(main())

@@ -1006,3 +1006,17 @@ path that bash never sees, and `/tmp/..` folds differently), leaving it blocked 
 Windows pentest can prove a finding).
 Source: specs/guard-paths.md
 Status: active
+
+## D98 · 2026-11-08 · Each zuko Python process sets its own stdio to UTF-8 with LF
+
+Why: Windows Python starts with cp1252 stdio and writes CRLF. `board.py render` and `decisions.py active` crashed on `→`, and `pr_body.py render` wrote 13 CR bytes in 13 lines. `PYTHONUTF8=1` still wrote `a→\r\n` on this machine. A `reconfigure` loop as the first statement fixes the encoding and the line end, in the 11 `lib/*.py` scripts and the 14 inline snippets in the hooks.
+Rejected: `PYTHONUTF8=1` in the hooks (`print()` still writes CRLF, the skill commands that Claude runs do not get it, and it leaks into the user's own child processes), a shared `lib/utf8.py` module (each inline snippet must put `lib/` on `sys.path`, and a guard that cannot import it cannot read its payload), a bash reader that strips each CR (a command can carry a real `\r`, which `release-commit.py` checks).
+Source: specs/utf8-stdio.md
+Status: active
+
+## D99 · 2026-11-08 · A byte that is not UTF-8 passes through zuko's Python as it came
+
+Why: a guard must read the whole command, and a gate must report on an old Latin-1 commit subject, not crash on it. `surrogateescape` keeps each such byte on input and writes the same byte on output, which is what Windows Python already did with cp1252.
+Rejected: replacing the byte with U+FFFD (a guard then checks text that differs from the command, and a published page refuses U+FFFD), stopping with an error (a gate stops on one old commit subject, and a strict read on Linux crashed where Windows went on).
+Source: specs/utf8-stdio.md
+Status: active

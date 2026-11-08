@@ -138,7 +138,8 @@ def plural(count, word):
 def gh(*args):
     """(exit code, stdout, stderr) of a gh call; a missing gh is an error too."""
     try:
-        done = subprocess.run(["gh"] + list(args), capture_output=True, text=True)
+        done = subprocess.run(["gh"] + list(args), capture_output=True, text=True,
+                              encoding="utf-8", errors="surrogateescape")
     except FileNotFoundError:
         return 127, "", "gh: command not found"
     return done.returncode, done.stdout, done.stderr
@@ -1158,4 +1159,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    # UTF-8 with LF on every OS; a byte that is not UTF-8 goes out as it came (D98, D99).
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
     sys.exit(main(sys.argv[1:]))

@@ -37,7 +37,8 @@ spec.loader.exec_module(git_command)
 
 
 def git(where, *args):
-    return subprocess.run(["git", "-C", where] + list(args), capture_output=True, text=True)
+    return subprocess.run(["git", "-C", where] + list(args), capture_output=True, text=True,
+                          encoding="utf-8", errors="surrogateescape")
 
 
 def subject_of(args):
@@ -128,4 +129,7 @@ def main():
 
 
 if __name__ == "__main__":
+    # UTF-8 with LF on every OS; a byte that is not UTF-8 goes out as it came (D98, D99).
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
     sys.exit(main())

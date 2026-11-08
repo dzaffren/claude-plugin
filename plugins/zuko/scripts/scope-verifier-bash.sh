@@ -32,6 +32,9 @@ import json
 import os
 import sys
 
+for stream in (sys.stdin, sys.stdout, sys.stderr):
+    stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
+
 VERIFIER = "zuko:finding-verifier"
 
 try:

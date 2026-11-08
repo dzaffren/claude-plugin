@@ -6,12 +6,12 @@
 set -uo pipefail
 
 input=$(cat)
-cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
+cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
 [ -z "$cmd" ] && exit 0
 
 # Where the command starts, which places a relative message file: the hook's
 # cwd, which follows the session's cd.
-base=$(printf '%s' "$input" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
+base=$(printf '%s' "$input" | python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
 [ -n "$base" ] || base="$PWD"
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -29,6 +29,9 @@ messages=$(ZUKO_COMMAND="$cmd" python3 - "$here" "$base" <<'PY' 2>/dev/null
 import importlib.util
 import os
 import sys
+
+for stream in (sys.stdin, sys.stdout, sys.stderr):
+    stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
 
 path = os.path.join(sys.argv[1], "lib", "git-command.py")
 spec = importlib.util.spec_from_file_location("git_command", path)
