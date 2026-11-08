@@ -860,7 +860,7 @@ def read_report(path, version):
     lead, and the files it checked; Refused when cut must not take it."""
     if not os.path.isfile(path):
         raise unreadable("%s not found" % path)
-    with open(path, encoding="utf-8", errors="replace") as handle:
+    with open(path, encoding="utf-8", errors="surrogateescape") as handle:
         text = handle.read()
     lines = text.splitlines()
     title = next((REPORT_TITLE.match(line) for line in lines if line.startswith("# ")), None)
@@ -1164,7 +1164,9 @@ def cut(project, version, today, report=None, reason=None):
         return 1
     for path, text in files.items():
         os.makedirs(os.path.dirname(os.path.join(project, path)), exist_ok=True)
-        with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
+        # A tracked name that is not UTF-8 goes into the ledger as it came (D99).
+        with open(os.path.join(project, path), "w", encoding="utf-8", errors="surrogateescape",
+                  newline="") as handle:
             handle.write(text)
     found = writes(release, today)
     v = show(release.version)

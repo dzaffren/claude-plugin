@@ -297,3 +297,23 @@ for shape in twice badmark badrow notable untracked; do
   [ "$out" = "$want" ]
   expect_exit 0 "$?" "refused ($shape): pick prints the same line (got: $out)"
 done
+
+# 6. A tracked name with a byte that is not UTF-8 goes into the ledger as the
+# same byte (D99). cut writes the whole release, and the next pick reads it.
+printf -v latin 'app/caf\xe9.py'
+scratch "$work/latin" app/cli.py
+mkdir -p "$repo/app" && printf 'x\n' >"$repo/$latin"
+unreleased "Read a Latin-1 file name."
+commit "feat(app): latin-1 file"
+run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" "$latin")"
+expect_exit 0 "$status" "latin cut: exits 0 (got: $(last_line "$out"))"
+[ -f "$repo/.git/zuko-release" ]
+expect_exit 0 "$?" "latin cut: the marker is written"
+LC_ALL=C grep -qxF -e "| $latin | v1.5.0 |" "$repo/docs/security/coverage.md"
+expect_exit 0 "$?" "latin cut: the ledger row keeps the byte as it came"
+released 1.5.0
+printf 'changed\n' >>"$repo/app/cli.py"
+unreleased "Change the cli."
+commit "feat(app): change the cli"
+run pick "$repo"
+expect_exit 0 "$status" "latin pick: reads the ledger (got: $out)"

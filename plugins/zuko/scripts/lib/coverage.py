@@ -46,7 +46,7 @@ def read(project):
     path = os.path.join(project, NAME)
     if not os.path.isfile(path):
         return None
-    with open(path, encoding="utf-8", errors="replace") as handle:
+    with open(path, encoding="utf-8", errors="surrogateescape") as handle:
         lines = handle.read().splitlines()
     header = next((i for i, line in enumerate(lines)
                    if line.strip().startswith("|") and cells(line) == ["File", "Mark"]), None)
