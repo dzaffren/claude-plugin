@@ -363,6 +363,12 @@ Recorded as D90, D91, D92, D93, D94.
 
 2026-11-08 · 1 raw finding, 0 survived. Clean.
 
+2026-11-08 · 3 raw findings, 3 survived, 3 fixed. The full suite was not compared with the base on this host, as row O16 says.
+
+- correctness · `plugins/zuko/scripts/tests/test-attack-pin.sh:92` · build the no-gh PATH from `dirname` and `grep` only · `bfc8e13`
+- correctness · `plugins/zuko/scripts/tests/test-e2e-attack-classes.sh:80` · check the D94 order rule in `pentester.md` and `release/SKILL.md` · `7f5ff72`
+- quality · `docs/learnings/empty-file-patch-needs-patch-p1.md:1` · drop the Windows fence rule that D97 made false, and keep the `patch -p1` note · `66467f7`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -382,6 +388,7 @@ Recorded as D90, D91, D92, D93, D94.
 | O13 | The plan wrote the pin as `c1c8a8c` in each class-file line of the pentester's SCOPE template. | flag | build | user | Decided alone | Chose: the template puts the short pin after `Cloudflare`, as in `(Cloudflare c1c8a8c)`, and the pentester takes the first 7 characters of the `Pinned:` line in `attack-classes/README.md`. A pin move then changes one file. Other: `c1c8a8c` written in `pentester.md`. Undo: put `c1c8a8c` back in the template in `plugins/zuko/agents/pentester.md` step 1b and the SCOPE block. 2026-11-07 |
 | O14 | The plan's compare call read only `.files[].filename`. When upstream renames a copied file, GitHub lists only the new path there, and the old one as `previous_filename`, so the check printed nothing. | flag | review | user | Decided alone | Chose: read `previous_filename` too, so a rename of a copied file gives the notice with its old name. A real compare in this repo's history showed the field. Other: keep `.files[].filename` and miss renames. Undo: put back `--jq '.files[].filename'` in `plugins/zuko/scripts/check-attack-pin.sh`, and drop the rename case from `test-attack-pin.sh`. 2026-11-07 |
 | O15 | O13's pentester rule said the pin is the first 7 characters of the `Pinned:` line. Those 7 characters are the word `Pinned:`, so a pentester that obeyed it wrote `(Cloudflare Pinned:)`. | flag | review | user | Decided alone | Chose: the rule now says the first 7 characters of the commit after `Pinned: `, such as `c1c8a8c`, and the e2e test checks that wording. Other: write `c1c8a8c` in the template, as the plan first did. Undo: revert the review commit that changes `plugins/zuko/agents/pentester.md` step 1b. 2026-11-07 |
+| O16 | The full suite was not compared with the branch point on this host. The branch run gave 28 files passing, 31 failing and 1 timing out, and two runs were stopped for low memory. | flag | review | user | Accepted risk | The branch changes only the pentester prompt, release step 2, `check-attack-pin.sh` and new reference and test files. The failing files test other code, and the two changed test files pass apart from the O12 checks. The user accepted this on 2026-11-08. |
 
 _Never delete this section or its rows. See references/ledger.md._
 
