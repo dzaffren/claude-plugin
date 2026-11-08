@@ -411,6 +411,7 @@ _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary
 
+- **Pentest** — a penetration test: an attack on your own code to find holes before someone else does.
 - **Lead** — a possible hole that the pentester traced in the code but could not prove with a run.
 - **Trace** — the path from an input, through named lines of code, to the place where harm would happen.
 - **Blind verifier** — a separate agent that sees only the claim and the code, not the reasoning, and tries to prove the claim false.
