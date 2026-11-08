@@ -875,10 +875,10 @@ expect_match "^$before\$" "$(snapshot "$repo")" "cut disagreeing manifests: noth
 repo=$(fixture)
 package_json "$repo" 1.4.2
 commit "$repo" "chore: add package.json"
-chmod a-w "$repo/package.json"
+deny w "$repo/package.json"
 before=$(snapshot "$repo")
 run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
-chmod u+w "$repo/package.json"
+allow "$repo/package.json"
 expect_exit 1 "$status" "cut a read-only manifest: exits 1"
 expect_match '^Cannot write package\.json\.$' "$out" "cut a read-only manifest: names the file"
 expect_match '^Nothing written\.$' "$(last_line "$out")" "cut a read-only manifest: says nothing was written"
@@ -1208,3 +1208,22 @@ expect_match '^NEXT: stop$' "$(last_line "$out")" "a stray tag at HEAD: NEXT: st
 expect_match "^$before\$" "$(snapshot "$repo")" "a stray tag at HEAD: nothing written"
 run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 1 "$status" "a stray tag at HEAD: cut refuses too"
+
+# 43. On Windows, gh() starts the stub through program.argv(), which runs a #!
+# script through bash (D107). os.name set to "nt" takes that path on any OS.
+# This stub has no exec bit and uses only bash builtins, so only bash can run
+# it, and the narrow PATH holds no other gh.
+gh_reset
+mkdir -p "$work/nt"
+printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"$FAKE_GH/calls"\nprintf "{\\"total_count\\": 0}\\n"\n' >"$work/nt/gh"
+chmod a-x "$work/nt/gh"
+nt_path=$(narrow_path "$work/nt")
+is_windows || ln -s "$(command -v bash)" "$work/nt/bash"
+py=$(python3 -c 'import sys; print(sys.executable)')
+out=$(PATH="$nt_path" "$py" -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import release
+os.name = "nt"
+code, out, err = release.gh("api", "repos/acme/invoice-cli/commits/abc/check-runs?per_page=100&page=1")
+print(code, out.strip())' "$scripts/lib" 2>&1)
+expect_match '^0 \{"total_count": 0\}$' "$out" "gh on Windows: the stub answers, through bash"
+expect_match '^api repos/acme/invoice-cli/commits/abc/check-runs\?per_page=100&page=1$' "$(cat "$FAKE_GH/calls" 2>/dev/null)" \
+  "gh on Windows: the stub logs the check-runs call"

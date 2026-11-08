@@ -73,6 +73,7 @@ def load(name):
 changelog = load("changelog")
 decisions = load("decisions")
 readme_block = load("readme_block")
+program = load("program")
 git = changelog.git
 
 USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
@@ -138,7 +139,7 @@ def plural(count, word):
 def gh(*args):
     """(exit code, stdout, stderr) of a gh call; a missing gh is an error too."""
     try:
-        done = subprocess.run(["gh"] + list(args), capture_output=True, text=True,
+        done = subprocess.run(program.argv(["gh"] + list(args)), capture_output=True, text=True,
                               encoding="utf-8", errors="surrogateescape")
     except FileNotFoundError:
         return 127, "", "gh: command not found"
@@ -243,7 +244,7 @@ def tests_gate(project, repo, gates):
     if command is None:
         gates.fail("tests", 'no CI checks on %s and no test command in OVERVIEW.md "Run it"' % short)
         return
-    code = subprocess.run(["bash", "-c", command], cwd=project, stdin=subprocess.DEVNULL,
+    code = subprocess.run(program.argv(["bash", "-c", command]), cwd=project, stdin=subprocess.DEVNULL,
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
     if code == 0:
         gates.ok("tests", 'no CI checks on %s — ran "%s": exit 0' % (short, command))
