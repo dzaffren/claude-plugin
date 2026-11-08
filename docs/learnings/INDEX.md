@@ -228,3 +228,12 @@ One line per lesson. Loaded into every session in this repo.
 - On Windows, apply a seed patch that has an empty-file entry with
   `patch -p1` — `git apply` refuses that entry.
   ([detail](empty-file-patch-needs-patch-p1.md))
+- Before `/build` branches, check the current branch and branch from `main` by
+  name — another session in the same checkout can move it under you.
+  ([detail](shared-checkout-moves-under-you.md))
+- Let a helper subshell end by itself — one killed just after its fork can run
+  the parent's EXIT trap and delete the shared work folder.
+  ([detail](killed-subshell-runs-exit-trap.md))
+- Put `noglob` in `MSYS` when native Windows code starts a Git Bash program —
+  it expands `{a}`, `*` and `[..]` in its arguments.
+  ([detail](git-bash-from-native-globs-args.md))
