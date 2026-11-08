@@ -114,8 +114,10 @@ if [ "$(id -u)" != 0 ]; then
   expect_exit 1 "$?" "deny w: Python cannot write the file"
   allow "$h/locked"
 fi
-# command: the run.sh python3 wrapper is a function, and $! would then be a subshell.
-command python3 -c 'import socket, sys
+# The interpreter's own path: the run.sh python3 wrapper is a function, so $!
+# would be a subshell, and bash 3.2 forks once more for `command python3 &`.
+py=$(command python3 -c 'import sys; print(sys.executable)')
+"$py" -c 'import socket, sys
 s = socket.socket(); s.bind(("127.0.0.1", 0)); s.listen()
 open(sys.argv[1] + ".tmp", "w").write(str(s.getsockname()[1]))
 import os; os.replace(sys.argv[1] + ".tmp", sys.argv[1])
