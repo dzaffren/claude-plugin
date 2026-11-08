@@ -355,3 +355,14 @@ run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0
 expect_exit 0 "$status" "lead tick: exits 0 (got: $(last_line "$out"))"
 has_row app/cli.py "lead in v1.5.0"
 expect_exit 0 "$?" "lead tick: a Where in backticks marks the lead"
+
+# 9. A file that the range deletes may be in Files checked: the pentester
+# read its removed lines. cut takes the report, and the file has no row.
+scratch "$work/deleted" app/cli.py app/old.py
+git -C "$repo" rm -q app/old.py
+unreleased "Drop the old export."
+commit "feat(app): drop the old export"
+run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" app/old.py)"
+expect_exit 0 "$status" "deleted: cut takes a Files checked path the range deleted (got: $(last_line "$out"))"
+grep -qF 'app/old.py' "$repo/docs/security/coverage.md"
+expect_exit 1 "$?" "deleted: the deleted file has no ledger row"

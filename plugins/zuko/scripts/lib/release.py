@@ -976,13 +976,14 @@ def sentence(text):
     return text if text.endswith((".", "!", "?")) else text + "."
 
 
-def pentest_verdict(project, version, today, report, reason):
+def pentest_verdict(project, version, today, report, reason, tag=None):
     """The Verdict for this cut; Refused when there is nothing cut may write."""
     if reason is None:
         text, findings, leads, checked = read_report(report, version)
-        # The ledger trusts the list only for files git tracks; a tracked
-        # file that is not a unit is skipped when the marks are worked out.
-        known = set(tracked(project))
+        # The ledger trusts the list only for files git tracks, and for a
+        # file the range deleted; a file that is not a unit is skipped when
+        # the marks are worked out.
+        known = set(tracked(project)) | set(range_files(project, tag))
         stray = next((path for path in checked if path not in known), None)
         if stray is not None:
             raise unreadable("Files checked names %s, which git does not track" % stray)
@@ -1149,7 +1150,7 @@ def cut(project, version, today, report=None, reason=None):
         return 1
     try:
         release.pentest = verdict = pentest_verdict(project, show(release.version), today,
-                                                    report, reason)
+                                                    report, reason, release.tag)
         old = ledger(project)
     except Refused as refused:
         print()
