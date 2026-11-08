@@ -41,8 +41,11 @@ expect_match 'Exit 2: could not render\.' "$out" "-h names the exit codes"
 # E1: no node on PATH, and no node at the Windows install path.
 nonode="$work/rendered-nonode"
 mkdir -p "$nonode/bin" "$nonode/pf"
+# Wrapper scripts, not links: a copied .exe cannot start away from its DLLs.
 for t in dirname cat sed grep find sort head printf; do
-  p=$(command -v "$t" 2>/dev/null) && [ -n "$p" ] && ln -sf "$p" "$nonode/bin/$t" 2>/dev/null
+  p=$(type -P "$t") || continue
+  printf '#!/bin/sh\nexec "%s" "$@"\n' "$p" >"$nonode/bin/$t"
+  chmod +x "$nonode/bin/$t"
 done
 out=$(cd "$tok" && PATH="$nonode/bin" PROGRAMFILES="$nonode/pf" CLAUDE_PROJECT_DIR="$tok" "$stage_bash" "$scripts/check-rendered-drift.sh" docs/design/p.html 2>&1)
 expect_exit 2 "$?" "no Node exits 2, never 0"
