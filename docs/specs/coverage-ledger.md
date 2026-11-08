@@ -177,7 +177,7 @@ With no ledger, the first line reads `Old files  10 of 145 not checked · no led
 | `reset in vX.Y.Z` | it changed in a release that shipped without a pentest | Not checked |
 | `unchecked` | no pentest has checked it | Not checked |
 
-`cut` writes the whole file each release. A new tracked file comes in as `unchecked`, and a deleted file goes out.
+`cut` writes the whole file each release. A new tracked file comes in as `unchecked`, and a deleted file goes out. A `|` in a file name is written `\|` in its cell (O14). A byte in a file name that is not UTF-8 is written as it came (D99).
 
 ### 3. The report section and the pentester's input
 
@@ -228,7 +228,7 @@ Coverage ledger unreadable: line 12: | a.py | v2.7.0 | extra | is not a File and
 Pentest report unreadable: Files checked names plugins/zuko/agents/nobody.md, which git does not track
 ```
 
-A tracked file that is not a unit, such as a changed spec under `docs/`, is skipped. A report without `## Files checked` is refused as `Pentest report unreadable: no Files checked list`. A skipped pentest (`--no-pentest`) has no report to read: `cut` marks each unit that the range changed as `reset in vX.Y.Z`, and leaves the rest as they are.
+A tracked file that is not a unit, such as a changed spec under `docs/`, is skipped. So is a file that the range deletes (O13). A report without `## Files checked` is refused as `Pentest report unreadable: no Files checked list`. A skipped pentest (`--no-pentest`) has no report to read: `cut` marks each unit that the range changed as `reset in vX.Y.Z`, and leaves the rest as they are.
 
 ## Technical plan
 
@@ -294,13 +294,14 @@ sequenceDiagram
 | `plugins/zuko/scripts/lib/coverage.py` (new) | `units(project)`: `git ls-files -z`, minus each path with a `test` or `tests` folder, minus `docs/`, minus a `.md` at the repo root (O2). `read(project)`: `None` with no file; a dict from each path to its mark, or `Refused` with Interface 5's lines. `pick(units, marks, range_files, limit=10)`: O5 order. `marked(...)`: the new marks, by the rules below. `render(...)`: the file of Interface 2, and the counts | scenarios 1 to 5 |
 | `plugins/zuko/scripts/lib/release.py:74` | Load `coverage` as `changelog` is loaded | — |
 | `plugins/zuko/scripts/lib/release.py:1156` `main` | A `pick <project-dir>` command, with no options, and its line in `USAGE` and the module docstring | Interface 1 |
-| `plugins/zuko/scripts/lib/release.py:839` `read_report` | After Needs validation, read `## Files checked`: `- path` lines. Refuse a report without the section, and a path that git does not track. Return the paths and the lead paths (the text before `:` in each `Where`) | scenario 1, 4, Interface 5 |
+| `plugins/zuko/scripts/lib/release.py:839` `read_report` | After Needs validation, read `## Files checked`: `- path` lines. Refuse a report without the section, and a path that git does not track and the range did not delete (O13). Return the paths and the lead paths (the first word of each `Where`, before any `:`, with no backticks, O15) | scenario 1, 4, Interface 5 |
 | `plugins/zuko/scripts/lib/release.py:950` `pentest_verdict` | Keep the checked paths and the lead paths on the `Verdict` | scenarios 1, 4 |
 | `plugins/zuko/scripts/lib/release.py:979` `rewritten` | Add `docs/security/coverage.md` from `coverage.render` | scenarios 1 to 3 |
 | `plugins/zuko/scripts/lib/release.py:630` `writes` | List `docs/security/coverage.md` with "coverage ledger, N of M checked", so the marker names it and the release commit may stage it (D30) | D30 |
 | `plugins/zuko/scripts/lib/release.py:1079` `cut` | Read the ledger before any write, so that a bad ledger writes nothing. Print the Coverage line after `Wrote` | scenario 5, Interface 4 |
 | `plugins/zuko/agents/pentester.md:14` and the SCOPE template | `OLD FILES` is given with `RANGE`. Check each old file with the categories and class files of the range. Add the `FILES CHECKED:` line to the SCOPE template and example | Interface 3 |
 | `plugins/zuko/skills/release/SKILL.md` step 2 | Run `release.py pick` before the dispatch, print its lines, and give the files as `OLD FILES`. Write `## Files checked` after `## Not assessed`. The summary line `old files: N picked, M checked` | Interface 1, 3, 4 |
+| `plugins/zuko/agents/finding-verifier.md` | `BASE: none` puts every line in scope, so a finding or a lead in an old file is not rejected as one the diff did not introduce (O16) | scenario 4 |
 | `plugins/zuko/skills/release/SKILL.md` step 7 | The report gets the Coverage line that `cut` printed | Interface 4 |
 | `plugins/zuko/scripts/tests/test-coverage.sh` (new) | Unit cases for `pick` and `cut` on scratch repos | scenarios 2 to 5 |
 | `plugins/zuko/scripts/tests/test-e2e-coverage-ledger.sh` (new) | The e2e test below | all |
@@ -380,6 +381,16 @@ No shared files. Chunk B's e2e test reads chunk A's fixtures and cuts with chunk
 
 Recorded as D109, D110, D111. D104 to D108 are taken on `feat/portable-suite`, which is not merged yet.
 
+## Review
+
+2026-11-09 · 6 raw findings, 5 survived, 5 fixed.
+
+- correctness · `plugins/zuko/scripts/lib/release.py:1176` · write and read the ledger and the report with surrogateescape, so a non-UTF-8 file name does not stop cut halfway · `85b5174`
+- correctness · `plugins/zuko/scripts/lib/coverage.py:125` · write a bar in a file name as an escaped bar, and split a row only at a bar with no backslash before it · `a740353`
+- correctness · `plugins/zuko/scripts/lib/release.py:941` · read a lead's file from the first word of its Where · `f47fd5e`
+- correctness · `plugins/zuko/scripts/lib/release.py:986` · take a Files checked path that the range deleted · `fba4632`
+- correctness · `plugins/zuko/skills/release/SKILL.md:128` · send an old file's finding and lead with BASE none, and let the verifier judge every line · `501877a`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -396,6 +407,10 @@ Recorded as D109, D110, D111. D104 to D108 are taken on `feat/portable-suite`, w
 | O10 | Interface 4's Coverage line had 0 leads in its example, so it did not say where a lead counts. | flag | build | user | Decided alone | Chose: the first number is Checked plus Lead, because a pentest read each lead's file, and the two numbers add up to the units. The ledger header still counts Lead on its own. Other: count a lead as not checked. Undo: change the counts in `coverage.render` and the Coverage line in `release.py`, and the cases in `test-coverage.sh`. 2026-11-09 |
 | O11 | Interface 1's no-ledger example read `10 of 148`, which counts the range files. Its own rule counts only the files on the list, outside the range. | flag | build | user | Decided alone | Chose: the rule, so the example now reads `10 of 145`. Other: count every unit. Undo: change the count in `pick` in `release.py`, and the expected lines in `test-coverage.sh` and `test-e2e-coverage-ledger.sh`. 2026-11-09 |
 | O12 | Interface 5 did not say what happens to a ledger line after the table that is not a row of two cells. | flag | build | user | Decided alone | Chose: refuse it with `line N: <text> is not a File and Mark row`, added to Interface 5. Other: skip the line. Undo: drop that check in `coverage.read`, and its case in `test-coverage.sh`. 2026-11-09 |
+| O13 | Review found that a file the range deletes can be in `FILES CHECKED`, because the pentester reads its removed lines. `cut` refused it as a path that git does not track, and so refused the whole report. | flag | review | user | Decided alone | Chose: `cut` trusts a path that git tracks or that the range deleted. A deleted file is not a unit, so it gets no row. Other: tell the pentester to leave out a deleted file, and keep the refusal. Undo: `git revert fba4632`. 2026-11-09 |
+| O14 | Review found that a tracked file name with a `\|` gave a ledger row of three cells, so the next `pick` and `cut` refused the ledger. | flag | review | user | Decided alone | Chose: `render` writes the `\|` as `\\|`, and `read` splits a row only at a `\|` with no `\\` before it. Other: leave out a file whose name has a `\|`. Undo: `git revert a740353`. 2026-11-09 |
+| O15 | Review found that a lead's file was the `Where` text before the first `:`. A `Where` such as `uv.lock requests` named no unit, so the lead was lost and the file was marked checked. | flag | review | user | Decided alone | Chose: the file is the first word of the `Where`, before any `:`, with no backticks. Other: also refuse a lead whose file git does not track, which the needs-validation fixtures do not track. Undo: `git revert f47fd5e`. 2026-11-09 |
+| O16 | Review found that the release sent an old file's finding with `BASE: <the last tag>`. The blind verifier rejects a problem the diff did not introduce, so each finding and lead in an old file was rejected, and the file was still marked checked. This changes `finding-verifier.md`, which the plan did not name. | flag | review | user | Decided alone | Chose: the release sends `BASE: none (old file: every line of this file is in scope)` for an old file, and the verifier reads `BASE: none` as every line in scope. Other: a `KIND: old file` line that only the release sends. Undo: `git revert 501877a`. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
@@ -407,3 +422,5 @@ _Never delete this section or its rows. See references/ledger.md._
 - **Range** — the commits since the last release tag, such as `v2.6.0..HEAD`.
 - **Lead** — a possible hole that the pentester traced in the code but could not prove with a run.
 - **e2e** — end-to-end: one test that walks the whole slice as a user would.
+- **Blind verifier** — an agent that judges one finding from the claim and the code only, without the reasoning of whoever found it.
+- **Lockfile** — a file such as `uv.lock` that pins the exact version of each dependency.
