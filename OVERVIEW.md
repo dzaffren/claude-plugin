@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-08 by /ship utf8-stdio
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-08 by /ship attack-classes
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -83,6 +83,7 @@ projects.
 | lf-checkout | Shipped | A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only | https://claude.ai/artifact/JUtcu8GLjCzgejTUDXxWFg |
 | guard-paths | Shipped | On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it | https://claude.ai/artifact/2juH24KKAcWnDXTBv4prwR |
 | utf8-stdio | Shipped | Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the board renders, and the PR body, the session-start decisions and the release guard show and compare the same text as on Linux | https://claude.ai/artifact/DDqkuv3ooiEwunibe38iEy |
+| attack-classes | Shipped | The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped | https://claude.ai/artifact/F9bL5Vm7mFYo6BT9PC9SmP |
 
 ## More
 

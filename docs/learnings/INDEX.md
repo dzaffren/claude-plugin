@@ -225,3 +225,6 @@ One line per lesson. Loaded into every session in this repo.
 - Write code that holds a backslash with the Write tool — the Bash tool turns
   a `\\` into one `\` before bash sees it, even in a quoted heredoc.
   ([detail](bash-tool-collapses-double-backslash.md))
+- On Windows, apply a seed patch that has an empty-file entry with
+  `patch -p1` — `git apply` refuses that entry.
+  ([detail](empty-file-patch-needs-patch-p1.md))

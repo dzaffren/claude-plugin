@@ -1,6 +1,6 @@
 # dzafran-claude-plugins · architecture
 
-**Status:** Active · **Updated:** 2026-11-02 by /ship rendered-drift-check
+**Status:** Active · **Updated:** 2026-11-08 by /ship attack-classes
 
 ## Context
 
@@ -22,7 +22,7 @@ flowchart LR
 | Component  | Folder                     | Does                                                                  |
 | ---------- | -------------------------- | --------------------------------------------------------------------- |
 | skills     | `plugins/zuko/skills/`     | the stages a user runs: shape, spec, build, review, ship, release, helpers |
-| references | `plugins/zuko/references/` | shared rules the stages read: voice, slicing, ledger, onboarding, OWASP |
+| references | `plugins/zuko/references/` | shared rules the stages read: voice, slicing, ledger, onboarding, OWASP, and a pinned copy of Cloudflare's attack-class files (`attack-classes/`) that the release pentester reads |
 | agents     | `plugins/zuko/agents/`     | subagents for build chunks, blind review verification, and the release pentest |
 | hooks      | `plugins/zuko/hooks/`      | binds scripts to Claude Code events (SessionStart, PreToolUse, Stop)  |
-| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the rendered drift gate that drives headless Chrome from Node (`lib/rendered-drift.mjs`, `lib/cdp.mjs`), the idea board renderer with its gate and PR cards and its replay of the idea's git history, and the hub's Ideas section (`lib/board.py`), and a bash test harness |
+| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the rendered drift gate that drives headless Chrome from Node (`lib/rendered-drift.mjs`, `lib/cdp.mjs`), the idea board renderer with its gate and PR cards and its replay of the idea's git history, and the hub's Ideas section (`lib/board.py`), the attack-class pin check (`check-attack-pin.sh`), and a bash test harness |

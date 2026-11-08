@@ -103,6 +103,10 @@ the app with `kill` on its pid, and remove the target file
 In live mode the report reads `**Mode:** live · <target>`, and A01 and A07
 move from `NOT ASSESSED:` to `ASSESSED:`.
 
+**Check the attack-class pin.** Run
+`bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-attack-pin.sh"`. When it prints a
+line, print that line to the user. The check never stops the release (D93).
+
 1. Dispatch the `zuko:pentester` agent with `RANGE`, `VERSION`, the repo,
    and the target when the release runs live.
    It returns a scope block and findings, each with a `PROOF` it ran.
@@ -133,11 +137,18 @@ move from `NOT ASSESSED:` to `ASSESSED:`.
    ## Assessed
 
    - A05:2025 Injection — 4 subprocess calls, 2 SQL strings
+   - ATTACK-CLASSES (Cloudflare c1c8a8c) — Injection, Obvious things: exporters/ledger.py
+   - AI-AND-LLM (Cloudflare c1c8a8c) — tool-argument injection, indirect injection: exporters/assistant.py
 
    ## Not assessed
 
    - A01:2025 Broken Access Control — needs a running server (slice 5b)
+   - CLIENT-SIDE (Cloudflare c1c8a8c) — no browser code in the range
+   - MEMORY-SAFETY-AND-BINARY (Cloudflare c1c8a8c) — no native code in the range
    ```
+
+   Copy each `ASSESSED:` and `NOT ASSESSED:` line from the scope block into
+   its list. Put the OWASP lines first, then the class-file lines (D94).
 
    A `LEAK:` line from the pentester (its proof changed something outside the
    scratch copy) goes into the table as its own row, `| L1 | critical | leak |
@@ -153,10 +164,13 @@ move from `NOT ASSESSED:` to `ASSESSED:`.
 4. Print the summary, then go to step 3 with `--pentest <report-file>`:
 
    ```
-   Pentest    code-level · v1.4.2..a1b2c3d (9 commits) · 7 categories
+   Pentest    code-level · v1.4.2..a1b2c3d (9 commits) · 7 categories · 2 class files
               A05 Injection        1 medium
               not assessed: A01, A07 — no running server (slice 5b)
+              class files not read: 8 — no matching code in the range
    ```
+
+   The class-file count is the number of class-file lines under `ASSESSED:`.
 
 The pentester returns nothing, stops early, or fails → the pentest did not
 finish. Say so, and ask:
