@@ -156,3 +156,7 @@ expect_match '^2$' "$(cr_free_lines "$h/lf.txt")" "python3 -c: the line ends in 
 sb=$(sandbox missed 'expect_match "^never$" "$(printf "C:\\x\nsecond")" "missed"')
 out=$(bash "$sb/tests/run.sh" missed 2>&1)
 expect_match '^        nothing matched /\^never\$/ in \[C:\\x\\nsecond\]$' "$out" "detail: a failed match shows the text it searched"
+python3 - <<'PY' >"$h/lf-stdin.txt"
+print("x")
+PY
+expect_match '^2$' "$(cr_free_lines "$h/lf-stdin.txt")" "python3 -: a script on stdin also ends its lines in LF"

@@ -23,9 +23,10 @@ record() {
   printf '%s\t%s\t%s\n' "$1" "$2" "$detail" >>"$results_file"
 }
 
-# A test's own `python3 -c` snippet reads and writes UTF-8 with LF, as zuko's
-# Python does (D98). Windows Python writes CRLF in cp1252 by default, and $( )
-# keeps the CR. zuko's own scripts never get this prelude.
+# A test's own `python3 -c` snippet, or `python3 -` script on stdin, reads and
+# writes UTF-8 with LF, as zuko's Python does (D98). Windows Python writes
+# CRLF in cp1252 by default, and $( ) keeps the CR. zuko's own scripts never
+# get this prelude.
 PY_LF='import sys
 for _zuko_stream in (sys.stdin, sys.stdout, sys.stderr):
     _zuko_stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
@@ -33,6 +34,8 @@ for _zuko_stream in (sys.stdin, sys.stdout, sys.stderr):
 python3() {
   if [ "${1:-}" = -c ]; then
     command python3 -c "$PY_LF$2" "${@:3}"
+  elif [ "${1:-}" = - ]; then
+    { printf '%s' "$PY_LF"; cat; } | command python3 - "${@:2}"
   else
     command python3 "$@"
   fi
