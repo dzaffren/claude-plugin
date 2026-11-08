@@ -30,8 +30,9 @@ def find(name, path, exts):
 def argv(args):
     """The argument list to start `args` with. Off Windows, `args` as they
     are. On Windows, the program found on PATH, after bash when the file
-    starts with #!. A program or a bash that is not found gives `args` back,
-    so the caller's FileNotFoundError path still runs."""
+    starts with #!. A program or a bash that is not found, or a found file
+    that cannot be read, gives `args` back, so the caller's own error path
+    still runs."""
     args = list(args)
     if os.name != "nt":
         return args
@@ -40,8 +41,11 @@ def argv(args):
     found = find(args[0], path, exts)
     if found is None:
         return args
-    with open(found, "rb") as handle:
-        script = handle.read(2) == b"#!"
+    try:
+        with open(found, "rb") as handle:
+            script = handle.read(2) == b"#!"
+    except OSError:
+        return args
     if not script:
         return [found] + args[1:]
     bash = find("bash", path, exts)

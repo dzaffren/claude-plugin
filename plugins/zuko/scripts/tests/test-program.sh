@@ -65,3 +65,11 @@ same "$(printf 'gh\napi')" "$(argv_on nt "$work/empty:$work/sh" gh api)" \
   "argv on Windows: a name not on PATH is given back, so the caller's not-installed path runs"
 same "$(printf 'gh\napi')" "$(argv_on nt "$work/one" gh api)" \
   "argv on Windows: a #! script with no bash on PATH is given back unchanged"
+if [ "$(id -u)" != 0 ]; then
+  mkdir -p "$work/locked"
+  printf '#!/bin/sh\necho locked\n' >"$work/locked/gh"
+  deny r "$work/locked/gh"
+  same "$(printf 'gh\napi')" "$(argv_on nt "$work/locked:$work/sh" gh api 2>&1)" \
+    "argv on Windows: a found file that cannot be read is given back unchanged, not an error"
+  allow "$work/locked/gh"
+fi
