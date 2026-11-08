@@ -938,7 +938,14 @@ def read_report(path, version):
     checked = listed(lines, "## Files checked")
     if not checked:
         raise unreadable("no Files checked list")
-    return text, findings, [row[2].split(":")[0].strip() for row in leads], checked
+    return text, findings, [lead_file(row[2]) for row in leads], checked
+
+
+def lead_file(where):
+    """The file a Where names: its first word, before any ":", with no backticks.
+    A Where is FILE then SYMBOL, and FILE may have no line number."""
+    words = where.replace("`", "").split()
+    return words[0].split(":")[0] if words else where
 
 
 def listed(lines, heading):

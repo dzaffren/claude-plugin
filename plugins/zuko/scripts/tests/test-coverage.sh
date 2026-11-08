@@ -334,3 +334,24 @@ commit "feat(app): change the cli"
 run pick "$repo"
 expect_exit 0 "$status" "pipe pick: reads the row back (got: $out)"
 expect_match '^Old files  1 of 1 not checked' "$out" "pipe pick: app/a|b.py is checked, so only check.sh is left"
+
+# 8. A lead's file is the first word of its Where, before any ":", so a Where
+# with no line number keeps its lead.
+scratch "$work/leadword" app/cli.py uv.lock
+printf 'changed\n' >>"$repo/uv.lock"
+unreleased "Pin the index."
+commit "feat(deps): pin the index"
+lead='| N1 | A03:2025 Software Supply Chain Failures | uv.lock requests | a pin may resolve to a fork | whether the index serves it |'
+run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "$lead" uv.lock)"
+expect_exit 0 "$status" "lead word: exits 0 (got: $(last_line "$out"))"
+has_row uv.lock "lead in v1.5.0"
+expect_exit 0 "$?" "lead word: a Where of FILE then SYMBOL with no line number marks the lead"
+scratch "$work/leadtick" app/cli.py uv.lock
+printf 'changed\n' >>"$repo/app/cli.py"
+unreleased "Quote the folder."
+commit "feat(app): quote the folder"
+lead='| N1 | A05:2025 Injection | `app/cli.py:12` main | a name may reach a shell | whether the shell splits it |'
+run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "$lead" app/cli.py)"
+expect_exit 0 "$status" "lead tick: exits 0 (got: $(last_line "$out"))"
+has_row app/cli.py "lead in v1.5.0"
+expect_exit 0 "$?" "lead tick: a Where in backticks marks the lead"
