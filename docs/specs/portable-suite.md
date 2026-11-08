@@ -1,6 +1,6 @@
 # Portable suite
 
-**Version:** v1 · **Status:** Built · **Type:** Technical · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Technical · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** lf-checkout, guard-paths, utf8-stdio
@@ -357,6 +357,7 @@ Recorded as D104, D105, D106, D107, D108. D100 to D103 are taken on `feat/needs-
 | O21 | O6 accepted five Windows facts. The runs settled them: `$( )` keeps the CR; `icacls //deny` stops native Python but not an admin's Git Bash; `nativestrict` made real links on the runner (0 symlink skips); `taskkill //T` stops a server but not a Git Bash `sleep`; the `cygpath -m /` repair passes in `board` and `e2e-replay`. | flag | build | user | Decided alone | Chose: a `python3` wrapper in `run.sh` that gives each `-c` or `-` test snippet UTF-8 with LF, and the same prelude by hand at the 12 `"$py" -c` sites. zuko's own scripts never get it. The watchdog also stops the file's process group. Other: strip CR in each test's compare. Undo: delete `PY_LF` and `python3()` from `run.sh`, and `"$PY_LF"` from the 12 sites. 2026-11-09 |
 | O22 | The plan did not foresee that Git Bash, started by a native program, expands `{a}`, `*` and `[..]` in its arguments. The replay stub got `repos/owner/repo`. | flag | build | user | Decided alone | Chose: `program.argv()` adds `noglob` to `MSYS` in `os.environ` before it gives back a bash command. Other: quote each argument in a Windows command line string. Undo: revert `b5a06c5`. 2026-11-09 |
 | O23 | The Interface showed a detail on one line, and a failed match with no text. A multi-line detail was cut at its first line, so the first Windows log hid each got value. | flag | build | user | Decided alone | Chose: `record` writes a CR as `\r` and a newline as `\n`, and a failed match prints the first 300 characters that it searched. The Interface now says so. Other: keep the old detail. Undo: revert the `record` and `expect_*` lines of `run.sh` from `6aa050c` and `8ad76c5`. 2026-11-09 |
+| O24 | At ship, the `windows-suite` job on this branch is red: 3262 passed, 26 failed, 3 skipped in the run at `01cf4a4`. Each failed check is a `\` path that `windows-paths` owns (O17). `main` has no Windows job, and failed 596 checks on Windows. | flag | ship | user | Decided alone | Chose: ship with the job red. The Linux suite passes 3596 of 3596 after the merge of `main`. Other: hold the PR until `windows-paths` makes the job green. Undo: none needed; `windows-paths` owns the 26 failures, and `windows-ci` makes the job a required check. 2026-11-09 |
 _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary

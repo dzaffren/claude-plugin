@@ -25,6 +25,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - On Windows, the pentester can run its proofs in its scratch copy, so a Windows release pentest can prove a finding.
 - On Windows, zuko's scripts now write UTF-8 with LF line ends, as on Linux and macOS. The board renders instead of crashing, the PR body and the session-start decisions show `·`, `×` and `→` correctly, and the release guard reads file names with accents.
 - The release pentester now runs the code under test through its own entry point, such as `python3 -m yourpkg.cli`, so it can prove a finding instead of dropping it when the fence refuses `python3 -c`.
+- On Windows, `/release` runs your test command in Git Bash and not in WSL's bash, and zuko finds `gh` on PATH as Git Bash does, so a test's stand-in `gh` answers in place of the real one.
+- On Windows, the board names the stage that last updated it, such as `/spec export-csv pause 1`, in place of `C:/Program Files/Git/spec export-csv pause 1`. When another program holds port 4751, `board.py serve` now stops, so the stage opens the board file instead.
 
 ### Security
 
