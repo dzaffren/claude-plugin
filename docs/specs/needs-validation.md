@@ -1,6 +1,6 @@
 # Needs validation
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** attack-classes
@@ -223,6 +223,7 @@ The step 7 report names the count:
 Pentest report unreadable: no Needs validation section
 Pentest report unreadable: the Needs validation columns are ID, Severity, Category, Where, Description, not ID, Category, Where, Description, Unknown
 Pentest report unreadable: a Needs validation row has 6 cells, not 5: | N1 | ... |
+Pentest report unreadable: a Needs validation row has ID P2, not N<n>
 ```
 
 A skipped pentest (`--no-pentest`) writes no Needs validation section, as it writes no Findings today.
@@ -346,6 +347,23 @@ Not added: no flag, no new script, no new agent, no cap (O5), and no dependency.
 2. **Verifier.** Dispatch `zuko:finding-verifier` with `lead-n2.txt`: a lead that says an export name reaches `open()`, when a check before it refuses a `/`. The run passes on `VERDICT: REJECTED` with a `DEFENCE:` line.
 3. **The D6 half of scenario 4.** Seeded run 2 of `attack-classes.md` on `llm-base`, run again. The PR-summary skill gives no finding and no lead.
 
+### Seeded runs, recorded
+
+Recorded by `/build` on 2026-11-09 on Linux, with the command in `docs/specs/pentest.md` › Seeded run and `--allowedTools Bash`. Seed 1 is `fixtures/pentest/base/` tagged v1.4.2, then `fixtures/pentest/range.patch`, then `fixtures/needs-validation/range.patch`, each with `git apply`.
+
+| Check | Run 1: pentester, invoice-cli v1.4.2..HEAD | Run 2: verifier, `lead-n2.txt` | Run 3: pentester, llm-base v0.3.0..HEAD |
+| --- | --- | --- | --- |
+| Result | pass | pass | not run to the end (O8) |
+| The Windows branch is a LEAD block with one `UNKNOWN` | yes: `suppliers.py:29` `start` call, UNKNOWN "whether cmd.exe on Windows treats the & in the target as a command separator" | — | — |
+| The regex gives no finding and no lead | yes: listed under `DEFENCES:` only | — | — |
+| The bank-import A05 is still a finding with a `PROOF` | yes: high, `ls pwned` printed "pwned" | — | — |
+| No `needs_validation` in the output | yes: 0 matches | — | — |
+| A broken trace is rejected | — | yes: `VERDICT: REJECTED`, `DEFENCE: invoice_cli/exporters/suppliers.py:20` | — |
+| The PR-summary skill gives no finding and no lead | — | — | no answer: the run stopped |
+| Turns | 23 subagent messages of 60 | 2 | 34 messages, then stopped |
+
+Run 1 also returned a second lead that the seed did not plant: on Windows, a supplier name `C:x` passes the `/` and `\` check, and `os.path.join` drops `exports`. Its UNKNOWN is where `open("C:x.csv", "w")` writes on Windows. The A03 lockfile finding came back as low, as in the attack-classes runs. No leak: `git status --porcelain` and the home listing matched the baseline.
+
 ### Chunks
 
 | Chunk | Scenarios | Files owned |
@@ -377,6 +395,10 @@ Recorded as D100, D101, D102, D103.
 | O3 | Does a blind verifier check each lead's trace before the lead reaches the report? | question | spec p1 | user | Resolved | Yes. A blind verifier checks that each line in the trace exists and that nothing upstream stops the input. A lead whose trace breaks is dropped. The D-entry is drafted at pause 3, 2026-11-08 |
 | O4 | Do zuko's exclusions also stop a lead: the Never-a-finding list (D5), and untrusted text with no path to a tool call or a file write (D6)? | question | spec p1 | user | Resolved | Yes, both. A lead whose only impact is resource exhaustion is never a lead (D5). An untrusted-text lead is a lead only when its trace reaches a tool call or a file write. Its unknown is then whether the model obeys the text (D6), 2026-11-08 |
 | O5 | Is there a limit on the number of leads in one report? | question | spec p1 | user | Resolved | No limit. Every lead whose trace holds goes in. A cap would hide leads, and the verifier drops the weak ones (O3), 2026-11-08 |
+| O6 | Interface 4 printed only `needs validation: 1 lead (2 dropped by the verifier)` and the step 7 line with a count. It did not say what to print with no lead or no rejected lead. | flag | build | user | Decided alone | Chose: with no rejected lead, leave out the part in brackets. With no lead, the summary reads `needs validation: 0 leads`, and step 7 leaves the lead part out, as the CHANGELOG has no line for 0 (D102). Other: always print `(0 dropped by the verifier)` and `0 leads need validation`. Undo: change the two sentences after the summary example and after the step 7 example in `plugins/zuko/skills/release/SKILL.md`. 2026-11-09 |
+| O7 | The verifier's Always-REJECT item "You had to assume how a function behaves without reading it" rejects every lead, because the `UNKNOWN` is that kind of fact. | flag | build | user | Decided alone | Chose: the lead section says "Do not reject a lead only because you cannot settle its `UNKNOWN`". Seeded run 2 still rejected a broken trace. Other: leave the rule, and let the verifier reject every lead. Undo: delete that sentence from the `## A lead` section of `plugins/zuko/agents/finding-verifier.md`. 2026-11-09 |
+| O8 | Seeded run 3 was to show that the `llm-base` PR-summary skill gives no finding and no lead (the D6 half of scenario 4). The pentester stopped after 34 messages: "Opus 5.5's safeguards flagged this session", request `req_011CgqkSwdrBRmAd94M7k95B`. | flag | build | user | Decided alone | Chose: record it as not run, and rest the D6 half on the pentester rule and its check in `test-e2e-needs-validation.sh`. The same block stopped the v2.4.2 pentest (D59). Other: run it again with another model in place of the pentester's `opus`. Undo: run seeded run 3 again with the command in Test plan, after CVP access or when the classifier lets it through, and record it here. 2026-11-09 |
+| O9 | Interface 6 named three refusals. The plan's ID check (`^N[0-9]+$`) had no message. | flag | build | user | Decided alone | Chose: `Pentest report unreadable: a Needs validation row has ID P2, not N<n>`, added to Interface 6. A section with a heading and no table gets `no Needs validation section`. Other: a separate message for a heading with no table. Undo: change the two `unreadable(...)` texts in `read_report` in `plugins/zuko/scripts/lib/release.py`, and the cases in `test-release.sh` case 43. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
