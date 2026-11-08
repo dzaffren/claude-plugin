@@ -107,12 +107,13 @@ def marked(units, old, version, changed, checked=None, leads=()):
 
 
 def checked_count(marks):
-    return sum(mark.startswith("v") for mark in marks.values())
+    """The units a pentest has checked, with a lead open or not."""
+    return sum(mark.startswith(("v", "lead in ")) for mark in marks.values())
 
 
 def render(marks, version, today):
     """The ledger text for marks, one row for each unit in path order."""
-    checked = checked_count(marks)
+    checked = sum(mark.startswith("v") for mark in marks.values())
     leads = sum(mark.startswith("lead in ") for mark in marks.values())
     lines = ["# Coverage", "",
              "**Updated:** v%s · %s" % (version, today),

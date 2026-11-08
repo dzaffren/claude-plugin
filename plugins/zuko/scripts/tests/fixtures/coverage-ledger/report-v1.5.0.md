@@ -2,7 +2,7 @@
 
 **Result:** pass
 **Mode:** code-level
-**Range:** v1.4.2..a1b2c3d (1 commit)
+**Range:** v1.4.2..a1b2c3d (2 commits)
 **Date:** 2026-10-02
 
 ## Findings
@@ -27,7 +27,16 @@
 
 ## Files checked
 
+- invoice_cli/exporters/assistant.py
+- invoice_cli/importers/bank.py
+- uv.lock
 - check.sh
 - invoice_cli/__init__.py
 - invoice_cli/cli.py
-- invoice_cli/exporters/suppliers.py
+- invoice_cli/config.py
+- invoice_cli/currency.py
+- invoice_cli/dates.py
+- invoice_cli/exporters/__init__.py
+- invoice_cli/exporters/csv_out.py
+- invoice_cli/exporters/ledger.py
+- invoice_cli/exporters/pdf.py

@@ -17,8 +17,8 @@
 
 ## Assessed
 
-- A01:2025 Broken Access Control — 2 file paths built from CSV fields
-- A05:2025 Injection — 3 subprocess calls, 2 SQL strings
+- A01:2025 Broken Access Control — 1 file path built from a CSV field
+- A05:2025 Injection — 2 subprocess calls, 1 SQL string
 
 ## Not assessed
 
@@ -26,9 +26,15 @@
 
 ## Files checked
 
-- invoice_cli/cli.py
-- invoice_cli/exporters/csv.py
-- invoice_cli/exporters/suppliers.py
+- invoice_cli/exporters/ledger.py
 - invoice_cli/importers/bank.py
+- invoice_cli/cli.py
+- invoice_cli/importers/__init__.py
+- invoice_cli/importers/ocr.py
 - invoice_cli/importers/statement.py
-- invoice_cli/ledger.py
+- invoice_cli/money.py
+- invoice_cli/paths.py
+- invoice_cli/report.py
+- invoice_cli/rounding.py
+- invoice_cli/suppliers.py
+- invoice_cli/tax.py

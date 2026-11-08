@@ -234,7 +234,7 @@ lead='| N1 | A05:2025 Injection | invoice_cli/cli.py:12 main | a file name may r
 run cut "$repo" --version 1.5.0 --date 2026-10-02 \
   --pentest "$(pass_report 1.5.0 "$lead" invoice_cli/export.py invoice_cli/cli.py)"
 expect_exit 0 "$status" "lead cut: exits 0 (got: $(last_line "$out"))"
-expect_match '^Coverage   1 of 5 files checked by a pentest · 4 not checked · ledger started$' "$(last_line "$out")" "lead cut: a lead is not checked"
+expect_match '^Coverage   2 of 5 files checked by a pentest · 3 not checked · ledger started$' "$(last_line "$out")" "lead cut: a file with a lead counts as checked by a pentest"
 has_row invoice_cli/cli.py "lead in v1.5.0"
 expect_exit 0 "$?" "lead cut: the file with the lead is marked lead in v1.5.0"
 has_row invoice_cli/export.py v1.5.0
