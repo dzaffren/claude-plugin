@@ -17,19 +17,19 @@ same() {  # same <expected> <actual> <description>
   else record FAIL "$3" "expected [$1], got [$2]"; fi
 }
 
-# bin <name> [gh script body]: a PATH dir with git, and a gh when a body is given.
+# bin <name> [gh script body]: a PATH dir, with a gh when a body is given.
 bin() {
   mkdir -p "$work/bin/$1"
-  ln -s "$(command -v git)" "$work/bin/$1/git"
   if [ -n "${2:-}" ]; then
     printf '#!/bin/sh\necho "$*" >>"%s"\n%s\n' "$work/bin/$1.log" "$2" >"$work/bin/$1/gh"
     chmod +x "$work/bin/$1/gh"
   fi
 }
 
-# render <bin> <repo> [data|render]: sets $out and $status.
+# render <bin> <repo> [data|render]: sets $out and $status. The PATH is the bin
+# dir and git (narrow_path), so the only gh is the bin dir's stub.
 render() {
-  out=$(PATH="$work/bin/$1" "$py" "$board" "${3:-data}" "$2/docs/specs/idea/shape.md" --by test 2>"$work/err")
+  out=$(PATH="$(narrow_path "$work/bin/$1")" "$py" "$board" "${3:-data}" "$2/docs/specs/idea/shape.md" --by test 2>"$work/err")
   status=$?
 }
 
@@ -90,6 +90,8 @@ spec() {  # spec <repo> <name> p1|p2|p3|refined|shipped
 bin none 'echo null'
 bin fail 'echo "HTTP 401: Bad credentials" >&2; exit 1'
 bin nogh
+same "$work/bin/none/gh" "$(PATH="$(narrow_path "$work/bin/none")" command -v gh)" "fixture: on the narrow PATH, gh is the stub"
+same "" "$(PATH="$(narrow_path "$work/bin/nogh")" command -v gh)" "fixture: with no stub, the narrow PATH has no gh"
 
 # --- guard: a fixture that is not a repo ---
 plain="$work/plain"

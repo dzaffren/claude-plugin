@@ -42,9 +42,10 @@ spec() {  # spec <repo> <name> p1|p2|p3|shipped
     "$2" "$status" "$more" >"$1/docs/specs/$2.md"
 }
 
-# render <bin dir>: the board page, with PATH holding only that dir. Sets $status.
+# render <bin dir>: the board page, with PATH holding only that dir and git
+# (narrow_path). Sets $status.
 render() {
-  PATH="$1" "$py" "$board" render "$repo/docs/specs/idea/shape.md" --by "/spec s-three pause 2" >"$page" 2>"$work/err"
+  PATH="$(narrow_path "$1")" "$py" "$board" render "$repo/docs/specs/idea/shape.md" --by "/spec s-three pause 2" >"$page" 2>"$work/err"
   status=$?
 }
 
@@ -117,10 +118,10 @@ git -C "$repo" cat-file -e "$head" 2>/dev/null
 expect_exit 1 "$?" "fixture: the clone does not hold the PR's commits before the render"
 
 mkdir -p "$work/stub" "$work/nogh"
-ln -s "$(command -v git)" "$work/stub/git"
-ln -s "$(command -v git)" "$work/nogh/git"
 printf '#!/bin/sh\necho "$*" >>"%s"\ncase "$*" in *%s*) echo 1 ;; *) echo null ;; esac\n' "$work/gh.log" "$squash" >"$work/stub/gh"
 chmod +x "$work/stub/gh"
+same "$work/stub/gh" "$(PATH="$(narrow_path "$work/stub")" command -v gh)" "fixture: on the narrow PATH, gh is the stub"
+same "" "$(PATH="$(narrow_path "$work/nogh")" command -v gh)" "fixture: with no stub, the narrow PATH has no gh"
 
 # --- render with gh: main, the PR's commits in place of the squash, then the branch ---
 render "$work/stub"
