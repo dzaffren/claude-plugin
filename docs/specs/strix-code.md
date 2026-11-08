@@ -74,7 +74,7 @@ Scenario: a confirmed Strix finding goes into the report
   Then /release runs Strix on the scratch copy of v2.6.1 with --scan-mode standard and --max-budget 10
   And Strix reports 2 vulnerabilities, and the verifier confirms 1 medium in plugins/zuko/scripts/lib/release.py and rejects the other
   And the report lists the medium under Findings as S1, and the rejected one under Needs validation
-  And the summary prints "Strix      standard · $3.80 of $10 · 2 found · 1 confirmed · 1 needs validation"
+  And the summary prints "strix: 1.7.0 standard · $3.80 of $10 · 2 found · 1 confirmed · 1 needs validation"
 
 Scenario: a confirmed high from Strix blocks the release
   Given the verifier confirms a high from Strix in plugins/zuko/scripts/lib/git-command.py
@@ -125,6 +125,125 @@ Scenario: a Strix run that fails or stops early is said, not hidden
 - Strix runs marking files in the coverage ledger — not doing (O6). Strix does not say which files it read.
 - Strix in `/review` — not doing. The shape keeps extra attackers to the release (shape O7).
 
+## Interface
+
+The slice adds two `release.py` commands, two prompts and three terminal lines in `/release`, and Strix rows in the report. `cut` reads the report as it does today.
+
+```mermaid
+flowchart LR
+  R["/release step 2"] -- "1. --scratch, --files" --> K["release.py strix"]
+  K -- "strix -n -t copy" --> X["strix CLI in Docker"]
+  X -- "run.json, vulnerabilities.json" --> K
+  K -- "FINDING blocks + STRIX: line" --> R
+  R -- "2. STRIX: missing" --> I["release.py strix-install"]
+  R -- "3. one claim per finding" --> V["finding-verifier"]
+  V -- "VERDICT" --> R
+  R -- "4. S rows, N rows, STRIX lines" --> REP["report.md"]
+  R -- "5. strix: summary line" --> T["/release terminal"]
+```
+
+`/release` calls `release.py strix`, which runs Strix on its own copy and prints one block for each finding. `/release` sends each block to a verifier, and writes the verdicts into the report. On `STRIX: missing`, `/release` offers `release.py strix-install` first.
+
+Each field below is in the `vulnerabilities.json` and `run.json` of Strix 1.4.1 and 1.7.0, read from their source on 2026-11-09.
+
+### 1. `release.py strix`
+
+```text
+python3 release.py strix <repo-root> --scratch <dir> --files <path>,<path>,...
+```
+
+- `--scratch` is a second `git archive` copy of the release. Strix mounts its target writable, so it never shares the pentester's copy.
+- `--files` is the range files and the `OLD FILES`. They go into the Strix instruction as the files to attack first (O8).
+- It runs `strix -n -t <scratch> --scan-mode standard --max-budget 10 --scope-mode full --instruction-file <file>`, from the folder above `--scratch`. Strix writes `strix_runs/` there, never in the repo.
+
+It prints one block for each finding that is not info, then one last `STRIX:` line. `/release` branches on that line and nothing else, as it does on `NEXT:`.
+
+```text
+FINDING S1
+STRIX-ID: vuln-0001
+SEVERITY: medium
+CWE: CWE-78
+TITLE: tests_gate runs the overview's test row through bash -c
+FILE: plugins/zuko/scripts/lib/release.py:260
+SNIPPET: code = subprocess.run(["bash", "-c", command], cwd=project,
+POC: /tmp/…/strix_runs/zuko-a1b2/vulnerabilities/vuln-0001.md
+```
+
+`FILE` is the first entry of Strix's `code_locations`, with its `start_line`. A finding with no code location prints `FILE: none`.
+
+| Last line | Means | `/release` does |
+| --- | --- | --- |
+| `STRIX: missing` | no `strix` on PATH | the install prompt (2) |
+| `STRIX: skipped · no LLM_API_KEY in the environment or ~/.strix/cli-config.json` | no key in either place | prints `Strix skipped: …`, goes on |
+| `STRIX: skipped · no STRIX_LLM in the environment or ~/.strix/cli-config.json` | no model in either place | prints `Strix skipped: …`, goes on |
+| `STRIX: skipped · docker info failed: Cannot connect to the Docker daemon` | the first line of the `docker info` error | prints `Strix skipped: …`, goes on |
+| `STRIX: failed · exit 1 · Docker daemon not reachable` | Strix exit 1, with its last output line | prints `Strix did not finish: …`, goes on (O5) |
+| `STRIX: failed · vulnerabilities.json unreadable: <why>` | a run file that the parser does not know | prints `Strix did not finish: …`, goes on |
+| `STRIX: done · 1.7.0 · standard · $3.80 of $10 · 3 found · 1 info dropped` | `run.json` status `completed` | sends the blocks to verifiers |
+| `STRIX: stopped · 1.7.0 · standard · $10.00 of $10 · 1 found` | `run.json` status `stopped` | sends the blocks to verifiers |
+
+The count after `found` is every finding, info included. `info dropped` is left out when it is 0.
+
+### 2. The install prompt and `release.py strix-install`
+
+On `STRIX: missing`, `/release` asks once, with the version yes:
+
+```text
+Strix is not installed. Install strix-agent 1.7.0 with uv tool install? yes / skip
+```
+
+- yes → `python3 release.py strix-install`. It runs `uv tool install strix-agent==1.7.0` and prints `Strix 1.7.0 installed`. Then `/release` runs `release.py strix` again.
+- skip → `Strix skipped: not installed`.
+- An install that fails prints `Strix install failed: uv not found`, or the last line from `uv`. `/release` treats it as a skip.
+
+### 3. One claim for each Strix finding
+
+`/release` sends each `FINDING` block to its own `finding-verifier`, blind, as it does for a pentester finding:
+
+- the claim: `TITLE`
+- `CATEGORY`: the OWASP 2025 category that `/release` picks from `owasp.md`, then Strix's CWE in brackets (O9)
+- `SEVERITY`, `FILE` and `SNIPPET`, from the block
+- `SYMBOL`: the function around `FILE`'s line, which `/release` reads in the repo
+- `PROOF`: the Proof of Concept section of the `POC` file
+- `BASE`: the same rule as a pentester finding. It is the last tag, or none for a file in `OLD FILES` (O8)
+
+A block with `FILE: none` goes to no verifier. It goes under Needs validation.
+
+### 4. The report
+
+| Strix result | Where it goes | Example |
+| --- | --- | --- |
+| confirmed finding | `## Findings`, ID `S1`, `S2` and on | `\| S1 \| medium \| A05:2025 Injection (CWE-78) \| plugins/zuko/scripts/lib/release.py:260 tests_gate \| tests_gate runs the overview's test row through bash -c \|` |
+| rejected finding, or `FILE: none` | `## Needs validation`, the next free `N` ID | `\| N2 \| A05:2025 Injection (CWE-78) \| plugins/zuko/scripts/lib/release.py:260 tests_gate \| Strix: tests_gate runs the overview's test row through bash -c \| whether Strix's proof reaches this line: zuko's verifier could not trace it in the code \|` |
+| info finding | nowhere; counted on the `STRIX:` line | — |
+| a run that finished | `## Assessed` | `- STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — 3 found, 1 confirmed, 1 needs validation, 1 info dropped · $3.80 of $10` |
+| a run that stopped | `## Assessed` | `- STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — stopped at the $10 budget · 1 found, 1 confirmed` |
+| skipped or failed | `## Not assessed` | `- STRIX — skipped: no LLM_API_KEY` · `- STRIX — skipped: not installed` · `- STRIX — did not finish: exit 1` |
+
+Needs validation rows keep `N` IDs, because `cut` refuses any other ID there. The `Strix:` prefix in the Description says where the row came from. The report never carries a Strix PoC, as it never carries a `PROOF`. `/release` prints each confirmed Strix PoC path to the terminal, after the pentester's proofs.
+
+### 5. Terminal lines
+
+Before the run, which takes about 30 minutes in the background:
+
+```text
+Strix running: 1.7.0 standard · up to $10 · in the background, next to the pentester
+```
+
+In the step 2 summary, one more line under `old files:`:
+
+```text
+              strix: 1.7.0 standard · $3.80 of $10 · 3 found · 1 confirmed · 1 needs validation · 1 info dropped
+```
+
+On a skip or a failure, the line reads `strix: skipped · no LLM_API_KEY` or `strix: did not finish · exit 1`.
+
+In the step 7 report, one more line under `pentest`:
+
+```text
+  strix     1.7.0 standard · $3.80 of $10 · 1 confirmed · 1 needs validation
+```
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -136,6 +255,9 @@ Scenario: a Strix run that fails or stops early is said, not hidden
 | O5 | When Strix fails or stops early, does the release go on with the zuko pentest only, or ask for a reason as it does when the pentester fails? | question | spec p1 | user | Resolved | The release goes on with the zuko pentest only. `/release` prints why Strix did not finish, and the report lists Strix under Not assessed. The D-entry is drafted at pause 3, 2026-11-09 |
 | O6 | Does a Strix run mark files in the coverage ledger? Strix does not say which files it read. The coverage-ledger spec handed this question to this slice. | question | spec p1 | user | Resolved | No. Only the zuko pentester's `FILES CHECKED` line marks the ledger, 2026-11-09 |
 | O7 | Strix grades findings critical, high, medium, low or info. zuko's grid (D4) has no info. What happens to an info finding? | question | spec p1 | user | Resolved | Dropped. An info finding goes to no verifier and not into the report. The summary counts it, 2026-11-09 |
+| O8 | Strix attacks the whole copy. The verifier rejects an issue that was in the code before the range (D15). Which `BASE` does a Strix finding get? | question | spec p2 | user | Resolved | The same rule as the pentester's findings: the last tag, or none for a file in `OLD FILES`. Strix attacks the range and old files first. A hole in other old code is rejected as pre-existing and goes under Needs validation. The D-entry is drafted at pause 3, 2026-11-09 |
+| O9 | Strix gives a CWE, not an OWASP category. The verifier returns no category. What goes in the Category column for a Strix row? | question | spec p2 | user | Resolved | `/release` picks the OWASP 2025 category from `owasp.md`, and keeps Strix's CWE in brackets: `A05:2025 Injection (CWE-78)`, 2026-11-09 |
+| O10 | This machine has `strix` 1.4.1, put in `~/.local/bin` by pip. The pin is 1.7.0. What does `/release` do when the `strix` on PATH is not the pinned version? | question | spec p2 | user | Resolved | Run the `strix` on PATH, and name its version in the report and the summary. A run file that the parser cannot read gives `STRIX: failed`, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
