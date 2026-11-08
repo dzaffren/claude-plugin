@@ -390,7 +390,7 @@ Recorded as D100, D101, D102, D103.
 
 2026-11-09 · 3 raw findings, 1 survived, 1 fixed.
 
-- correctness · `plugins/zuko/skills/release/SKILL.md:181` · keep a pipe out of a lead's Description and Unknown cells, in the pentester and in /release · `7d7b777`
+- correctness · `plugins/zuko/skills/release/SKILL.md:181` · keep a pipe out of a lead's Description and Unknown cells, in the pentester and in /release · `1bb50df`
 
 ## Open items
 
@@ -405,7 +405,7 @@ Recorded as D100, D101, D102, D103.
 | O7 | The verifier's Always-REJECT item "You had to assume how a function behaves without reading it" rejects every lead, because the `UNKNOWN` is that kind of fact. | flag | build | user | Decided alone | Chose: the lead section says "Do not reject a lead only because you cannot settle its `UNKNOWN`". Seeded run 2 still rejected a broken trace. Other: leave the rule, and let the verifier reject every lead. Undo: delete that sentence from the `## A lead` section of `plugins/zuko/agents/finding-verifier.md`. 2026-11-09 |
 | O8 | Seeded run 3 was to show that the `llm-base` PR-summary skill gives no finding and no lead (the D6 half of scenario 4). The pentester stopped after 34 messages: "Opus 5.5's safeguards flagged this session", request `req_011CgqkSwdrBRmAd94M7k95B`. | flag | build | user | Decided alone | Chose: record it as not run, and rest the D6 half on the pentester rule and its check in `test-e2e-needs-validation.sh`. The same block stopped the v2.4.2 pentest (D59). Other: run it again with another model in place of the pentester's `opus`. Undo: run seeded run 3 again with the command in Test plan, after CVP access or when the classifier lets it through, and record it here. 2026-11-09 |
 | O9 | Interface 6 named three refusals. The plan's ID check (`^N[0-9]+$`) had no message. | flag | build | user | Decided alone | Chose: `Pentest report unreadable: a Needs validation row has ID P2, not N<n>`, added to Interface 6. A section with a heading and no table gets `no Needs validation section`. Other: a separate message for a heading with no table. Undo: change the two `unreadable(...)` texts in `read_report` in `plugins/zuko/scripts/lib/release.py`, and the cases in `test-release.sh` case 43. 2026-11-09 |
-| O10 | Interface 3 copied the `LEAD` sentence and the `UNKNOWN` line into the table as written. A `\|` in either one made a sixth cell, and `cut` refused the whole report. | flag | review | user | Decided alone | Chose: the pentester never writes a `\|` in `LEAD` or `UNKNOWN`, and `/release` writes any `\|` in those cells as `/`. Interface 3 now says so. Other: teach `cells()` in `release.py` to read an escaped `\\|`. Undo: `git revert 7d7b777`. 2026-11-09 |
+| O10 | Interface 3 copied the `LEAD` sentence and the `UNKNOWN` line into the table as written. A `\|` in either one made a sixth cell, and `cut` refused the whole report. | flag | review | user | Decided alone | Chose: the pentester never writes a `\|` in `LEAD` or `UNKNOWN`, and `/release` writes any `\|` in those cells as `/`. Interface 3 now says so. Other: teach `cells()` in `release.py` to read an escaped `\\|`. Undo: `git revert 1bb50df`. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
