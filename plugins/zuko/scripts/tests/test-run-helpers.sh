@@ -162,3 +162,17 @@ python3 - <<'PY' >"$h/lf-stdin.txt"
 print("x")
 PY
 expect_match '^2$' "$(cr_free_lines "$h/lf-stdin.txt")" "python3 -: a script on stdin also ends its lines in LF"
+
+# A Ctrl-C at the terminal stops the test file too, not only run.sh: the
+# file runs in its own process group, which the terminal does not signal.
+sb=$(sandbox interrupted 'sleep 3
+: >"$SANDBOX_MARK"
+expect_exit 0 0 "after the sleep"')
+SANDBOX_MARK="$sb/still-running" python3 -c 'import os, signal, subprocess, sys, time
+run = subprocess.Popen(["bash", sys.argv[1]], start_new_session=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+time.sleep(1)
+os.killpg(run.pid, signal.SIGINT)
+run.wait()
+time.sleep(3)' "$sb/tests/run.sh"
+expect_exit 1 "$([ -e "$sb/still-running" ]; echo $?)" "Ctrl-C: the test file stops with run.sh"

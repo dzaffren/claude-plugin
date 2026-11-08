@@ -160,6 +160,19 @@ total_fail=0
 total_skip=0
 limit="${ZUKO_TEST_LIMIT:-600}"
 
+# The file runs in its own process group, which a Ctrl-C at the terminal does
+# not reach, so run.sh stops it before it exits. On Windows, taskkill misses a
+# Git Bash child such as sleep; the file's process group has it.
+job=""
+stop_job() {           # stop_job: stop the running test file and its process group
+  [ -n "$job" ] || return 0
+  stop_tree "$job"
+  kill -TERM -- "-$job" 2>/dev/null
+  return 0
+}
+trap 'stop_job; exit 130' INT
+trap 'stop_job; exit 143' TERM
+
 for file in "${files[@]}"; do
   base=$(basename "$file" .sh)
   base=${base#test-}
@@ -177,12 +190,9 @@ for file in "${files[@]}"; do
   (
     ticks=$((limit * 5))
     while [ "$ticks" -gt 0 ] && kill -0 "$job" 2>/dev/null; do sleep 0.2; ticks=$((ticks - 1)); done
-    # taskkill misses a Git Bash child such as sleep; the file's own process
-    # group has it.
     if [ "$ticks" -eq 0 ]; then
       : >"$results_file.late"
-      stop_tree "$job"
-      kill -TERM -- "-$job" 2>/dev/null
+      stop_job
     fi
   ) >/dev/null 2>&1 </dev/null &
   dog=$!
