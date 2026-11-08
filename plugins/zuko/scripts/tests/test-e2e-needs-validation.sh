@@ -54,6 +54,9 @@ expect_no_match '^(SEVERITY|ATTACKER|GAIN): ' "$lead_example" "verifier: the lea
 
 skill_text=$(cat "$skill")
 skill_flat=$(tr '\n' ' ' <<<"$skill_text" | tr -s ' ')
+# A | in a lead's text adds a cell, and cut refuses the whole report.
+expect_match 'Never put a `\|` in `LEAD` or `UNKNOWN`' "$agent_flat" "pentester: no | in a lead's LEAD or UNKNOWN"
+expect_match 'Write each `\|` in a `Description` or `Unknown` cell as `/`' "$skill_flat" "release skill: a | in a lead cell becomes /"
 expect_match 'LEAD blocks, each with a `TRACE`, an `UNKNOWN` and a `CHECK`' "$skill_flat" "release skill: the pentester also returns LEAD blocks"
 expect_match 'with `KIND: lead` first and no `SEVERITY`' "$skill_flat" "release skill: sends each lead with KIND: lead"
 expect_match 'Never send `CHECK`\.' "$skill_flat" "release skill: never sends a lead's CHECK"

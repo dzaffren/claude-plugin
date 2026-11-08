@@ -179,6 +179,8 @@ line, print that line to the user. The check never stops the release (D93).
    confirmed leads, numbered `N1`, `N2` and on. With no confirmed lead, the
    table has its header and no rows. `Where` is `FILE` then `SYMBOL`,
    `Description` is the `LEAD` sentence, and `Unknown` is the `UNKNOWN` line.
+   Write each `|` in a `Description` or `Unknown` cell as `/`, because `cut`
+   reads each `|` as a cell break and refuses the row.
    A lead has no severity and never changes `**Result:**`. The table never
    carries a `TRACE` or a `CHECK`.
 
