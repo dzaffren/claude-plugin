@@ -32,3 +32,8 @@
 - A07:2025 Authentication Failures — needs a running server (slice 5b)
 - CLIENT-SIDE (Cloudflare c1c8a8c) — no browser code in the range
 - MEMORY-SAFETY-AND-BINARY (Cloudflare c1c8a8c) — no native code in the range
+
+## Files checked
+
+- check.sh
+- suppliers.py
