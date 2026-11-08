@@ -15,6 +15,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The release pentest now also hunts with Cloudflare's attack classes that fit the code in the release, such as prompt injection in an agent or a plugin that changes what a tool may do. The security report names each class file it assessed, and each one it skipped with the reason.
 - /release tells you when Cloudflare changed one of the copied class files after the pinned commit. The pentest still uses the pinned copy, so the files change only when you copy them again.
 - The release pentest now keeps each lead that it traced but could not prove, such as a hole in a Windows-only branch on a Linux release. The security report lists each lead under Needs validation with the one fact that settles it, and the terminal shows how to check that fact. A lead never blocks a release, and the release notes give only the number of leads.
+- Each release pentest now records the files it checked in `docs/security/coverage.md`, and also checks up to 10 files that no pentest has checked yet, so code older than the last tag gets covered over a few releases. `/release` prints how many files a pentest has checked, and stops before it writes anything when it cannot read the ledger.
 
 ### Fixed
 

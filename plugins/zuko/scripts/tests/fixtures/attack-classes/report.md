@@ -35,3 +35,8 @@
 - PROTOCOLS-RPC-AND-MESSAGING (Cloudflare c1c8a8c) — no RPC, queue or webhook code in the range
 - SUPPLY-CHAIN-AND-RELEASE (Cloudflare c1c8a8c) — no dependency, CI, release or plugin change in the range
 - WEB-PROTOCOL-AND-AUTH (Cloudflare c1c8a8c) — no HTTP, session or token code in the range
+
+## Files checked
+
+- assistant.py
+- check.sh

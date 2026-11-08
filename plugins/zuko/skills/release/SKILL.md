@@ -107,15 +107,26 @@ move from `NOT ASSESSED:` to `ASSESSED:`.
 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/check-attack-pin.sh"`. When it prints a
 line, print that line to the user. The check never stops the release (D93).
 
-1. Dispatch the `zuko:pentester` agent with `RANGE`, `VERSION`, the repo,
-   and the target when the release runs live.
-   It returns a scope block, findings, each with a `PROOF` it ran, and
-   LEAD blocks, each with a `TRACE`, an `UNKNOWN` and a `CHECK`.
+**Pick the old files.** Run
+`python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" pick <repo-root>`.
+Print its lines to the user as they are. Each indented line names one old
+file, then the mark that put it on the list. When `pick` exits 1, print its
+refusal, such as `Coverage ledger unreadable: ...`. Then end before the
+pentest: nothing is written.
+
+1. Dispatch the `zuko:pentester` agent with `RANGE`, `OLD FILES`, `VERSION`,
+   the repo, and the target when the release runs live. `OLD FILES` is the
+   paths that `pick` printed, joined with `, `, or `none` when it printed no
+   path. It returns a scope block with a `FILES CHECKED:` line, findings, each
+   with a `PROOF` it ran, and LEAD blocks, each with a `TRACE`, an `UNKNOWN`
+   and a `CHECK`.
 2. Send each finding to a `finding-verifier` agent, blind, exactly as
    `/review` does: the claim, `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL`,
    `SNIPPET` and `PROOF`, with `BASE: <the last tag>`, or
-   `BASE: none (first release: every tracked line is in the range)`. Never the
-   scope block. A verifier that hits its turn limit is not confirmed, and is
+   `BASE: none (first release: every tracked line is in the range)`. For a
+   finding or a lead in a file from `OLD FILES`, send
+   `BASE: none (old file: every line of this file is in scope)`, because the
+   range does not change that file. Never the scope block. A verifier that hits its turn limit is not confirmed, and is
    never resumed with added context. A confirmed finding keeps the lowest
    `SEVERITY` a verifier returned, never above the pentester's.
 
@@ -159,10 +170,21 @@ line, print that line to the user. The check never stops the release (D93).
    - A01:2025 Broken Access Control — needs a running server (slice 5b)
    - CLIENT-SIDE (Cloudflare c1c8a8c) — no browser code in the range
    - MEMORY-SAFETY-AND-BINARY (Cloudflare c1c8a8c) — no native code in the range
+
+   ## Files checked
+
+   - invoice_cli/cli.py
+   - invoice_cli/exporters/assistant.py
+   - invoice_cli/exporters/ledger.py
    ```
 
    Copy each `ASSESSED:` and `NOT ASSESSED:` line from the scope block into
    its list. Put the OWASP lines first, then the class-file lines (D94).
+
+   Copy each file in the `FILES CHECKED:` line into `## Files checked`, one in
+   each line. Write each path from the repo root, as the pentester gave it.
+   `cut` marks these files in the coverage ledger, and refuses a report
+   without the section.
 
    A `LEAK:` line from the pentester (its proof changed something outside the
    scratch copy) goes into the table as its own row, `| L1 | critical | leak |
@@ -199,6 +221,7 @@ line, print that line to the user. The check never stops the release (D93).
    Pentest    code-level · v1.4.2..a1b2c3d (9 commits) · 7 categories · 2 class files
               A05 Injection        1 medium
               needs validation: 1 lead (2 dropped by the verifier)
+              old files: 10 picked, 9 checked
               not assessed: A01, A07 — no running server (slice 5b)
               class files not read: 8 — no matching code in the range
    ```
@@ -206,7 +229,9 @@ line, print that line to the user. The check never stops the release (D93).
    The class-file count is the number of class-file lines under `ASSESSED:`.
    The lead count is the number of rows under `## Needs validation`. The
    dropped count is the number of leads that the verifiers rejected. With no
-   rejected lead, leave out the part in brackets.
+   rejected lead, leave out the part in brackets. The picked count is the
+   number of paths that `pick` printed. The checked count is the number of
+   those paths in `FILES CHECKED:`.
 
 The pentester returns nothing, stops early, or fails → the pentest did not
 finish. Say so, and ask:
@@ -242,10 +267,12 @@ Nothing written. Fix it, then run /release again.
 ```
 
 On success it rewrites `CHANGELOG.md`, the manifests and the overview's
-`**Release:**` field, and writes `docs/security/vX.Y.Z/report.md`. A medium or
-low finding gets a line under the version's Security section. A skip also
-appends a D-entry to `DECISIONS.md`. Step 4 commits exactly the files it
-changed; `git status --short` lists them.
+`**Release:**` field, and writes `docs/security/vX.Y.Z/report.md` and
+`docs/security/coverage.md`. A medium or low finding gets a line under the
+version's Security section. A skip also appends a D-entry to `DECISIONS.md`.
+Step 4 commits exactly the files it changed; `git status --short` lists them.
+After the files it wrote, `cut` prints a `Coverage` line. Keep that line for
+step 7.
 
 ### 4. Commit, tag, push
 
@@ -297,6 +324,7 @@ also covers a resumed release. No `hub page:` link on the overview's
 ```
 Released v2.2.0
   pentest   passed: 0 critical, 0 high, 1 medium, 1 low · 1 lead needs validation · docs/security/v2.2.0/report.md
+  coverage  13 of 148 files checked by a pentest · 135 not checked
   commit    a1b2c3d chore(release): v2.2.0
   tag       v2.2.0, annotated, pushed
   release   https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
@@ -305,6 +333,10 @@ Released v2.2.0
 
 The lead count reads `1 lead needs validation` or `3 leads need validation`.
 With no lead, leave that part out.
+
+The `coverage` line is the text after `Coverage` in the line that `cut`
+printed, as it is. It includes `· ledger started` for the release that
+starts the ledger.
 
 ## Tags are permanent
 
