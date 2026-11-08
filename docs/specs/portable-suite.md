@@ -163,7 +163,7 @@ The last line always has three counts. The exit code is 0 only when the failed c
 skip <description> <reason>    # records SKIP; the description names the check, as expect_* does
 ```
 
-A test file calls `skip` only after the Windows way failed, as D101 says. On Linux and macOS, no check calls it.
+A test file calls `skip` only after the Windows way failed, as D105 says. On Linux and macOS, no check calls it.
 
 `ZUKO_TEST_LIMIT` sets the limit in seconds, 600 by default. It exists for `test-run-helpers.sh`, which proves the time limit with a limit of 2 s instead of a 600 s wait.
 
@@ -188,7 +188,7 @@ The board shows the `--by` text as the stage typed it. On Windows, `board.py` tu
 
 Three changes do the work. `run.sh` gets the time limit, `skip`, and four Windows helpers that the tests share. zuko's Python finds `gh` and `bash` on PATH itself, as Git Bash does, and runs a script through bash. `board.py` turns the Git Bash rewrite of `--by` back. Then each test from the Problem table uses the shared helper in place of its own `ln -s`, `chmod` or `kill`.
 
-Relies on: D31 (fail closed), D96 (cygpath, only on Windows), D98 (UTF-8 with LF), D100, D101, D102, D103, D104
+Relies on: D31 (fail closed), D96 (cygpath, only on Windows), D98 (UTF-8 with LF), D104, D105, D106, D107, D108
 
 ```mermaid
 flowchart TB
@@ -250,17 +250,17 @@ Each failure count from the shape, traced from the code and the docs. The Window
 
 | File | What changes | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/tests/run.sh:60-87` | Each file runs as `( . "$file" ) &`, with job control on, so it has its own process group. A watchdog stops that group with `stop_tree` after `${ZUKO_TEST_LIMIT:-600}` seconds and records the timeout FAIL. Each file line and the last line add the SKIP count, and the SKIP lines print under the count. | Scenarios 3 and 4, D102 |
+| `plugins/zuko/scripts/tests/run.sh:60-87` | Each file runs as `( . "$file" ) &`, with job control on, so it has its own process group. A watchdog stops that group with `stop_tree` after `${ZUKO_TEST_LIMIT:-600}` seconds and records the timeout FAIL. Each file line and the last line add the SKIP count, and the SKIP lines print under the count. | Scenarios 3 and 4, D106 |
 | `plugins/zuko/scripts/tests/run.sh` (new helpers, next to `expect_*`) | `skip`. `is_windows`: `uname -s` is `MINGW*` or `MSYS*`. `make_link <target> <link>`: `MSYS=winsymlinks:nativestrict ln -s` on Windows, plain `ln -s` elsewhere, with exit 1 when no real link exists. `deny r\|w <file>` and `allow <file>`: `chmod` elsewhere, `icacls //deny "$USERNAME:(R)"` or `(W)` on Windows. `stop_tree <pid>`: `kill` and `wait` elsewhere, `taskkill //F //T //PID "$(cat /proc/<pid>/winpid)"` on Windows. `narrow_path <dir>`: the stub dir, then on Windows the folders of `git.exe` and `bash.exe`, and on other OSes a `git` link in the stub dir. | Scenarios 2, 3, 4 |
-| `plugins/zuko/scripts/lib/program.py` (new) | `find(name, path, exts)` walks the PATH folders in order, and tries `name` and then `name` with each PATHEXT extension in each folder. It never looks in the current folder. `argv(args)` returns `args` unchanged when `os.name != "nt"`. On Windows it puts the found path first, and puts `bash.exe` from PATH before a found file that starts with `#!`. When nothing is found, it returns `args`, so the caller's `FileNotFoundError` path stays. | Scenario 2, D103 |
+| `plugins/zuko/scripts/lib/program.py` (new) | `find(name, path, exts)` walks the PATH folders in order, and tries `name` and then `name` with each PATHEXT extension in each folder. It never looks in the current folder. `argv(args)` returns `args` unchanged when `os.name != "nt"`. On Windows it puts the found path first, and puts `bash.exe` from PATH before a found file that starts with `#!`. When nothing is found, it returns `args`, so the caller's `FileNotFoundError` path stays. | Scenario 2, D107 |
 | `plugins/zuko/scripts/lib/release.py:141,246` | `subprocess.run(program.argv([...]))` for `gh` and for the tests-gate `bash`. `program` loads through `load()` at `:64`. | Scenario 2, O8 |
 | `plugins/zuko/scripts/lib/board.py:551` | `run()` passes `program.argv(list(args))`. | Scenarios 2 and 5 |
-| `plugins/zuko/scripts/lib/board.py:721` | `board()` passes `by` through `typed(by)`. On Windows, a `by` that starts with the output of `cygpath -m /` gets that prefix turned back into `/`. `typed()` calls `cygpath` through `program.argv()`. | Scenario 5, D104 |
+| `plugins/zuko/scripts/lib/board.py:721` | `board()` passes `by` through `typed(by)`. On Windows, a `by` that starts with the output of `cygpath -m /` gets that prefix turned back into `/`. `typed()` calls `cygpath` through `program.argv()`. | Scenario 5, D108 |
 | `plugins/zuko/scripts/tests/test-program.sh` (new) | `find()` with fixture folders, on every OS: a stub before a later `gh.exe`, a name with no extension, a `.EXE` from PATHEXT, and no current-folder hit. | Scenario 2 |
 | `plugins/zuko/scripts/tests/test-run-helpers.sh` | `ZUKO_TEST_LIMIT=2` with a file that sleeps: FAIL "timed out after 2 s", and a server it started is stopped. A file that calls `skip`: the SKIP lines, the count, exit 0. | Scenarios 3 and 4 |
 | `plugins/zuko/scripts/tests/test-board.sh` | `typed()` with a faked `cygpath -m /` prefix. | Scenario 5 |
 | The test files in the Failure trace | Use the shared helpers, as the Fix column says. | Scenarios 1 to 4 |
-| `.github/workflows/windows-suite.yml` (new) | `on: push: branches: [feat/portable-suite]` and `workflow_dispatch`. One job: `runs-on: windows-latest`, `defaults.run.shell: bash`, `actions/checkout` at a pinned tag, `actions/setup-python` with `python-version: "3.12"`, then `bash plugins/zuko/scripts/tests/run.sh`. `timeout-minutes: 30`. | Scenario 1, D100 |
+| `.github/workflows/windows-suite.yml` (new) | `on: push: branches: [feat/portable-suite]` and `workflow_dispatch`. One job: `runs-on: windows-latest`, `defaults.run.shell: bash`, `actions/checkout` at a pinned tag, `actions/setup-python` with `python-version: "3.12"`, then `bash plugins/zuko/scripts/tests/run.sh`. `timeout-minutes: 30`. | Scenario 1, D104 |
 
 Reusing: `expect_*` and `record` in `run.sh`, the wrapper-script pattern of `test-attack-pin.sh:95`, `load()` in `release.py:64`, and the `cygpath` rule of D96.
 
@@ -271,7 +271,7 @@ Reusing: `expect_*` and `record` in `run.sh`, the wrapper-script pattern of `tes
 | `lib/program.py` | Scenario 2. Two modules, `release.py` and `board.py`, start `gh`, and `shutil.which` searches the current folder first. It also finds a name with no extension only from Python 3.12. |
 | `ZUKO_TEST_LIMIT` | Scenario 3's test. A 600 s wait in `test-run-helpers.sh` would make the suite 10 minutes slower. |
 | The six helpers in `run.sh` | Scenarios 3 and 4. Each one has two or more callers in the Failure trace. |
-| `windows-suite.yml` | Scenario 1 and D100. |
+| `windows-suite.yml` | Scenario 1 and D104. |
 
 ### Non-functionals
 
@@ -317,42 +317,7 @@ A goes first, because B and C call its helpers. B and C then run side by side. T
 
 ### Decisions to record
 
-```markdown
-## D100 · 2026-11-08 · A Windows workflow on branch pushes proves the suite while zuko is built on Linux
-
-Why: this slice is built on Linux, and its done line is 0 failures on Windows. GitHub's `windows-latest` runner is the only Windows that a Linux session can reach. GitHub starts a `workflow_dispatch` workflow only from the default branch, but a `push` trigger runs from a file on a branch. Claude pushes only when the user says so, so the user starts each run.
-Rejected: the user's Windows machine (the last two full runs there stopped on low memory, utf8-stdio O7), Linux plus the docs only (nothing then proves the Windows claim), a dispatch-only workflow merged to `main` first (one more PR and merge before the first proof).
-Source: specs/portable-suite.md
-Status: active
-
-## D101 · 2026-11-08 · A check whose setup Windows refuses prints SKIP with the reason, and never counts as a pass
-
-Why: without Developer Mode, `ln -s` makes a copy, so a symlink check would pass or fail on a plain file. A SKIP line names the check and the reason, as the lesson "a gate that scanned nothing must never exit 0" asks. The Windows way runs first: `icacls` denies a read, and a real symlink is used when Windows allows it.
-Rejected: fail the check (a green run then needs Developer Mode on every Windows machine), pass it quietly (a check that ran nothing would count as proof).
-Source: specs/portable-suite.md
-Status: active
-
-## D102 · 2026-11-08 · run.sh gives each test file 600 s, and a file past it fails
-
-Why: `e2e-board` hung on Windows until it was stopped by hand, and a hang blocks `/release` at its tests gate. On Windows, `release` ran past 300 s, so 600 s gives it twice that.
-Rejected: 300 s (a slow Windows machine may fail `release`), no limit (a new hang still blocks the run).
-Source: specs/portable-suite.md
-Status: active
-
-## D103 · 2026-11-08 · On Windows, zuko's Python finds gh and bash on PATH itself, and runs a script through bash
-
-Why: CreateProcess looks in Python's own folder, the current folder and `System32` before PATH, and appends `.exe` only. So `release.py` misses a test's stub `gh`, and may start WSL's `bash.exe` from `System32`. Git Bash walks PATH in order and runs a `#!` script, and zuko now does the same.
-Rejected: `shutil.which` (it searches the current folder first, and finds a name with no extension only from Python 3.12), a `ZUKO_GH` variable for tests (a setting that only tests read, and the real `gh.exe` still wins without it), `.cmd` stubs (`cmd.exe` splits the `&` in `status?per_page=100&page=1`).
-Source: specs/portable-suite.md
-Status: active
-
-## D104 · 2026-11-08 · board.py turns the Git Bash rewrite of --by back into the typed text
-
-Why: Git Bash rewrites `/spec x pause 1` to `C:/Program Files/Git/spec x pause 1`, and the board shows it. The live board said `C:/Program Files/Git/ship utf8-stdio` on 2026-11-08. One repair in `board.py` covers each stage's call.
-Rejected: `MSYS_NO_PATHCONV=1` in six skill commands (one missed command shows the bug again), `--by` without its leading `/` (every caller and the board's text change).
-Source: specs/portable-suite.md
-Status: active
-```
+Recorded as D104, D105, D106, D107, D108. D100 to D103 are taken on `feat/needs-validation`, which is not merged yet.
 
 ## Open items
 
@@ -362,10 +327,11 @@ Status: active
 | O2 | This spec is written on Linux. What proves scenario 1, "0 failed on Windows"? | question | spec p1 | user | Resolved | A workflow in this slice that runs `run.sh` on `windows-latest`, started by hand only. Claude pushes the branch only when the user says so, and reads the log with `gh`. `windows-ci` adds the PR trigger, ubuntu and the required check, 2026-11-08 |
 | O3 | A check whose setup Windows cannot make, such as a symlink without Developer Mode: SKIP and name it, or make every check run on Windows? | question | spec p1 | user | Resolved | Use the Windows way when one exists: `icacls` to deny a read, a real symlink when Windows allows it. Print SKIP with the reason only when Windows refuses. A SKIP never counts as a pass, 2026-11-08 |
 | O4 | What time limit does `run.sh` give each test file? On Linux the whole suite takes 2 min 34 s. On Windows, `release` alone ran past 300 s. | question | spec p1 | user | Resolved | 600 s for each file. A file past it records FAIL "timed out after 600 s", and `run.sh` goes on, 2026-11-08 |
-| O5 | GitHub starts a `workflow_dispatch` workflow only when its file is on the default branch, so a by-hand run cannot start from this branch. How does the Windows run start before the merge? | question | spec p2 | user | Resolved | A `push` trigger on `feat/portable-suite`, plus `workflow_dispatch` for after the merge. Claude pushes only when the user says so. D100 now says so, 2026-11-08 |
+| O5 | GitHub starts a `workflow_dispatch` workflow only when its file is on the default branch, so a by-hand run cannot start from this branch. How does the Windows run start before the merge? | question | spec p2 | user | Resolved | A `push` trigger on `feat/portable-suite`, plus `workflow_dispatch` for after the merge. Claude pushes only when the user says so. D104 now says so, 2026-11-08 |
 | O6 | The plan rests on five Windows facts that no doc settles: Git Bash `$( )` keeps the CR from a test's `python3 -c` print (26 lines in 11 files), `icacls //deny` stops a read by native Python, git and Git Bash's `cat`, `winsymlinks:nativestrict` makes a real link on the runner, `taskkill //T` on `/proc/<pid>/winpid` stops `board.py serve`, and `cygpath -m /` is the prefix that Git Bash adds to `/spec`. | unproven | spec p3 | poc | Accepted risk | No `/poc`. The first Windows run at `/build` checks each fact, and a wrong one becomes a Decided alone row with its fix. `/build` may need two or three runs, 2026-11-08 |
 | O7 | CreateProcess looks in the current folder before PATH. So a repo with `git.exe` at its root runs that file from each zuko Python `git` call on Windows, the Stop hooks too: `changelog.py:59`, `decisions.py:238`, `stop_scope.py:35`, `release-commit.py:40`. `program.argv()` fixes the calls that use it. | flag | spec p3 | user | Resolved | A new slice, `exe-lookup`, slice 6 of the shape, sends those calls through `program.argv()` with its own review. This slice uses the helper only for `gh`, `bash` and `cygpath` in `release.py` and `board.py`, 2026-11-08 |
 | O8 | `release.py:246` starts `bash` for the tests gate, and CreateProcess tries `System32\bash.exe` (WSL) before Git's bash. It is the same cause as the stub `gh`, and `/release` from Windows needs it, but it is not in the Problem table. | question | spec p3 | user | Resolved | Fix it here, with `program.argv()`. It is now a row of the Problem table, 2026-11-08 |
+| O9 | The plan numbered the new decisions D100 to D104. `feat/needs-validation` records its own D100 to D103, and is not merged yet. | flag | build | user | Decided alone | Chose: D104 to D108, so the two branches never give one number to two entries. `decisions.py check` allows the gap, because it checks only the order. Other: D100 to D104, which then collide with `needs-validation` at merge. Undo: renumber the five entries in `DECISIONS.md` and in this spec. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

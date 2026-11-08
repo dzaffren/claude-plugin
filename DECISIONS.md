@@ -1055,3 +1055,38 @@ Why: a guard must read the whole command, and a gate must report on an old Latin
 Rejected: replacing the byte with U+FFFD (a guard then checks text that differs from the command, and a published page refuses U+FFFD), stopping with an error (a gate stops on one old commit subject, and a strict read on Linux crashed where Windows went on).
 Source: specs/utf8-stdio.md
 Status: active
+
+## D104 · 2026-11-08 · A Windows workflow on branch pushes proves the suite while zuko is built on Linux
+
+Why: this slice is built on Linux, and its done line is 0 failures on Windows. GitHub's `windows-latest` runner is the only Windows that a Linux session can reach. GitHub starts a `workflow_dispatch` workflow only from the default branch, but a `push` trigger runs from a file on a branch. Claude pushes only when the user says so, so the user starts each run.
+Rejected: the user's Windows machine (the last two full runs there stopped on low memory, utf8-stdio O7), Linux plus the docs only (nothing then proves the Windows claim), a dispatch-only workflow merged to `main` first (one more PR and merge before the first proof).
+Source: specs/portable-suite.md
+Status: active
+
+## D105 · 2026-11-08 · A check whose setup Windows refuses prints SKIP with the reason, and never counts as a pass
+
+Why: without Developer Mode, `ln -s` makes a copy, so a symlink check would pass or fail on a plain file. A SKIP line names the check and the reason, as the lesson "a gate that scanned nothing must never exit 0" asks. The Windows way runs first: `icacls` denies a read, and a real symlink is used when Windows allows it.
+Rejected: fail the check (a green run then needs Developer Mode on every Windows machine), pass it quietly (a check that ran nothing would count as proof).
+Source: specs/portable-suite.md
+Status: active
+
+## D106 · 2026-11-08 · run.sh gives each test file 600 s, and a file past it fails
+
+Why: `e2e-board` hung on Windows until it was stopped by hand, and a hang blocks `/release` at its tests gate. On Windows, `release` ran past 300 s, so 600 s gives it twice that.
+Rejected: 300 s (a slow Windows machine may fail `release`), no limit (a new hang still blocks the run).
+Source: specs/portable-suite.md
+Status: active
+
+## D107 · 2026-11-08 · On Windows, zuko's Python finds gh and bash on PATH itself, and runs a script through bash
+
+Why: CreateProcess looks in Python's own folder, the current folder and `System32` before PATH, and appends `.exe` only. So `release.py` misses a test's stub `gh`, and may start WSL's `bash.exe` from `System32`. Git Bash walks PATH in order and runs a `#!` script, and zuko now does the same.
+Rejected: `shutil.which` (it searches the current folder first, and finds a name with no extension only from Python 3.12), a `ZUKO_GH` variable for tests (a setting that only tests read, and the real `gh.exe` still wins without it), `.cmd` stubs (`cmd.exe` splits the `&` in `status?per_page=100&page=1`).
+Source: specs/portable-suite.md
+Status: active
+
+## D108 · 2026-11-08 · board.py turns the Git Bash rewrite of --by back into the typed text
+
+Why: Git Bash rewrites `/spec x pause 1` to `C:/Program Files/Git/spec x pause 1`, and the board shows it. The live board said `C:/Program Files/Git/ship utf8-stdio` on 2026-11-08. One repair in `board.py` covers each stage's call.
+Rejected: `MSYS_NO_PATHCONV=1` in six skill commands (one missed command shows the bug again), `--by` without its leading `/` (every caller and the board's text change).
+Source: specs/portable-suite.md
+Status: active
