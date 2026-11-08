@@ -1,6 +1,6 @@
 # Needs validation
 
-**Version:** v1 · **Status:** Draft · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** attack-classes
@@ -226,6 +226,176 @@ Pentest report unreadable: a Needs validation row has 6 cells, not 5: | N1 | ...
 ```
 
 A skipped pentest (`--no-pentest`) writes no Needs validation section, as it writes no Findings today.
+
+## Technical plan
+
+### Approach
+
+Three prompts and one script change. The pentester writes a LEAD block where it drops a lead today. The verifier gets a `KIND: lead` section. `/release` step 2 sends leads through the verifiers, and writes the new table and the terminal lines. `release.py` reads the new section with the parser that reads Findings now, refuses a malformed one, and adds the count line to the Security section.
+
+D94 rejected a new report section for the class-file lines, because those lines fit the Assessed lists. A lead is a new kind of row with its own columns, so it gets its own section, and `cut` learns it.
+
+Relies on: D4, D5, D6, D10, D12, D14, D94, D100, D101, D102, D103
+
+```mermaid
+flowchart TB
+  subgraph plugin["plugins/zuko"]
+    PT["agents/pentester.md: step 1b, step 4 LEAD block"]
+    FV["agents/finding-verifier.md: new section A lead"]
+    RS["skills/release/SKILL.md: step 2 items 1 to 4, step 7"]
+    RP["scripts/lib/release.py: read_report, pentest_verdict"]
+  end
+  subgraph project["the project being released"]
+    REP["docs/security/vX.Y.Z/report.md"]
+    CL["CHANGELOG.md"]
+  end
+  RS -- "dispatch RANGE, VERSION" --> PT
+  PT -- "findings and LEAD blocks" --> RS
+  RS -- "each lead, KIND: lead, no CHECK" --> FV
+  RS -- "scratchpad report with Needs validation" --> RP
+  RP -- "writes" --> REP
+  RP -- "known issues + one count line" --> CL
+```
+
+`/release` dispatches the pentester and gets findings and leads back. It sends each one to a verifier, and writes the scratchpad report. `cut` reads it and writes the committed report and the CHANGELOG lines.
+
+```mermaid
+sequenceDiagram
+  participant R as /release step 2
+  participant P as zuko:pentester
+  participant V as finding-verifier
+  participant C as release.py cut
+  R->>P: RANGE v2.5.1..HEAD, VERSION 2.6.0
+  P-->>R: SCOPE, 0 findings, 3 LEAD blocks
+  R->>V: KIND: lead, LEAD, CATEGORY, FILE, SYMBOL, SNIPPET, TRACE, UNKNOWN, BASE
+  V-->>R: VERDICT CONFIRMED (1 lead), REJECTED (2 leads)
+  R->>R: write report: Findings empty, Needs validation N1
+  R->>R: print summary, then N1 trace, unknown, check
+  R->>C: cut --pentest report.md
+  C->>C: read_report: Findings, lists, Needs validation columns and IDs
+  C-->>R: writes report.md, CHANGELOG "- 1 lead needs validation; see ..."
+```
+
+The verifier sees each lead blind, as it sees a finding. The leads that hold go into the report. `cut` checks the section, then writes.
+
+```mermaid
+flowchart LR
+  L["LEAD block"] -- "LEAD, CATEGORY, FILE, SYMBOL, UNKNOWN" --> REP["report.md: public, committed"]
+  L -- "TRACE, CHECK" --> T["terminal: the user only"]
+  REP -- "a count only" --> N["GitHub release notes: public"]
+```
+
+The public report gets the claim and the unknown. The trace and the check, which can read like an exploit, stay in the terminal (O2). The release notes get only a count (O1).
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `plugins/zuko/agents/pentester.md:62-69` (step 1b) | Replace "A lead without a run proof is dropped. Never report it." with: a lead without a run proof is not a finding; when it meets the rules of Interface 1, write a LEAD block. Replace "`confirmed` and `needs_validation`: ignore these verdicts" with: a class file's `needs_validation` is a LEAD block, and the word never appears in the output | scenarios 1, 4, D101 |
+| `plugins/zuko/agents/pentester.md:174-210` (step 4, Report) | "Only what a run proved" becomes the rule for findings. Add the LEAD template and the example from Interface 1, after the finding template, and the five rules under it | scenarios 1, 4, Interface 1 |
+| `plugins/zuko/agents/finding-verifier.md:73` (new section "A lead", after the two exceptions) | With `KIND: lead`, confirm when each step of `TRACE` is in the code as written, the diff introduced it, no defence that you read stops the input, and the repo does not answer `UNKNOWN`. A defence still needs its `DEFENCE:` line. Leave out `SEVERITY`, `ATTACKER` and `GAIN`. No `KIND` line means a finding, as today, so `/review` does not change | scenario 3, Interface 2, D103 |
+| `plugins/zuko/skills/release/SKILL.md:110-173` (step 2, items 1 to 4) | Item 1: the pentester also returns LEAD blocks. Item 2: send each lead with `KIND: lead` and without `CHECK`. Item 3: the report gets the Needs validation section of Interface 3, from the confirmed leads only, always there. After each `PROOF`, print each lead as Interface 4 shows. Item 4: the summary line `needs validation: …` | scenarios 1, 2, 3, Interface 3 and 4 |
+| `plugins/zuko/skills/release/SKILL.md:263` (step 7) | The pentest line names the lead count | Interface 4 |
+| `plugins/zuko/scripts/lib/release.py:795` `findings_table` | Take the heading as a second argument, default `"## Findings"`, and put the section name in its error. Every rule stays: each line of the section is read, and a line with a severity that is not a row is refused | scenario 5 |
+| `plugins/zuko/scripts/lib/release.py:836` `read_report` | After the Assessed and Not assessed checks, read `## Needs validation` with `findings_table`. Refuse: no section, columns other than `LEAD_COLUMNS`, a row without 5 cells, and an ID that does not match `^N[0-9]+$`. Return the lead count as a third value | scenario 5, Interface 6 |
+| `plugins/zuko/scripts/lib/release.py:933` `pentest_verdict` | After the known-issue lines, add `- 1 lead needs validation; see <report>.` or `- N leads need validation; see <report>.`. No line for 0 | scenario 2, Interface 5, D102 |
+| `plugins/zuko/scripts/tests/test-release.sh` | The `findings_report` helper (line 1123) gets an empty Needs validation table. New cases: a missing section, wrong columns, 6 cells, a `P2` ID, an empty table taken, and 1 and 3 leads giving the two count lines | scenarios 2, 5 |
+| `plugins/zuko/scripts/tests/fixtures/pentest/pass.md`, `medium.md`, `fixtures/pentest-live/live-pass.md`, `fixtures/attack-classes/report.md` | Add an empty Needs validation table between Findings and Assessed | scenario 5: every pass report has the section |
+| `plugins/zuko/scripts/tests/test-e2e-attack-classes.sh:69,73` | The two checks on the old drop rule check the new LEAD rule | D101 |
+| `plugins/zuko/scripts/tests/test-e2e-needs-validation.sh` (new) | The e2e test below | all |
+| `plugins/zuko/scripts/tests/fixtures/needs-validation/` (new) | `report.md`: a v1.5.0 pass report with 1 medium finding and 3 leads. `range.patch`: the seed range on `fixtures/pentest/base/` for seeded run 1. `lead-n2.txt`: the broken-trace lead for seeded run 2 | scenarios 1 to 4 |
+
+Reusing: `findings_table` and `unreadable` in `release.py`, the `known_issue` line shape, the `run.sh` helpers and the scratch invoice-cli repo of `test-e2e-attack-classes.sh` section 4, the invoice-cli seed in `fixtures/pentest/base/`, the `llm-base` seed of `fixtures/attack-classes/`, and the seeded run command in `docs/specs/pentest.md` › Seeded run.
+
+### Earn-it
+
+| Added | Triggered by |
+| --- | --- |
+| The `## Needs validation` section and `LEAD_COLUMNS` | Scenarios 1 and 5. A lead has an Unknown and no Severity, so the five Findings columns do not fit it |
+| The `^N[0-9]+$` ID check | Risk 1. A finding row in this table would never block. `cut` fails closed on it, as it does on a hidden Findings row (test-release.sh case 39) |
+| `KIND: lead` in the verifier | O3 and scenario 3. A lead has no concrete outcome, so the verifier's rule 1 rejects every lead without it |
+| `fixtures/needs-validation/range.patch` | Scenario 1 needs a Windows-only branch, and scenario 4 a resource-exhaustion lead. The invoice-cli seed has neither |
+
+Not added: no flag, no new script, no new agent, no cap (O5), and no dependency.
+
+### Non-functionals
+
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | One pentest for each release, about one each week. Each lead adds one haiku verifier run. |
+| **Breaks first**     | At 10 times the leads, about 30, step 2 runs 30 more verifiers, and the report gets long. There is no cap (O5). When it hurts, raise the lead rules in the pentester first. |
+| **Security surface** | The committed report and the release notes are public. The report gets the claim, the place and the unknown of each lead, never the trace or the check (O2). The notes get a count (O1). `cut` trusts the scratchpad report only after its checks, and refuses an ID that is not `N<n>` in the lead table. No secret is read or stored. |
+| **Proof it works**   | `docs/security/v2.6.0/report.md` has a `## Needs validation` heading with its table, and the step 2 summary has the line `needs validation: N leads`. |
+| **Rollout**          | No flag. `/release` uses it once the installed plugin has this version. To roll back, revert the commits. `cut` reads only the report of the release that it cuts, so old reports without the section stay valid in the repo. |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 2 | `test-release.sh`: a report with 3 leads and a medium finding gives the known-issue line, then `- 3 leads need validation; see docs/security/v1.5.0/report.md.`. 1 lead gives `- 1 lead needs validation; …`. 0 leads give no line | `bash plugins/zuko/scripts/tests/run.sh release` |
+| 5 | same: no section, the columns `ID, Severity, Category, Where, Description`, a row with 6 cells, and a row with ID `P2` each print their Interface 6 refusal and write nothing. A table with no rows is taken | same |
+| 1, 3, 4 (prompts) | `test-e2e-needs-validation.sh`: `pentester.md` has the LEAD template lines `TRACE:`, `UNKNOWN:` and `CHECK:`, the exactly-one-UNKNOWN rule, and no "Never write `needs_validation`". `finding-verifier.md` has the `KIND: lead` section. `release/SKILL.md` sends `KIND: lead`, says `CHECK` is never sent, and has the Needs validation table and the summary line | `bash plugins/zuko/scripts/tests/run.sh e2e-needs-validation` |
+| 1, 2 (report) | same: a scratch invoice-cli release cut with `fixtures/needs-validation/report.md`. The release commit on origin carries the report with N1, and `release.py notes` prints the count line | same |
+| 1, 3, 4 (agents) | the seeded runs below | recorded in this spec by `/build` |
+
+**E2E:** `test-e2e-needs-validation.sh`. It checks the three prompts for the LEAD contract. It then cuts a scratch invoice-cli v1.5.0 with a report that has a medium finding and 3 leads, and expects the report, the known-issue line and the count line on origin and in `release.py notes`.
+
+**Seeded runs:** use the command in `docs/specs/pentest.md` › Seeded run, with `--allowedTools Bash`.
+
+1. **Pentester.** On `fixtures/pentest/base/` plus `fixtures/needs-validation/range.patch`, tagged v1.4.2. The patch adds an export path that builds a shell string only under `os.name == "nt"`, and an invoice-number regex whose only harm is a slow match. The run passes when the Windows branch is a LEAD block with one `UNKNOWN` about Windows, the regex gives no finding and no lead, the bank-import A05 is still a finding with a `PROOF`, and the output has no `needs_validation`.
+2. **Verifier.** Dispatch `zuko:finding-verifier` with `lead-n2.txt`: a lead that says an export name reaches `open()`, when a check before it refuses a `/`. The run passes on `VERDICT: REJECTED` with a `DEFENCE:` line.
+3. **The D6 half of scenario 4.** Seeded run 2 of `attack-classes.md` on `llm-base`, run again. The PR-summary skill gives no finding and no lead.
+
+### Chunks
+
+| Chunk | Scenarios | Files owned |
+| --- | --- | --- |
+| A | 2, 5 | `plugins/zuko/scripts/lib/release.py`, `plugins/zuko/scripts/tests/test-release.sh`, `plugins/zuko/scripts/tests/fixtures/pentest/pass.md`, `fixtures/pentest/medium.md`, `fixtures/pentest-live/live-pass.md`, `fixtures/attack-classes/report.md` |
+| B | 1, 3, 4 | `plugins/zuko/agents/pentester.md`, `plugins/zuko/agents/finding-verifier.md`, `plugins/zuko/skills/release/SKILL.md`, `plugins/zuko/scripts/tests/test-e2e-attack-classes.sh`, `plugins/zuko/scripts/tests/test-e2e-needs-validation.sh`, `plugins/zuko/scripts/tests/fixtures/needs-validation/` |
+
+No shared files. The e2e test in chunk B cuts with chunk A's parser, so it goes green only after both merge. The seeded runs go after the merge.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| 1. The pentester writes a provable critical as a lead, and the release does not block. | The rule "a lead is never a finding with its proof left out". Seeded run 1 keeps the provable bank-import A05 as a finding. Today the same lead is dropped, so the user sees more than before. |
+| 2. The haiku verifier passes weak traces, and the section fills with noise. | The lead section keeps the verifier's default of REJECT and its `DEFENCE:` rule. Seeded run 2 must reject a broken trace. If it does not, `/build` moves lead checks to a stronger model and adds a Decided alone row. |
+| 3. The public report gives an attacker a list of unproved places to look. | O2: no trace and no check in the report. D12 already names the file of each unfixed medium and low finding. |
+| 4. A pass fixture without the section fails tests that do not test leads. | Chunk A adds the section to every pass fixture. A missed fixture fails loudly, with the refusal message. |
+
+### Decisions to record
+
+```markdown
+## D100 · 2026-11-08 · A lead that the pentest cannot prove goes under Needs validation, with no severity, and never blocks
+
+Why: the pentester dropped each unproved lead, so a hole in a Windows-only branch was never seen on a Linux release. Each lead names the one fact that decides it. `cut` refuses a report without the section, so an absent section never reads as no leads (spec O5, scenario 5).
+Rejected: drop the lead, as D92 did until this slice (the user never hears of it), a severity for a lead (a guess about impact would block or pass a release with no proof), a cap at 10 leads (hides leads), an optional section (a pentester that ran out of turns leaves no section).
+Source: specs/needs-validation.md
+Status: active
+
+## D101 · 2026-11-08 · Where a class file and zuko's rules disagree, zuko's rules win, for leads too
+
+Why: the class files only add places to look. The Never-a-finding list (D5), the severity grid (D4), a proof that the pentester ran for each finding, and no network stay. A lead that Cloudflare calls `needs_validation` becomes a LEAD block. D5 stops a lead too, and an untrusted-text lead needs a trace to a tool call or a file write (D6) (spec O4).
+Rejected: Cloudflare's rules win for its own classes (conflicts with D4, D5 and the proof rule), only D5 applies to leads (every skill that reads PR text gives a lead), neither applies (DoS leads in every report).
+Supersedes: D92
+Source: specs/needs-validation.md
+Status: active
+
+## D102 · 2026-11-08 · Release notes count the leads, and the report names each lead without its trace or check
+
+Why: the notes and the committed report are public and permanent. One count line tells readers that leads exist. Each report row has the category, the place, the claim and the unknown fact. The trace and the check print in the terminal only, as D12 does for `PROOF` (spec O1, O2).
+Rejected: one notes line for each lead (unproved guesses on each release page), no notes line (readers do not know that leads exist), the trace and the check in the report (a near-exploit one click from the repo page).
+Source: specs/needs-validation.md
+Status: active
+
+## D103 · 2026-11-08 · A blind verifier checks each lead's trace, and a broken trace drops the lead
+
+Why: the pentester's word alone fills the section with guesses. The verifier gets `KIND: lead` and confirms only when each step of the trace is real, nothing upstream stops it, and the repo does not answer the unknown. It never sees the check (spec O3).
+Rejected: the pentester's leads go straight into the report (no second look, more noise), the verifier's finding rules for leads (rule 1 rejects every lead, because a lead has no observed outcome).
+Source: specs/needs-validation.md
+Status: active
+```
 
 ## Open items
 
