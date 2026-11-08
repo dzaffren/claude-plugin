@@ -13,6 +13,7 @@ skill="$scripts/../skills/release/SKILL.md"
 # and lists each file it read and hunted.
 agent_text=$(cat "$agent")
 agent_flat=$(tr '\n' ' ' <<<"$agent_text" | tr -s ' ')
+expect_match 'Leave out a file whose proof did not run' "$agent_flat" "pentester: a file with an unrun proof is not checked"
 expect_match 'You are given `RANGE` \([^)]*\), `OLD FILES`' "$agent_flat" "pentester: OLD FILES is given with RANGE"
 expect_match 'Check each file in `OLD FILES` as you check a file that the range changes\.' "$agent_flat" "pentester: checks each old file as a range file"
 expect_match 'Use the same categories and the same class files as for the range' "$agent_flat" "pentester: an old file gets the range's categories and class files"
