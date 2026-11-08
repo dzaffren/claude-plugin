@@ -228,3 +228,6 @@ One line per lesson. Loaded into every session in this repo.
 - On Windows, apply a seed patch that has an empty-file entry with
   `patch -p1` — `git apply` refuses that entry.
   ([detail](empty-file-patch-needs-patch-p1.md))
+- A seeded pentester run can be stopped by the safety classifier — keep a
+  prompt-text check for the same rule, and record a stopped run with its
+  request ID. ([detail](seeded-pentests-can-be-stopped-by-the-classifier.md))
