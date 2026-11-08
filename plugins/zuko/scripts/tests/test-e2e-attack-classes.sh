@@ -67,6 +67,8 @@ expect_match '## 1b\. Class files' "$agent_text" "pentester: has the class-file 
 expect_match 'git diff --stat <RANGE>' "$agent_text" "pentester: matches target lines against the range"
 expect_match "zuko's rules win" "$agent_flat" "pentester: zuko's rules win over a class file"
 expect_match 'A lead without a run proof is dropped' "$agent_flat" "pentester: drops a lead without a proof"
+expect_match 'Run the code under test through its tracked entry point' "$agent_flat" "pentester: proves through the tracked entry point"
+expect_match 'Before you drop a lead because the hook refused a command, try the tracked entry point' "$agent_flat" "pentester: tries the entry point before it drops a lead"
 expect_match '`subagent_type`: ignore it' "$agent_flat" "pentester: ignores subagent_type"
 expect_match 'Never write `needs_validation`' "$agent_flat" "pentester: never reports needs_validation"
 expect_match 'RESOURCE-EXHAUSTION-AND-AVAILABILITY\.md` is not in the plugin' "$agent_flat" "pentester: knows the resource-exhaustion file is left out"
