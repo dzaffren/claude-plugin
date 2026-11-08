@@ -886,8 +886,13 @@ def serve(folder, port=PORT):
                 return None
             return super().send_head()
 
+    class Server(http.server.ThreadingHTTPServer):
+        # On Windows, SO_REUSEADDR lets a second server bind a port that
+        # another one holds, so a busy 4751 would never fail.
+        allow_reuse_address = os.name != "nt"
+
     try:
-        server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        server = Server(("127.0.0.1", port), Handler)
     except OSError as error:
         print("board.py: cannot serve on 127.0.0.1:%d: %s" % (port, error.strerror or error), file=sys.stderr)
         return 1
