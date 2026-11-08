@@ -109,7 +109,8 @@ line, print that line to the user. The check never stops the release (D93).
 
 1. Dispatch the `zuko:pentester` agent with `RANGE`, `VERSION`, the repo,
    and the target when the release runs live.
-   It returns a scope block and findings, each with a `PROOF` it ran.
+   It returns a scope block, findings, each with a `PROOF` it ran, and
+   LEAD blocks, each with a `TRACE`, an `UNKNOWN` and a `CHECK`.
 2. Send each finding to a `finding-verifier` agent, blind, exactly as
    `/review` does: the claim, `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL`,
    `SNIPPET` and `PROOF`, with `BASE: <the last tag>`, or
@@ -117,8 +118,15 @@ line, print that line to the user. The check never stops the release (D93).
    scope block. A verifier that hits its turn limit is not confirmed, and is
    never resumed with added context. A confirmed finding keeps the lowest
    `SEVERITY` a verifier returned, never above the pentester's.
+
+   Send each lead to its own verifier in the same way, with `KIND: lead` first
+   and no `SEVERITY`: `KIND: lead`, the `LEAD` claim, `CATEGORY`, `FILE`,
+   `SYMBOL`, `SNIPPET`, `TRACE`, `UNKNOWN` and the same `BASE`. Never send
+   `CHECK`. A lead holds when its verifier returns `VERDICT: CONFIRMED`. Drop
+   each other lead.
 3. Write the report to a file in the session's scratchpad directory (`mktemp`
-   when there is none), in this format, from the confirmed findings only:
+   when there is none), in this format, from the confirmed findings and the
+   confirmed leads only:
 
    ```text
    # Pentest v1.5.0
@@ -133,6 +141,12 @@ line, print that line to the user. The check never stops the release (D93).
    | ID | Severity | Category | Where | Description |
    | -- | -------- | -------- | ----- | ----------- |
    | P1 | medium | A05:2025 Injection | exporters/ledger.py:31 export_ledger | order reaches ORDER BY unchecked |
+
+   ## Needs validation
+
+   | ID | Category | Where | Description | Unknown |
+   | -- | -------- | ----- | ----------- | ------- |
+   | N1 | A05:2025 Injection | exporters/suppliers.py:29 export_suppliers | on Windows, a supplier name may reach a cmd.exe shell string unquoted | whether cmd.exe on Windows runs the text after & in a supplier name as its own command |
 
    ## Assessed
 
@@ -161,16 +175,36 @@ line, print that line to the user. The check never stops the release (D93).
    Print each confirmed finding's `PROOF` to the terminal after the table, for
    the user to act on.
 
+   The `## Needs validation` section is always there. Its table lists the
+   confirmed leads, numbered `N1`, `N2` and on. With no confirmed lead, the
+   table has its header and no rows. `Where` is `FILE` then `SYMBOL`,
+   `Description` is the `LEAD` sentence, and `Unknown` is the `UNKNOWN` line.
+   A lead has no severity and never changes `**Result:**`. The table never
+   carries a `TRACE` or a `CHECK`.
+
+   After the `PROOF`s, print each confirmed lead to the terminal:
+
+   ```
+   N1  exporters/suppliers.py:29 export_suppliers
+       trace    supplier "x&echo marker&" in invoices.csv → cli.py main → export_suppliers → subprocess.run("start " + target, shell=True)
+       unknown  whether cmd.exe on Windows runs the text after & in a supplier name as its own command
+       check    on Windows, run `python -m invoice_cli.cli export invoices.csv` with the supplier x&echo marker&, and expect marker in the output
+   ```
+
 4. Print the summary, then go to step 3 with `--pentest <report-file>`:
 
    ```
    Pentest    code-level · v1.4.2..a1b2c3d (9 commits) · 7 categories · 2 class files
               A05 Injection        1 medium
+              needs validation: 1 lead (2 dropped by the verifier)
               not assessed: A01, A07 — no running server (slice 5b)
               class files not read: 8 — no matching code in the range
    ```
 
    The class-file count is the number of class-file lines under `ASSESSED:`.
+   The lead count is the number of rows under `## Needs validation`. The
+   dropped count is the number of leads that the verifiers rejected. With no
+   rejected lead, leave out the part in brackets.
 
 The pentester returns nothing, stops early, or fails → the pentest did not
 finish. Say so, and ask:
@@ -260,12 +294,15 @@ also covers a resumed release. No `hub page:` link on the overview's
 
 ```
 Released v2.2.0
-  pentest   passed: 0 critical, 0 high, 1 medium, 1 low · docs/security/v2.2.0/report.md
+  pentest   passed: 0 critical, 0 high, 1 medium, 1 low · 1 lead needs validation · docs/security/v2.2.0/report.md
   commit    a1b2c3d chore(release): v2.2.0
   tag       v2.2.0, annotated, pushed
   release   https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
   overview  Release: v2.2.0 · hub page republished
 ```
+
+The lead count reads `1 lead needs validation` or `3 leads need validation`.
+With no lead, leave that part out.
 
 ## Tags are permanent
 
