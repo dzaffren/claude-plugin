@@ -18,6 +18,8 @@ UNCHECKED = "unchecked"
 LIMIT = 10
 MARK = re.compile(r"^(?:(?:lead in |reset in )?v\d+\.\d+\.\d+|unchecked)$")
 TABLE_RULE = re.compile(r"^:?-+:?$")
+# A | in a tracked name is written \| in its cell, so the row keeps two cells.
+BAR = re.compile(r"(?<!\\)\|")
 
 
 class Unreadable(Exception):
@@ -36,7 +38,7 @@ def units(tracked):
 
 
 def cells(line):
-    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+    return [cell.strip().replace("\\|", "|") for cell in BAR.split(line.strip().strip("|"))]
 
 
 def read(project):
@@ -120,5 +122,5 @@ def render(marks, version, today):
              "**Units:** %d · **Checked:** %d · **Lead:** %d · **Not checked:** %d"
              % (len(marks), checked, leads, len(marks) - checked - leads),
              "", "| File | Mark |", "| ---- | ---- |"]
-    lines += ["| %s | %s |" % (unit, marks[unit]) for unit in sorted(marks)]
+    lines += ["| %s | %s |" % (unit.replace("|", "\\|"), marks[unit]) for unit in sorted(marks)]
     return "\n".join(lines) + "\n"

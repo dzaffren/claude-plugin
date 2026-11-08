@@ -317,3 +317,20 @@ unreleased "Change the cli."
 commit "feat(app): change the cli"
 run pick "$repo"
 expect_exit 0 "$status" "latin pick: reads the ledger (got: $out)"
+
+# 7. A tracked name with a | goes into its cell as \|, so the next pick and
+# cut read the row back as one File and one Mark.
+scratch "$work/pipe" app/cli.py 'app/a|b.py'
+unreleased "Read a file name with a bar."
+commit "feat(app): a file name with a bar"
+run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" 'app/a|b.py')"
+expect_exit 0 "$status" "pipe cut: exits 0 (got: $(last_line "$out"))"
+has_row 'app/a\|b.py' v1.5.0
+expect_exit 0 "$?" "pipe cut: the ledger cell writes the | as \\|"
+released 1.5.0
+printf 'changed\n' >>"$repo/app/cli.py"
+unreleased "Change the cli."
+commit "feat(app): change the cli"
+run pick "$repo"
+expect_exit 0 "$status" "pipe pick: reads the row back (got: $out)"
+expect_match '^Old files  1 of 1 not checked' "$out" "pipe pick: app/a|b.py is checked, so only check.sh is left"
