@@ -123,8 +123,10 @@ pentest: nothing is written.
 2. Send each finding to a `finding-verifier` agent, blind, exactly as
    `/review` does: the claim, `CATEGORY`, `SEVERITY`, `FILE`, `SYMBOL`,
    `SNIPPET` and `PROOF`, with `BASE: <the last tag>`, or
-   `BASE: none (first release: every tracked line is in the range)`. Never the
-   scope block. A verifier that hits its turn limit is not confirmed, and is
+   `BASE: none (first release: every tracked line is in the range)`. For a
+   finding or a lead in a file from `OLD FILES`, send
+   `BASE: none (old file: every line of this file is in scope)`, because the
+   range does not change that file. Never the scope block. A verifier that hits its turn limit is not confirmed, and is
    never resumed with added context. A confirmed finding keeps the lowest
    `SEVERITY` a verifier returned, never above the pentester's.
 

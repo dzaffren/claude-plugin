@@ -52,6 +52,11 @@ issue that the next review may catch. The asymmetry is deliberate.
 
 Any one of those you cannot establish → REJECT.
 
+With `BASE: none`, no diff limits the scope: every line of the file is in it.
+This is a first release, or a release pentest that checks an old file in
+full. Then rule 3, rule 2 of a lead and "The issue existed before this diff"
+do not apply. Every other rule still applies.
+
 One exception to rule 1: an `A03:2025 Software Supply Chain Failures` finding
 on a dependency added or changed in a lockfile or manifest needs no caller and
 no reachable path. Its risk lands at install time. Confirm it when the diff

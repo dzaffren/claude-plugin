@@ -38,6 +38,12 @@ dispatch_at=$(grep -n 'Dispatch the `zuko:pentester` agent' "$skill" | head -n 1
 expect_exit 0 "$?" "release skill: pick runs after the pin check and before the dispatch"
 expect_match 'Print its lines to the user as they are\.' "$skill_flat" "release skill: prints pick's lines"
 expect_match 'When `pick` exits 1, print its refusal' "$skill_flat" "release skill: prints a pick refusal"
+# An old file is not in the release diff, so its finding or lead goes to the
+# verifier with no diff to measure it by, and the verifier judges every line.
+expect_match 'For a finding or a lead in a file from `OLD FILES`, send `BASE: none \(old file: every line of this file is in scope\)`' "$skill_flat" "release skill: an old file's finding or lead goes to the verifier with BASE none"
+verifier_flat=$(tr '\n' ' ' <"$scripts/../agents/finding-verifier.md" | tr -s ' ')
+expect_match 'With `BASE: none`, no diff limits the scope: every line of the file is in it\.' "$verifier_flat" "finding-verifier: BASE none puts every line in scope"
+expect_match 'Then rule 3, rule 2 of a lead and "The issue existed before this diff" do not apply\.' "$verifier_flat" "finding-verifier: BASE none lifts the introduced-by-this-diff rules"
 expect_match 'Then end before the pentest: nothing is written\.' "$skill_flat" "release skill: a pick refusal stops the release before the pentest"
 expect_match 'Dispatch the `zuko:pentester` agent with `RANGE`, `OLD FILES`, `VERSION`' "$skill_flat" "release skill: gives OLD FILES with RANGE"
 expect_match '`OLD FILES` is the paths that `pick` printed, joined with `, `, or `none`' "$skill_flat" "release skill: OLD FILES is pick's paths"
