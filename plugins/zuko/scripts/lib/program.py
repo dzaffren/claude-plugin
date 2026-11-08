@@ -30,7 +30,8 @@ def find(name, path, exts):
 def argv(args):
     """The argument list to start `args` with. Off Windows, `args` as they
     are. On Windows, the program found on PATH, after bash when the file
-    starts with #!. A program or a bash that is not found, or a found file
+    starts with #!, with noglob added to MSYS in os.environ for that bash.
+    A program or a bash that is not found, or a found file
     that cannot be read, gives `args` back, so the caller's own error path
     still runs."""
     args = list(args)
@@ -51,4 +52,9 @@ def argv(args):
     bash = find("bash", path, exts)
     if bash is None:
         return args
+    # Git Bash expands {a}, * and [..] in the arguments that a native program
+    # hands it; noglob keeps each argument as typed.
+    options = os.environ.get("MSYS", "").split()
+    if "noglob" not in options:
+        os.environ["MSYS"] = " ".join(options + ["noglob"])
     return [bash, found] + args[1:]

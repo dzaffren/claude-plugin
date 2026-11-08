@@ -73,3 +73,20 @@ if [ "$(id -u)" != 0 ]; then
     "argv on Windows: a found file that cannot be read is given back unchanged, not an error"
   allow "$work/locked/gh"
 fi
+
+# Git Bash expands {a}, * and [..] in the arguments that a native program
+# hands it, so repos/{owner}/{repo} reached the stub as repos/owner/repo.
+msys_after() {  # msys_after <MSYS value> <arg>...: MSYS after argv() on Windows
+  local value=$1
+  shift
+  MSYS="$value" PATH="$work/one:$work/sh" PATHEXT=".EXE" "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import program
+os.name = "nt"
+program.argv(sys.argv[2:])
+print(os.environ.get("MSYS", ""))' "$lib" "$@"
+}
+same "noglob" "$(msys_after "" gh api 'repos/{owner}/{repo}')" \
+  "argv on Windows: a #! script runs with MSYS=noglob, so bash keeps {owner} as typed"
+same "winsymlinks:nativestrict noglob" "$(msys_after "winsymlinks:nativestrict" gh api)" \
+  "argv on Windows: noglob is added to the MSYS options already set"
+same "noglob" "$(msys_after "noglob" gh api)" "argv on Windows: noglob is not added twice"
+same "" "$(msys_after "" git status)" "argv on Windows: a program that is not a script leaves MSYS alone"
