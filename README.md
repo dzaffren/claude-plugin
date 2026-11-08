@@ -259,6 +259,7 @@ projects.
 - On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it
 - Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the board renders, and the PR body, the session-start decisions and the release guard show and compare the same text as on Linux
 - The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped
+- The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads
 
 ## Docs
 
