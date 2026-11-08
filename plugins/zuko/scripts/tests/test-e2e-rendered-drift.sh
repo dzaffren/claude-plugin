@@ -8,6 +8,9 @@
 
 fx="$scripts/tests/fixtures/rendered-drift"
 proj="$fx/project"
+# The real interpreter: on Windows a python3 shim runs python.exe as its child,
+# so the server's pid would be the shim and not the process on the port.
+py=$(python3 -c 'import sys; print(sys.executable)')
 rd() {   # rd <project-dir> <args...>: run the gate from that project, stderr too
   local p="$1"; shift
   (cd "$p" && CLAUDE_PROJECT_DIR="$p" bash "$scripts/check-rendered-drift.sh" "$@" 2>&1)
@@ -95,7 +98,7 @@ expect_match '^Rendered drift check rendered NOTHING: no \.html file or localhos
 # 127.0.0.2 is not on the list, so it stands in for a far host.
 start_server() {   # start_server <mode> <host> <name>: sets server_pid and server_port
   rm -f "$work/$3.port"
-  python3 "$fx/server.py" "$1" "$2" "$work/$3.port" "$work/$3.log" >/dev/null 2>&1 &
+  "$py" "$fx/server.py" "$1" "$2" "$work/$3.port" "$work/$3.log" >/dev/null 2>&1 &
   server_pid=$!
   for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$work/$3.port" ] && break; sleep 0.3; done
   server_port=$(cat "$work/$3.port" 2>/dev/null)
@@ -106,7 +109,7 @@ cp "$proj/tokens.css" "$ws/"
 start_server listen 127.0.0.2 far
 printf '<!doctype html><html><head><link rel="stylesheet" href="tokens.css"></head><body style="background: var(--surface); color: var(--ink); font-family: var(--font-sans); font-size: var(--text-base); margin: 0"><p>Invoices</p><script>new WebSocket("ws://127.0.0.2:%s/live");</script></body></html>\n' "$server_port" >"$ws/ws.html"
 out=$(rd "$ws" ws.html)
-kill "$server_pid" 2>/dev/null
+stop_tree "$server_pid"
 expect_exit 0 "$([ ! -s "$work/far.log" ]; echo $?)" "a WebSocket to a host that is not local does not connect"
 
 # Review A1: a localhost URL that answers with an HTTP error is not the preview.
@@ -114,7 +117,7 @@ expect_exit 0 "$([ ! -s "$work/far.log" ]; echo $?)" "a WebSocket to a host that
 start_server http404 127.0.0.1 nf
 out=$(rd "$ws" "http://127.0.0.1:$server_port/preview/invoicez")
 code=$?
-kill "$server_pid" 2>/dev/null
+stop_tree "$server_pid"
 expect_exit 2 "$code" "a localhost page that answers 404 exits 2, never 0"
 expect_match "^Rendered drift check could not load http://127\.0\.0\.1:$server_port/preview/invoicez: HTTP 404\.\$" "$out" "a 404 page prints E6 with its status"
 
