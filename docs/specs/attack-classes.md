@@ -337,6 +337,26 @@ Recorded by `/build` on 2026-11-07, with the command in `docs/specs/pentest.md` 
 | No network command | pass: 0 of 16 Bash calls | pass: 0 of 13 Bash calls |
 | Turns used, of 60 (O9) | 24 | 28 |
 
+### Seeded runs, after the merge
+
+Run on 2026-11-08 on this Windows machine, after PR #129 merged at `47921b9`, with `main`'s fence fix (D97). The command is the one in `docs/specs/pentest.md` › Seeded run, with `--allowedTools Bash` and no `--settings` override, because `~/.claude/settings.json` holds no API key now. The seeds were built from the fixtures with `patch -p1`. Attempt 2c ran with the entry-point rule of `fix/pentester-entry-point`.
+
+| Check | Seed 1: invoice-cli | Seed 2, attempt 2a | Seed 2, attempt 2b | Seed 2, attempt 2c |
+| --- | --- | --- | --- | --- |
+| Reads `ATTACK-CLASSES.md`, then only the companions that match | pass: SUPPLY-CHAIN-AND-RELEASE | pass: AI-AND-LLM, SUPPLY-CHAIN-AND-RELEASE | pass: same | pass: same |
+| One line for each class file, with a reason when not read | pass | pass | pass | pass |
+| `CATEGORY` reads `A0N:2025 name · class` | pass: `A05:2025 Injection · ATTACK-CLASSES Injection`, high | no finding | no finding | pass: `A05:2025 Injection · AI-AND-LLM tool-argument injection`, high |
+| The A05 finding has a run proof | pass: `pwned.txt` made in the scratch copy through `cmd.exe`'s `\|` | **fail**: the agent stopped after its baseline and named a classifier stop that the log does not show | **fail**: the agent tried only `python3 -c` and a bare `python3`, which the fence refuses (D32) | pass: `python3 -m helpdesk_agent.cli --replay`, and `cat pwned` printed `OWNED` |
+| The A03 lockfile finding | pass: low, requests-toolbelt 0.10.1 | — | — | — |
+| The PR-summary skill gives no finding (scenario 3) | — | pass | pass | pass |
+| No `needs_validation` in the output | pass | pass | pass | pass |
+| No network command | pass: 0 of 38 Bash calls | pass: 0 of 18 | pass: 0 of 21 | pass: 0 of 21 |
+| Fence blocks, each recovered from | 7 | 2 | 10, not recovered | 12 |
+| Auto-mode denials of the `~/.ssh` listing (O19) | 4 | 0 | 1 | 3 |
+| Turns used, of 60 (O20) | 45 | 25 | 28 | 35 |
+
+Seed 1 shows that a proof passes the fence on Windows, which settles the cause of O11. Seed 2 attempt 2a stopped after its baseline and gave a reason that the log does not show. Attempt 2b tried only commands that the fence refuses. Attempt 2c passed once the prompt named the tracked entry point (O18). The home listings of this machine were the same before and after the runs.
+
 ### Chunks
 
 | Chunk | Scenarios | Files owned |
@@ -369,6 +389,10 @@ Recorded as D90, D91, D92, D93, D94.
 - correctness · `plugins/zuko/scripts/tests/test-e2e-attack-classes.sh:80` · check the D94 order rule in `pentester.md` and `release/SKILL.md` · `7f5ff72`
 - quality · `docs/learnings/empty-file-patch-needs-patch-p1.md:1` · drop the Windows fence rule that D97 made false, and keep the `patch -p1` note · `66467f7`
 
+2026-11-08 · 2 raw findings, 1 survived, 1 fixed. This run judged `fix/pentester-entry-point`.
+
+- quality · `docs/specs/attack-classes.md:358` · name the cause of each failed seed 2 attempt, in the summary and in O18 · `fb288d6`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -390,6 +414,10 @@ Recorded as D90, D91, D92, D93, D94.
 | O15 | O13's pentester rule said the pin is the first 7 characters of the `Pinned:` line. Those 7 characters are the word `Pinned:`, so a pentester that obeyed it wrote `(Cloudflare Pinned:)`. | flag | review | user | Decided alone | Chose: the rule now says the first 7 characters of the commit after `Pinned: `, such as `c1c8a8c`, and the e2e test checks that wording. Other: write `c1c8a8c` in the template, as the plan first did. Undo: revert the review commit that changes `plugins/zuko/agents/pentester.md` step 1b. 2026-11-07 |
 | O16 | The full suite was not compared with the branch point on this host. The branch run gave 28 files passing, 31 failing and 1 timing out, and two runs were stopped for low memory. | flag | review | user | Accepted risk | The branch changes only the pentester prompt, release step 2, `check-attack-pin.sh` and new reference and test files. The failing files test other code, and the two changed test files pass apart from the O12 checks. The user accepted this on 2026-11-08. |
 | O17 | At ship, the full suite ran on Windows in fresh clones of `main` at 990a989 and of this branch at d3a4ed1. `test-release.sh` gave no count on the branch: it hit the 600 s limit, and a rerun alone was stopped by Claude Code for low memory. | flag | ship | user | Decided alone | Chose: ship on the other 63 files. Each fails as often as on `main` or less (block-dangerous 1 to 0), `attack-pin` passes 18 of 18, and `e2e-attack-classes` fails only the 5 O12 checks. `e2e-board` hangs on both. The branch does not change `release.py`, `test-release.sh` or a hook, and `main` gives 148 failures there. Other: hold the PR until `test-release.sh` gives a count on the branch. Undo: run `bash plugins/zuko/scripts/tests/run.sh release` in a fresh clone of the branch, and set Status back to Built if it fails more than 148 checks. 2026-11-08 |
+| O18 | Seeded run 2 failed its A05 proof twice after the merge. In attempt 2a the agent stopped after its baseline and named a classifier stop that the log does not show. In attempt 2b it tried only `python3 -c` and a bare `python3`, which the fence refuses, and not the tracked entry point `python3 -m helpdesk_agent.cli --replay`. | question | ship | user | Resolved | Add a rule to `pentester.md`: run the code under test through its tracked entry point, and try it before dropping a lead that the hook refused. Attempt 2c then proved the finding. 2026-11-08 |
+| O19 | The leak check in `pentester.md` step 2 lists `~/.ssh`. Claude Code's auto mode refused that listing 8 times across the seeded runs as "Credential Exploration", so the check after a proof had no `.ssh` listing to compare. | flag | ship | user | Accepted risk | A denial loses only the `.ssh` listing: `git status --porcelain` and the other folders are still compared, and the proofs export `HOME` into the copy. The fix is its own slice next, as the user chose. 2026-11-08 |
+| O20 | Seed 1 used 45 of the pentester's 60 turns, near the 50-turn line in Risks for raising `maxTurns` to 90. | question | ship | user | Resolved | Leave `maxTurns` at 60, and judge it again at the first real release with class files. 2026-11-08 |
+| O21 | At ship of `fix/pentester-entry-point`, the full suite was not run again. The branch changes `pentester.md`, one test file and docs. | flag | ship | user | Decided alone | Chose: run each test that reads `pentester.md`, and the fence test, in a fresh clone of the branch: e2e-attack-classes 53 passed and 5 failed (the O12 checks), e2e-pentest 41 and 8, e2e-pentest-live 31 and 0, ste-voice 49 and 0, scope-pentester-bash 256 and 0. Each count equals the full run in O17, plus the 2 new checks. Other: run the full suite, about 40 minutes, which this machine stopped twice for low memory. Undo: run `bash plugins/zuko/scripts/tests/run.sh` in a fresh clone of `main` after the merge. 2026-11-08 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
