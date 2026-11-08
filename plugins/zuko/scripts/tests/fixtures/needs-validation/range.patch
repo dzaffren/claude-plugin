@@ -1,0 +1,66 @@
+diff --git a/invoice_cli/cli.py b/invoice_cli/cli.py
+--- a/invoice_cli/cli.py
++++ b/invoice_cli/cli.py
+@@ -2,6 +2,7 @@
+ import argparse
+ import csv
+
++from invoice_cli.exporters.suppliers import export_suppliers
+ from invoice_cli.importers.bank import import_rows
+
+
+@@ -17,11 +18,15 @@
+     total.add_argument("csv")
+     bank = sub.add_parser("import-bank", help="import a bank statement CSV")
+     bank.add_argument("csv")
++    export = sub.add_parser("export", help="write one CSV per supplier under exports/")
++    export.add_argument("csv")
+     args = parser.parse_args(argv)
+     if args.command == "totals":
+         print("%.2f" % totals(args.csv))
+     elif args.command == "import-bank":
+         print("%d rows" % len(import_rows(args.csv)))
++    elif args.command == "export":
++        print("%d exports" % len(export_suppliers(args.csv)))
+
+
+ if __name__ == "__main__":
+diff --git a/invoice_cli/exporters/__init__.py b/invoice_cli/exporters/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/invoice_cli/exporters/suppliers.py b/invoice_cli/exporters/suppliers.py
+new file mode 100644
+--- /dev/null
++++ b/invoice_cli/exporters/suppliers.py
+@@ -0,0 +1,31 @@
++"""Split an invoice CSV into one export per supplier, and open each on Windows."""
++import csv
++import os
++import re
++import subprocess
++
++INVOICE_NUMBER = re.compile(r"^INV-(\d+-?)+$")
++
++
++def export_suppliers(path):
++    by_supplier = {}
++    with open(path, newline="") as handle:
++        for row in csv.DictReader(handle):
++            if not INVOICE_NUMBER.match(row["number"]):
++                raise SystemExit("not an invoice number: %s" % row["number"])
++            by_supplier.setdefault(row["supplier"], []).append(row)
++    os.makedirs("exports", exist_ok=True)
++    written = []
++    for supplier, rows in by_supplier.items():
++        if "/" in supplier or "\\" in supplier:
++            raise SystemExit("a supplier name cannot hold / or \\: %s" % supplier)
++        target = os.path.join("exports", supplier + ".csv")
++        with open(target, "w", newline="") as handle:
++            writer = csv.DictWriter(handle, ["number", "supplier", "amount"], extrasaction="ignore")
++            writer.writeheader()
++            writer.writerows(rows)
++        if os.name == "nt":
++            # Show the finished export in the default viewer.
++            subprocess.run("start " + target, shell=True)
++        written.append(target)
++    return written
