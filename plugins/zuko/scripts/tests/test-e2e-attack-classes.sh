@@ -59,18 +59,19 @@ pin_out=${pin_out//$'\r'/}
 expect_exit 0 "$?" "pin check: prints exactly the notice that names AI-AND-LLM.md (got: $pin_out)"
 
 # 3. The prompt: the pentester reads the index, zuko's rules win, and a lead
-# with no proof is dropped. The release step runs the pin check first.
+# with no proof is a LEAD block (D101). The release step runs the pin check
+# first.
 agent_text=$(cat "$agent")
 agent_flat=$(tr '\n' ' ' <<<"$agent_text" | tr -s ' ')
 expect_match '\$\{CLAUDE_PLUGIN_ROOT\}/references/attack-classes/ATTACK-CLASSES\.md' "$agent_text" "pentester: reads attack-classes/ATTACK-CLASSES.md"
 expect_match '## 1b\. Class files' "$agent_text" "pentester: has the class-file step"
 expect_match 'git diff --stat <RANGE>' "$agent_text" "pentester: matches target lines against the range"
 expect_match "zuko's rules win" "$agent_flat" "pentester: zuko's rules win over a class file"
-expect_match 'A lead without a run proof is dropped' "$agent_flat" "pentester: drops a lead without a proof"
+expect_match 'A lead without a run proof is not a finding\. When it meets the lead rules in step 4, write a LEAD block for it\.' "$agent_flat" "pentester: a lead without a proof is a LEAD block, not a finding"
 expect_match 'Run the code under test through its tracked entry point' "$agent_flat" "pentester: proves through the tracked entry point"
 expect_match 'Before you drop a lead because the hook refused a command, try the tracked entry point' "$agent_flat" "pentester: tries the entry point before it drops a lead"
 expect_match '`subagent_type`: ignore it' "$agent_flat" "pentester: ignores subagent_type"
-expect_match 'Never write `needs_validation`' "$agent_flat" "pentester: never reports needs_validation"
+expect_match '`needs_validation`: write a LEAD block instead, as step 4 says\.' "$agent_flat" "pentester: a needs_validation verdict becomes a LEAD block"
 expect_match 'RESOURCE-EXHAUSTION-AND-AVAILABILITY\.md` is not in the plugin' "$agent_flat" "pentester: knows the resource-exhaustion file is left out"
 expect_match '^ +\{class file\} \(Cloudflare \{pin\}\) — \{classes used\}: \{files\}' "$agent_text" "pentester: the SCOPE template has an assessed class-file line"
 expect_match '^ +\{class file\} \(Cloudflare \{pin\}\) — \{one-line reason\}' "$agent_text" "pentester: the SCOPE template has a not-assessed class-file line"
