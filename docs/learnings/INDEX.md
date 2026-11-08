@@ -231,3 +231,6 @@ One line per lesson. Loaded into every session in this repo.
 - A seeded pentester run can be stopped by the safety classifier — keep a
   prompt-text check for the same rule, and record a stopped run with its
   request ID. ([detail](seeded-pentests-can-be-stopped-by-the-classifier.md))
+- A chunk-builder with a new module, its tests and fixtures runs out of its 60
+  turns — tell it to commit after each step, and check its worktree before you
+  resume it. ([detail](chunk-builders-run-out-of-turns.md))

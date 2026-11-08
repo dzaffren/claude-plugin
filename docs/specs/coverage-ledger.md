@@ -1,6 +1,6 @@
 # Coverage ledger
 
-**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** needs-validation
@@ -150,7 +150,7 @@ Old files  10 of 135 not checked · docs/security/coverage.md
   ...
 ```
 
-With no ledger, the first line reads `Old files  10 of 148 not checked · no ledger yet, cut starts one`. With nothing left to pick, it reads `Old files  0 · every unit is checked`. A ledger it cannot read gives the same refusal as `cut` (section 5) and exit 1.
+With no ledger, the first line reads `Old files  10 of 145 not checked · no ledger yet, cut starts one`, where 145 is the 148 units less the 3 that the range changes. With nothing left to pick, it reads `Old files  0 · every unit is checked`. A ledger it cannot read gives the same refusal as `cut` (section 5) and exit 1.
 
 ### 2. The ledger file
 
@@ -224,6 +224,7 @@ The second form is for the release that creates the ledger.
 Coverage ledger unreadable: line 14: plugins/zuko/scripts/lib/fence.py is listed twice
 Coverage ledger unreadable: line 9: the mark "v2.7" is not vX.Y.Z, lead in vX.Y.Z, reset in vX.Y.Z or unchecked
 Coverage ledger unreadable: no File and Mark table
+Coverage ledger unreadable: line 12: | a.py | v2.7.0 | extra | is not a File and Mark row
 Pentest report unreadable: Files checked names plugins/zuko/agents/nobody.md, which git does not track
 ```
 
@@ -353,7 +354,9 @@ Not added: no flag, no JSON, no hash of each file (the range catches each change
 
 **E2E:** `test-e2e-coverage-ledger.sh`. It checks the two prompts, then cuts two releases of a scratch invoice-cli repo in a row with the two fixture reports. After each cut it reads `coverage.md` on origin and the `pick` output, and expects the marks and counts of scenarios 1, 2 and 4.
 
-**Seeded run:** one pentester run with the command in `docs/specs/pentest.md` › Seeded run, on `fixtures/pentest/base/` plus `fixtures/pentest/range.patch`, tagged v1.4.2, with `OLD FILES: invoice_cli/cli.py, uv.lock`. It passes when `FILES CHECKED:` names both old files and the range files, and the bank-import A05 is still a finding.
+**Seeded run:** one pentester run with the command in `docs/specs/pentest.md` › Seeded run, on `fixtures/pentest/base/` plus `fixtures/pentest/range.patch`, tagged v1.4.2, with the `OLD FILES` that `release.py pick` prints for that seed: `invoice_cli/__init__.py`. It passes when `FILES CHECKED:` names the old file and the range files, and the bank-import A05 is still a finding.
+
+**Seeded run, recorded** on 2026-11-09 on Linux. Run 1: `FILES CHECKED: invoice_cli/cli.py, invoice_cli/importers/__init__.py, invoice_cli/importers/bank.py, uv.lock, invoice_cli/__init__.py`, which names the old file and every range file. The A03 lockfile finding came back as low. The A05 proof never ran: the pentester stopped after `git archive`, at 28 messages, and put A05 under `NOT ASSESSED:`. It still listed `bank.py` as checked, which row O9 fixes. Run 2, the one retry, stopped at 21 messages: "Opus 5.5's safeguards flagged this session", request `req_011CgqwDnohzUcqvyrNdynnq` (row O8).
 
 ### Chunks
 
@@ -387,6 +390,12 @@ Recorded as D109, D110, D111. D104 to D108 are taken on `feat/portable-suite`, w
 | O4 | The ledger is committed, so it is public. It names each file that no pentest has checked yet. Where does it live? | question | spec p1 | user | Resolved | `docs/security/coverage.md`, committed in the release commit. It names files, not holes. The D-entry is drafted at pause 3, 2026-11-09 |
 | O5 | In what order does a release pick the unchecked files? | question | spec p1 | user | Resolved | Files with an open lead first, then files that a skipped release put back to unchecked, then never-checked files in path order. The D-entry is drafted at pause 3, 2026-11-09 |
 | O6 | What does cut do with a ledger it cannot read? | question | spec p1 | user | Resolved | Refuse and write nothing, as cut does on a bad report. A missing ledger is not an error: cut starts a new one and says so. The D-entry is drafted at pause 3, 2026-11-09 |
+| O7 | The seeded run was to give `OLD FILES: invoice_cli/cli.py, uv.lock`. Both are range files on that seed, and `pick` never offers a range file. | flag | build | user | Decided alone | Chose: the list that `release.py pick` prints for the seed, `invoice_cli/__init__.py`. Other: the plan's list, which no real release would send. Undo: run the seeded run again with the plan's list. 2026-11-09 |
+| O8 | The seeded run was to show the bank-import A05 as a finding with old files in the input. Run 1 stopped before any proof, and the one retry was stopped by the safeguards, request `req_011CgqwDnohzUcqvyrNdynnq`. | flag | build | user | Decided alone | Chose: record it, and rest the A05 half on needs-validation's seeded run 1, which proved the same A05 with the same fence. The `FILES CHECKED` half passed. Other: run it with another model in place of the pentester's `opus`. Undo: run the seeded run again after CVP access, and record it here. 2026-11-09 |
+| O9 | Seeded run 1 listed `invoice_cli/importers/bank.py` in `FILES CHECKED`, though its A05 proof never ran. `cut` would mark it checked, and no later release would read it again until it changed. | flag | build | user | Decided alone | Chose: the pentester leaves out a file whose proof did not run. Other: trust the list as the plan said. Undo: `git revert b75d90e`. 2026-11-09 |
+| O10 | Interface 4's Coverage line had 0 leads in its example, so it did not say where a lead counts. | flag | build | user | Decided alone | Chose: the first number is Checked plus Lead, because a pentest read each lead's file, and the two numbers add up to the units. The ledger header still counts Lead on its own. Other: count a lead as not checked. Undo: change the counts in `coverage.render` and the Coverage line in `release.py`, and the cases in `test-coverage.sh`. 2026-11-09 |
+| O11 | Interface 1's no-ledger example read `10 of 148`, which counts the range files. Its own rule counts only the files on the list, outside the range. | flag | build | user | Decided alone | Chose: the rule, so the example now reads `10 of 145`. Other: count every unit. Undo: change the count in `pick` in `release.py`, and the expected lines in `test-coverage.sh` and `test-e2e-coverage-ledger.sh`. 2026-11-09 |
+| O12 | Interface 5 did not say what happens to a ledger line after the table that is not a row of two cells. | flag | build | user | Decided alone | Chose: refuse it with `line N: <text> is not a File and Mark row`, added to Interface 5. Other: skip the line. Undo: drop that check in `coverage.read`, and its case in `test-coverage.sh`. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
