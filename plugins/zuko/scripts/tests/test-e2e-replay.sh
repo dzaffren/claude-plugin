@@ -51,7 +51,7 @@ render() {
 
 # get <python expression>: R is the replay in the page's data block, H its hashes.
 get() {
-  "$py" -c 'import json, sys
+  "$py" -c "$PY_LF"'import json, sys
 page = open(sys.argv[2], encoding="utf-8").read()
 start = page.index(">", page.index("<script id=\"data\"")) + 1
 R = json.loads(page[start:page.index("</script>", start)])["replay"]
@@ -139,7 +139,7 @@ same "s-two: 0 -> 1 | docs/specs/s-two.md: added the spec" \
 same "2026-10-01 09:31 · docs(spec): s-two p1" "$(get 'R["steps"][2]["at"] + " · " + R["steps"][2]["subject"]')" \
   "gh: a PR step has its own date and subject"
 same "{\"$squash\": {\"head\": \"$head\", \"pr\": 1}}" \
-  "$("$py" -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1])), sort_keys=True))' "$repo/docs/specs/.pages/replay-prs.json" 2>&1)" \
+  "$("$py" -c "$PY_LF"'import json, sys; print(json.dumps(json.load(open(sys.argv[1])), sort_keys=True))' "$repo/docs/specs/.pages/replay-prs.json" 2>&1)" \
   "cache: the squash commit maps to PR 1 and its head"
 same "1" "$(wc -l <"$work/gh.log" | tr -d ' ')" "gh: asked once, for the one squash commit on main's first-parent line"
 

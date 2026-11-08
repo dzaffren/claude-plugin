@@ -35,7 +35,7 @@ render() {
 
 # pick <python expression>: R is board()["replay"] from $out, H the hashes.
 pick() {
-  "$py" -c 'import json, sys
+  "$py" -c "$PY_LF"'import json, sys
 R = json.loads(sys.argv[2])["replay"]
 H = [s["hash"] for s in R["steps"]]
 v = eval(sys.argv[1])
@@ -162,7 +162,7 @@ same '[{"file": "docs/specs/s-one.md", "items": []}]' \
   "$(pick 'R["steps"][2]["changed"]')" "changed: a Status-line change gives the file with no items"
 same '[{"file": "docs/specs/s-two.md", "items": [{"kind": "removed", "what": "the spec"}]}]' \
   "$(pick 'R["steps"][4]["changed"]')" "changed: a spec that is gone is removed"
-same "True" "$("$py" -c 'import json, sys; print(json.load(open(sys.argv[1])) == dict.fromkeys(sys.argv[2:]))' \
+same "True" "$("$py" -c "$PY_LF"'import json, sys; print(json.load(open(sys.argv[1])) == dict.fromkeys(sys.argv[2:]))' \
   "$local_repo/$cache" "$(full "$local_repo" HEAD~4)" "$(full "$local_repo" HEAD~3)" "$(full "$local_repo" HEAD~2)" 2>&1)" \
   "cache: each commit on main with no merged PR is cached as null"
 expect_match "^api repos/\{owner\}/\{repo\}/commits/$(full "$local_repo" HEAD~2)/pulls --jq \[\.\[\] \| select\(\.merged_at\)\]\[0\]\.number$" \
@@ -175,7 +175,7 @@ same "3" "$(wc -l <"$work/bin/none.log" | tr -d ' ')" "cache: a second render as
 render none "$local_repo" render
 page=$out
 printf '%s' "$page" >"$work/page.html"
-out=$("$py" -c 'import sys
+out=$("$py" -c "$PY_LF"'import sys
 page = open(sys.argv[1], encoding="utf-8").read()
 start = page.index(">", page.index("<script id=\"data\"")) + 1
 print(page[start:page.index("</script>", start)])' "$work/page.html")
@@ -225,7 +225,7 @@ same "[\"$first\", \"${pr[0]}\", \"${pr[1]}\"]" "$(pick 'H')" "swap: the squash 
 same "[null, 1, 1]" "$(pick '[s["pr"] for s in R["steps"]]')" "swap: the PR steps carry the PR number"
 same "null" "$(pick 'R["note"]')" "swap: no note"
 same "{\"head\": \"$(full "$author" s-two)\", \"pr\": 1}" \
-  "$("$py" -c 'import json, sys; print(json.dumps(json.load(open(sys.argv[1]))[sys.argv[2]], sort_keys=True))' "$work/swap/$cache" "$squash" 2>&1)" \
+  "$("$py" -c "$PY_LF"'import json, sys; print(json.dumps(json.load(open(sys.argv[1]))[sys.argv[2]], sort_keys=True))' "$work/swap/$cache" "$squash" 2>&1)" \
   "swap: the cache keeps the PR number and its head"
 
 git -C "$work/swap" remote set-url origin "$work/gone.git"
@@ -252,7 +252,7 @@ render pr "$work/offline"
 same "[\"$first\", \"$(short "$author" main)\"]" "$(pick 'H')" "fetch fails: the squash commit stays one step"
 expect_match "^PR commits not read: fatal: '.*gone\.git' does not appear to be a git repository\. $tail_note\$" \
   "$(pick 'R["note"]')" "fetch fails: the note gives the fetch's first stderr line"
-same "False" "$("$py" -c 'import json, os, sys; print(os.path.exists(sys.argv[1]) and sys.argv[2] in json.load(open(sys.argv[1])))' "$work/offline/$cache" "$squash" 2>&1)" \
+same "False" "$("$py" -c "$PY_LF"'import json, os, sys; print(os.path.exists(sys.argv[1]) and sys.argv[2] in json.load(open(sys.argv[1])))' "$work/offline/$cache" "$squash" 2>&1)" \
   "fetch fails: the squash commit is not cached"
 
 clone broken

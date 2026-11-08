@@ -19,7 +19,7 @@ same() {  # same <expected> <actual> <description>
 }
 
 found() {  # found <name> <exts, ;-separated> [<folder>...]: what find() gives, or None
-  "$py" -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import program
+  "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import program
 '"$short"'
 exts = [e for e in sys.argv[3].split(";") if e]
 print(short(program.find(sys.argv[2], os.pathsep.join(sys.argv[4:]), exts)))' "$lib" "$@"
@@ -28,7 +28,7 @@ print(short(program.find(sys.argv[2], os.pathsep.join(sys.argv[4:]), exts)))' "$
 argv_on() {  # argv_on <os.name> <PATH> <arg>...: argv() of the args, one per line
   local name=$1 path=$2
   shift 2
-  PATH="$path" PATHEXT=".EXE" "$py" -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import program
+  PATH="$path" PATHEXT=".EXE" "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import program
 '"$short"'
 os.name = sys.argv[2]
 print("\n".join(short(arg) for arg in program.argv(sys.argv[3:])))' "$lib" "$name" "$@"

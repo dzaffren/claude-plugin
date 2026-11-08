@@ -14,7 +14,29 @@ scripts=$(dirname "$here")
 
 results_file=""
 
-record() { printf '%s\t%s\t%s\n' "$1" "$2" "${3:-}" >>"$results_file"; }
+# A CR or a newline in the detail is written as \r or \n, so a multi-line
+# expected or got value prints whole, with each CR in sight.
+record() {
+  local detail="${3:-}"
+  detail=${detail//$'\r'/\\r}
+  detail=${detail//$'\n'/\\n}
+  printf '%s\t%s\t%s\n' "$1" "$2" "$detail" >>"$results_file"
+}
+
+# A test's own `python3 -c` snippet reads and writes UTF-8 with LF, as zuko's
+# Python does (D98). Windows Python writes CRLF in cp1252 by default, and $( )
+# keeps the CR. zuko's own scripts never get this prelude.
+PY_LF='import sys
+for _zuko_stream in (sys.stdin, sys.stdout, sys.stderr):
+    _zuko_stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")
+'
+python3() {
+  if [ "${1:-}" = -c ]; then
+    command python3 -c "$PY_LF$2" "${@:3}"
+  else
+    command python3 "$@"
+  fi
+}
 
 expect_exit() {        # expect_exit <expected> <actual> <description>
   if [ "$2" = "$1" ]; then record PASS "$3"
@@ -54,17 +76,24 @@ make_link() {          # make_link <target> <link>: a real symlink, or exit 1 an
   return 1
 }
 
+# On Windows a read is denied with icacls, which an admin's Git Bash reads
+# past with backup rights, so deny r exits 1 when cat can still read the file.
+# A write is denied with the read-only attribute, which os.access reads.
 deny() {               # deny r|w <file>: the user can no longer read, or write, <file>
-  if is_windows; then
-    icacls "$(cygpath -w "$2")" //deny "$USERNAME:($(printf '%s' "$1" | tr rw RW))" >/dev/null
-  else
+  if ! is_windows; then
     chmod "a-$1" "$2"
+  elif [ "$1" = r ]; then
+    icacls "$(cygpath -w "$2")" //deny "$USERNAME:(R)" >/dev/null
+    ! cat "$2" >/dev/null 2>&1
+  else
+    attrib +R "$(cygpath -w "$2")" >/dev/null
   fi
 }
 
 allow() {              # allow <file>: undo deny
   if is_windows; then
     icacls "$(cygpath -w "$1")" //remove:d "$USERNAME" >/dev/null
+    attrib -R "$(cygpath -w "$1")" >/dev/null
   else
     chmod u+rw "$1"
   fi
@@ -72,12 +101,12 @@ allow() {              # allow <file>: undo deny
 
 # kill alone leaves the children of a native Windows program alive, so a
 # server that a shim started keeps its port; taskkill /T ends the whole tree.
+# taskkill misses a Git Bash child such as sleep, which the process group has.
 stop_tree() {          # stop_tree <pid>: stop a background job and each process it started
   if is_windows && [ -r "/proc/$1/winpid" ]; then
     taskkill //F //T //PID "$(cat "/proc/$1/winpid")" >/dev/null 2>&1
-  else
-    kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
   fi
+  kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
   wait "$1" 2>/dev/null
   return 0
 }

@@ -68,9 +68,16 @@ expect_match '^line 40$' "$load_out" "no status: file loaded"
 # 6. Unreadable: never blocks the session. (root reads anything, so skip there.)
 if [ "$(id -u)" != 0 ]; then
   dir=$(mktemp -d -p "$work"); write_overview "$dir" "$active" 10
-  deny r "$dir/OVERVIEW.md"; load "$dir"; allow "$dir/OVERVIEW.md"
-  expect_exit 0 "$load_status" "unreadable: exits 0"
-  expect_match 'has no Status line — loaded as Draft' "$load_out" "unreadable: reported as no Status line"
+  if deny r "$dir/OVERVIEW.md"; then
+    load "$dir"; allow "$dir/OVERVIEW.md"
+    expect_exit 0 "$load_status" "unreadable: exits 0"
+    expect_match 'has no Status line — loaded as Draft' "$load_out" "unreadable: reported as no Status line"
+  else
+    allow "$dir/OVERVIEW.md"
+    for check in "unreadable: exits 0" "unreadable: reported as no Status line"; do
+      skip "$check" "Git Bash reads past icacls with an admin's backup rights"
+    done
+  fi
 fi
 
 # 7. hooks.json: valid JSON, and the loader runs after load-learnings.sh.

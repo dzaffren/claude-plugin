@@ -260,7 +260,7 @@ chmod a-x "$dir/nt/cygpath" "$dir/nt/gh"
 nt_path=$(narrow_path "$dir/nt")
 is_windows || ln -s "$(command -v bash)" "$dir/nt/bash"
 py=$(python3 -c 'import sys; print(sys.executable)')
-nt=$(PATH="$nt_path" "$py" -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import board
+nt=$(PATH="$nt_path" "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import board
 os.name = "nt"
 print(board.bash_root())
 print(board.run(("gh", "api", "x"), sys.argv[2]).decode().strip())' "$scripts/lib" "$dir" 2>&1)

@@ -99,9 +99,12 @@ else
 fi
 if [ "$(id -u)" != 0 ]; then
   printf 'secret\n' >"$h/locked"
-  deny r "$h/locked"
-  cat "$h/locked" >/dev/null 2>&1
-  expect_exit 1 "$?" "deny r: the file cannot be read"
+  if deny r "$h/locked"; then
+    cat "$h/locked" >/dev/null 2>&1
+    expect_exit 1 "$?" "deny r: the file cannot be read"
+  else
+    skip "deny r: the file cannot be read" "Git Bash reads past icacls with an admin's backup rights"
+  fi
   python3 -c 'import sys; open(sys.argv[1]).read()' "$h/locked" 2>/dev/null
   expect_exit 1 "$?" "deny r: Python cannot read it either"
   allow "$h/locked"
@@ -111,7 +114,8 @@ if [ "$(id -u)" != 0 ]; then
   expect_exit 1 "$?" "deny w: Python cannot write the file"
   allow "$h/locked"
 fi
-python3 -c 'import socket, sys
+# command: the run.sh python3 wrapper is a function, and $! would then be a subshell.
+command python3 -c 'import socket, sys
 s = socket.socket(); s.bind(("127.0.0.1", 0)); s.listen()
 open(sys.argv[1] + ".tmp", "w").write(str(s.getsockname()[1]))
 import os; os.replace(sys.argv[1] + ".tmp", sys.argv[1])
@@ -137,3 +141,12 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   case "$out" in *"No such file"*|*"0 passed, 0 failed, 0 skipped") lost=$((lost + 1)) ;; esac
 done
 expect_exit 0 "$lost" "20 quick runs in a row: no run lost its results"
+
+# A multi-line detail prints whole, with each CR in sight.
+sb=$(sandbox detail 'record FAIL "two lines" "$(printf "expected [a\r\nb]")"')
+out=$(bash "$sb/tests/run.sh" detail 2>&1)
+expect_match '^        expected \[a\\r\\nb\]$' "$out" "detail: a CR and a newline print as \\r and \\n, on one line"
+
+# A test's own python3 -c snippet writes LF and UTF-8, whatever the OS default is.
+expect_match '^a·b$' "$(python3 -c 'print("a\u00b7b")')" "python3 -c: a middle dot comes out as UTF-8"
+expect_exit 1 "$(python3 -c 'print("x")' | grep -qU $'\r'; echo $?)" "python3 -c: the line ends in LF, with no CR"

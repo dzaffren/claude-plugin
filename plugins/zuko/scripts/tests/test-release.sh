@@ -1220,7 +1220,7 @@ chmod a-x "$work/nt/gh"
 nt_path=$(narrow_path "$work/nt")
 is_windows || ln -s "$(command -v bash)" "$work/nt/bash"
 py=$(python3 -c 'import sys; print(sys.executable)')
-out=$(PATH="$nt_path" "$py" -c 'import os, sys; sys.path.insert(0, sys.argv[1]); import release
+out=$(PATH="$nt_path" "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import release
 os.name = "nt"
 code, out, err = release.gh("api", "repos/acme/invoice-cli/commits/abc/check-runs?per_page=100&page=1")
 print(code, out.strip())' "$scripts/lib" 2>&1)

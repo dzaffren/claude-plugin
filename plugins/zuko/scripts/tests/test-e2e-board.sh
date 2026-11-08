@@ -166,7 +166,7 @@ if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:4751/"; then
   expect_exit 1 "$?" "serve: port 4751 in use exits 1"
   expect_match "4751" "$(cat "$work/taken.err")" "serve: the message names the port"
   port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-  "$py" -c 'import sys; sys.path.insert(0, sys.argv[1]); import board; sys.exit(board.serve(sys.argv[2], int(sys.argv[3])))' \
+  "$py" -c "$PY_LF"'import sys; sys.path.insert(0, sys.argv[1]); import board; sys.exit(board.serve(sys.argv[2], int(sys.argv[3])))' \
     "$scripts/lib" "$pages" "$port" >/dev/null 2>"$work/serve.err" &
 else
   port=4751
