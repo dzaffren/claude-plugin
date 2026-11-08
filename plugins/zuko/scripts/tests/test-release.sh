@@ -1128,6 +1128,7 @@ findings_report() {   # findings_report <findings section body>: a v1.5.0 report
     printf '**Range:** v1.4.2..a1b2c3d (1 commit)\n**Date:** 2026-10-02\n\n## Findings\n\n'
     printf '| ID | Severity | Category | Where | Description |\n| -- | -------- | -------- | ----- | ----------- |\n'
     printf '%s\n' "$1"
+    printf '\n## Needs validation\n\n| ID | Category | Where | Description | Unknown |\n| -- | -------- | ----- | ----------- | ------- |\n'
     printf '\n## Assessed\n\n- A05:2025 Injection — 1 call\n\n## Not assessed\n\n- A01:2025 Broken Access Control — needs a server\n'
   } >"$file"
   printf '%s' "$file"
@@ -1208,3 +1209,70 @@ expect_match '^NEXT: stop$' "$(last_line "$out")" "a stray tag at HEAD: NEXT: st
 expect_match "^$before\$" "$(snapshot "$repo")" "a stray tag at HEAD: nothing written"
 run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
 expect_exit 1 "$status" "a stray tag at HEAD: cut refuses too"
+
+# 43. Every pass report has a Needs validation table, and cut refuses a wrong
+# one. A row there never blocks, so a row whose ID is not N<n> could be a
+# finding that skips the block.
+leads_report() {   # leads_report <fixture> <rows>: the v1.5.0 fixture with <rows> under Needs validation
+  local file
+  file=$(mktemp -p "$work")
+  ROWS="$2" awk '{ print } $0 == "## Needs validation" { at = 1 } at && /^\| -/ { print ENVIRON["ROWS"]; at = 0 }' \
+    "$pentest_fixtures/$1.md" >"$file"
+  printf '%s' "$file"
+}
+lead_n1='| N1 | A01:2025 Broken Access Control | lib/paths.py:12 native_path | a /c/ path may skip conversion | whether cygpath -m maps /c/x to C:/x |'
+lead_n2='| N2 | A05:2025 Injection | exporters/csv.py:40 export_name | a name may reach a shell on Windows | whether cmd.exe splits the name |'
+lead_n3='| N3 | A01:2025 Broken Access Control | lib/paths.py:30 repo_root | a UNC path may name another repo | whether git takes //host/share as -C |'
+for shape in nosection noheader columns sixcells findingid; do
+  file=$(mktemp -p "$work")
+  case $shape in
+    nosection) sed '/^## Needs validation$/,/^## Assessed$/{/^## Assessed$/!d;}' "$(report pass 1.5.0)" >"$file"
+               want='no Needs validation section' ;;
+    noheader)  sed '/^## Needs validation$/,/^## Assessed$/{/^|/d;}' "$(report pass 1.5.0)" >"$file"
+               want='no Needs validation section' ;;
+    columns)   sed 's/^| ID  | Category | Where | Description | Unknown |$/| ID | Severity | Category | Where | Description |/' "$(report pass 1.5.0)" >"$file"
+               want='the Needs validation columns are ID, Severity, Category, Where, Description, not ID, Category, Where, Description, Unknown' ;;
+    sixcells)  cp "$(leads_report pass '| N1 | A01:2025 Broken Access Control | a.py:1 f | x | y | z |')" "$file"
+               want='a Needs validation row has 6 cells, not 5: \| N1 \| A01:2025 Broken Access Control \| a\.py:1 f \| x \| y \| z \|' ;;
+    findingid) cp "$(leads_report pass '| P2 | A05:2025 Injection | importers/bank.py:22 import_rows | CSV field reaches a shell | none |')" "$file"
+               want='a Needs validation row has ID P2, not N<n>' ;;
+  esac
+  repo=$(fixture)
+  before=$(snapshot "$repo")
+  run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$file"
+  expect_exit 1 "$status" "a bad Needs validation table ($shape): exits 1"
+  expect_match "^Pentest report unreadable: $want\$" "$out" "a bad Needs validation table ($shape): names it"
+  expect_match '^Nothing written\.$' "$(last_line "$out")" "a bad Needs validation table ($shape): says nothing was written"
+  expect_match "^$before\$" "$(snapshot "$repo")" "a bad Needs validation table ($shape): nothing written"
+done
+
+# 44. Leads never block. The Security section counts them in one line, after
+# the known issues. No leads means no line.
+repo=$(fixture)
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(report pass 1.5.0)"
+expect_exit 0 "$status" "no leads: an empty Needs validation table is taken"
+run notes "$repo" --version 1.5.0
+expect_no_match 'validation' "$out" "no leads: no count line"
+expect_no_match '^### Security$' "$out" "no leads: no Security section"
+
+repo=$(fixture)
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$(leads_report pass "$lead_n1")"
+expect_exit 0 "$status" "one lead: exits 0"
+run notes "$repo" --version 1.5.0
+expect_match '^- 1 lead needs validation; see docs/security/v1\.5\.0/report\.md\.$' "$(last_line "$out")" "one lead: the count line is singular"
+
+repo=$(fixture)
+file=$(leads_report medium "$lead_n1
+$lead_n2
+$lead_n3")
+run cut "$repo" --version 1.5.0 --date 2026-09-25 --pentest "$file"
+expect_exit 0 "$status" "three leads and a medium: exits 0"
+run notes "$repo" --version 1.5.0
+expected='### Security
+
+- Known medium issue: A05:2025 Injection in exporters/ledger.py; see docs/security/v1.5.0/report.md.
+- Known low issue: A03:2025 Software Supply Chain Failures in uv.lock; see docs/security/v1.5.0/report.md.
+- 3 leads need validation; see docs/security/v1.5.0/report.md.'
+[ "$(printf '%s\n' "$out" | sed -n '/^### Security$/,$p')" = "$expected" ]
+expect_exit 0 "$?" "three leads and a medium: the known issues, then the count line"
+expect_exit 0 "$(same "$repo/docs/security/v1.5.0/report.md" "$file")" "three leads and a medium: the report is committed as given"

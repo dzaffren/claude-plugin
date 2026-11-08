@@ -29,7 +29,8 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          another version, carries a Proof column, or holds a critical or high
          finding; otherwise it is copied to docs/security/vX.Y.Z/report.md and
          each medium or low finding gets a line under the version's Security
-         section. --no-pentest takes the reason the user typed ("skip" or
+         section, and the Needs validation leads get one count line there.
+         --no-pentest takes the reason the user typed ("skip" or
          nothing is refused): it writes a skipped report, a Security line, and
          a D-entry in DECISIONS.md. Last, it writes the release marker
          block-dangerous.sh reads (D30): the version, HEAD, and every path
@@ -762,6 +763,8 @@ RESULT = re.compile(r"^\*\*Result:\*\*\s*(\S*)\s*$")
 RANGE = re.compile(r"^\*\*Range:\*\*\s*\S")
 MODE = re.compile(r"^\*\*Mode:\*\*\s*(.+?)\s*$")
 FINDING_COLUMNS = ("ID", "Severity", "Category", "Where", "Description")
+LEAD_COLUMNS = ("ID", "Category", "Where", "Description", "Unknown")
+LEAD_ID = re.compile(r"^N[0-9]+$")
 SEVERITIES = ("critical", "high", "medium", "low")
 BLOCKING = ("critical", "high")
 TABLE_RULE = re.compile(r"^:?-+:?$")
@@ -792,13 +795,13 @@ def cells(line):
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def findings_table(lines):
-    """(columns, rows) of the whole "## Findings" section, up to the next "## "
+def findings_table(lines, heading="## Findings"):
+    """(columns, rows) of the whole heading section, up to the next "## "
     heading; None when there is no section or no header row. Every line in the
     section is read: a blank line, a comment or a second header row never ends
     it, so a finding cannot hide after one. A line that names a severity but is
     not a well-formed row raises Refused: cut fails closed on it."""
-    at = next((i for i, line in enumerate(lines) if line.strip() == "## Findings"), None)
+    at = next((i for i, line in enumerate(lines) if line.strip() == heading), None)
     if at is None:
         return None
     body = []
@@ -814,8 +817,8 @@ def findings_table(lines):
         severity = re.search(r"\b(%s)\b" % "|".join(SEVERITIES), text, re.I)
         if not (text.startswith("|") and text.endswith("|")):
             if severity or "|" in text:
-                raise unreadable("the Findings section has a line that is not a table row: %s"
-                                 % text[:80])
+                raise unreadable("the %s section has a line that is not a table row: %s"
+                                 % (heading[3:], text[:80]))
             continue
         row = cells(text)
         if all(TABLE_RULE.match(cell) for cell in row):
@@ -834,8 +837,8 @@ def unreadable(what):
 
 
 def read_report(path, version):
-    """The report's text and its findings, one dict per row; Refused when cut
-    must not take it."""
+    """The report's text, its findings, one dict per row, and its lead count;
+    Refused when cut must not take it."""
     if not os.path.isfile(path):
         raise unreadable("%s not found" % path)
     with open(path, encoding="utf-8", errors="replace") as handle:
@@ -899,7 +902,21 @@ def read_report(path, version):
     for heading, name in (("## Assessed", "Assessed"), ("## Not assessed", "Not assessed")):
         if not listed(lines, heading):
             raise unreadable("no %s list" % name)
-    return text, findings
+    table = findings_table(lines, "## Needs validation")
+    if table is None:
+        raise unreadable("no Needs validation section")
+    columns, leads = table
+    if tuple(columns) != LEAD_COLUMNS:
+        raise unreadable("the Needs validation columns are %s, not %s"
+                         % (", ".join(columns), ", ".join(LEAD_COLUMNS)))
+    for row in leads:
+        if len(row) != len(LEAD_COLUMNS):
+            raise unreadable("a Needs validation row has %d cells, not %d: | %s |"
+                             % (len(row), len(LEAD_COLUMNS), " | ".join(row)))
+        # A lead never blocks, so a finding row here would ship unblocked.
+        if not LEAD_ID.match(row[0]):
+            raise unreadable("a Needs validation row has ID %s, not N<n>" % row[0])
+    return text, findings, len(leads)
 
 
 def listed(lines, heading):
@@ -933,9 +950,14 @@ def sentence(text):
 def pentest_verdict(project, version, today, report, reason):
     """The Verdict for this cut; Refused when there is nothing cut may write."""
     if reason is None:
-        text, findings = read_report(report, version)
-        return Verdict("pass", text, [known_issue(finding, version) for finding in findings
-                                      if finding["Severity"] not in BLOCKING])
+        text, findings, leads = read_report(report, version)
+        security = [known_issue(finding, version) for finding in findings
+                    if finding["Severity"] not in BLOCKING]
+        if leads:
+            security.append("- %s %s validation; see %s.\n"
+                            % (plural(leads, "lead"), "needs" if leads == 1 else "need",
+                               report_path(version)))
+        return Verdict("pass", text, security)
     reason = " ".join(reason.split())
     if not reason or reason.lower() == "skip":
         raise Refused("A skip needs a reason")
