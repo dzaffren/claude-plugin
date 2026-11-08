@@ -323,6 +323,13 @@ A goes first, because B and C call its helpers. B and C then run side by side. T
 
 Recorded as D104, D105, D106, D107, D108. D100 to D103 are taken on `feat/needs-validation`, which is not merged yet.
 
+## Review
+
+2026-11-09 · 4 raw findings, 2 survived, 2 fixed.
+
+- correctness · `plugins/zuko/scripts/tests/test-run-helpers.sh:118` · start the stop_tree test server by the interpreter's own path, so bash 3.2 stops it · `c799e0a`
+- correctness · `plugins/zuko/scripts/tests/run.sh:174` · stop the running test file and its process group on a Ctrl-C · `557e58f`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
