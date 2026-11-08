@@ -389,6 +389,10 @@ Recorded as D90, D91, D92, D93, D94.
 - correctness · `plugins/zuko/scripts/tests/test-e2e-attack-classes.sh:80` · check the D94 order rule in `pentester.md` and `release/SKILL.md` · `7f5ff72`
 - quality · `docs/learnings/empty-file-patch-needs-patch-p1.md:1` · drop the Windows fence rule that D97 made false, and keep the `patch -p1` note · `66467f7`
 
+2026-11-08 · 2 raw findings, 1 survived, 1 fixed. This run judged `fix/pentester-entry-point`.
+
+- quality · `docs/specs/attack-classes.md:358` · name the cause of each failed seed 2 attempt, in the summary and in O18 · `fb288d6`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
