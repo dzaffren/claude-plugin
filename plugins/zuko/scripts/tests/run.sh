@@ -48,11 +48,11 @@ expect_exit() {        # expect_exit <expected> <actual> <description>
 # pipeline then reports 141 instead of grep's answer.
 expect_match() {       # expect_match <regex> <text> <description>
   if grep -qE -e "$1" <<<"$2"; then record PASS "$3"
-  else record FAIL "$3" "nothing matched /$1/"; fi
+  else record FAIL "$3" "nothing matched /$1/ in [${2:0:300}]"; fi
 }
 
 expect_no_match() {    # expect_no_match <regex> <text> <description>
-  if grep -qE -e "$1" <<<"$2"; then record FAIL "$3" "matched /$1/ and should not have"
+  if grep -qE -e "$1" <<<"$2"; then record FAIL "$3" "matched /$1/ and should not have, in [${2:0:300}]"
   else record PASS "$3"; fi
 }
 
@@ -101,12 +101,12 @@ allow() {              # allow <file>: undo deny
 
 # kill alone leaves the children of a native Windows program alive, so a
 # server that a shim started keeps its port; taskkill /T ends the whole tree.
-# taskkill misses a Git Bash child such as sleep, which the process group has.
 stop_tree() {          # stop_tree <pid>: stop a background job and each process it started
   if is_windows && [ -r "/proc/$1/winpid" ]; then
     taskkill //F //T //PID "$(cat "/proc/$1/winpid")" >/dev/null 2>&1
+  else
+    kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
   fi
-  kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
   wait "$1" 2>/dev/null
   return 0
 }
@@ -120,6 +120,14 @@ narrow_path() {        # narrow_path <dir>: a PATH of <dir> and git, so gh is on
     ln -sf "$(command -v git)" "$1/git"
     printf '%s' "$1"
   fi
+}
+
+native() {             # native <path>: the path as native Windows programs print it
+  if is_windows; then cygpath -m "$1"; else printf '%s' "$1"; fi
+}
+
+cr_free_lines() {      # cr_free_lines <file>: how many lines have no CR at their end
+  command python3 -c 'import sys; print(sum(1 for line in open(sys.argv[1], "rb").read().split(b"\n") if not line.endswith(b"\r")))' "$1"
 }
 
 name="${1:-}"
@@ -166,7 +174,13 @@ for file in "${files[@]}"; do
   (
     ticks=$((limit * 5))
     while [ "$ticks" -gt 0 ] && kill -0 "$job" 2>/dev/null; do sleep 0.2; ticks=$((ticks - 1)); done
-    if [ "$ticks" -eq 0 ]; then : >"$results_file.late"; stop_tree "$job"; fi
+    # taskkill misses a Git Bash child such as sleep; the file's own process
+    # group has it.
+    if [ "$ticks" -eq 0 ]; then
+      : >"$results_file.late"
+      stop_tree "$job"
+      kill -TERM -- "-$job" 2>/dev/null
+    fi
   ) >/dev/null 2>&1 </dev/null &
   dog=$!
   wait "$job"

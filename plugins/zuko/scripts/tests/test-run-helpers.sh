@@ -149,4 +149,10 @@ expect_match '^        expected \[a\\r\\nb\]$' "$out" "detail: a CR and a newlin
 
 # A test's own python3 -c snippet writes LF and UTF-8, whatever the OS default is.
 expect_match '^a·b$' "$(python3 -c 'print("a\u00b7b")')" "python3 -c: a middle dot comes out as UTF-8"
-expect_exit 1 "$(python3 -c 'print("x")' | grep -qU $'\r'; echo $?)" "python3 -c: the line ends in LF, with no CR"
+python3 -c 'print("x")' >"$h/lf.txt"
+expect_match '^2$' "$(cr_free_lines "$h/lf.txt")" "python3 -c: the line ends in LF, with no CR"
+
+# A failed match prints the start of the text it searched.
+sb=$(sandbox missed 'expect_match "^never$" "$(printf "C:\\x\nsecond")" "missed"')
+out=$(bash "$sb/tests/run.sh" missed 2>&1)
+expect_match '^        nothing matched /\^never\$/ in \[C:\\x\\nsecond\]$' "$out" "detail: a failed match shows the text it searched"

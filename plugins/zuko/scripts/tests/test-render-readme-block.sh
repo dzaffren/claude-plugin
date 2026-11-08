@@ -213,7 +213,7 @@ render "$dir" --write
 expect_exit 0 "$status" "crlf: --write exits 0"
 outside "$dir/README.md" >"$dir/outside.after"
 expect_match '^yes$' "$(same_bytes "$dir/outside.before" "$dir/outside.after")" "crlf: bytes outside the markers unchanged"
-expect_match '^1$' "$(grep -Uvc $'\r$' "$dir/README.md")" "crlf: every line but the unterminated last one ends CRLF"
+expect_match '^1$' "$(cr_free_lines "$dir/README.md")" "crlf: every line but the unterminated last one ends CRLF"
 render "$dir" --check
 expect_exit 0 "$status" "crlf: --check after --write exits 0"
 
