@@ -1,0 +1,57 @@
+[
+  {
+    "id": "vuln-0001",
+    "title": "Ledger export builds ORDER BY | LIMIT from the --sort option",
+    "severity": "high",
+    "timestamp": "2026-11-09 09:05:11 UTC",
+    "cwe": "CWE-89",
+    "description": "export_ledger joins the --sort value into the SQL text.",
+    "poc_description": "Run the export with --sort \"total; DROP TABLE invoices\".",
+    "poc_script_code": "python -m invoice_cli.cli export ledger --sort 'total; DROP TABLE invoices'",
+    "code_locations": [
+      {"file": "invoice_cli/exporters/ledger.py", "start_line": 31, "end_line": 33,
+       "snippet": "cursor.execute(\"SELECT * FROM invoices ORDER BY \" + sort)\nrows = cursor.fetchall()"}
+    ]
+  },
+  {
+    "id": "vuln-0002",
+    "title": "Supplier export passes the supplier name to a shell",
+    "severity": "medium",
+    "timestamp": "2026-11-09 09:06:40 UTC",
+    "cwe": "CWE-78",
+    "description": "export_suppliers runs start with shell=True on a name from the CSV.",
+    "code_locations": [
+      {"file": "invoice_cli/importers/bank.py", "start_line": 40, "end_line": 40, "label": "caller"},
+      {"file": "invoice_cli/exporters/suppliers.py", "start_line": 29, "end_line": 29,
+       "snippet": "subprocess.run(\"start \" + target, shell=True)"}
+    ]
+  },
+  {
+    "id": "vuln-0003",
+    "title": "Bank import logs the full account number",
+    "severity": "low",
+    "timestamp": "2026-11-09 09:08:02 UTC",
+    "cwe": "CWE-532",
+    "code_locations": [
+      {"file": "invoice_cli/importers/bank.py", "start_line": 58, "end_line": 58,
+       "snippet": "log.info(\"account %s\", row[\"account\"])"}
+    ]
+  },
+  {
+    "id": "vuln-0004",
+    "title": "Version banner prints the Python version",
+    "severity": "info",
+    "timestamp": "2026-11-09 09:09:15 UTC",
+    "cwe": "CWE-200",
+    "code_locations": [
+      {"file": "invoice_cli/cli.py", "start_line": 12, "end_line": 12}
+    ]
+  },
+  {
+    "id": "vuln-0005",
+    "title": "The install script fetches a wheel over plain http",
+    "severity": "medium",
+    "timestamp": "2026-11-09 09:10:30 UTC",
+    "cwe": "CWE-494"
+  }
+]

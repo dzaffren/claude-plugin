@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "run_name": "invoice-cli_a1b2",
+  "summary": {"surfaces_reviewed": 9, "findings_filed": 5, "gaps": 2},
+  "completeness": {
+    "complete": false,
+    "scan_status": "completed",
+    "exit_reason": "finished_by_tool",
+    "caveats": ["1 agent(s) did not finish cleanly (Exporters); any surface they held is under-covered."]
+  }
+}

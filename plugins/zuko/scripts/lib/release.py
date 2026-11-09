@@ -8,6 +8,8 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
                         (--pentest <report> | --no-pentest <reason>)
        release.py notes <project-dir> --version X.Y.Z
        release.py pick  <project-dir>
+       release.py strix <project-dir> --scratch <dir> --files <path>,<path>,...
+       release.py strix-install <project-dir>
 
   plan   run the gates and print the report; every failing gate is listed.
          Then the last version, the commits since it and the proposed one:
@@ -48,6 +50,13 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          units outside the range since the last tag that no pentest has
          checked, each lead first, then each reset, then each unchecked unit.
          It writes nothing
+  strix  run Strix on a git archive of HEAD in --scratch, when strix 1.7.0
+         or newer, STRIX_LLM, LLM_API_KEY and docker info are all there
+         (strix.py). It prints a FINDING block for each finding in --files,
+         an OUTSIDE line for each other one, and a last "STRIX: " line:
+         missing, skipped, failed, done or stopped. It writes only in
+         --scratch
+  strix-install  install the pinned strix-agent with uv tool install
 
 The last version is the newest plain semver tag on HEAD's history; with no
 tag, the version the manifests share, and the commits that count are those
@@ -60,7 +69,8 @@ disagree stop the release.
 
 Exit 0 planned, written, or printed. Exit 1 a gate failed or the version was
 refused (plan says "NEXT: stop", cut "Nothing written."), notes found no
-such section, or pick could not read the ledger. Exit 2 bad usage, a bad
+such section, pick could not read the ledger, or strix-install failed. strix
+exits 0 on each STRIX: line. Exit 2 bad usage, a bad
 date, a project folder that does not exist, or one that is not a git
 repository.
 """
@@ -87,13 +97,16 @@ coverage = load("coverage")
 decisions = load("decisions")
 readme_block = load("readme_block")
 program = load("program")
+strix = load("strix")
 git = changelog.git
 
 USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
          "       release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD\n"
          "                        (--pentest <report> | --no-pentest <reason>)\n"
          "       release.py notes <project-dir> --version X.Y.Z\n"
-         "       release.py pick  <project-dir>")
+         "       release.py pick  <project-dir>\n"
+         "       release.py strix <project-dir> --scratch <dir> --files <path>,<path>,...\n"
+         "       release.py strix-install <project-dir>")
 
 # host, then owner/repo, from https, ssh:// and scp-style git@host:path URLs.
 REMOTE = re.compile(r"^(?:[a-z][a-z+]*://)?(?:[^@/]+@)?([^/:]+)(?::\d+)?[:/]+(.+?)(?:\.git)?/*$")
@@ -1239,6 +1252,18 @@ def pick(project):
     return 0
 
 
+def scan(project, scratch, files):
+    for line in strix.scan(project, os.path.abspath(scratch), [path for path in files.split(",") if path]):
+        print(line)
+    return 0
+
+
+def install_strix():
+    code, line = strix.install()
+    print(line)
+    return code
+
+
 def is_date(text):
     try:
         return bool(DATE.match(text)) and bool(date.fromisoformat(text))
@@ -1263,6 +1288,10 @@ def main(argv):
         run = lambda: notes(project, show(parse(options["--version"])))
     elif command == "pick" and given == []:
         run = lambda: pick(project)
+    elif command == "strix" and given == ["--files", "--scratch"] and os.path.isdir(options["--scratch"]):
+        run = lambda: scan(project, options["--scratch"], options["--files"])
+    elif command == "strix-install" and given == []:
+        run = install_strix
     else:
         print(USAGE, file=sys.stderr)
         return 2
