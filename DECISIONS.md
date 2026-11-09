@@ -1245,3 +1245,10 @@ Why: the hole spread because one line was copied into ten scripts (spec O3). A c
 Rejected: fix the fourteen calls only (a new hook could bring the hole back with no failing test), a rule in the reviewer prompt (prompt rules drift; grep does not).
 Source: specs/hook-import-path.md
 Status: active
+
+## D127 · 2026-11-09 · On Windows, zuko's Node starts taskkill by its path in System32
+
+Why: libuv looks in the current folder before PATH for a bare name, so `spawnSync('taskkill')` in `cdp.mjs` ran a `taskkill.exe` from the project folder at the end of each drift check. Windows ships `taskkill.exe` in `System32` only.
+Rejected: a Node copy of `program.find()` that walks PATH (more code, and it finds the same file), set `NoDefaultCurrentDirectoryInExePath` in `process.env` (nobody has checked that libuv reads the change, and it holds only for this process), `process.kill(pid)` (it ends Chrome but not its child processes, which keep the profile folder open).
+Source: specs/node-lookup.md
+Status: active

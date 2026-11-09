@@ -76,7 +76,7 @@ Scenario: off Windows nothing changes
 
 `drop()` in `cdp.mjs` starts `taskkill.exe` by its full path, `%SystemRoot%\System32\taskkill.exe`. libuv does no PATH search for a name with a folder in it, so the current folder is never searched. Windows ships `taskkill.exe` in `System32` only, so a PATH walk would find the same file.
 
-Relies on: D105, D119, D127 (drafted below)
+Relies on: D105, D119, D127
 
 ```mermaid
 flowchart TB
@@ -162,12 +162,7 @@ Single chunk. One line in `cdp.mjs`, one new test file and one CHANGELOG line.
 
 ### Decisions to record
 
-#### D127 · 2026-11-09 · On Windows, zuko's Node starts taskkill by its path in System32
-
-Why: libuv looks in the current folder before PATH for a bare name, so `spawnSync('taskkill')` in `cdp.mjs` ran a `taskkill.exe` from the project folder at the end of each drift check. Windows ships `taskkill.exe` in `System32` only.
-Rejected: a Node copy of `program.find()` that walks PATH (more code, and it finds the same file), set `NoDefaultCurrentDirectoryInExePath` in `process.env` (nobody has checked that libuv reads the change, and it holds only for this process), `process.kill(pid)` (it ends Chrome but not its child processes, which keep the profile folder open).
-Source: specs/node-lookup.md
-Status: active
+Recorded as D127.
 
 ## Open items
 
