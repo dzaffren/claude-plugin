@@ -19,7 +19,7 @@ command -v gh >/dev/null 2>&1 || exit 0
 
 # Prints "<source> <ref>" for a GitHub entry pinned to a ref, else nothing.
 # The source is data from the project: only a plain owner/repo goes to gh.
-read -r source ref < <(python3 - "$lock" "$skill" <<'PY' 2>/dev/null
+read -r source ref < <(python3 -I - "$lock" "$skill" <<'PY' 2>/dev/null
 import json, re, sys
 for stream in (sys.stdin, sys.stdout, sys.stderr):
     stream.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n")

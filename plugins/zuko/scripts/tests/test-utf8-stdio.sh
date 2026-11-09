@@ -20,7 +20,7 @@ done
 snippets=0
 for file in "$scripts"/*.sh; do
   name=$(basename "$file")
-  launches=$(grep -vE '^[[:space:]]*#' "$file" | grep -cE 'python3 (-c |- |<<)')
+  launches=$(grep -vE '^[[:space:]]*#' "$file" | grep -cE 'python3 (-I )?(-c |- |<<)')
   [ "$launches" -gt 0 ] || continue
   snippets=$((snippets + launches))
   loops=$(grep -cF -e "$loop" "$file")

@@ -266,6 +266,7 @@ projects.
 - With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer
 - On Windows, zuko's hooks and gates start git and cygpath from PATH only, so a git.exe or cygpath.exe at the root of a project never runs, and a program that is not on PATH fails as not found
 - When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location
+- Each inline Python call in a zuko hook runs in isolated mode, so a json.py at the root of a project or on PYTHONPATH never runs from a hook and never turns a block into a pass
 
 ## Docs
 
