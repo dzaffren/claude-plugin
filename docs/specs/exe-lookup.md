@@ -241,6 +241,8 @@ Recorded as D118, D119.
 
 | O8 | Scenario 2 said "Then the call fails with "git: not found on PATH"". `argv()` raises `FileNotFoundError(ENOENT, "not found on PATH", "git")`, which prints `[Errno 2] not found on PATH: 'git'`, as the Changes table says. | flag | review | user | Decided alone | Chose: scenario 2 now says the call raises `FileNotFoundError` for git, with "not found on PATH". Other: change the message to "git: not found on PATH". Undo: put back the old scenario 2, and give `argv()` that message, 2026-11-09 |
 
+| O9 | The `windows-suite` job on `feat/exe-lookup` (run 42555977864) ends with 3651 passed, 3 failed, 12 skipped. `e2e-exe-lookup` passes its 8 checks. The 3 failures are the `test-replay.sh` "stale fork" checks. | flag | ship | user | Decided alone | Chose: ship with those 3 checks red. The `main` run 42547085812 fails the same 3, so this branch did not cause them. Other: fix replay on Windows in this slice. Undo: none needed; take the 3 `test-replay.sh` "stale fork" checks to `/debug`, 2026-11-09 |
+
 _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary
