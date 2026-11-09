@@ -122,3 +122,46 @@ rm -f "$repo/PWNED"
 out=$(PYTHONPATH=. hook block-dangerous.sh force)
 expect_exit 1 "$([ -e "$repo/PWNED" ]; echo $?)" "PYTHONPATH=. in acme-shop does not bring json.py back"
 expect_match '^exit=2$' "$out" "with PYTHONPATH=., block-dangerous.sh still blocks the force push"
+
+# D126: no new inline Python call in a zuko script comes in without -I.
+# A call is python3 or python with -c, - or << next, after any options. A
+# line whose first character that is not a space is # is a comment, and
+# never counts. Each hit prints as file:line.
+bare_python() {   # bare_python <file>...: each inline Python call with no -I
+  python3 -c 'import re, sys
+for path in sys.argv[1:]:
+    for number, line in enumerate(open(path, encoding="utf-8"), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        for match in re.finditer(r"\bpython3?(?=\s)", line):
+            words = line[match.end():].split()
+            for word in words:
+                if word == "-I":
+                    break
+                if word in ("-c", "-") or word.startswith("<<"):
+                    print("%s:%d" % (path, number))
+                    break
+                if not word.startswith("-"):
+                    break' "$@"
+}
+
+fixture="$work/fixture"
+mkdir -p "$fixture"
+cat >"$fixture/new-hook.sh" <<'SH'
+cmd=$(printf '%s' "$input" | python3 -c 'import json')
+python3 - "$here" <<'PY'
+ZUKO_INPUT="$input" env python3 <<'PY'
+cmd=$(python3 -I -c 'import json')
+python3 "$here/lib/stop_scope.py" "$base"
+  # python3 -c in a comment
+SH
+want=$(printf '%s\n' "$fixture/new-hook.sh:1" "$fixture/new-hook.sh:2" "$fixture/new-hook.sh:3")
+got=$(bare_python "$fixture/new-hook.sh")
+if [ "$got" = "$want" ]; then
+  record PASS "the -I check names each inline Python call without -I, and nothing else"
+else
+  record FAIL "the -I check names each inline Python call without -I, and nothing else" "want [$want] got [$got]"
+fi
+
+hits=$(bare_python "$scripts"/*.sh "$scripts"/lib/*.sh)
+expect_exit 0 "$([ -z "$hits" ]; echo $?)" "each inline Python call in plugins/zuko/scripts runs with -I: [${hits}]"
