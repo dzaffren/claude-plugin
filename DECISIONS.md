@@ -1140,3 +1140,17 @@ Why: the next release on any clone reads it, and the release commit carries it w
 Rejected: a git-ignored ledger (lost on a new clone), a new ledger in place of a bad one (all history lost without a word), the Coverage line written into the report by cut (cut copies the report as it is).
 Source: specs/coverage-ledger.md
 Status: active
+
+## D116 · 2026-11-09 · zuko's Python writes `/` in each path that it prints, writes to a file, gives to git or compares as text
+
+Why: on Windows, `os.path` builds `docs\adr\0001-use-make.md`, and 26 checks of the Windows suite failed on it. git always gives `/`, so `DECISIONS.md`, the gate messages, the board's Replay and the release marker disagreed with it. `.replace(os.sep, "/")` is the idiom of `stop_scope.py:78`, and on Linux and macOS it changes nothing.
+Rejected: `posixpath` in place of `os.path` (on Windows it misreads `C:\` paths in `isabs` and `join`), replacing each `\` on every OS (a Linux file name can hold `\`), a shared helper (six one-line sites in four scripts).
+Source: specs/windows-paths.md
+Status: active
+
+## D117 · 2026-11-09 · A Windows run whose only failure is the Chrome start check passes after one rerun
+
+Why: `e2e-rendered-drift` "a 404 page prints E6 with its status" fails in some Windows runs with `CDP timeout: Page.navigate`. It failed in portable-suite runs 2 and 4 and passed in runs 1 and 3 (its O18). The cause is Chrome's start time on the runner, and its fix belongs to `windows-ci`.
+Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and this slice does not touch that check).
+Source: specs/windows-paths.md
+Status: active

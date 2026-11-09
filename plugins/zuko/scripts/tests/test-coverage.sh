@@ -114,6 +114,11 @@ old_files() {  # old_files <width> <mark> <path>...: pick's lines for those path
   for path in "$@"; do printf "  %-${width}s%s\n" "$path" "$mark"; done
 }
 
+# A check whose file name Windows does not store as written prints SKIP (D105).
+stored() {     # stored <path>: exit 0 when git in $repo tracks exactly that name
+  git -C "$repo" ls-files -z | LC_ALL=C grep -qzxF -e "$1"
+}
+
 has_row() {    # has_row <path> <mark>: exit 0 when the ledger in $repo has exactly that row
   grep -qxF -e "| $1 | $2 |" "$repo/docs/security/coverage.md"
 }
@@ -305,35 +310,49 @@ scratch "$work/latin" app/cli.py
 mkdir -p "$repo/app" && printf 'x\n' >"$repo/$latin"
 unreleased "Read a Latin-1 file name."
 commit "feat(app): latin-1 file"
-run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" "$latin")"
-expect_exit 0 "$status" "latin cut: exits 0 (got: $(last_line "$out"))"
-[ -f "$repo/.git/zuko-release" ]
-expect_exit 0 "$?" "latin cut: the marker is written"
-LC_ALL=C grep -qxF -e "| $latin | v1.5.0 |" "$repo/docs/security/coverage.md"
-expect_exit 0 "$?" "latin cut: the ledger row keeps the byte as it came"
-released 1.5.0
-printf 'changed\n' >>"$repo/app/cli.py"
-unreleased "Change the cli."
-commit "feat(app): change the cli"
-run pick "$repo"
-expect_exit 0 "$status" "latin pick: reads the ledger (got: $out)"
+if stored "$latin"; then
+  run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" "$latin")"
+  expect_exit 0 "$status" "latin cut: exits 0 (got: $(last_line "$out"))"
+  [ -f "$repo/.git/zuko-release" ]
+  expect_exit 0 "$?" "latin cut: the marker is written"
+  LC_ALL=C grep -qxF -e "| $latin | v1.5.0 |" "$repo/docs/security/coverage.md"
+  expect_exit 0 "$?" "latin cut: the ledger row keeps the byte as it came"
+  released 1.5.0
+  printf 'changed\n' >>"$repo/app/cli.py"
+  unreleased "Change the cli."
+  commit "feat(app): change the cli"
+  run pick "$repo"
+  expect_exit 0 "$status" "latin pick: reads the ledger (got: $out)"
+else
+  for check in "latin cut: exits 0" "latin cut: the marker is written" \
+    "latin cut: the ledger row keeps the byte as it came" "latin pick: reads the ledger"; do
+    skip "$check" "Windows does not store this file name as written"
+  done
+fi
 
 # 7. A tracked name with a | goes into its cell as \|, so the next pick and
 # cut read the row back as one File and one Mark.
 scratch "$work/pipe" app/cli.py 'app/a|b.py'
 unreleased "Read a file name with a bar."
 commit "feat(app): a file name with a bar"
-run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" 'app/a|b.py')"
-expect_exit 0 "$status" "pipe cut: exits 0 (got: $(last_line "$out"))"
-has_row 'app/a\|b.py' v1.5.0
-expect_exit 0 "$?" "pipe cut: the ledger cell writes the | as \\|"
-released 1.5.0
-printf 'changed\n' >>"$repo/app/cli.py"
-unreleased "Change the cli."
-commit "feat(app): change the cli"
-run pick "$repo"
-expect_exit 0 "$status" "pipe pick: reads the row back (got: $out)"
-expect_match '^Old files  1 of 1 not checked' "$out" "pipe pick: app/a|b.py is checked, so only check.sh is left"
+if stored 'app/a|b.py'; then
+  run cut "$repo" --version 1.5.0 --date 2026-10-02 --pentest "$(pass_report 1.5.0 "" 'app/a|b.py')"
+  expect_exit 0 "$status" "pipe cut: exits 0 (got: $(last_line "$out"))"
+  has_row 'app/a\|b.py' v1.5.0
+  expect_exit 0 "$?" "pipe cut: the ledger cell writes the | as \\|"
+  released 1.5.0
+  printf 'changed\n' >>"$repo/app/cli.py"
+  unreleased "Change the cli."
+  commit "feat(app): change the cli"
+  run pick "$repo"
+  expect_exit 0 "$status" "pipe pick: reads the row back (got: $out)"
+  expect_match '^Old files  1 of 1 not checked' "$out" "pipe pick: app/a|b.py is checked, so only check.sh is left"
+else
+  for check in "pipe cut: exits 0" "pipe cut: the ledger cell writes the | as \\|" \
+    "pipe pick: reads the row back" "pipe pick: app/a|b.py is checked, so only check.sh is left"; do
+    skip "$check" "Windows does not store this file name as written"
+  done
+fi
 
 # 8. A lead's file is the first word of its Where, before any ":", so a Where
 # with no line number keeps its lead.
