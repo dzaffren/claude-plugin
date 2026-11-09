@@ -1231,3 +1231,17 @@ Why: Strix has the source in the copy and can find the seed accounts, or registe
 Rejected: a test login typed at each run (the login goes to the LLM provider).
 Source: specs/strix-live.md
 Status: active
+
+## D125 · 2026-11-09 · Each inline Python in a zuko script runs with -I
+
+Why: `python3 -c`, `python3 -` and `python3 <<` put the current folder first on `sys.path`, and hooks run in the project folder. A planted `json.py` let `git push --force origin main` through `block-dangerous.sh`. `-I` also drops `PYTHONPATH` and the user's site-packages (spec O2).
+Rejected: `-P` (Python 3.11 and later only, and this machine has 3.9), each snippet moved into a `lib/` file run by its path (fourteen new files for one flag), a `sys.path` cleanup in each snippet (leaves `PYTHONPATH` open, and each copy can drop it).
+Source: specs/hook-import-path.md
+Status: active
+
+## D126 · 2026-11-09 · The suite fails on an inline Python call in a zuko script without -I
+
+Why: the hole spread because one line was copied into ten scripts (spec O3). A check that names the file and line stops the next copy.
+Rejected: fix the fourteen calls only (a new hook could bring the hole back with no failing test), a rule in the reviewer prompt (prompt rules drift; grep does not).
+Source: specs/hook-import-path.md
+Status: active

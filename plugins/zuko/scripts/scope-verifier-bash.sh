@@ -26,7 +26,7 @@ payload_file=$(mktemp) || fail_closed "mktemp failed"
 trap 'rm -f "$payload_file"' EXIT
 cat >"$payload_file" || fail_closed "could not read the hook input"
 
-python3 - "$here" "$payload_file" <<'PY'
+python3 -I - "$here" "$payload_file" <<'PY'
 import importlib.util
 import json
 import os

@@ -3,7 +3,7 @@
 set -uo pipefail
 
 input=$(cat 2>/dev/null || true)
-active=$(printf '%s' "$input" | python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("stop_hook_active", False))' 2>/dev/null) || active=False
+active=$(printf '%s' "$input" | python3 -I -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("stop_hook_active", False))' 2>/dev/null) || active=False
 [ "$active" = "True" ] && exit 0
 
 dir="${CLAUDE_PROJECT_DIR:-$PWD}"
