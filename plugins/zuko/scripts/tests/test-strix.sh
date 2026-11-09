@@ -128,7 +128,7 @@ mv "$work/docker.off" "$bin/docker"
 reset; mv "$bin/strix" "$work/strix.off"
 strix_run
 expect_exit 0 "$status" "strix: missing exits 0"
-expect_match '^STRIX: missing$' "$(last)" "strix: no strix on PATH is missing"
+expect_match '^STRIX: missing · strix-agent 1\.7\.0$' "$(last)" "strix: no strix on PATH is missing, with the pin"
 
 install() {    # install: release.py strix-install; sets $out $status
   out=$(PATH="$narrow" "$py" "$release" strix-install "$repo" 2>&1)
@@ -153,7 +153,7 @@ mv "$work/uv.off" "$bin/uv"; mv "$work/strix.off" "$bin/strix"
 reset; keys "$both"
 strix_run
 expect_exit 0 "$status" "strix: a finished run exits 0"
-expect_match '^STRIX: done · 1\.7\.0 · standard · \$3\.80 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: the done line counts, costs and says incomplete"
+expect_match '^STRIX: done · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$3\.80 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: the done line counts, costs and says incomplete"
 expect_match "^$(native "$scratch")\$" "$(cat "$FAKE/cwd")" "strix: runs from the scratch folder"
 expect_match '^-n$' "$(cat "$FAKE/args")" "strix: headless"
 args=$(tr '\n' ' ' <"$FAKE/args")
@@ -198,7 +198,7 @@ data = json.load(open(sys.argv[1])); data["status"] = "stopped"; data["llm_usage
 json.dump(data, open(sys.argv[1], "w"))
 PY
 strix_run
-expect_match '^STRIX: stopped · 1\.7\.0 · standard · \$10\.00 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: a budget stop is stopped"
+expect_match '^STRIX: stopped · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$10\.00 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: a budget stop is stopped"
 expect_match '^FINDING S1$' "$out" "strix: a stopped run still gives its blocks"
 
 reset; "$py" - "$FAKE/run/run.json" <<'PY'
@@ -215,7 +215,7 @@ expect_match '^STRIX: failed · vulnerabilities\.json unreadable: missing after 
 
 reset; rm -f "$FAKE/run/vulnerabilities.json" "$FAKE/run/coverage.json"; echo 0 >"$FAKE/exit"
 strix_run
-expect_match '^STRIX: done · 1\.7\.0 · standard · \$3\.80 of \$10 · 0 found$' "$(last)" "strix: exit 0 with no findings is 0 found"
+expect_match '^STRIX: done · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$3\.80 of \$10 · 0 found$' "$(last)" "strix: exit 0 with no findings is 0 found"
 
 reset; sed -i.bak 's/"severity": "high"/"severity": "urgent"/' "$FAKE/run/vulnerabilities.json"; rm -f "$FAKE/run/"*.bak
 strix_run
@@ -230,9 +230,9 @@ expect_match '^STRIX: failed · no run\.json under strix_runs$' "$(last)" "strix
 reset; echo 5 >"$FAKE/sleep"
 scratch=$(mktemp -d -p "$work")
 out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" "$py" - "$scripts/lib" "$repo" "$scratch" "$files" <<'PY' 2>&1
-import sys
-sys.path.insert(0, sys.argv[1])
-import strix
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location("strix", os.path.join(sys.argv[1], "strix.py"))
+strix = importlib.util.module_from_spec(spec); spec.loader.exec_module(strix)
 for line in strix.scan(sys.argv[2], sys.argv[3], sys.argv[4].split(","), timeout=1):
     print(line)
 PY

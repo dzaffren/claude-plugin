@@ -11,6 +11,7 @@ OUTSIDE line for each other finding, and one last "STRIX: " line (D113).
 Info findings are dropped. A run file it cannot read is a failure, never an
 empty pass.
 """
+import importlib.util
 import io
 import json
 import os
@@ -18,7 +19,11 @@ import re
 import subprocess
 import tarfile
 
-import program
+# release.py loads this module by its path, so program.py is loaded the same way.
+here = os.path.dirname(os.path.abspath(__file__))
+spec = importlib.util.spec_from_file_location("program", os.path.join(here, "program.py"))
+program = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(program)
 
 PIN = "1.7.0"
 MINIMUM = (1, 7, 0)
@@ -28,6 +33,7 @@ BUDGET = 10
 SEVERITIES = ("critical", "high", "medium", "low", "info")
 CONFIG = "~/.strix/cli-config.json"
 VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+MISSING = "STRIX: missing · strix-agent %s" % PIN
 # Strix draws its error panels with these; a line of them alone says nothing.
 BOX = "│╭╮╰╯─┃━ \t"
 
@@ -70,7 +76,7 @@ def not_ready():
     """(None, version) when Strix can run, else (the STRIX: line, None)."""
     code, out, err = call(["strix", "--version"])
     if code is None:
-        return "STRIX: missing", None
+        return MISSING, None
     found = VERSION.search(out + err)
     if code != 0 or found is None:
         return "STRIX: skipped · strix --version printed %r" % last_line(out + err), None
@@ -89,6 +95,11 @@ def not_ready():
         first = next((line.strip() for line in (err + out).splitlines() if line.strip()), "exit %d" % code)
         return "STRIX: skipped · docker info failed: %s" % first, None
     return None, version
+
+
+def model():
+    """STRIX_LLM as Strix reads it: the environment first, then the config file."""
+    return os.environ.get("STRIX_LLM") or str(config_keys().get("STRIX_LLM", ""))
 
 
 def instruction(files):
@@ -209,7 +220,7 @@ def report(scratch, files, code, version):
                   "SNIPPET: %s" % (snippet[0].strip() if snippet else "none"),
                   "POC: %s" % os.path.join(where, "vulnerabilities", item["id"] + ".md"),
                   ""]
-    end = ["STRIX: %s" % ("done" if status == "completed" else "stopped"), version, MODE,
+    end = ["STRIX: %s" % ("done" if status == "completed" else "stopped"), version, MODE, model(),
            "$%.2f of $%d" % (cost, BUDGET), "%d found" % len(found)]
     if info:
         end.append("%d info dropped" % info)
@@ -251,7 +262,7 @@ def scan(project, scratch, files, timeout=TIMEOUT):
         except subprocess.TimeoutExpired:
             code = None
         except FileNotFoundError:
-            return ["STRIX: missing"]
+            return [MISSING]
     if code is None:
         lines = report(scratch, files, 0, version)
         return [line for line in lines if not line.startswith("STRIX: ")] + [
