@@ -1,6 +1,6 @@
 # Windows CI
 
-**Version:** v1 · **Status:** Refined · **Type:** Technical · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Draft · **Type:** Technical · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** portable-suite, windows-paths
@@ -294,6 +294,10 @@ Recorded as D118, D119, D120, D121, D122, D123.
 | O8 | Is the rule on `main` a repository ruleset or classic branch protection? | question | spec p3 | user | Resolved | A ruleset, with the admin role on its bypass list (D123), 2026-11-09 |
 | O9 | May `/build` push `feat/windows-ci`, open its PR, create the ruleset after the first green run, and push and close the scratch PR `test/windows-ci-red`? | question | spec p3 | user | Resolved | Yes, all of it. Rollback is one `gh api -X DELETE` of the ruleset, 2026-11-09 |
 | O10 | Once the ruleset is on, each open PR whose branch lacks `suite.yml` waits on two `Expected` checks. `feat/strix-code` (PR #134) is open now. | flag | spec p3 | user | Accepted risk | Each open PR merges `main` once after the windows-ci merge, and then gets its two checks, 2026-11-09 |
+
+| O11 | The first PR run failed 3 `replay` "stale fork" checks on both OSes with `Committer identity unknown`. The plan named no change to `test-replay.sh`. | flag | build | user | Decided alone | Chose: give the squash merge at `test-replay.sh:317` the test identity that its other git calls already pass. A CI runner has no git user, so git cannot guess one. Other: set a git identity in a workflow step. Undo: revert `e65cccf`, and add a `git config --global` step to `suite.yml`. 2026-11-09 |
+| O12 | `run.sh` said only "the test file exited non-zero partway through", so the CI log could not show why `e2e-pentest-live` stopped. The plan did not name `run.sh`. | flag | build | user | Decided alone | Chose: the FAIL line now gives the exit status and the number of checks recorded. Other: leave the message as it was. Undo: revert `e53b5b5`. 2026-11-09 |
+| O13 | On `ubuntu-latest`, `e2e-pentest-live` exits 143 (SIGTERM) after 2 of its 31 checks, at `stop_tree "$app_pid"`, in 2 of 2 runs. It passes on `windows-latest` and on this Linux machine, also with no terminal and no git identity. The cause is not known. The next step is a throwaway PR that runs only that file on `ubuntu-latest` and logs the process groups. Claude Code's permission check refused that push. | question | build | user | Open | — |
 
 _Never delete this section or its rows. See references/ledger.md._
 
