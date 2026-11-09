@@ -32,9 +32,13 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Windows' own taskkill, by its full path: libuv looks in the current folder
+// first for a bare name (D127).
+export const taskkillPath = () => win32.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe');
 
 // The browser to drive, or null. A set CHROME_PATH is the only candidate, so a
 // wrong path is an error, not a different browser.
@@ -76,7 +80,7 @@ export class Browser {
     // On exit Chrome still holds the profile's files: stop it first, then remove the folder.
     let pid = 0;
     const drop = () => {
-      try { if (pid) { if (process.platform === 'win32') spawnSync(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe'), ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
+      try { if (pid) { if (process.platform === 'win32') spawnSync(taskkillPath(), ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
       try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
     };
     process.once('exit', drop);

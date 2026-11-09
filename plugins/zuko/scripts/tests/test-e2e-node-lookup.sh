@@ -14,7 +14,12 @@ expect_exit 0 "$([ "$found" -ge 2 ]; echo $?)" "the bare-name check reads the sp
 expect_match "$bare" "spawnSync('taskkill', ['/pid', String(pid)])" "the bare-name check catches spawnSync('taskkill', ...)"
 expect_no_match "$bare" "$(grep -nE "$calls" "$lib"/*.mjs)" "no spawn in lib/*.mjs starts a program by a bare name"
 
+# The taskkill path that cdp.mjs builds, with SystemRoot as the caller set it.
+tk() { node -e "import(require('node:url').pathToFileURL(process.argv[1])).then((m) => console.log(m.taskkillPath()))" "$lib/cdp.mjs"; }
+
 if ! is_windows; then
+  expect_match '^D:\\WinNT\\System32\\taskkill\.exe$' "$(SystemRoot='D:\WinNT' tk 2>&1)" "cdp.mjs starts the taskkill.exe in SystemRoot's System32"
+  expect_match '^C:\\Windows\\System32\\taskkill\.exe$' "$(unset SystemRoot; tk 2>&1)" "with no SystemRoot, cdp.mjs starts C:\\Windows\\System32\\taskkill.exe"
   skip "e2e-node-lookup: a taskkill.exe at the repo root never runs from the drift check" \
     "libuv looks in the current folder on Windows only; the bare-name check above covers every OS"
   return 0 2>/dev/null || exit 0
@@ -43,4 +48,7 @@ fi
 expect_exit 0 "$code" "the drift check on clean.html in acme-shop exits 0"
 expect_match '^Rendered drift check passed: ' "$out" "the drift check prints its pass line"
 expect_exit 0 "$([ -z "$(numbered)" ]; echo $?)" "the planted taskkill.exe did not run: no pid folder in acme-shop [$(numbered)]"
-expect_exit 0 "$([ "$(profiles)" = "$before" ]; echo $?)" "the taskkill.exe in System32 ended Chrome: no zuko-chrome- profile folder stays"
+expect_exit 0 "$([ "$(profiles)" = "$before" ]; echo $?)" "no zuko-chrome- profile folder stays"
+
+ran=$(node -e "import(require('node:url').pathToFileURL(process.argv[1])).then((m) => console.log(require('node:child_process').spawnSync(m.taskkillPath(), ['/?'], { stdio: 'ignore' }).status))" "$lib/cdp.mjs")
+expect_match '^0$' "$ran" "the taskkill.exe path that cdp.mjs builds starts Windows' own taskkill"
