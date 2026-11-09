@@ -161,7 +161,7 @@ Reusing: `run.sh`'s `is_windows`, `skip`, `record`, `expect_exit`, `expect_match
 | Scenario | Test | Command |
 | --- | --- | --- |
 | 1. A planted chrome.exe never runs | `test-e2e-chrome-lookup.sh`, off Windows. First, a `spawnSync('Google/Chrome/Application/chrome.exe')` from Node in `acme-shop` writes `planted-ran`, so the hole is real on this runner. The test removes that file. Then the drift check on `clean.html`, with `LOCALAPPDATA` and `PROGRAMFILES` unset, exits 0 with its pass line, and `acme-shop` has no `planted-ran`. | `bash plugins/zuko/scripts/tests/run.sh e2e-chrome-lookup` |
-| 2. No relative path, every OS | `test-e2e-chrome-lookup.sh`. Off Windows, it plants all three candidates of the Problem table. On Windows, it plants the two without `:` or `\` in the name. Node prints `isAbsolute(findChrome())`, or `null`. The check expects `true` or `null`. | `bash plugins/zuko/scripts/tests/run.sh e2e-chrome-lookup` |
+| 2. No relative path, every OS | `test-e2e-chrome-lookup.sh`. Off Windows, it plants all three candidates of the Problem table. On Windows, it plants the two without `:` or `\` in the name. Node prints `isAbsolute(findChrome())`, or `null`. Off Windows, the check expects `true` or `null`. On Windows, `PROGRAMFILES` and `PROGRAMFILES(X86)` point at an empty folder, and the check expects `null`. The runner's Chrome is in Program Files, which comes first. | `bash plugins/zuko/scripts/tests/run.sh e2e-chrome-lookup` |
 | 3. CHROME_PATH and the suite | The whole suite on Linux. `test-e2e-rendered-drift.sh:74` checks the E3 line for `CHROME_PATH=/no/chrome`. | `bash plugins/zuko/scripts/tests/run.sh` |
 
 **E2E:** `test-e2e-chrome-lookup.sh` in the `suite` check on `ubuntu-latest`, which runs on each PR to `main` (D128). On `windows-latest`, the drift run prints SKIP, and the `findChrome()` check carries the proof.
@@ -181,12 +181,19 @@ Single chunk. One line in `cdp.mjs`, one new test file and one CHANGELOG line.
 
 Recorded as D134.
 
+## Review
+
+2026-11-09 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/tests/test-e2e-chrome-lookup.sh:24` · on Windows the check points Program Files at an empty folder and expects null, so it fails without the fix · `bc8e45d`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
 | O1 | The os-agnostic-suite shape does not list this slice. Is it slice 9 of that shape, with a `**Shape doc:**` line here and a row in its Slices table? | question | spec p1 | user | Resolved | Yes. It is slice 9 of os-agnostic-suite, the same kind of fix as exe-lookup and node-lookup, 2026-11-09 |
 | O2 | A relative `CHROME_PATH` also reads from the project folder. Is it in this slice? | question | spec p1 | user | Resolved | No. The user sets `CHROME_PATH`, and a project cannot, 2026-11-09 |
+| O3 | Test plan row 2 said that on Windows the check expects `true` or `null` with `PROGRAMFILES` unset. The Windows runner's Chrome is in Program Files, which comes first, so that check passed with or without the fix. | flag | review | user | Decided alone | Chose: on Windows, point `PROGRAMFILES` and `PROGRAMFILES(X86)` at an empty folder and expect `null`. Other: keep the old check, and Windows CI proves nothing about the fix. Undo: `git revert bc8e45d`, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
