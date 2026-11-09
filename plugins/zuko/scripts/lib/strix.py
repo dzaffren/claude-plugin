@@ -22,6 +22,7 @@ import ipaddress
 import json
 import os
 import re
+import socket
 import subprocess
 import tarfile
 from urllib.parse import urlsplit
@@ -126,11 +127,19 @@ def live_host(url):
         scheme, host = None, None
     if scheme not in ("http", "https") or not host:
         return None, "%s is not an http or https URL" % url
+    name = host.rstrip(".")
     try:
-        address = ipaddress.ip_address(host)
-        local = address.is_loopback or address.is_unspecified
+        address = ipaddress.ip_address(name)
     except ValueError:
-        local = host == "localhost" or host.endswith(".localhost")
+        # inet_aton reads IPv4 as the OS does: 127.1, 0, 2130706433, 0x7f.1.
+        try:
+            address = ipaddress.IPv4Address(socket.inet_aton(name))
+        except OSError:
+            address = None
+    if address is not None:
+        local = address.is_loopback or address.is_unspecified
+    else:
+        local = name == "localhost" or name.endswith(".localhost")
     if local:
         return None, "%s is this machine, which the Strix sandbox cannot reach" % host
     return host, None

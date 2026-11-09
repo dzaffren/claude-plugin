@@ -320,7 +320,9 @@ live_run() {   # live_run <url>: release.py strix --live <url>; sets $out $statu
   out=${out//$'\r'/}
 }
 reset; keys "$both"
-for url in http://127.0.0.1:5000 http://localhost:5000 'http://[::1]:5000' http://0.0.0.0:5000 http://app.localhost:5000 http://127.1.2.3/; do
+# The OS reads shorthand IPv4 and a trailing dot as these hosts too.
+for url in http://127.0.0.1:5000 http://localhost:5000 'http://[::1]:5000' http://0.0.0.0:5000 http://app.localhost:5000 http://127.1.2.3/ \
+           http://127.1:5000 http://0:5000 http://2130706433/ http://0x7f.1/ http://localhost.:5000; do
   live_run "$url"
   expect_exit 2 "$status" "strix --live: $url is refused"
   expect_match '^release\.py: --live takes a staging URL; .+ is this machine, which the Strix sandbox cannot reach$' "$out" "strix --live: $url names why"
