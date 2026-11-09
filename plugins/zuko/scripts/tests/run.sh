@@ -107,8 +107,12 @@ allow() {              # allow <file>: undo deny
 stop_tree() {          # stop_tree <pid>: stop a background job and each process it started
   if is_windows && [ -r "/proc/$1/winpid" ]; then
     taskkill //F //T //PID "$(cat "/proc/$1/winpid")" >/dev/null 2>&1
-  else
+  elif [ "$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')" = "$1" ]; then
     kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
+  else
+    # Not a group leader: a test file sees `set -o monitor` from run.sh, and
+    # bash 5.2's kill maps -pid to the job's group, which is the test file's.
+    kill "$1" 2>/dev/null
   fi
   wait "$1" 2>/dev/null
   return 0
