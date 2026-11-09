@@ -139,13 +139,13 @@ running app:
 
   Only the reply `yes` sends Strix live: add `--live <the URL>` to the
   `strix` command below. Strix sends its requests from its Docker sandbox,
-  and no zuko hook sees them, so D28 and D29 do not cover them (D118). On
+  and no zuko hook sees them, so D28 and D29 do not cover them (D120). On
   `code-level`, start Strix without `--live`. On any other reply, print
   `Strix live skipped: the reply was not yes; Strix attacks the code only`,
   and start Strix without `--live`.
 - **localhost**: ask nothing. Print
   `Strix live skipped: the Strix sandbox cannot reach 127.0.0.1:5000; Strix attacks the code only`,
-  with the target's host and port, and start Strix without `--live` (D119).
+  with the target's host and port, and start Strix without `--live` (D121).
 - **code-level**: start Strix without `--live`.
 
 Make an empty folder with `mktemp -d`. Join the files that the
@@ -158,7 +158,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" strix <repo-root> --scrat
 ```
 
 For a live run, add `--live <the URL>` at the end. One run attacks the copy
-and the URL, within the same $10 (D120). `release.py strix` exits 2 when it
+and the URL, within the same $10 (D122). `release.py strix` exits 2 when it
 refuses the URL: print its message, and start Strix again without `--live`.
 
 Print `Strix running: standard · up to $10 · in the background, next to the pentester`,
@@ -307,7 +307,7 @@ without Strix.
    block with `FILE: none` and an `ENDPOINT` other than `none` has the
    `ENDPOINT` as its `Where`, such as `GET /admin/export`. Its `Unknown` is
    `whether Strix's request reaches code in this release: Strix gave no code
-   location`. It goes to no verifier and never blocks (D121).
+   location`. It goes to no verifier and never blocks (D123).
 
    One line in the report says what Strix did:
 

@@ -1183,35 +1183,35 @@ Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and 
 Source: specs/windows-paths.md
 Status: active
 
-## D118 · 2026-11-09 · Strix attacks a staging URL only after a yes in each run, and no zuko guard holds its requests
+## D120 · 2026-11-09 · Strix attacks a staging URL only after a yes in each run, and no zuko guard holds its requests
 
 Why: Strix sends its requests from its Docker sandbox, which no Claude Code hook sees, so D28 and D29 do not cover them (shape O6). The question names the host, the missing guard, the data loss and the HEAD that staging should run (spec O7, O9). Only an exact yes sends Strix live (spec O10).
 Rejected: a hook or proxy that holds Strix to one host (its traffic leaves from the container, past every hook), one yes kept for later releases (a later release can name another host), typing the host again to confirm (slower for the same check).
 Source: specs/strix-live.md
 Status: active
 
-## D119 · 2026-11-09 · Strix goes live only on a staging URL; a localhost target keeps it to the code
+## D121 · 2026-11-09 · Strix goes live only on a staging URL; a localhost target keeps it to the code
 
 Why: Strix rewrites localhost to host.docker.internal, which on Linux reaches the Docker bridge and not an app bound to 127.0.0.1 (spec O2). release.py refuses a loopback --live value too.
 Rejected: a reachability probe from a container, then a live run (more code and a Docker test for a target the shape did not ask for).
 Source: specs/strix-live.md
 Status: active
 
-## D120 · 2026-11-09 · A live release has one Strix run on the copy and the URL, within D115's $10
+## D122 · 2026-11-09 · A live release has one Strix run on the copy and the URL, within D115's $10
 
 Why: one run keeps 10 releases a month on $100 (spec O4).
 Rejected: a code run and a live run at $10 each (about 5 releases a month), one run at $20 (supersedes D115 for each live release).
 Source: specs/strix-live.md
 Status: active
 
-## D121 · 2026-11-09 · A live Strix finding with no code location goes under Needs validation, with its endpoint, and never blocks
+## D123 · 2026-11-09 · A live Strix finding with no code location goes under Needs validation, with its endpoint, and never blocks
 
 Why: a finding with no code location reaches no verifier (D113), and a block with no verifier stops a release on a claim that zuko cannot check (spec O5).
 Rejected: a critical or high live finding that blocks without a verifier (a false positive stops the release).
 Source: specs/strix-live.md
 Status: active
 
-## D122 · 2026-11-09 · zuko gives Strix no test accounts
+## D124 · 2026-11-09 · zuko gives Strix no test accounts
 
 Why: Strix has the source in the copy and can find the seed accounts, or register through the app. No secret goes into the instruction file or to the STRIX_LLM provider (spec O6).
 Rejected: a test login typed at each run (the login goes to the LLM provider).

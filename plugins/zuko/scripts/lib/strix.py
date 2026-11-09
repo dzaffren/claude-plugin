@@ -12,7 +12,7 @@ Info findings are dropped. A run file it cannot read is a failure, never an
 empty pass.
 
 With a live URL, which the user confirmed in /release, Strix also attacks
-that staging app with real requests (D118). No zuko hook sees them: the
+that staging app with real requests (D120). No zuko hook sees them: the
 instruction file asks for the one host and for reads, and that is all.
 ready() runs the readiness check alone, so /release can ask before the run.
 """
@@ -119,7 +119,7 @@ def model():
 def live_host(url):
     """(the host, None) for a staging URL, else (None, why). Strix reaches this
     machine through host.docker.internal, which on Linux is the Docker bridge,
-    not 127.0.0.1, so a loopback host is refused (D119)."""
+    not 127.0.0.1, so a loopback host is refused (D121)."""
     try:
         parts = urlsplit(url)
         scheme, host = parts.scheme, parts.hostname

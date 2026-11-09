@@ -28,7 +28,7 @@ expect_match '^ *Strix will attack staging\.invoice-api\.example\.net with real 
 expect_match '`git rev-parse --short HEAD`' "$skill_flat" "release skill: the question takes the short HEAD"
 expect_match 'Only the reply `yes` sends Strix live' "$skill_flat" "release skill: only yes sends Strix live"
 expect_match 'print `Strix live skipped: the reply was not yes; Strix attacks the code only`' "$skill_flat" "release skill: any other reply is code-level"
-expect_match 'D28 and D29 do not cover them \(D118\)' "$skill_flat" "release skill: says that no hook holds Strix"
+expect_match 'D28 and D29 do not cover them \(D120\)' "$skill_flat" "release skill: says that no hook holds Strix"
 expect_match '[Pp]rint `Strix live skipped: the Strix sandbox cannot reach 127\.0\.0\.1:5000; Strix attacks the code only`' "$skill_flat" "release skill: a localhost target keeps Strix to the code"
 expect_match 'add `--live <the URL>`' "$skill_flat" "release skill: yes adds --live"
 expect_match '`Strix running: standard · live <host> · up to \$10 · in the background, next to the pentester`' "$skill_flat" "release skill: the running line names the host"
