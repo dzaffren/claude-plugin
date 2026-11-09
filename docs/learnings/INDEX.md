@@ -252,3 +252,6 @@ One line per lesson. Loaded into every session in this repo.
 - A lib module that `release.py` loads by path loads its own siblings by path
   too — a plain import breaks where a test loads `release.py` from elsewhere.
   ([detail](a-module-loaded-by-path-loads-siblings-by-path.md))
+- A CI runner has no git identity — each test commit or merge passes
+  `-c user.name`, and `user.useConfigOnly=true` shows the gap locally.
+  ([detail](a-ci-runner-has-no-git-identity.md))
