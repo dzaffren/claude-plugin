@@ -112,7 +112,7 @@ stop_tree() {          # stop_tree <pid>: stop a background job and each process
   else
     # Not a group leader. A test file inherits `set -o monitor` from run.sh,
     # and there bash's kill can signal the job's group for -pid: the group of
-    # the test file itself. It ended e2e-pentest-live on ubuntu-latest.
+    # the test file itself.
     kill "$1" 2>/dev/null
   fi
   wait "$1" 2>/dev/null
