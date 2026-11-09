@@ -227,7 +227,13 @@ strix_run
 expect_match '^STRIX: failed · no run\.json under strix_runs$' "$(last)" "strix: no run.json is a failure"
 
 # The 30-minute limit, called with 1 second: a 30-minute test cannot run.
+# A killed Strix runs no cleanup, so its run.json still says "running".
 reset; echo 5 >"$FAKE/sleep"
+"$py" - "$FAKE/run/run.json" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1])); data["status"] = "running"
+json.dump(data, open(sys.argv[1], "w"))
+PY
 scratch=$(mktemp -d -p "$work")
 out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" "$py" - "$scripts/lib" "$repo" "$scratch" "$files" <<'PY' 2>&1
 import importlib.util, os, sys

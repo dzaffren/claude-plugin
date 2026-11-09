@@ -178,25 +178,8 @@ def findings(path, code):
     return found
 
 
-def report(scratch, files, code, version):
-    """The block and OUTSIDE lines and the last line for the run in scratch."""
-    where = run_dir(scratch)
-    if where is None:
-        return ["STRIX: failed · no run.json under strix_runs"]
-    try:
-        run = read_json(os.path.join(where, "run.json"))
-    except Unreadable as error:
-        return ["STRIX: failed · run.json unreadable: %s" % error]
-    status = run.get("status") if isinstance(run, dict) else None
-    if status not in ("completed", "stopped"):
-        return ["STRIX: failed · run.json status %s" % status]
-    try:
-        found = findings(os.path.join(where, "vulnerabilities.json"), code)
-    except Unreadable as error:
-        return ["STRIX: failed · %s" % error]
-    cost = (run.get("llm_usage") or {}).get("cost")
-    if not isinstance(cost, (int, float)):
-        return ["STRIX: failed · run.json unreadable: no llm_usage cost"]
+def blocks(found, files, where):
+    """(the FINDING block lines, the OUTSIDE lines, the info count) for found."""
     wanted = set(files)
     lines, outside, info, number = [], [], 0, 0
     for item in found:
@@ -220,6 +203,29 @@ def report(scratch, files, code, version):
                   "SNIPPET: %s" % (snippet[0].strip() if snippet else "none"),
                   "POC: %s" % os.path.join(where, "vulnerabilities", item["id"] + ".md"),
                   ""]
+    return lines, outside, info
+
+
+def report(scratch, files, code, version):
+    """The block and OUTSIDE lines and the last line for the run in scratch."""
+    where = run_dir(scratch)
+    if where is None:
+        return ["STRIX: failed · no run.json under strix_runs"]
+    try:
+        run = read_json(os.path.join(where, "run.json"))
+    except Unreadable as error:
+        return ["STRIX: failed · run.json unreadable: %s" % error]
+    status = run.get("status") if isinstance(run, dict) else None
+    if status not in ("completed", "stopped"):
+        return ["STRIX: failed · run.json status %s" % status]
+    try:
+        found = findings(os.path.join(where, "vulnerabilities.json"), code)
+    except Unreadable as error:
+        return ["STRIX: failed · %s" % error]
+    cost = (run.get("llm_usage") or {}).get("cost")
+    if not isinstance(cost, (int, float)):
+        return ["STRIX: failed · run.json unreadable: no llm_usage cost"]
+    lines, outside, info = blocks(found, files, where)
     end = ["STRIX: %s" % ("done" if status == "completed" else "stopped"), version, MODE, model(),
            "$%.2f of $%d" % (cost, BUDGET), "%d found" % len(found)]
     if info:
@@ -235,6 +241,21 @@ def report(scratch, files, code, version):
         if complete is False:
             end.append("incomplete")
     return lines + outside + [" · ".join(end)]
+
+
+def killed(scratch, files):
+    """The block and OUTSIDE lines a killed run left. A kill runs no cleanup, so
+    its run.json still says "running"; Strix wrote vulnerabilities.json with
+    each finding, so the blocks come from that file alone."""
+    where = run_dir(scratch)
+    if where is None:
+        return []
+    try:
+        found = findings(os.path.join(where, "vulnerabilities.json"), 0)
+    except Unreadable:
+        return []
+    lines, outside, _ = blocks(found, files, where)
+    return lines + outside
 
 
 def seconds(limit):
@@ -264,9 +285,7 @@ def scan(project, scratch, files, timeout=TIMEOUT):
         except FileNotFoundError:
             return [MISSING]
     if code is None:
-        lines = report(scratch, files, 0, version)
-        return [line for line in lines if not line.startswith("STRIX: ")] + [
-            "STRIX: failed · timed out after %s" % seconds(timeout)]
+        return killed(scratch, files) + ["STRIX: failed · timed out after %s" % seconds(timeout)]
     if code not in (0, 2):
         with open(log, encoding="utf-8", errors="replace") as handle:
             return ["STRIX: failed · exit %d · %s" % (code, last_line(handle.read()))]
