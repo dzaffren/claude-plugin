@@ -279,3 +279,112 @@ out=$("$py" "$release" strix "$repo" --files "$files" 2>&1)
 expect_exit 2 "$?" "strix: needs --scratch"
 out=$("$py" "$release" strix "$repo" --scratch "$work/nowhere" --files "$files" 2>&1)
 expect_exit 2 "$?" "strix: --scratch must be a folder"
+
+# --- strix-live scenario 5: strix-ready checks, and runs no scan ---
+ready() {      # ready: release.py strix-ready; sets $out $status
+  out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" \
+        "$py" "$release" strix-ready "$repo" 2>&1)
+  status=$?
+  out=${out//$'\r'/}
+}
+reset; keys "$both"
+ready
+expect_exit 0 "$status" "strix-ready: exits 0"
+expect_match '^STRIX: ready · 1\.7\.0$' "$out" "strix-ready: a ready Strix says so, with its version"
+[ ! -f "$FAKE/args" ]
+expect_exit 0 "$?" "strix-ready: runs no scan"
+keys '{"STRIX_LLM": "anthropic/claude-sonnet-5-5"}'
+ready
+expect_match '^STRIX: skipped · no LLM_API_KEY in the environment or ~/\.strix/cli-config\.json$' "$out" "strix-ready: no key is the strix skip line"
+reset; keys "$both"; echo 1.4.1 >"$FAKE/version"
+ready
+expect_match '^STRIX: skipped · strix 1\.4\.1 may erase keys stored in ~/\.strix/cli-config\.json; 1\.7\.0 or newer is needed$' "$out" "strix-ready: an older strix is the strix skip line"
+reset; echo "Cannot connect to the Docker daemon" >"$FAKE/docker-error"
+ready
+expect_match '^STRIX: skipped · docker info failed: Cannot connect to the Docker daemon$' "$out" "strix-ready: docker info failing is the strix skip line"
+reset; mv "$bin/strix" "$work/strix.off"
+ready
+expect_exit 0 "$status" "strix-ready: missing exits 0"
+expect_match '^STRIX: missing · strix-agent 1\.7\.0$' "$out" "strix-ready: no strix on PATH is missing, with the pin"
+mv "$work/strix.off" "$bin/strix"
+out=$("$py" "$release" strix-ready "$repo" --files x 2>&1)
+expect_exit 2 "$?" "strix-ready: takes no option"
+
+# --- strix-live scenario 4: --live refuses this machine and a URL that is not http ---
+live_files="invoice_api/routes.py"
+live_run() {   # live_run <url>: release.py strix --live <url>; sets $out $status $scratch
+  scratch=$(mktemp -d -p "$work")
+  out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" \
+        "$py" "$release" strix "$repo" --scratch "$scratch" --files "$live_files" --live "$1" 2>&1)
+  status=$?
+  out=${out//$'\r'/}
+}
+reset; keys "$both"
+for url in http://127.0.0.1:5000 http://localhost:5000 'http://[::1]:5000' http://0.0.0.0:5000 http://app.localhost:5000 http://127.1.2.3/; do
+  live_run "$url"
+  expect_exit 2 "$status" "strix --live: $url is refused"
+  expect_match '^release\.py: --live takes a staging URL; .+ is this machine, which the Strix sandbox cannot reach$' "$out" "strix --live: $url names why"
+done
+live_run http://127.0.0.1:5000
+expect_match '^release\.py: --live takes a staging URL; 127\.0\.0\.1 is this machine, which the Strix sandbox cannot reach$' "$out" "strix --live: the refusal names the host"
+for url in ftp://staging.invoice-api.example.net staging.invoice-api.example.net 'https://'; do
+  live_run "$url"
+  expect_exit 2 "$status" "strix --live: $url is refused"
+  expect_match "^release\\.py: --live takes a staging URL; .* is not an http or https URL\$" "$out" "strix --live: $url is not an http or https URL"
+done
+[ ! -f "$FAKE/args" ]
+expect_exit 0 "$?" "strix --live: a refused URL runs no strix"
+
+# --- strix-live scenarios 1 and 2: one run on the copy and the URL ---
+live_reset() { # live_reset: Strix ready, a run that files the strix-live fixture's two live findings
+  reset
+  rm -f "$FAKE/run/"*
+  cp "$scripts/tests/fixtures/strix-live/"*.json "$FAKE/run/"
+}
+live_reset; keys "$both"
+live_run https://staging.invoice-api.example.net
+expect_exit 0 "$status" "strix --live: a finished run exits 0"
+expect_match '^STRIX: done · 1\.7\.0 · standard · live staging\.invoice-api\.example\.net · anthropic/claude-sonnet-5-5 · \$6\.20 of \$10 · 2 found$' "$(last)" "strix --live: the done line names the host"
+args=$(tr '\n' ' ' <"$FAKE/args")
+expect_match '-t \./release -t https://staging\.invoice-api\.example\.net --scan-mode standard --max-budget 10 --scope-mode full --instruction-file instruction\.md' "$args" "strix --live: the copy, then the URL, as targets"
+instruction=$(cat "$scratch/instruction.md")
+expect_match '^This pentest also attacks the running app at https://staging\.invoice-api\.example\.net\.$' "$instruction" "strix --live: the instruction names the URL"
+expect_match '^Send requests to staging\.invoice-api\.example\.net only\.$' "$instruction" "strix --live: the instruction names the one host"
+expect_match '^Read data\. Change or delete only data that you created in this run\.$' "$instruction" "strix --live: the instruction asks for reads"
+expect_match '^Run no load or denial-of-service test\.$' "$instruction" "strix --live: the instruction asks for no load test"
+expect_no_match 'Send no request to any host' "$instruction" "strix --live: the instruction drops the no-request line"
+expect_match '^- invoice_api/routes\.py$' "$instruction" "strix --live: the instruction still names the files"
+expect_match '^ENDPOINT: GET /invoices/1042$' "$(grep -A1 '^FILE: invoice_api/routes\.py:88$' <<<"$out" | tail -n 1)" "strix --live: ENDPOINT follows FILE"
+s2=$(awk '/^FINDING S2$/ { f = 1 } f && /^$/ { exit } f' <<<"$out")
+expect_match '^FILE: none$' "$s2" "strix --live: a live finding with no location has FILE: none"
+expect_match '^ENDPOINT: GET /admin/export$' "$s2" "strix --live: and its endpoint"
+expect_match '^POC: [^\\]*strix_runs/[^/]+/vulnerabilities/vuln-0002\.md$' "$s2" "strix --live: and its PoC path"
+
+live_reset; "$py" - "$FAKE/run/vulnerabilities.json" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1]))
+del data[0]["method"]
+data[0]["endpoint"] = "/invoices/1042|export"
+del data[1]["method"], data[1]["endpoint"]
+json.dump(data, open(sys.argv[1], "w"))
+PY
+live_run https://staging.invoice-api.example.net
+expect_match '^ENDPOINT: /invoices/1042/export$' "$out" "strix --live: an endpoint with no method, with | as /"
+expect_match '^ENDPOINT: none$' "$out" "strix --live: no endpoint is ENDPOINT: none"
+
+live_reset; "$py" - "$FAKE/run/run.json" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1])); data["status"] = "stopped"
+json.dump(data, open(sys.argv[1], "w"))
+PY
+live_run https://staging.invoice-api.example.net:8443/app
+expect_match '^STRIX: stopped · 1\.7\.0 · standard · live staging\.invoice-api\.example\.net · ' "$(last)" "strix --live: the stopped line names the host"
+expect_match '-t https://staging\.invoice-api\.example\.net:8443/app ' "$(tr '\n' ' ' <"$FAKE/args")" "strix --live: the URL goes to Strix as given"
+
+# --- strix-live scenario 3: with no --live, the run is strix-code's ---
+live_reset; keys "$both"
+strix_run
+expect_match '^STRIX: done · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$6\.20 of \$10 · 2 found · 1 outside$' "$(last)" "strix: with no --live, the done line names no host"
+expect_no_match '^ENDPOINT:' "$out" "strix: with no --live, no block has an ENDPOINT line"
+expect_match '-t \./release --scan-mode' "$(tr '\n' ' ' <"$FAKE/args")" "strix: with no --live, the copy is the only target"
+expect_match 'Send no request to any host' "$(cat "$scratch/instruction.md")" "strix: with no --live, the instruction keeps Strix off the network"

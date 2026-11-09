@@ -1,0 +1,37 @@
+[
+  {
+    "id": "vuln-0001",
+    "title": "Invoice of another customer readable by id",
+    "severity": "high",
+    "timestamp": "2026-11-09 10:14:52 UTC",
+    "cwe": "CWE-639",
+    "target": "https://staging.invoice-api.example.net",
+    "endpoint": "/invoices/1042",
+    "method": "GET",
+    "description": "get_invoice loads the invoice by id and never compares its customer with the session's.",
+    "poc_description": "Log in as bea@ledgerworks.test and request an invoice owned by ari@ledgerworks.test.",
+    "poc_script_code": "curl -s -b session=bea https://staging.invoice-api.example.net/invoices/1042",
+    "code_locations": [
+      {
+        "file": "invoice_api/routes.py",
+        "start_line": 88,
+        "end_line": 90,
+        "snippet": "invoice = db.session.get(Invoice, invoice_id)\nreturn jsonify(invoice.to_dict())"
+      }
+    ]
+  },
+  {
+    "id": "vuln-0002",
+    "title": "Admin export reachable without a session",
+    "severity": "medium",
+    "timestamp": "2026-11-09 10:18:30 UTC",
+    "cwe": "CWE-306",
+    "target": "https://staging.invoice-api.example.net",
+    "endpoint": "/admin/export",
+    "method": "GET",
+    "description": "GET /admin/export answers 200 with a CSV of every invoice when no session cookie is sent.",
+    "poc_description": "Request the export with no cookie.",
+    "poc_script_code": "curl -s https://staging.invoice-api.example.net/admin/export",
+    "code_locations": []
+  }
+]

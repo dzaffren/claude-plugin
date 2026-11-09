@@ -9,6 +9,8 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
        release.py notes <project-dir> --version X.Y.Z
        release.py pick  <project-dir>
        release.py strix <project-dir> --scratch <dir> --files <path>,<path>,...
+                        [--live <url>]
+       release.py strix-ready <project-dir>
        release.py strix-install <project-dir>
 
   plan   run the gates and print the report; every failing gate is listed.
@@ -55,7 +57,11 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          (strix.py). It prints a FINDING block for each finding in --files,
          an OUTSIDE line for each other one, and a last "STRIX: " line:
          missing, skipped, failed, done or stopped. It writes only in
-         --scratch
+         --scratch. --live also gives Strix a staging URL to attack with
+         real requests: each block then has an ENDPOINT line, and the done
+         and stopped lines name the host. A loopback host is refused
+  strix-ready  run the readiness check of strix alone, and print its
+         missing or skipped line, or "STRIX: ready · <version>"
   strix-install  install the pinned strix-agent with uv tool install
 
 The last version is the newest plain semver tag on HEAD's history; with no
@@ -70,7 +76,8 @@ disagree stop the release.
 Exit 0 planned, written, or printed. Exit 1 a gate failed or the version was
 refused (plan says "NEXT: stop", cut "Nothing written."), notes found no
 such section, pick could not read the ledger, or strix-install failed. strix
-exits 0 on each STRIX: line. Exit 2 bad usage, a bad
+and strix-ready exit 0 on each STRIX: line. Exit 2 bad usage, a --live URL
+that is not http or https or names this machine, a bad
 date, a project folder that does not exist, or one that is not a git
 repository.
 """
@@ -105,7 +112,8 @@ USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
          "                        (--pentest <report> | --no-pentest <reason>)\n"
          "       release.py notes <project-dir> --version X.Y.Z\n"
          "       release.py pick  <project-dir>\n"
-         "       release.py strix <project-dir> --scratch <dir> --files <path>,<path>,...\n"
+         "       release.py strix <project-dir> --scratch <dir> --files <path>,<path>,... [--live <url>]\n"
+         "       release.py strix-ready <project-dir>\n"
          "       release.py strix-install <project-dir>")
 
 # host, then owner/repo, from https, ssh:// and scp-style git@host:path URLs.
@@ -1252,9 +1260,15 @@ def pick(project):
     return 0
 
 
-def scan(project, scratch, files):
-    for line in strix.scan(project, os.path.abspath(scratch), [path for path in files.split(",") if path]):
+def scan(project, scratch, files, live=None):
+    for line in strix.scan(project, os.path.abspath(scratch), [path for path in files.split(",") if path],
+                           live=live):
         print(line)
+    return 0
+
+
+def strix_ready():
+    print(strix.ready())
     return 0
 
 
@@ -1288,8 +1302,17 @@ def main(argv):
         run = lambda: notes(project, show(parse(options["--version"])))
     elif command == "pick" and given == []:
         run = lambda: pick(project)
-    elif command == "strix" and given == ["--files", "--scratch"] and os.path.isdir(options["--scratch"]):
-        run = lambda: scan(project, options["--scratch"], options["--files"])
+    elif (command == "strix" and given in (["--files", "--scratch"], ["--files", "--live", "--scratch"])
+          and os.path.isdir(options["--scratch"])):
+        live = options.get("--live")
+        if live is not None:
+            _, why = strix.live_host(live)
+            if why:
+                print("release.py: --live takes a staging URL; %s" % why, file=sys.stderr)
+                return 2
+        run = lambda: scan(project, options["--scratch"], options["--files"], live)
+    elif command == "strix-ready" and given == []:
+        run = strix_ready
     elif command == "strix-install" and given == []:
         run = install_strix
     else:

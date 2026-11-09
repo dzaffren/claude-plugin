@@ -10,14 +10,21 @@ files. It gives one block for each finding in the release's files, one
 OUTSIDE line for each other finding, and one last "STRIX: " line (D113).
 Info findings are dropped. A run file it cannot read is a failure, never an
 empty pass.
+
+With a live URL, which the user confirmed in /release, Strix also attacks
+that staging app with real requests (D118). No zuko hook sees them: the
+instruction file asks for the one host and for reads, and that is all.
+ready() runs the readiness check alone, so /release can ask before the run.
 """
 import importlib.util
 import io
+import ipaddress
 import json
 import os
 import re
 import subprocess
 import tarfile
+from urllib.parse import urlsplit
 
 # release.py loads this module by its path, so program.py is loaded the same way.
 here = os.path.dirname(os.path.abspath(__file__))
@@ -97,17 +104,50 @@ def not_ready():
     return None, version
 
 
+def ready():
+    """The line release.py strix-ready prints: not_ready()'s, or "STRIX: ready"."""
+    line, version = not_ready()
+    return line or "STRIX: ready · %s" % version
+
+
 def model():
     """STRIX_LLM as Strix reads it: the environment first, then the config file."""
     return os.environ.get("STRIX_LLM") or str(config_keys().get("STRIX_LLM", ""))
 
 
-def instruction(files):
+def live_host(url):
+    """(the host, None) for a staging URL, else (None, why). Strix reaches this
+    machine through host.docker.internal, which on Linux is the Docker bridge,
+    not 127.0.0.1, so a loopback host is refused (D119)."""
+    try:
+        parts = urlsplit(url)
+        scheme, host = parts.scheme, parts.hostname
+    except ValueError:
+        scheme, host = None, None
+    if scheme not in ("http", "https") or not host:
+        return None, "%s is not an http or https URL" % url
+    try:
+        address = ipaddress.ip_address(host)
+        local = address.is_loopback or address.is_unspecified
+    except ValueError:
+        local = host == "localhost" or host.endswith(".localhost")
+    if local:
+        return None, "%s is this machine, which the Strix sandbox cannot reach" % host
+    return host, None
+
+
+def instruction(files, live=None):
     lines = ["This is a code-level pentest of one release, in the folder ./release.",
              "Attack these files first. This release changed them, or no pentest has checked them yet:", ""]
     lines += ["- %s" % path for path in files]
-    lines += ["", "Send no request to any host outside your sandbox. The target is this folder only.",
-              "Give each finding a code location: its file relative to the folder root, and its start line.", ""]
+    if live:
+        lines += ["", "This pentest also attacks the running app at %s." % live,
+                  "Send requests to %s only." % live_host(live)[0],
+                  "Read data. Change or delete only data that you created in this run.",
+                  "Run no load or denial-of-service test."]
+    else:
+        lines += ["", "Send no request to any host outside your sandbox. The target is this folder only."]
+    lines += ["Give each finding a code location: its file relative to the folder root, and its start line.", ""]
     return "\n".join(lines)
 
 
@@ -190,8 +230,9 @@ def findings(path, code):
     return found
 
 
-def blocks(found, files, where):
-    """(the FINDING block lines, the OUTSIDE lines, the info count) for found."""
+def blocks(found, files, where, live=False):
+    """(the FINDING block lines, the OUTSIDE lines, the info count) for found.
+    A live run's blocks also name Strix's method and endpoint."""
     wanted = set(files)
     lines, outside, info, number = [], [], 0, 0
     for item in found:
@@ -211,14 +252,17 @@ def blocks(found, files, where):
                   "SEVERITY: %s" % item["severity"],
                   "CWE: %s" % (cell(item.get("cwe") or "") or "none"),
                   "TITLE: %s" % cell(item["title"]),
-                  "FILE: %s" % ("%s:%d" % (inside["file"], inside["start_line"]) if inside else "none"),
-                  "SNIPPET: %s" % (snippet[0].strip() if snippet else "none"),
+                  "FILE: %s" % ("%s:%d" % (inside["file"], inside["start_line"]) if inside else "none")]
+        if live:
+            lines.append("ENDPOINT: %s" % (cell(" ".join(str(item.get(key) or "") for key in ("method", "endpoint")))
+                                           or "none"))
+        lines += ["SNIPPET: %s" % (snippet[0].strip() if snippet else "none"),
                   "POC: %s" % os.path.join(where, "vulnerabilities", item["id"] + ".md").replace(os.sep, "/"),
                   ""]
     return lines, outside, info
 
 
-def report(scratch, files, code, version):
+def report(scratch, files, code, version, live=None):
     """The block and OUTSIDE lines and the last line for the run in scratch."""
     where = run_dir(scratch)
     if where is None:
@@ -237,9 +281,11 @@ def report(scratch, files, code, version):
     cost = (run.get("llm_usage") or {}).get("cost")
     if not isinstance(cost, (int, float)):
         return ["STRIX: failed · run.json unreadable: no llm_usage cost"]
-    lines, outside, info = blocks(found, files, where)
-    end = ["STRIX: %s" % ("done" if status == "completed" else "stopped"), version, MODE, model(),
-           "$%.2f of $%d" % (cost, BUDGET), "%d found" % len(found)]
+    lines, outside, info = blocks(found, files, where, bool(live))
+    end = ["STRIX: %s" % ("done" if status == "completed" else "stopped"), version, MODE]
+    if live:
+        end.append("live %s" % live_host(live)[0])
+    end += [model(), "$%.2f of $%d" % (cost, BUDGET), "%d found" % len(found)]
     if info:
         end.append("%d info dropped" % info)
     if outside:
@@ -255,7 +301,7 @@ def report(scratch, files, code, version):
     return lines + outside + [" · ".join(end)]
 
 
-def killed(scratch, files):
+def killed(scratch, files, live=None):
     """The block and OUTSIDE lines a killed run left. A kill runs no cleanup, so
     its run.json still says "running"; Strix wrote vulnerabilities.json with
     each finding, so the blocks come from that file alone."""
@@ -266,7 +312,7 @@ def killed(scratch, files):
         found = findings(os.path.join(where, "vulnerabilities.json"), 0)
     except Unreadable:
         return []
-    lines, outside, _ = blocks(found, files, where)
+    lines, outside, _ = blocks(found, files, where, bool(live))
     return lines + outside
 
 
@@ -274,8 +320,9 @@ def seconds(limit):
     return "%d minutes" % (limit // 60) if limit % 60 == 0 else "%d seconds" % limit
 
 
-def scan(project, scratch, files, timeout=TIMEOUT):
-    """The lines release.py strix prints."""
+def scan(project, scratch, files, timeout=TIMEOUT, live=None):
+    """The lines release.py strix prints. live is a staging URL that
+    live_host() takes, and Strix attacks it next to the copy."""
     line, version = not_ready()
     if line:
         return [line]
@@ -284,8 +331,8 @@ def scan(project, scratch, files, timeout=TIMEOUT):
     except Unreadable as error:
         return ["STRIX: failed · %s" % error]
     with open(os.path.join(scratch, "instruction.md"), "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(instruction(files))
-    args = ["strix", "-n", "-t", "./release", "--scan-mode", MODE, "--max-budget", str(BUDGET),
+        handle.write(instruction(files, live))
+    args = ["strix", "-n", "-t", "./release"] + (["-t", live] if live else []) + ["--scan-mode", MODE, "--max-budget", str(BUDGET),
             "--scope-mode", "full", "--instruction-file", "instruction.md"]
     log = os.path.join(scratch, "strix.log")
     with open(log, "w", encoding="utf-8", errors="surrogateescape") as out:
@@ -297,11 +344,11 @@ def scan(project, scratch, files, timeout=TIMEOUT):
         except FileNotFoundError:
             return [MISSING]
     if code is None:
-        return killed(scratch, files) + ["STRIX: failed · timed out after %s" % seconds(timeout)]
+        return killed(scratch, files, live) + ["STRIX: failed · timed out after %s" % seconds(timeout)]
     if code not in (0, 2):
         with open(log, encoding="utf-8", errors="replace") as handle:
             return ["STRIX: failed · exit %d · %s" % (code, last_line(handle.read()))]
-    return report(scratch, files, code, version)
+    return report(scratch, files, code, version, live)
 
 
 def install():
