@@ -158,7 +158,7 @@ The workflow file gets a new name, two triggers and a matrix of two OSes. A repo
 
 That cause was reproduced on Linux at pause 3. With one idle TCP connection open to the 404 server, `check-rendered-drift.sh` printed `CDP timeout: Page.navigate` after 26 s. With `ThreadingHTTPServer` and the same idle connection, it printed `HTTP 404` after 1 s. Without the idle connection, both servers answer in 1 s.
 
-Relies on: D1, D86, D106, D118, D119, D120, D121, D122, D123
+Relies on: D1, D86, D106, D125, D126, D127, D128, D129, D130
 
 ```mermaid
 flowchart TB
@@ -206,11 +206,11 @@ sequenceDiagram
 
 | File | What changes | Why |
 | --- | --- | --- |
-| `.github/workflows/windows-suite.yml` → `.github/workflows/suite.yml` (`git mv`) | `name: suite`. `on: pull_request: branches: [main]` and `workflow_dispatch`; the `push` trigger goes. `concurrency: group: suite-${{ github.event.pull_request.number \|\| github.ref }}`, `cancel-in-progress: true`. Job `suite`: `strategy: fail-fast: false, matrix: os: [windows-latest, ubuntu-latest]`, `runs-on: ${{ matrix.os }}`, `timeout-minutes: 30`, `defaults.run.shell: bash`. Steps: `actions/checkout@v4.2.2`, `actions/setup-python@v5.6.0` with `"3.12"`, `actions/setup-node@v4.4.0` with `node-version: "22"`, then `bash plugins/zuko/scripts/tests/run.sh`. | Scenarios 1, 2, 4; D119, D121 |
+| `.github/workflows/windows-suite.yml` → `.github/workflows/suite.yml` (`git mv`) | `name: suite`. `on: pull_request: branches: [main]` and `workflow_dispatch`; the `push` trigger goes. `concurrency: group: suite-${{ github.event.pull_request.number \|\| github.ref }}`, `cancel-in-progress: true`. Job `suite`: `strategy: fail-fast: false, matrix: os: [windows-latest, ubuntu-latest]`, `runs-on: ${{ matrix.os }}`, `timeout-minutes: 30`, `defaults.run.shell: bash`. Steps: `actions/checkout@v4.2.2`, `actions/setup-python@v5.6.0` with `"3.12"`, `actions/setup-node@v4.4.0` with `node-version: "22"`, then `bash plugins/zuko/scripts/tests/run.sh`. | Scenarios 1, 2, 4; D126, D128 |
 | `plugins/zuko/scripts/tests/fixtures/rendered-drift/server.py:39` | `http.server.HTTPServer` → `http.server.ThreadingHTTPServer`. Its threads are daemon threads, so the process still stops on the test's `stop_tree`. | Scenario 5 |
 | `plugins/zuko/scripts/tests/test-e2e-rendered-drift.sh:116` | Before the 404 run, start one Python child that opens a TCP connection to the server and sends nothing. Stop it with `stop_tree` after the run. The check "a 404 page prints E6 with its status" keeps its name, and it now fails on every OS when the server is single-threaded. | Scenario 5 |
 | `docs/ARCHITECTURE.md:28` | "which `.github/workflows/windows-suite.yml` runs on `windows-latest`" → "which `.github/workflows/suite.yml` runs on each PR, on `windows-latest` and `ubuntu-latest`". | The doc names the old file. |
-| Ruleset on `main` (a GitHub setting, not a file) | Created by `/build` after the PR's first green run, with the command below. | Scenarios 1, 2, 3; D118, D122, D123 |
+| Ruleset on `main` (a GitHub setting, not a file) | Created by `/build` after the PR's first green run, with the command below. | Scenarios 1, 2, 3; D125, D129, D130 |
 
 ```bash
 gh api -X POST repos/dzaffren/claude-plugin/rulesets --input - <<'JSON'
@@ -233,8 +233,8 @@ Reusing: `run.sh` and its 600 s limit for each file (D106), `start_server` and `
 | --- | --- |
 | The `ubuntu-latest` job | Scenario 2, a check that fails on Linux only. |
 | `actions/setup-node` at Node 22 | `e2e-rendered-drift` fails without Node 22 (D86), and the default Node of the `ubuntu-latest` image is not known (O7). |
-| The `concurrency` block | D121. |
-| The ruleset | D118 and scenario 2: a red check must block the merge. |
+| The `concurrency` block | D128. |
+| The ruleset | D125 and scenario 2: a red check must block the merge. |
 | `ThreadingHTTPServer` and the idle connection in the test | Scenario 5. The idle connection makes the old failure happen on each run, on every OS. |
 
 ### Non-functionals
@@ -242,7 +242,7 @@ Reusing: `run.sh` and its 600 s limit for each file (D106), `start_server` and `
 |                      |                                                                               |
 | -------------------- | ----------------------------------------------------------------------------- |
 | **Load**             | One run for each push to a PR: a few a day. Windows takes 13 to 18 minutes. Linux takes about 2.5 minutes on this machine, and is not measured on GitHub. |
-| **Breaks first**     | At 10×, the free plan's limit of concurrent jobs queues the runs. The cancel of older runs (D121) is the first relief. Nothing else is needed at this size. |
+| **Breaks first**     | At 10×, the free plan's limit of concurrent jobs queues the runs. The cancel of older runs (D128) is the first relief. Nothing else is needed at this size. |
 | **Security surface** | `pull_request`, never `pull_request_target`: a PR from a fork runs on GitHub's VM with a read-only token, and GitHub asks the owner to approve a first-time contributor's run. `permissions: contents: read`. No secret is read. Only the admin role can bypass the ruleset. |
 | **Proof it works**   | On the next PR after the merge, `gh pr checks` lists `suite (windows-latest)` and `suite (ubuntu-latest)` as `pass`. `gh api repos/dzaffren/claude-plugin/rulesets/{id} -q '.enforcement + " " + .current_user_can_bypass'` prints `active always`. |
 | **Rollout**          | No flag. Order: push the branch, open the PR, wait for its first green run, create the ruleset, prove scenarios 2 and 3, then merge. Rollback: `gh api -X DELETE repos/dzaffren/claude-plugin/rulesets/{id}` removes the rule, and a `git revert` of the workflow commit gives back `windows-suite.yml`. |
@@ -253,7 +253,7 @@ Reusing: `run.sh` and its 600 s limit for each file (D106), `start_server` and `
 | --- | --- | --- |
 | 1. A PR runs the suite on Windows and Linux | The windows-ci PR's own run | `gh pr checks {pr} --watch`, then `gh run view {run} --log \| grep -E '[0-9]+ passed, 0 failed'` for each job. After the ruleset: `gh pr view {pr} --json mergeStateStatus -q .mergeStateStatus` prints `CLEAN`. |
 | 2. A check that passes on one OS only blocks the merge | Scratch PR `test/windows-ci-red`, from `feat/windows-ci` to `main`. Commit 1 adds the Windows-only check to `test-decisions.sh`. After its run, commit 2 swaps it for the Linux-only check. | `gh pr checks {scratch}` shows the right red job each time, and `gh pr view {scratch} --json mergeStateStatus -q .mergeStateStatus` prints `BLOCKED`. Then `gh pr close {scratch} --delete-branch`. |
-| 2, cancel (D121) | The same scratch PR: a third commit pushed while the run of commit 2 is in progress | `gh run list --branch test/windows-ci-red --json conclusion -q '.[].conclusion'` holds `cancelled`. |
+| 2, cancel (D128) | The same scratch PR: a third commit pushed while the run of commit 2 is in progress | `gh run list --branch test/windows-ci-red --json conclusion -q '.[].conclusion'` holds `cancelled`. |
 | 3. The release commit still goes straight to main | The ruleset reply | `gh api repos/dzaffren/claude-plugin/rulesets/{id} -q .current_user_can_bypass` prints `always`. The next real `/release` push is the full proof. |
 | 4. The user runs the suite by hand | After the merge, at `/ship` | `gh workflow run suite.yml --ref feat/strix-live`, then `gh run list --workflow suite.yml --branch feat/strix-live`. `gh run list --workflow suite.yml --event push` is empty. |
 | 5. The Chrome 404 check is steady | `test-e2e-rendered-drift.sh`, with the idle connection | `bash plugins/zuko/scripts/tests/run.sh e2e-rendered-drift` on Linux. It must fail with the old `server.py` and pass with the new one. Then `gh run rerun {run}` four times on the windows-ci PR's run, so five attempts in all, and `gh run view {run} --attempt {n} --log \| grep 'a 404 page prints E6'` shows `PASS` in each. |
@@ -276,7 +276,7 @@ Single chunk. Four files and one GitHub setting, and each proof needs the one be
 
 ### Decisions to record
 
-Recorded as D118, D119, D120, D121, D122, D123.
+Recorded as D125, D126, D127, D128, D129, D130.
 
 ## Open items
 
@@ -289,7 +289,7 @@ Recorded as D118, D119, D120, D121, D122, D123.
 | O5 | When a new push reaches a PR branch while its run is in progress, what happens to the older run? | question | spec p2 | user | Resolved | It is cancelled. Only the newest commit gets a result, 2026-11-09 |
 | O6 | Must a PR hold the latest `main` before it can merge? | question | spec p2 | user | Resolved | No. A PR merges when its own last run passed, 2026-11-09 |
 | O7 | The suite has never run on `ubuntu-latest`. The image's Node may be older than 22, and Chrome's sandbox may fail on Ubuntu 24.04. | unproven | spec p3 | user | Accepted risk | No `/poc`. The windows-ci PR's first run is the proof, and `/build` fixes what fails there before it creates the ruleset, 2026-11-09 |
-| O8 | Is the rule on `main` a repository ruleset or classic branch protection? | question | spec p3 | user | Resolved | A ruleset, with the admin role on its bypass list (D123), 2026-11-09 |
+| O8 | Is the rule on `main` a repository ruleset or classic branch protection? | question | spec p3 | user | Resolved | A ruleset, with the admin role on its bypass list (D130), 2026-11-09 |
 | O9 | May `/build` push `feat/windows-ci`, open its PR, create the ruleset after the first green run, and push and close the scratch PR `test/windows-ci-red`? | question | spec p3 | user | Resolved | Yes, all of it. Rollback is one `gh api -X DELETE` of the ruleset, 2026-11-09 |
 | O10 | Once the ruleset is on, each open PR whose branch lacks `suite.yml` waits on two `Expected` checks. `feat/strix-code` (PR #134) is open now. | flag | spec p3 | user | Accepted risk | Each open PR merges `main` once after the windows-ci merge, and then gets its two checks, 2026-11-09 |
 | O11 | The first PR run failed 3 `replay` "stale fork" checks on both OSes with `Committer identity unknown`. The plan named no change to `test-replay.sh`. | flag | build | user | Decided alone | Chose: give the squash merge at `test-replay.sh:317` the test identity that its other git calls already pass. A CI runner has no git user, so git cannot guess one. Other: set a git identity in a workflow step. Undo: revert `e65cccf`, and add a `git config --global` step to `suite.yml`. 2026-11-09 |

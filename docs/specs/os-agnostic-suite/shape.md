@@ -41,6 +41,7 @@ flowchart LR
     S4 --> S5["5 · windows-ci"]
     S4 --> S6["6 · exe-lookup"]
     S4 --> S7["7 · windows-paths"]
+    S6 --> S8["8 · node-lookup"]
 ```
 
 | # | Slice | What ships | Why this order |
@@ -52,6 +53,7 @@ flowchart LR
 | 5 | windows-ci | A GitHub Actions workflow runs `run.sh` on `windows-latest` and `ubuntu-latest` for each PR. A test that passes on one OS only shows red before merge. | Green only after slice 4. It keeps the suite OS-agnostic from then on. |
 | 6 | exe-lookup | Each zuko Python call to `git` finds its program on PATH, as Git Bash does. A `git.exe` at the root of a repo never runs from a hook or a gate on Windows. | It reuses slice 4's `program.argv()`. It is a security fix, so it gets its own review. Raised at `/spec portable-suite` (O7). |
 | 7 | windows-paths | Each path that zuko prints or compares uses `/` on every OS. On Windows, the ADR scan, the gates, the board and `/release` stop writing `docs\adr\...`. The last 26 Windows failures of the suite then pass. | `portable-suite` found the cause in four Windows runs (its O17). It is zuko itself, not a test, so it is its own slice. |
+| 8 | node-lookup | zuko's Node scripts start `taskkill` and each other program from PATH, never from the current folder. A `taskkill.exe` at the root of a repo never runs from the rendered drift check on Windows. | Raised at `/spec exe-lookup` (O3). Nobody has checked yet whether Node looks in the current folder, so its spec starts with that check. |
 
 ## Not doing
 

@@ -252,6 +252,15 @@ One line per lesson. Loaded into every session in this repo.
 - A lib module that `release.py` loads by path loads its own siblings by path
   too — a plain import breaks where a test loads `release.py` from elsewhere.
   ([detail](a-module-loaded-by-path-loads-siblings-by-path.md))
+- A refused board publish can be another session's live gate card — read
+  which stage published it, and serve locally instead of overwriting it.
+  ([detail](one-board-many-sessions.md))
+- A newline in a grep pattern makes two patterns that each pass alone — check
+  that one line follows another with `grep -A1`, not one pattern.
+  ([detail](a-newline-in-a-grep-pattern-is-two-patterns.md))
+- A test that runs `cut` needs the fake `gh` on PATH, or `cut` asks the real
+  GitHub and fails its gate before the pentest check.
+  ([detail](a-cut-test-needs-a-fake-gh.md))
 - A CI runner has no git identity — each test commit or merge passes
   `-c user.name`, and `user.useConfigOnly=true` shows the gap locally.
   ([detail](a-ci-runner-has-no-git-identity.md))

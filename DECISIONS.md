@@ -1090,7 +1090,8 @@ Status: active
 Why: this slice is built on Linux, and its done line is 0 failures on Windows. GitHub's `windows-latest` runner is the only Windows that a Linux session can reach. GitHub starts a `workflow_dispatch` workflow only from the default branch, but a `push` trigger runs from a file on a branch. Claude pushes only when the user says so, so the user starts each run.
 Rejected: the user's Windows machine (the last two full runs there stopped on low memory, utf8-stdio O7), Linux plus the docs only (nothing then proves the Windows claim), a dispatch-only workflow merged to `main` first (one more PR and merge before the first proof).
 Source: specs/portable-suite.md
-Status: superseded by D119
+Status: superseded by D126
+
 ## D105 · 2026-11-08 · A check whose setup Windows refuses prints SKIP with the reason, and never counts as a pass
 
 Why: without Developer Mode, `ln -s` makes a copy, so a symlink check would pass or fail on a plain file. A SKIP line names the check and the reason, as the lesson "a gate that scanned nothing must never exit 0" asks. The Windows way runs first: `icacls` denies a read, and a real symlink is used when Windows allows it.
@@ -1180,16 +1181,65 @@ Status: active
 Why: `e2e-rendered-drift` "a 404 page prints E6 with its status" fails in some Windows runs with `CDP timeout: Page.navigate`. It failed in portable-suite runs 2 and 4 and passed in runs 1 and 3 (its O18). The cause is Chrome's start time on the runner, and its fix belongs to `windows-ci`.
 Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and this slice does not touch that check).
 Source: specs/windows-paths.md
-Status: superseded by D120
+Status: superseded by D127
 
-## D118 · 2026-11-09 · Both suite jobs are required on main, and the repo admin bypasses them
+## D118 · 2026-11-09 · On Windows, program.argv() never hands CreateProcess a bare program name
+
+Why: CreateProcess looks in the current folder before PATH, so a bare `git` runs the `git.exe` at the root of the project that a hook runs in. A program that is not on PATH now raises `FileNotFoundError`, as a missing program does on Linux.
+Rejected: give the bare name back so the caller's error path runs (a planted `git.exe` still runs when PATH has no git), set `NoDefaultCurrentDirectoryInExePath` (it drops the current folder only; Python's own folder and System32 still come before PATH).
+Source: specs/exe-lookup.md
+Status: active
+
+## D119 · 2026-11-09 · Each program that zuko's Python starts goes through program.argv()
+
+Why: four `git()` helpers and the attribution guard's `cygpath` started a bare name, so each was open to a planted `.exe`. A check in `test-program.sh` fails a new `subprocess.run([` in `lib/` that skips `program.argv()`, on every OS.
+Rejected: fix only the four `git` calls that the shape named (the `cygpath` call in `block-attribution.sh` has the same hole), `shutil.which` (on Windows it looks in the current folder first).
+Source: specs/exe-lookup.md
+Status: active
+
+## D120 · 2026-11-09 · Strix attacks a staging URL only after a yes in each run, and no zuko guard holds its requests
+
+Why: Strix sends its requests from its Docker sandbox, which no Claude Code hook sees, so D28 and D29 do not cover them (shape O6). The question names the host, the missing guard, the data loss and the HEAD that staging should run (spec O7, O9). Only an exact yes sends Strix live (spec O10).
+Rejected: a hook or proxy that holds Strix to one host (its traffic leaves from the container, past every hook), one yes kept for later releases (a later release can name another host), typing the host again to confirm (slower for the same check).
+Source: specs/strix-live.md
+Status: active
+
+## D121 · 2026-11-09 · Strix goes live only on a staging URL; a localhost target keeps it to the code
+
+Why: Strix rewrites localhost to host.docker.internal, which on Linux reaches the Docker bridge and not an app bound to 127.0.0.1 (spec O2). release.py refuses a loopback --live value too.
+Rejected: a reachability probe from a container, then a live run (more code and a Docker test for a target the shape did not ask for).
+Source: specs/strix-live.md
+Status: active
+
+## D122 · 2026-11-09 · A live release has one Strix run on the copy and the URL, within D115's $10
+
+Why: one run keeps 10 releases a month on $100 (spec O4).
+Rejected: a code run and a live run at $10 each (about 5 releases a month), one run at $20 (supersedes D115 for each live release).
+Source: specs/strix-live.md
+Status: active
+
+## D123 · 2026-11-09 · A live Strix finding with no code location goes under Needs validation, with its endpoint, and never blocks
+
+Why: a finding with no code location reaches no verifier (D113), and a block with no verifier stops a release on a claim that zuko cannot check (spec O5).
+Rejected: a critical or high live finding that blocks without a verifier (a false positive stops the release).
+Source: specs/strix-live.md
+Status: active
+
+## D124 · 2026-11-09 · zuko gives Strix no test accounts
+
+Why: Strix has the source in the copy and can find the seed accounts, or register through the app. No secret goes into the instruction file or to the STRIX_LLM provider (spec O6).
+Rejected: a test login typed at each run (the login goes to the LLM provider).
+Source: specs/strix-live.md
+Status: active
+
+## D125 · 2026-11-09 · Both suite jobs are required on main, and the repo admin bypasses them
 
 Why: a test that passes on one OS only must block the merge, not only show red. `/release` pushes its commit straight to `main` (D1), with no PR, so the admin bypasses the rule.
 Rejected: not required (a red job can still be merged by mistake), required with no bypass (it blocks the release push, and D1 would have to change).
 Source: specs/windows-ci.md
 Status: active
 
-## D119 · 2026-11-09 · The suite workflow runs on each PR to main and by hand, not on a push to main
+## D126 · 2026-11-09 · The suite workflow runs on each PR to main and by hand, not on a push to main
 
 Why: the PR is the last stop before `main`. A run after a squash merge repeats the PR's tree, and a Windows run takes 13 to 18 minutes.
 Rejected: a run on each push to `main` too (a second run of the same tree after each merge), the push trigger on one branch that D104 used (that branch is shipped, and a PR now proves each branch).
@@ -1197,7 +1247,7 @@ Supersedes: D104
 Source: specs/windows-ci.md
 Status: active
 
-## D120 · 2026-11-09 · A Windows check that fails in some runs gets its cause fixed, and the required job never reruns it
+## D127 · 2026-11-09 · A Windows check that fails in some runs gets its cause fixed, and the required job never reruns it
 
 Why: a required job that fails at random blocks each merge until a person reruns it. The Chrome 404 check timed out after 25 s in 2 of 4 portable-suite runs, and its cause is not known.
 Rejected: a rerun of a failed file in CI (it also hides each new flaky test), a SKIP on Windows (Windows then never proves the 404 path), one rerun as D117 allows (each red run then needs a person).
@@ -1205,23 +1255,23 @@ Supersedes: D117
 Source: specs/windows-ci.md
 Status: active
 
-## D121 · 2026-11-09 · A new push to a PR cancels its suite run in progress
+## D128 · 2026-11-09 · A new push to a PR cancels its suite run in progress
 
 Why: only the newest commit of a PR can merge, and a Windows run takes 13 to 18 minutes.
 Rejected: letting each run finish (runs stack up on a busy PR, and only the last one counts).
 Source: specs/windows-ci.md
 Status: active
 
-## D122 · 2026-11-09 · A PR does not have to hold the latest main before it merges
+## D129 · 2026-11-09 · A PR does not have to hold the latest main before it merges
 
 Why: with that rule, each merge sends every other open PR to an update and a new run of 13 to 18 minutes. A clash between two PRs still shows on the next PR run.
 Rejected: requiring the latest `main` (one more update and full run after each merge).
 Source: specs/windows-ci.md
 Status: active
 
-## D123 · 2026-11-09 · The required checks on main are a repository ruleset, not classic branch protection
+## D130 · 2026-11-09 · The required checks on main are a repository ruleset, not classic branch protection
 
-Why: a ruleset names its bypass list, and its API reports `current_user_can_bypass`. That proves the admin bypass of D118 without a push to `main`.
+Why: a ruleset names its bypass list, and its API reports `current_user_can_bypass`. That proves the admin bypass of D125 without a push to `main`.
 Rejected: classic branch protection with "include administrators" off (the admin bypass is implicit, and nothing lists it).
 Source: specs/windows-ci.md
 Status: active

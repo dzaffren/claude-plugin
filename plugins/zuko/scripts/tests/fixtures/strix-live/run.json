@@ -1,0 +1,12 @@
+{
+  "run_name": "invoice-api_c3d4",
+  "status": "completed",
+  "end_time": "2026-11-09T10:21:07+00:00",
+  "scan_results": {},
+  "llm_usage": {
+    "requests": 164,
+    "total_tokens": 15208117,
+    "cost": 6.2041,
+    "agents": []
+  }
+}
