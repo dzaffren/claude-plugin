@@ -158,7 +158,7 @@ reset; keys "$both"
 strix_run
 expect_exit 0 "$status" "strix: a finished run exits 0"
 expect_match '^STRIX: done · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$3\.80 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: the done line counts, costs and says incomplete"
-[ "$(cat "$FAKE/cwd")" = "$(cd "$scratch" && pwd -P)" ]
+[ "$(cd "$(cat "$FAKE/cwd")" && pwd -P)" = "$(cd "$scratch" && pwd -P)" ]
 expect_exit 0 "$?" "strix: runs from the scratch folder"
 expect_match '^-n$' "$(cat "$FAKE/args")" "strix: headless"
 args=$(tr '\n' ' ' <"$FAKE/args")
