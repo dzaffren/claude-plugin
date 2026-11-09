@@ -267,3 +267,7 @@ One line per lesson. Loaded into every session in this repo.
 - Signal a process group only after `ps -o pgid=` shows the pid leads it — a
   group kill that should fail can reach the test file itself.
   ([detail](a-group-kill-can-reach-the-caller.md))
+- A path built from an environment variable is relative wherever the variable
+  is unset — build it with each variable unset on each OS before calling it
+  absolute.
+  ([detail](an-env-path-is-relative-where-the-var-is-unset.md))
