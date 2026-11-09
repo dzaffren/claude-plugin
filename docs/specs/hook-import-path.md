@@ -240,6 +240,7 @@ Recorded as D125, D126.
 | O3 | Is a suite check that fails on a new `python3 -c`, `python3 -` or `python3 <<` without `-I` in this slice? | question | spec p1 | user | Resolved | Yes. Scenario 4 covers it, 2026-11-09 |
 | O4 | `-I` keeps the current folder off `sys.path` for `-c`, `-` and `<<` on Python 3.12 on Windows, as it does on Python 3.9 on Linux. Checked on Linux only, on 2026-11-09. | unproven | spec p3 | poc | Accepted risk | Python documents `-I` the same on every OS. The `windows-suite` run on `feat/hook-import-path` proves it before merge. If it goes red, `/build` changes the fix, 2026-11-09 |
 | O5 | The Changes table did not name `test-utf8-stdio.sh`. Its D98 check finds the hooks' inline Python with `python3 (-c \|- \|<<)`. After the fix it found 0 snippets, and its scanned-nothing check failed. | flag | build | user | Decided alone | Chose: the pattern allows an `-I` first, and finds the fourteen snippets again. Other: count the snippets with `bare_python`. Undo: replace the grep at `test-utf8-stdio.sh:23` with a `bare_python` count, 2026-11-09 |
+| O6 | The `windows-suite` run 42565107518 failed three `stale fork` checks in `test-replay.sh`, which this slice does not touch. | flag | ship | user | Decided alone | Chose: leave them. They fail the same way on `main` (run 42547085812) and on `feat/exe-lookup` (run 42555977864). Other: fix `test-replay.sh` in this PR. Undo: open a `fix/` branch for the replay checks on Windows, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
