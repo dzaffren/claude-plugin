@@ -1,6 +1,6 @@
 # Strix code
 
-**Version:** v1 · **Status:** Draft · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** attack-classes, needs-validation
