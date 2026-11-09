@@ -1,6 +1,6 @@
 # Windows CI
 
-**Version:** v1 · **Status:** Draft · **Type:** Technical · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Technical · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** portable-suite, windows-paths
@@ -152,11 +152,131 @@ What the user sees:
 
 ## Technical plan
 
-The plan comes at pause 3. Pauses 1 and 2 drafted these entries from O1, O3, O4, O5 and O6.
+### Approach
+
+The workflow file gets a new name, two triggers and a matrix of two OSes. A repository ruleset on `main` then requires both checks, with the admin role on its bypass list. The Chrome 404 flake is in the test fixture, not in zuko. `server.py` serves with the single-threaded `HTTPServer`, so one idle connection from Chrome blocks it, and the real request waits until `Page.navigate` times out.
+
+That cause was reproduced on Linux at pause 3. With one idle TCP connection open to the 404 server, `check-rendered-drift.sh` printed `CDP timeout: Page.navigate` after 26 s. With `ThreadingHTTPServer` and the same idle connection, it printed `HTTP 404` after 1 s. Without the idle connection, both servers answer in 1 s.
+
+Relies on: D1, D86, D106, D118, D119, D120, D121, D122, D123
+
+```mermaid
+flowchart TB
+    subgraph branch["feat/windows-ci"]
+        WF[".github/workflows/suite.yml"]
+        RUN["scripts/tests/run.sh"]
+        T["test-e2e-rendered-drift.sh"]
+        SV["fixtures/rendered-drift/server.py"]
+    end
+    subgraph github["GitHub"]
+        PR["PR to main"]
+        RS["ruleset: suite on main"]
+    end
+    PR -- "pull_request event" --> WF
+    WF -- "bash run.sh, one job per OS" --> RUN
+    RUN -- "sources the test file" --> T
+    T -- "starts the http404 server, holds one idle socket" --> SV
+    WF -- "two check results" --> RS
+    RS -- "merge allowed or blocked" --> PR
+```
+
+The PR starts the workflow, which runs `run.sh` on each OS. The two results go to the ruleset, which allows or blocks the merge.
+
+```mermaid
+sequenceDiagram
+    participant D as developer
+    participant G as GitHub Actions
+    participant W as suite (windows-latest)
+    participant L as suite (ubuntu-latest)
+    participant R as ruleset on main
+    D->>G: git push feat/exe-lookup (PR open)
+    G->>G: cancel the run in progress in group suite-PR-number
+    par
+        G->>W: start the job
+        W-->>G: run.sh exit 0
+    and
+        G->>L: start the job
+        L-->>G: run.sh exit 1
+    end
+    G->>R: suite (ubuntu-latest) failed
+    R-->>D: merge blocked until both checks pass
+```
+
+### Changes
+
+| File | What changes | Why |
+| --- | --- | --- |
+| `.github/workflows/windows-suite.yml` → `.github/workflows/suite.yml` (`git mv`) | `name: suite`. `on: pull_request: branches: [main]` and `workflow_dispatch`; the `push` trigger goes. `concurrency: group: suite-${{ github.event.pull_request.number \|\| github.ref }}`, `cancel-in-progress: true`. Job `suite`: `strategy: fail-fast: false, matrix: os: [windows-latest, ubuntu-latest]`, `runs-on: ${{ matrix.os }}`, `timeout-minutes: 30`, `defaults.run.shell: bash`. Steps: `actions/checkout@v4.2.2`, `actions/setup-python@v5.6.0` with `"3.12"`, `actions/setup-node@v4.4.0` with `node-version: "22"`, then `bash plugins/zuko/scripts/tests/run.sh`. | Scenarios 1, 2, 4; D119, D121 |
+| `plugins/zuko/scripts/tests/fixtures/rendered-drift/server.py:39` | `http.server.HTTPServer` → `http.server.ThreadingHTTPServer`. Its threads are daemon threads, so the process still stops on the test's `stop_tree`. | Scenario 5 |
+| `plugins/zuko/scripts/tests/test-e2e-rendered-drift.sh:116` | Before the 404 run, start one Python child that opens a TCP connection to the server and sends nothing. Stop it with `stop_tree` after the run. The check "a 404 page prints E6 with its status" keeps its name, and it now fails on every OS when the server is single-threaded. | Scenario 5 |
+| `docs/ARCHITECTURE.md:28` | "which `.github/workflows/windows-suite.yml` runs on `windows-latest`" → "which `.github/workflows/suite.yml` runs on each PR, on `windows-latest` and `ubuntu-latest`". | The doc names the old file. |
+| Ruleset on `main` (a GitHub setting, not a file) | Created by `/build` after the PR's first green run, with the command below. | Scenarios 1, 2, 3; D118, D122, D123 |
+
+```bash
+gh api -X POST repos/dzaffren/claude-plugin/rulesets --input - <<'JSON'
+{"name": "suite on main", "target": "branch", "enforcement": "active",
+ "conditions": {"ref_name": {"include": ["~DEFAULT_BRANCH"], "exclude": []}},
+ "bypass_actors": [{"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"}],
+ "rules": [{"type": "required_status_checks", "parameters": {
+   "strict_required_status_checks_policy": false,
+   "required_status_checks": [{"context": "suite (windows-latest)"}, {"context": "suite (ubuntu-latest)"}]}}]}
+JSON
+```
+
+`actor_id` 5 is the admin repository role. The proof of that is the `current_user_can_bypass` field in the reply, which must read `always`.
+
+Reusing: `run.sh` and its 600 s limit for each file (D106), `start_server` and `stop_tree` in `test-e2e-rendered-drift.sh`, and the action tags that `windows-suite.yml` already pins.
+
+### Earn-it
+
+| Added | Triggered by |
+| --- | --- |
+| The `ubuntu-latest` job | Scenario 2, a check that fails on Linux only. |
+| `actions/setup-node` at Node 22 | `e2e-rendered-drift` fails without Node 22 (D86), and the default Node of the `ubuntu-latest` image is not known (O7). |
+| The `concurrency` block | D121. |
+| The ruleset | D118 and scenario 2: a red check must block the merge. |
+| `ThreadingHTTPServer` and the idle connection in the test | Scenario 5. The idle connection makes the old failure happen on each run, on every OS. |
+
+### Non-functionals
+
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | One run for each push to a PR: a few a day. Windows takes 13 to 18 minutes. Linux takes about 2.5 minutes on this machine, and is not measured on GitHub. |
+| **Breaks first**     | At 10×, the free plan's limit of concurrent jobs queues the runs. The cancel of older runs (D121) is the first relief. Nothing else is needed at this size. |
+| **Security surface** | `pull_request`, never `pull_request_target`: a PR from a fork runs on GitHub's VM with a read-only token, and GitHub asks the owner to approve a first-time contributor's run. `permissions: contents: read`. No secret is read. Only the admin role can bypass the ruleset. |
+| **Proof it works**   | On the next PR after the merge, `gh pr checks` lists `suite (windows-latest)` and `suite (ubuntu-latest)` as `pass`. `gh api repos/dzaffren/claude-plugin/rulesets/{id} -q '.enforcement + " " + .current_user_can_bypass'` prints `active always`. |
+| **Rollout**          | No flag. Order: push the branch, open the PR, wait for its first green run, create the ruleset, prove scenarios 2 and 3, then merge. Rollback: `gh api -X DELETE repos/dzaffren/claude-plugin/rulesets/{id}` removes the rule, and a `git revert` of the workflow commit gives back `windows-suite.yml`. |
+
+### Test plan
+
+| Scenario | Test | Command |
+| --- | --- | --- |
+| 1. A PR runs the suite on Windows and Linux | The windows-ci PR's own run | `gh pr checks {pr} --watch`, then `gh run view {run} --log \| grep -E '[0-9]+ passed, 0 failed'` for each job. After the ruleset: `gh pr view {pr} --json mergeStateStatus -q .mergeStateStatus` prints `CLEAN`. |
+| 2. A check that passes on one OS only blocks the merge | Scratch PR `test/windows-ci-red`, from `feat/windows-ci` to `main`. Commit 1 adds the Windows-only check to `test-decisions.sh`. After its run, commit 2 swaps it for the Linux-only check. | `gh pr checks {scratch}` shows the right red job each time, and `gh pr view {scratch} --json mergeStateStatus -q .mergeStateStatus` prints `BLOCKED`. Then `gh pr close {scratch} --delete-branch`. |
+| 2, cancel (D121) | The same scratch PR: a third commit pushed while the run of commit 2 is in progress | `gh run list --branch test/windows-ci-red --json conclusion -q '.[].conclusion'` holds `cancelled`. |
+| 3. The release commit still goes straight to main | The ruleset reply | `gh api repos/dzaffren/claude-plugin/rulesets/{id} -q .current_user_can_bypass` prints `always`. The next real `/release` push is the full proof. |
+| 4. The user runs the suite by hand | After the merge, at `/ship` | `gh workflow run suite.yml --ref feat/strix-live`, then `gh run list --workflow suite.yml --branch feat/strix-live`. `gh run list --workflow suite.yml --event push` is empty. |
+| 5. The Chrome 404 check is steady | `test-e2e-rendered-drift.sh`, with the idle connection | `bash plugins/zuko/scripts/tests/run.sh e2e-rendered-drift` on Linux. It must fail with the old `server.py` and pass with the new one. Then `gh run rerun {run}` four times on the windows-ci PR's run, so five attempts in all, and `gh run view {run} --attempt {n} --log \| grep 'a 404 page prints E6'` shows `PASS` in each. |
+
+**E2E:** the scratch PR `test/windows-ci-red` against the live ruleset. It walks scenarios 1 and 2, and the cancel rule.
+
+### Chunks
+
+Single chunk. Four files and one GitHub setting, and each proof needs the one before it.
+
+### Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| Chrome does not start on `ubuntu-latest`, because Ubuntu 24.04 restricts unprivileged user namespaces and `cdp.mjs:83` passes no `--no-sandbox`. | The first PR run shows it (O7). When it fails, the workflow sets `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` in a Linux-only step. That changes the CI VM only. `cdp.mjs` keeps the sandbox for users. |
+| Other Linux tests fail on `ubuntu-latest` from an image difference, such as a missing tool. | Same first run. `/build` fixes each one before it creates the ruleset, so `main` never requires a red check. |
+| The ruleset goes on before `suite.yml` is on `main`, so an open PR that lacks the file waits on two `Expected` checks. | O10: accepted. Each open PR merges `main` after the windows-ci merge. |
+| `actor_id` 5 is not the admin role, and the release push is then blocked. | The `current_user_can_bypass` check in scenario 3 fails before the merge. `/build` corrects the ruleset with `gh api -X PUT`. |
+| The fixture fix hides a real slow start of Chrome on Windows. | The five Windows attempts of scenario 5 must all pass. A timeout in any one of them reopens the cause. |
 
 ### Decisions to record
 
-The numbers assume that `strix-code` (D112 to D115) and `windows-paths` (D116, D117) merge first. `/build` renumbers them when that is not so.
+Pauses 1 to 3 drafted these entries from O1, O3, O4, O5, O6 and O8. The numbers assume that `strix-code` (D112 to D115) and `windows-paths` (D116, D117) merge first. `/build` renumbers them when that is not so.
 
 ```markdown
 ## D118 · 2026-11-09 · Both suite jobs are required on main, and the repo admin bypasses them
@@ -169,7 +289,8 @@ Status: active
 ## D119 · 2026-11-09 · The suite workflow runs on each PR to main and by hand, not on a push to main
 
 Why: the PR is the last stop before `main`. A run after a squash merge repeats the PR's tree, and a Windows run takes 13 to 18 minutes.
-Rejected: a run on each push to `main` too (a second run of the same tree after each merge).
+Rejected: a run on each push to `main` too (a second run of the same tree after each merge), the push trigger on one branch that D104 used (that branch is shipped, and a PR now proves each branch).
+Supersedes: D104
 Source: specs/windows-ci.md
 Status: active
 
@@ -194,6 +315,13 @@ Why: with that rule, each merge sends every other open PR to an update and a new
 Rejected: requiring the latest `main` (one more update and full run after each merge).
 Source: specs/windows-ci.md
 Status: active
+
+## D123 · 2026-11-09 · The required checks on main are a repository ruleset, not classic branch protection
+
+Why: a ruleset names its bypass list, and its API reports `current_user_can_bypass`. That proves the admin bypass of D118 without a push to `main`.
+Rejected: classic branch protection with "include administrators" off (the admin bypass is implicit, and nothing lists it).
+Source: specs/windows-ci.md
+Status: active
 ```
 
 ## Open items
@@ -208,6 +336,11 @@ Status: active
 | O5 | When a new push reaches a PR branch while its run is in progress, what happens to the older run? | question | spec p2 | user | Resolved | It is cancelled. Only the newest commit gets a result, 2026-11-09 |
 | O6 | Must a PR hold the latest `main` before it can merge? | question | spec p2 | user | Resolved | No. A PR merges when its own last run passed, 2026-11-09 |
 
+| O7 | The suite has never run on `ubuntu-latest`. The image's Node may be older than 22, and Chrome's sandbox may fail on Ubuntu 24.04. | unproven | spec p3 | user | Accepted risk | No `/poc`. The windows-ci PR's first run is the proof, and `/build` fixes what fails there before it creates the ruleset, 2026-11-09 |
+| O8 | Is the rule on `main` a repository ruleset or classic branch protection? | question | spec p3 | user | Resolved | A ruleset, with the admin role on its bypass list (D123), 2026-11-09 |
+| O9 | May `/build` push `feat/windows-ci`, open its PR, create the ruleset after the first green run, and push and close the scratch PR `test/windows-ci-red`? | question | spec p3 | user | Resolved | Yes, all of it. Rollback is one `gh api -X DELETE` of the ruleset, 2026-11-09 |
+| O10 | Once the ruleset is on, each open PR whose branch lacks `suite.yml` waits on two `Expected` checks. `feat/strix-code` (PR #134) is open now. | flag | spec p3 | user | Accepted risk | Each open PR merges `main` once after the windows-ci merge, and then gets its two checks, 2026-11-09 |
+
 _Never delete this section or its rows. See references/ledger.md._
 
 ## Glossary
@@ -221,3 +354,6 @@ _Never delete this section or its rows. See references/ledger.md._
 - **CDP** — Chrome DevTools Protocol: the messages that the drift check sends to drive headless Chrome.
 - **Flaky** — a test that passes in some runs and fails in others on the same code.
 - **e2e** — end-to-end: one test that walks the whole slice as a user would.
+- **Ruleset** — a set of GitHub rules for named branches, such as required checks, with a list of who can bypass them.
+- **Matrix** — one job in a workflow that GitHub runs once for each value, here once for each OS.
+- **Chrome sandbox** — Chrome's own wall around each page. On Linux it needs user namespaces, which Ubuntu 24.04 limits through AppArmor.
