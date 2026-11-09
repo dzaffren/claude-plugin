@@ -19,9 +19,18 @@ for r in "${rel[@]}"; do
 done
 
 # Every OS: with the variables unset, findChrome() gives an absolute path or null.
-found=$(cd "$repo" && env -u LOCALAPPDATA -u PROGRAMFILES -u 'PROGRAMFILES(X86)' -u HOME -u USERPROFILE -u CHROME_PATH \
+vars=(-u LOCALAPPDATA -u PROGRAMFILES -u 'PROGRAMFILES(X86)' -u HOME -u USERPROFILE -u CHROME_PATH)
+want='^(true .+|null)$'
+if is_windows; then
+  # Program Files comes first and holds the runner's Chrome, so point it at an
+  # empty folder: only a planted relative candidate can then be found.
+  empty=$(cygpath -w "$(mktemp -d -p "$work")")
+  vars=(-u LOCALAPPDATA -u HOME -u USERPROFILE -u CHROME_PATH "PROGRAMFILES=$empty" "PROGRAMFILES(X86)=$empty")
+  want='^null$'
+fi
+found=$(cd "$repo" && env "${vars[@]}" \
   node -e "import(require('node:url').pathToFileURL(process.argv[1])).then((m) => { const c = m.findChrome(); console.log(c === null ? 'null' : require('node:path').isAbsolute(c) + ' ' + c); })" "$lib/cdp.mjs" 2>&1)
-expect_match '^(true .+|null)$' "$found" "findChrome() in acme-shop gives an absolute path or null [$found]"
+expect_match "$want" "$found" "findChrome() in acme-shop gives no relative path [$found]"
 
 if is_windows; then
   skip "e2e-chrome-lookup: a chrome.exe planted in the repo never runs from the drift check" \
