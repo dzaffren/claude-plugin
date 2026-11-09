@@ -394,6 +394,12 @@ Single chunk. The e2e test calls the functions that the unit tests cover, and ev
 
 Recorded as D118, D119, D120, D121, D122.
 
+## Review
+
+2026-11-09 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/lib/strix.py:133` · `live_host()` refuses shorthand loopback hosts such as 127.1, 0 and localhost. too · `5881d3f`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
