@@ -1,6 +1,6 @@
 # node-lookup
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** exe-lookup
@@ -144,7 +144,7 @@ Reusing: `run.sh`'s `is_windows`, `skip`, `expect_exit`, `expect_match` and `exp
 
 | Scenario | Test | Command |
 | --- | --- | --- |
-| 1. A taskkill.exe at the repo root never runs | `test-e2e-node-lookup.sh`, Windows only. First, a bare `spawnSync('taskkill', ['/pid', '4242', '/T', '/F'])` from Node in `acme-shop` makes a folder `4242`, so the hole is real on this runner. Then the drift check on `clean.html` exits 0. No folder with a number for its name appears in `acme-shop`, and the list of `zuko-chrome-*` folders in the temp folder is the same as before the run. | `bash plugins/zuko/scripts/tests/run.sh e2e-node-lookup` |
+| 1. A taskkill.exe at the repo root never runs | `test-e2e-node-lookup.sh`, Windows only. First, a bare `spawnSync('taskkill', ['4242'])` from Node in `acme-shop` makes a folder `4242`, so the hole is real on this runner. Then the drift check on `clean.html` exits 0. No folder with a number for its name appears in `acme-shop`, and the list of `zuko-chrome-*` folders in the temp folder is the same as before the run. | `bash plugins/zuko/scripts/tests/run.sh e2e-node-lookup` |
 | 2. Off Windows nothing changes | The whole suite on Linux, `e2e-rendered-drift` included. The bare-name check in `test-e2e-node-lookup.sh` passes. | `bash plugins/zuko/scripts/tests/run.sh` |
 
 **E2E:** `test-e2e-node-lookup.sh` in the `windows-suite` job, after the branch is pushed: `gh workflow run windows-suite.yml --ref feat/node-lookup`, then `gh run watch`. On Linux, its Windows checks print SKIP, and the bare-name check carries the proof.
@@ -171,6 +171,7 @@ Recorded as D127.
 | O1 | The shape says "from PATH". The plan starts `taskkill.exe` by its fixed path in `System32` instead. Is that the fix? | question | spec p1 | user | Resolved | Yes. `taskkill.exe` starts from `%SystemRoot%\System32`, with `C:\Windows` as the fall back. A PATH walk would find the same file, 2026-11-09 |
 | O2 | The vendored `.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs:85` has the same bare `taskkill`. It runs in this repo's own sessions, not in zuko. Is it in this slice? | question | spec p1 | user | Resolved | No. It is upstream code, and a local edit is lost at the next vendor update, 2026-11-09 |
 | O3 | The Windows test plants a copy of Git Bash's `mkdir.exe` as `taskkill.exe`. Assuming that it makes a folder `4242` in the current folder from the arguments `/pid 4242 /T /F`. Nobody has run it. | unproven | spec p1 | poc | Accepted risk | exe-lookup's copy of `echo.exe` ran from a project folder. The first check fails when the copy makes no folder, so the test cannot pass on a stand-in that never ran, 2026-11-09 |
+| O4 | The Test plan said the first check runs the planted copy with `/pid 4242 /T /F`. `mkdir.exe` reads `/pid`, `/T` and `/F` as folders at the root of Git for Windows, and a CI runner is an admin, so it would make them there. | flag | build | user | Decided alone | Chose: the first check passes only `4242`. The drift check run still passes all four arguments, and after the fix the planted copy gets none of them. Other: pass all four and remove the three folders after. Undo: change `['4242']` back to `['/pid', '4242', '/T', '/F']` in `test-e2e-node-lookup.sh`, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
