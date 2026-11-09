@@ -143,7 +143,7 @@ report() {     # report <severity confirmed> <file>: the report the skill writes
   python3 - "$1" "$2" "$work/strix.out" <<'PY'
 import re, sys
 confirm, path = sys.argv[1], sys.argv[2]
-blocks = re.findall(r"^FINDING (S\d+)\n(.*?)(?:\n\n|\Z)", open(sys.argv[3]).read(), re.M | re.S)
+blocks = re.findall(r"^FINDING (S\d+)\n(.*?)(?:\n\n|\Z)", open(sys.argv[3], encoding="utf-8").read(), re.M | re.S)
 cats = {"CWE-89": "A05:2025 Injection", "CWE-78": "A05:2025 Injection", "CWE-494": "A08:2025 Software or Data Integrity Failures"}
 found, needs = [], []
 for _, body in blocks:
@@ -156,7 +156,7 @@ for _, body in blocks:
         needs.append("| N%d | %s | %s | Strix: %s | whether Strix's proof reaches this line: zuko's verifier could not trace it in the code |"
                      % (len(needs) + 1, cat, where, f["TITLE"]))
 result = "blocked" if confirm in ("critical", "high") else "pass"
-open(path, "w").write("""# Pentest v1.5.0
+open(path, "w", encoding="utf-8", newline="\n").write("""# Pentest v1.5.0
 
 **Result:** %s
 **Mode:** code-level

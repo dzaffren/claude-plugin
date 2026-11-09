@@ -11,15 +11,18 @@ py=$(python3 -c 'import sys; print(sys.executable)')
 
 # The stubs. FAKE holds what each one does and what it was called with.
 # The stubs run on the narrow PATH, so each one puts the full PATH back first.
+# The PATH is written into the stub: on its way through Python, Git Bash turns
+# a colon list in any other variable into Windows form, and never back.
 FAKE="$work/fake"
-STUB_PATH="$PATH"
-export FAKE STUB_PATH
+export FAKE
+stub() {       # stub <name>: the stub script on stdin, at $bin/<name>, with the full PATH
+  { printf '#!/usr/bin/env bash\nPATH=%q\n' "$PATH"; cat; } >"$bin/$1"
+  chmod +x "$bin/$1"
+}
 bin="$work/bin"
 mkdir -p "$bin" "$FAKE"
 is_windows || ln -s "$(command -v bash)" "$bin/bash"
-cat >"$bin/strix" <<'STUB'
-#!/usr/bin/env bash
-PATH=$STUB_PATH
+stub strix <<'STUB'
 if [ "$1" = "--version" ]; then echo "strix $(cat "$FAKE/version" 2>/dev/null || echo 1.7.0)"; exit 0; fi
 printf '%s\n' "$@" >"$FAKE/args"
 pwd >"$FAKE/cwd"
@@ -28,21 +31,16 @@ if [ -d "$FAKE/run" ]; then mkdir -p strix_runs/invoice-cli_a1b2; cp "$FAKE/run/
 [ -f "$FAKE/sleep" ] && sleep "$(cat "$FAKE/sleep")"
 exit "$(cat "$FAKE/exit" 2>/dev/null || echo 2)"
 STUB
-cat >"$bin/docker" <<'STUB'
-#!/usr/bin/env bash
-PATH=$STUB_PATH
+stub docker <<'STUB'
 [ "$1" = "info" ] || exit 9
 [ -f "$FAKE/docker-error" ] && { cat "$FAKE/docker-error" >&2; exit 1; }
 echo "Server Version: 29.9.2"
 STUB
-cat >"$bin/uv" <<'STUB'
-#!/usr/bin/env bash
-PATH=$STUB_PATH
+stub uv <<'STUB'
 printf '%s\n' "$*" >"$FAKE/uv-args"
 [ -f "$FAKE/uv-error" ] && { cat "$FAKE/uv-error" >&2; exit 2; }
 echo "Installed 1 executable: strix"
 STUB
-chmod +x "$bin/strix" "$bin/docker" "$bin/uv"
 narrow=$(narrow_path "$bin")
 
 reset() {      # reset: Strix 1.7.0, Docker up, a run that files the fixture's five findings
@@ -119,10 +117,16 @@ reset; echo "Cannot connect to the Docker daemon at unix:///var/run/docker.sock.
 strix_run
 expect_match '^STRIX: skipped · docker info failed: Cannot connect to the Docker daemon at unix:///var/run/docker\.sock\. Is the docker daemon running\?$' "$(last)" "strix: docker info failing is a skip"
 
-reset; mv "$bin/docker" "$work/docker.off"
-strix_run
-expect_match '^STRIX: skipped · docker info failed: docker not found$' "$(last)" "strix: no docker is a skip"
-mv "$work/docker.off" "$bin/docker"
+# Windows starts a program from System32 before PATH (D107), so a docker.exe
+# there cannot be hidden.
+if is_windows && [ -e "$(cygpath -W)/System32/docker.exe" ]; then
+  skip "strix: no docker is a skip" "docker.exe is in System32, which Windows searches before PATH"
+else
+  reset; mv "$bin/docker" "$work/docker.off"
+  strix_run
+  expect_match '^STRIX: skipped · docker info failed: docker not found$' "$(last)" "strix: no docker is a skip"
+  mv "$work/docker.off" "$bin/docker"
+fi
 
 # --- Scenario 4: a missing strix, and the pinned install ---
 reset; mv "$bin/strix" "$work/strix.off"
