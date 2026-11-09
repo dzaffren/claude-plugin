@@ -399,9 +399,9 @@ Recorded as D112, D113, D114, D115.
 
 2026-11-09 · 5 raw findings, 3 survived, 3 fixed.
 
-- correctness · `plugins/zuko/scripts/lib/strix.py:267` · a timed-out run keeps the findings that Strix wrote before the kill · `18c6997`
-- correctness · `plugins/zuko/scripts/lib/strix.py:122` · a committed link out of the tree is left out of the copy, and the run goes on · `f9ca860`
-- correctness · `plugins/zuko/skills/release/SKILL.md:275` · a stopped run says "stopped before it finished", with no cause that Strix does not give · `10a328e`
+- correctness · `plugins/zuko/scripts/lib/strix.py:267` · a timed-out run keeps the findings that Strix wrote before the kill · `7c47bb4`
+- correctness · `plugins/zuko/scripts/lib/strix.py:122` · a committed link out of the tree is left out of the copy, and the run goes on · `e2e9283`
+- correctness · `plugins/zuko/skills/release/SKILL.md:275` · a stopped run says "stopped before it finished", with no cause that Strix does not give · `79d5fd7`
 
 ## Open items
 
