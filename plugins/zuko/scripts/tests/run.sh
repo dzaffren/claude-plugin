@@ -107,8 +107,13 @@ allow() {              # allow <file>: undo deny
 stop_tree() {          # stop_tree <pid>: stop a background job and each process it started
   if is_windows && [ -r "/proc/$1/winpid" ]; then
     taskkill //F //T //PID "$(cat "/proc/$1/winpid")" >/dev/null 2>&1
-  else
+  elif [ "$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')" = "$1" ]; then
     kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
+  else
+    # Not a group leader. A test file inherits `set -o monitor` from run.sh,
+    # and there bash's kill can signal the job's group for -pid: the group of
+    # the test file itself. It ended e2e-pentest-live on ubuntu-latest.
+    kill "$1" 2>/dev/null
   fi
   wait "$1" 2>/dev/null
   return 0
