@@ -117,11 +117,23 @@ def copy_head(project, dest):
                           capture_output=True)
     if done.returncode != 0:
         raise Unreadable("git archive failed: %s" % last_line(done.stderr.decode("utf-8", "replace")))
-    with tarfile.open(fileobj=io.BytesIO(done.stdout)) as archive:
-        if hasattr(tarfile, "data_filter"):
-            archive.extractall(dest, filter="data")
-        else:
-            archive.extractall(dest)
+    try:
+        with tarfile.open(fileobj=io.BytesIO(done.stdout)) as archive:
+            if hasattr(tarfile, "data_filter"):
+                archive.extractall(dest, filter=inside_copy)
+            else:
+                archive.extractall(dest)
+    except (tarfile.TarError, OSError) as error:
+        raise Unreadable("git archive could not be unpacked: %s" % error)
+
+
+def inside_copy(member, path):
+    """The data filter, but a member it refuses, such as a link out of the
+    tree, is left out of the copy instead of stopping the run."""
+    try:
+        return tarfile.data_filter(member, path)
+    except tarfile.FilterError:
+        return None
 
 
 def run_dir(scratch):

@@ -180,6 +180,25 @@ expect_match '^OUTSIDE: invoice_cli/importers/bank\.py:58 · low · Bank import 
 expect_no_match 'vuln-0004|Version banner' "$out" "strix: an info finding is dropped"
 expect_no_match '^FINDING S4$' "$out" "strix: only three blocks"
 
+# A committed symlink that leaves the repo is left out of the copy, and Strix still runs.
+linked="$work/linked"
+git clone -q "$repo" "$linked"
+if make_link /etc/hostname "$linked/host" && make_link ../../outside "$linked/up"; then
+  git -C "$linked" -c user.email=t@example.com -c user.name=t add -A
+  git -C "$linked" -c user.email=t@example.com -c user.name=t commit -q --no-verify -m "chore: links"
+  reset; keys "$both"
+  scratch=$(mktemp -d -p "$work")
+  out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" \
+        "$py" "$release" strix "$linked" --scratch "$scratch" --files "$files" 2>&1)
+  expect_exit 0 "$?" "strix: a repo with a link out of the tree exits 0"
+  out=${out//$'\r'/}
+  expect_match '^STRIX: done · ' "$(last)" "strix: a link out of the tree does not stop the run"
+  [ ! -e "$scratch/release/host" ] && [ ! -L "$scratch/release/host" ] && [ ! -L "$scratch/release/up" ] && [ -f "$scratch/release/invoice_cli/cli.py" ]
+  expect_exit 0 "$?" "strix: the copy leaves out each link out of the tree, and keeps the rest"
+else
+  skip "strix: a link out of the tree does not stop the run" "this OS made no real symlink"
+fi
+
 # --- Scenario 5: a run that fails or stops is said ---
 reset; rm -rf "$FAKE/run"; echo 1 >"$FAKE/exit"
 printf 'Pulling image ghcr.io/usestrix/strix-sandbox:1.3.0\nDocker daemon not reachable\n' >"$FAKE/output"
