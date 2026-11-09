@@ -243,3 +243,9 @@ One line per lesson. Loaded into every session in this repo.
 - Put `noglob` in `MSYS` when native Windows code starts a Git Bash program —
   it expands `{a}`, `*` and `[..]` in its arguments.
   ([detail](git-bash-from-native-globs-args.md))
+- Copy an outside tool's config files to a private scratch file before a spike
+  runs the tool for real — Strix 1.4.1 erased the user's keys on its first run.
+  ([detail](back-up-a-tool-config-before-a-spike.md))
+- A lib module that `release.py` loads by path loads its own siblings by path
+  too — a plain import breaks where a test loads `release.py` from elsewhere.
+  ([detail](a-module-loaded-by-path-loads-siblings-by-path.md))
