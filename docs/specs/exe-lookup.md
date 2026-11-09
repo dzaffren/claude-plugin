@@ -69,7 +69,7 @@ Scenario: no git on PATH
   Given a Windows clone of acme-shop with a git.exe at its root that is not Git
   And no git on PATH
   When stop_scope.py asks git for its version in acme-shop
-  Then the call fails with "git: not found on PATH"
+  Then the call raises FileNotFoundError for git, with "not found on PATH"
   And the git.exe at the root of acme-shop does not run
 
 Scenario: a cygpath.exe at the repo root never runs from the attribution guard
@@ -221,6 +221,10 @@ Single chunk. Six small edits and one new test file, and `test-program.sh` cover
 
 Recorded as D118, D119.
 
+## Review
+
+2026-11-09 · 0 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -234,6 +238,8 @@ Recorded as D118, D119.
 
 | O6 | The Changes table said "Add `import program`" to `changelog.py`, `decisions.py`, `stop_scope.py` and `release-commit.py`. `test-e2e-pentest-live.sh` loads `release.py` from `python3 -`, so `import program` failed there, and it would load a `program.py` from the current folder. | flag | build | user | Decided alone | Chose: each of the five modules loads `program.py` by its path, as `release.py`'s `load()` does, and a `test-program.sh` check plants a `program.py` in the current folder. Other: `import program`, with `lib/` put on `sys.path` by each host. Undo: revert c74e4e4 in part, back to `import program` in those four files, 2026-11-09 |
 | O7 | The Test plan said "run the job once before the fix", red first. The `windows-suite` job needs a push of `feat/exe-lookup`, and only the user approves a push. | flag | build | user | Decided alone | Chose: the e2e's first check runs a bare `git` from Python and expects the planted copy, so every run shows the hole. The Windows job has not run yet. A dry run on Linux, with the OS guard off, passed the Stop hook and the four helper checks. Other: push before the fix and run the job red. Undo: push the branch and run `gh workflow run windows-suite.yml --ref feat/exe-lookup`, 2026-11-09 |
+
+| O8 | Scenario 2 said "Then the call fails with "git: not found on PATH"". `argv()` raises `FileNotFoundError(ENOENT, "not found on PATH", "git")`, which prints `[Errno 2] not found on PATH: 'git'`, as the Changes table says. | flag | review | user | Decided alone | Chose: scenario 2 now says the call raises `FileNotFoundError` for git, with "not found on PATH". Other: change the message to "git: not found on PATH". Undo: put back the old scenario 2, and give `argv()` that message, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
