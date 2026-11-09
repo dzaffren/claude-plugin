@@ -823,6 +823,13 @@ expect_exit 0 "$(same "$repo/.claude-plugin/marketplace.json" "$work/expected")"
 expect_exit 0 "$(same "$repo/plugins/zuko/.claude-plugin/plugin.json" "$work/zuko/plugins/zuko/.claude-plugin/plugin.json")" "cut first: plugin.json byte for byte"
 expect_match '^\.claude-plugin/marketplace\.json CHANGELOG\.md OVERVIEW\.md docs/ plugins/zuko/\.claude-plugin/plugin\.json $' \
   "$(changed "$repo")" "cut first: those files and no others"
+# The marker names each file as git stages it, with / (D116), so the
+# main-branch guard lets the release commit through.
+count=$(grep -cxF 'plugins/zuko/.claude-plugin/plugin.json' "$repo/.git/zuko-release")
+expect_exit 1 "$count" "cut first: the marker lists plugins/zuko/.claude-plugin/plugin.json once"
+git -C "$repo" add -A
+guard=$(printf '%s' 'git commit -m "chore(release): v2.2.0"' | python3 "$scripts/lib/release-commit.py" "$repo" 2>&1)
+expect_exit 0 "$?" "cut first: the main-branch guard lets the v2.2.0 commit through (got: $guard)"
 
 # 25. Every kind at once: the version line, and not the decoys.
 repo=$(fixture)

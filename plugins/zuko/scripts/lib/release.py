@@ -396,7 +396,7 @@ def manifests(project, gates):
             continue
         if isinstance(entry.get("version"), str):
             keyed.append(("plugins", i, "version"))
-        inner = os.path.normpath(os.path.join(source, ".claude-plugin", "plugin.json"))
+        inner = os.path.normpath(os.path.join(source, ".claude-plugin", "plugin.json")).replace(os.sep, "/")
         if not inner.startswith("..") and not os.path.isabs(inner) and inner not in nested:
             nested.append(inner)
     fields += json_fields(path, "marketplace.json", text, keyed, gates) if keyed else []
@@ -675,7 +675,7 @@ def write_marker(project, version, found):
     lines = ["version " + version, "head " + head] + [name for name, _ in found]
     with open(path, "w", encoding="utf-8", newline="") as handle:
         handle.write("\n".join(lines) + "\n")
-    return os.path.relpath(path, project)
+    return os.path.relpath(path, project).replace(os.sep, "/")
 
 
 def print_writes(heading, found, notes=()):
