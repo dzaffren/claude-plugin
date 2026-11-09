@@ -1,6 +1,6 @@
 # Windows paths
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** portable-suite
@@ -244,6 +244,8 @@ Recorded as D116, D117. D112 to D115 are taken on `feat/strix-code`, which is no
 | O2 | The 6 `coverage` checks fail on Windows because their file names hold `\|` or a Latin-1 byte (portable-suite O25). Are they in this slice, as a SKIP with its reason by D105? | question | spec p1 | user | Resolved | Yes. On Windows they print SKIP with the reason, by D105. Without them the Windows suite cannot reach 0 failed, 2026-11-09 |
 | O3 | `e2e-rendered-drift` "a 404 page prints E6" fails in some Windows runs from Chrome's start time (portable-suite O18). Is a run where only that check fails good enough for scenario 5? | question | spec p1 | user | Resolved | Yes, when a rerun of that file passes. `windows-ci` keeps the fix, 2026-11-09 |
 | O4 | The `windows-suite` job runs on a push to `feat/portable-suite`, or by `workflow_dispatch`. Scenario 5 needs a Windows run of this branch. How does `/build` get one? | question | spec p1 | user | Resolved | `/build` asks the user once, then pushes `feat/windows-paths` and runs `gh workflow run windows-suite.yml --ref feat/windows-paths`. The workflow file stays as it is, 2026-11-09 |
+| O5 | `/build` says to watch each test fail before the code. On Linux `os.sep` is `/`, so no check of scenarios 1 to 4 can fail there before the fix. | flag | build | user | Decided alone | Chose: take the red from Windows run 42538018070, where the 26 checks failed, and show that each new check fails on Linux when the fixed line writes `\` again. Other: push the tests alone first, for a red Windows run before the fix. Undo: revert the four `fix` commits, push, and run the `windows-suite` job. 2026-11-09 |
+| O6 | Scenario 5 said "Then the last line reads "N passed, 0 failed, K skipped"". Windows run 42542336065 at `5ae665f` gave 3535 passed, 3 failed, 11 skipped. The 3 are `replay` "stale fork", which gets 2 Replay steps where it expects 3 (`[[1, 1]]` for `[[1, 7, 7]]`). | flag | build | user | Decided alone | Chose: leave the 3 red. Run 42538018070 on the base tree of `feat/portable-suite` failed them the same way, before this fix, so the cause is not a `\` path. The other 30 failures of that run now pass or print SKIP, and `e2e-rendered-drift` passed, so D117 was not used. Other: trace them here, with more Windows runs. Undo: none needed; take the log of run 42542336065 to `/debug`. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
