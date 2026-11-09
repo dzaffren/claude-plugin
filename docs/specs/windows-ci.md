@@ -278,6 +278,10 @@ Single chunk. Four files and one GitHub setting, and each proof needs the one be
 
 Recorded as D125, D126, D127, D128, D129, D130.
 
+## Review
+
+2026-11-09 · 2 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
