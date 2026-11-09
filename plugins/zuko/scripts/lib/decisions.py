@@ -336,7 +336,7 @@ def read_adr(project, path, number):
         if match and date is None:
             date = match.group(1)
 
-    rel = os.path.relpath(path, project)
+    rel = os.path.relpath(path, project).replace(os.sep, "/")
     if title:
         # "1. Title", "0006. Title", "ADR-0002: Title" -- only this ADR's own number.
         prefix = re.match(r"^(?:ADR[-\s]?)?(\d+)\s*[.:)-]?\s+", title, re.I)
