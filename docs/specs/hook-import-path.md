@@ -1,6 +1,6 @@
 # hook-import-path
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -97,7 +97,7 @@ Scenario: the suite fails on a new hook call without -I
 
 ## Scope
 
-**In:** the fifteen `python3 -c`, `python3 -` and `python3 <<` calls in the ten scripts above. A suite check that keeps a new such call from coming in without `-I`. The same e2e on Linux and in the `windows-suite` job.
+**In:** the fourteen `python3 -c`, `python3 -` and `python3 <<` calls in the ten scripts above. A suite check that keeps a new such call from coming in without `-I`. The same e2e on Linux and in the `windows-suite` job.
 
 **Out:**
 
@@ -111,7 +111,7 @@ Scenario: the suite fails on a new hook call without -I
 
 ### Approach
 
-Add `-I` after `python3` in each of the fifteen calls. In isolated mode, Python puts neither the current folder nor `PYTHONPATH` on `sys.path`, and skips the user's site-packages. The four `python3 -` hooks already load `git-command.py` by its path, so they need nothing more. A new e2e plants a `json.py` in a scratch repo, runs each script there, and scans `plugins/zuko/scripts` for a new call without `-I`.
+Add `-I` after `python3` in each of the fourteen calls. In isolated mode, Python puts neither the current folder nor `PYTHONPATH` on `sys.path`, and skips the user's site-packages. The four `python3 -` hooks already load `git-command.py` by its path, so they need nothing more. A new e2e plants a `json.py` in a scratch repo, runs each script there, and scans `plugins/zuko/scripts` for a new call without `-I`.
 
 Relies on: D98 (each hook sets its own stdio, so no `PYTHON*` variable is needed), D105, D125 and D126 (drafted below)
 
@@ -172,6 +172,7 @@ On the main path, the Bash guard reads the command through an isolated Python, t
 | `plugins/zuko/scripts/verify-gates.sh:6` | Same. | scenario 1 |
 | `plugins/zuko/scripts/check-open-items.sh:43` | Same. | scenario 1 |
 | `plugins/zuko/scripts/tests/test-e2e-hook-import-path.sh` | New. It builds `acme-shop` in `$work`, with a changed spec, a `skills-lock.json` and a `gh` stub. It runs each script there, plants `json.py`, and runs them again. Then it runs the force-push and `PYTHONPATH=.` checks. Last, its `bare_python` function scans a fixture folder and `plugins/zuko/scripts`. | scenarios 1 to 4 |
+| `plugins/zuko/scripts/tests/test-utf8-stdio.sh:23` | The D98 check finds each inline snippet with `python3 (-I )?(-c \|- \|<<)`, so it still counts the fourteen. | O5 |
 | `CHANGELOG.md` | One `[Unreleased]` line: zuko's hooks no longer import a Python module from the project folder or `PYTHONPATH`. | `/ship` gate |
 
 Reusing: `run.sh`'s `expect_exit`, `expect_match`, `expect_no_match`, `narrow_path` and `$work`; the `HOME` and `GIT_CONFIG_NOSYSTEM` setup and the Stop payload from `test-e2e-exe-lookup.sh`; the `gh` stub shape from `test-skill-pin.sh`.
@@ -212,7 +213,7 @@ The e2e builds each payload before it goes into `acme-shop`, and runs only `bash
 
 ### Chunks
 
-Single chunk — thirteen one-flag edits, one test file and one CHANGELOG line.
+Single chunk — fourteen one-flag edits, one test file and one CHANGELOG line.
 
 ### Risks
 
@@ -234,6 +235,7 @@ Recorded as D125, D126.
 | O2 | A fix for the current folder alone leaves `PYTHONPATH=.` and user site-packages open. Do the hooks also ignore `PYTHONPATH` and the user's site-packages? | question | spec p1 | user | Resolved | Yes. The hooks ignore both, so `PYTHONPATH=.` gets no way in (scenario 3), 2026-11-09 |
 | O3 | Is a suite check that fails on a new `python3 -c`, `python3 -` or `python3 <<` without `-I` in this slice? | question | spec p1 | user | Resolved | Yes. Scenario 4 covers it, 2026-11-09 |
 | O4 | `-I` keeps the current folder off `sys.path` for `-c`, `-` and `<<` on Python 3.12 on Windows, as it does on Python 3.9 on Linux. Checked on Linux only, on 2026-11-09. | unproven | spec p3 | poc | Accepted risk | Python documents `-I` the same on every OS. The `windows-suite` run on `feat/hook-import-path` proves it before merge. If it goes red, `/build` changes the fix, 2026-11-09 |
+| O5 | The Changes table did not name `test-utf8-stdio.sh`. Its D98 check finds the hooks' inline Python with `python3 (-c \|- \|<<)`. After the fix it found 0 snippets, and its scanned-nothing check failed. | flag | build | user | Decided alone | Chose: the pattern allows an `-I` first, and finds the fourteen snippets again. Other: count the snippets with `bare_python`. Undo: replace the grep at `test-utf8-stdio.sh:23` with a `bare_python` count, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
