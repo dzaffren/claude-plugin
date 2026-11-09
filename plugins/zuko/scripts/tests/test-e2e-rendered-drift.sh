@@ -115,8 +115,16 @@ expect_exit 0 "$([ ! -s "$work/far.log" ]; echo $?)" "a WebSocket to a host that
 # Review A1: a localhost URL that answers with an HTTP error is not the preview.
 # The fixture's not-found page uses only tokens, so judging it would pass.
 start_server http404 127.0.0.1 nf
+# Chrome may hold a second connection open and send nothing on it. A server
+# that serves one connection at a time then never reads the real request,
+# and Page.navigate times out (windows-ci). One idle socket makes that happen
+# on every run.
+"$py" -c 'import socket, sys, time; s = socket.create_connection(("127.0.0.1", int(sys.argv[1]))); time.sleep(120)' "$server_port" &
+idle_pid=$!
+sleep 0.5
 out=$(rd "$ws" "http://127.0.0.1:$server_port/preview/invoicez")
 code=$?
+stop_tree "$idle_pid"
 stop_tree "$server_pid"
 expect_exit 2 "$code" "a localhost page that answers 404 exits 2, never 0"
 expect_match "^Rendered drift check could not load http://127\.0\.0\.1:$server_port/preview/invoicez: HTTP 404\.\$" "$out" "a 404 page prints E6 with its status"
