@@ -252,6 +252,9 @@ One line per lesson. Loaded into every session in this repo.
 - A lib module that `release.py` loads by path loads its own siblings by path
   too — a plain import breaks where a test loads `release.py` from elsewhere.
   ([detail](a-module-loaded-by-path-loads-siblings-by-path.md))
+- A refused board publish can be another session's live gate card — read
+  which stage published it, and serve locally instead of overwriting it.
+  ([detail](one-board-many-sessions.md))
 - A newline in a grep pattern makes two patterns that each pass alone — check
   that one line follows another with `grep -A1`, not one pattern.
   ([detail](a-newline-in-a-grep-pattern-is-two-patterns.md))

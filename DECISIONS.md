@@ -1183,6 +1183,20 @@ Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and 
 Source: specs/windows-paths.md
 Status: active
 
+## D118 · 2026-11-09 · On Windows, program.argv() never hands CreateProcess a bare program name
+
+Why: CreateProcess looks in the current folder before PATH, so a bare `git` runs the `git.exe` at the root of the project that a hook runs in. A program that is not on PATH now raises `FileNotFoundError`, as a missing program does on Linux.
+Rejected: give the bare name back so the caller's error path runs (a planted `git.exe` still runs when PATH has no git), set `NoDefaultCurrentDirectoryInExePath` (it drops the current folder only; Python's own folder and System32 still come before PATH).
+Source: specs/exe-lookup.md
+Status: active
+
+## D119 · 2026-11-09 · Each program that zuko's Python starts goes through program.argv()
+
+Why: four `git()` helpers and the attribution guard's `cygpath` started a bare name, so each was open to a planted `.exe`. A check in `test-program.sh` fails a new `subprocess.run([` in `lib/` that skips `program.argv()`, on every OS.
+Rejected: fix only the four `git` calls that the shape named (the `cygpath` call in `block-attribution.sh` has the same hole), `shutil.which` (on Windows it looks in the current folder first).
+Source: specs/exe-lookup.md
+Status: active
+
 ## D120 · 2026-11-09 · Strix attacks a staging URL only after a yes in each run, and no zuko guard holds its requests
 
 Why: Strix sends its requests from its Docker sandbox, which no Claude Code hook sees, so D28 and D29 do not cover them (shape O6). The question names the host, the missing guard, the data loss and the HEAD that staging should run (spec O7, O9). Only an exact yes sends Strix live (spec O10).

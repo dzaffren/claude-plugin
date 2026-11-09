@@ -28,11 +28,19 @@ a file already there, or the check found problems, each on a
 Exit 2 bad usage, a base that is not a commit, a project folder that does not
 exist, or no file for add-unreleased.
 """
+import importlib.util
 import os
 import re
 import subprocess
 import sys
 from collections import Counter
+
+# By its path, not `import program`: a host that loads this file from
+# `python3 -` has the project folder first on sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "program", os.path.join(os.path.dirname(os.path.abspath(__file__)), "program.py"))
+program = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(program)
 
 NAME = "CHANGELOG.md"
 USAGE = ("usage: changelog.py init <project-dir>\n"
@@ -56,7 +64,7 @@ BREAKING = re.compile(r"^BREAKING[ -]CHANGE: ", re.M)
 
 
 def git(project, *args):
-    return subprocess.run(["git", "-C", project] + list(args),
+    return subprocess.run(program.argv(["git", "-C", project] + list(args)),
                           capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
 
 
