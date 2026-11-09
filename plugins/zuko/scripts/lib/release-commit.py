@@ -27,6 +27,13 @@ import shlex
 import subprocess
 import sys
 
+# By its path, not `import program`: a host that loads this file from
+# `python3 -` has the project folder first on sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "program", os.path.join(os.path.dirname(os.path.abspath(__file__)), "program.py"))
+program = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(program)
+
 MARKER = "zuko-release"
 PREFIX = "chore(release):"
 
@@ -37,7 +44,7 @@ spec.loader.exec_module(git_command)
 
 
 def git(where, *args):
-    return subprocess.run(["git", "-C", where] + list(args), capture_output=True, text=True,
+    return subprocess.run(program.argv(["git", "-C", where] + list(args)), capture_output=True, text=True,
                           encoding="utf-8", errors="surrogateescape")
 
 

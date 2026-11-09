@@ -19,12 +19,19 @@ the reason on stderr. bash still runs the lines before an unclosed quote, and an
 unclosed heredoc to the end of the text, so the caller must block it (D52).
 Exit 4 when it is over the length limit.
 """
+import importlib.util
 import os
 import re
 import shlex
-import shutil
 import subprocess
 import sys
+
+# By its path, not `import program`: a hook that loads this file from
+# `python3 -` has the project folder first on sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "program", os.path.join(os.path.dirname(os.path.abspath(__file__)), "program.py"))
+program = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(program)
 
 # <<EOF, <<-EOF, <<'EOF', <<"EOF".
 HEREDOC = re.compile(r'<<-?[ \t]*(["\']?)(\w+)\1')
@@ -285,13 +292,14 @@ def native_path(path):
     Git Bash converts `/tmp/x` to `C:/.../Temp/x` only when it passes a path to
     a program as an argument. A hook gets the command as text, so native
     Windows Python reads `/tmp/x` as `\\tmp\\x` on the current drive. On Windows
-    a path that starts with `/` goes through `cygpath -m`, as one argument with
-    no shell. Any failure, and every other OS, gives the path back unchanged.
+    a path that starts with `/` goes through the `cygpath -m` on PATH, as one
+    argument with no shell. Any failure, a cygpath that is not on PATH, and
+    every other OS give the path back unchanged.
     """
-    if os.name != "nt" or not path.startswith("/") or not shutil.which("cygpath"):
+    if os.name != "nt" or not path.startswith("/"):
         return path
     try:
-        result = subprocess.run(["cygpath", "-m", "--", path], capture_output=True,
+        result = subprocess.run(program.argv(["cygpath", "-m", "--", path]), capture_output=True,
                                 encoding="utf-8", timeout=5)
     except (OSError, subprocess.SubprocessError, ValueError):
         return path
