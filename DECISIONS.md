@@ -1182,3 +1182,17 @@ Why: `e2e-rendered-drift` "a 404 page prints E6 with its status" fails in some W
 Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and this slice does not touch that check).
 Source: specs/windows-paths.md
 Status: active
+
+## D118 · 2026-11-09 · On Windows, program.argv() never hands CreateProcess a bare program name
+
+Why: CreateProcess looks in the current folder before PATH, so a bare `git` runs the `git.exe` at the root of the project that a hook runs in. A program that is not on PATH now raises `FileNotFoundError`, as a missing program does on Linux.
+Rejected: give the bare name back so the caller's error path runs (a planted `git.exe` still runs when PATH has no git), set `NoDefaultCurrentDirectoryInExePath` (it drops the current folder only; Python's own folder and System32 still come before PATH).
+Source: specs/exe-lookup.md
+Status: active
+
+## D119 · 2026-11-09 · Each program that zuko's Python starts goes through program.argv()
+
+Why: four `git()` helpers and the attribution guard's `cygpath` started a bare name, so each was open to a planted `.exe`. A check in `test-program.sh` fails a new `subprocess.run([` in `lib/` that skips `program.argv()`, on every OS.
+Rejected: fix only the four `git` calls that the shape named (the `cygpath` call in `block-attribution.sh` has the same hole), `shutil.which` (on Windows it looks in the current folder first).
+Source: specs/exe-lookup.md
+Status: active

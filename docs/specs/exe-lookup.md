@@ -213,29 +213,13 @@ Single chunk. Six small edits and one new test file, and `test-program.sh` cover
 
 | Risk | Mitigation |
 | --- | --- |
-| `feat/windows-paths` also edits `decisions.py:336` and `stop_scope.py:106`, not yet on `main`. | Its hunks are away from the `git()` functions. The branch that merges second rebases; the conflict is at most an import line. |
+| `feat/windows-paths` also edits `decisions.py:336` and `stop_scope.py:106`. | It merged as #135 before this build, and the rebase onto it had no conflict. |
 | A copy of `echo.exe` outside `/usr/bin` may not start, because it needs `msys-2.0.dll` from `/usr/bin`. Then the planted file proves nothing. | O4. The red run before the fix shows the planted `git.exe` ran. |
 | A Windows user whose git is on a relative PATH entry only now gets "git: not found on PATH". | D107 already skips relative entries for `gh` and `bash`. Git for Windows puts absolute folders on PATH. |
 
 ### Decisions to record
 
-D112 to D117 are taken on `feat/strix-code` and `feat/windows-paths`, which are not merged yet.
-
-```markdown
-## D118 · 2026-11-09 · On Windows, program.argv() never hands CreateProcess a bare program name
-
-Why: CreateProcess looks in the current folder before PATH, so a bare `git` runs the `git.exe` at the root of the project that a hook runs in. A program that is not on PATH now raises `FileNotFoundError`, as a missing program does on Linux.
-Rejected: give the bare name back so the caller's error path runs (a planted `git.exe` still runs when PATH has no git), set `NoDefaultCurrentDirectoryInExePath` (it drops the current folder only; Python's own folder and System32 still come before PATH).
-Source: specs/exe-lookup.md
-Status: active
-
-## D119 · 2026-11-09 · Each program that zuko's Python starts goes through program.argv()
-
-Why: four `git()` helpers and the attribution guard's `cygpath` started a bare name, so each was open to a planted `.exe`. A check in `test-program.sh` fails a new `subprocess.run([` in `lib/` that skips `program.argv()`, on every OS.
-Rejected: fix only the four `git` calls that the shape named (the `cygpath` call in `block-attribution.sh` has the same hole), `shutil.which` (on Windows it looks in the current folder first).
-Source: specs/exe-lookup.md
-Status: active
-```
+Recorded as D118, D119.
 
 ## Open items
 
