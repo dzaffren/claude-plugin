@@ -11,6 +11,11 @@
 | --- | -------- | ------------------------------------------------------- | -------------------------------------------- | ----------------------------------- |
 | P1  | medium   | A05:2025 Injection · AI-AND-LLM tool-argument injection | invoice_cli/assistant/tools.py:9 count_lines | a model-chosen path reaches a shell |
 
+## Needs validation
+
+| ID  | Category | Where | Description | Unknown |
+| --- | -------- | ----- | ----------- | ------- |
+
 ## Assessed
 
 - A05:2025 Injection — 1 subprocess call with shell=True, 1 model tool loop
@@ -30,3 +35,8 @@
 - PROTOCOLS-RPC-AND-MESSAGING (Cloudflare c1c8a8c) — no RPC, queue or webhook code in the range
 - SUPPLY-CHAIN-AND-RELEASE (Cloudflare c1c8a8c) — no dependency, CI, release or plugin change in the range
 - WEB-PROTOCOL-AND-AUTH (Cloudflare c1c8a8c) — no HTTP, session or token code in the range
+
+## Files checked
+
+- assistant.py
+- check.sh

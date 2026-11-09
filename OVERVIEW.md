@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-08 by /ship attack-classes
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-09 by /ship coverage-ledger
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -84,6 +84,8 @@ projects.
 | guard-paths | Shipped | On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it | https://claude.ai/artifact/2juH24KKAcWnDXTBv4prwR |
 | utf8-stdio | Shipped | Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the board renders, and the PR body, the session-start decisions and the release guard show and compare the same text as on Linux | https://claude.ai/artifact/DDqkuv3ooiEwunibe38iEy |
 | attack-classes | Shipped | The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped | https://claude.ai/artifact/F9bL5Vm7mFYo6BT9PC9SmP |
+| needs-validation | Shipped | The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads | — |
+| coverage-ledger | Shipped | Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases | — |
 
 ## More
 

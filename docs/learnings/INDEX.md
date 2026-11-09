@@ -228,6 +228,12 @@ One line per lesson. Loaded into every session in this repo.
 - On Windows, apply a seed patch that has an empty-file entry with
   `patch -p1` — `git apply` refuses that entry.
   ([detail](empty-file-patch-needs-patch-p1.md))
+- A seeded pentester run can be stopped by the safety classifier — keep a
+  prompt-text check for the same rule, and record a stopped run with its
+  request ID. ([detail](seeded-pentests-can-be-stopped-by-the-classifier.md))
+- A chunk-builder with a new module, its tests and fixtures runs out of its 60
+  turns — tell it to commit after each step, and check its worktree before you
+  resume it. ([detail](chunk-builders-run-out-of-turns.md))
 - Before `/build` branches, check the current branch and branch from `main` by
   name — another session in the same checkout can move it under you.
   ([detail](shared-checkout-moves-under-you.md))

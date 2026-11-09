@@ -7,6 +7,7 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
        release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD
                         (--pentest <report> | --no-pentest <reason>)
        release.py notes <project-dir> --version X.Y.Z
+       release.py pick  <project-dir>
 
   plan   run the gates and print the report; every failing gate is listed.
          Then the last version, the commits since it and the proposed one:
@@ -29,14 +30,24 @@ Usage: release.py plan  <project-dir> [--version X.Y.Z]
          another version, carries a Proof column, or holds a critical or high
          finding; otherwise it is copied to docs/security/vX.Y.Z/report.md and
          each medium or low finding gets a line under the version's Security
-         section. --no-pentest takes the reason the user typed ("skip" or
+         section, and the Needs validation leads get one count line there.
+         --no-pentest takes the reason the user typed ("skip" or
          nothing is refused): it writes a skipped report, a Security line, and
-         a D-entry in DECISIONS.md. Last, it writes the release marker
+         a D-entry in DECISIONS.md. It rewrites the coverage ledger,
+         docs/security/coverage.md: each unit in the report's Files checked
+         gets the version, and each unit with a lead gets "lead in"; on a
+         skip, each unit the range changed gets "reset in". It refuses a
+         ledger it cannot read, and starts one when there is none. Then it
+         prints the Coverage line. Last, it writes the release marker
          block-dangerous.sh reads (D30): the version, HEAD, and every path
          it wrote, at git's zuko-release path, replacing any older one.
          On any failure it writes nothing
   notes  print the lines under "## [X.Y.Z]", without the heading or the blank
          lines around them: the GitHub release's notes
+  pick   print up to 10 old files for the pentest from the coverage ledger:
+         units outside the range since the last tag that no pentest has
+         checked, each lead first, then each reset, then each unchecked unit.
+         It writes nothing
 
 The last version is the newest plain semver tag on HEAD's history; with no
 tag, the version the manifests share, and the commits that count are those
@@ -48,9 +59,10 @@ the repo, with that plugin's own .claude-plugin/plugin.json. Manifests that
 disagree stop the release.
 
 Exit 0 planned, written, or printed. Exit 1 a gate failed or the version was
-refused (plan says "NEXT: stop", cut "Nothing written."), or notes found no
-such section. Exit 2 bad usage, a bad date, a project folder that does not
-exist, or one that is not a git repository.
+refused (plan says "NEXT: stop", cut "Nothing written."), notes found no
+such section, or pick could not read the ledger. Exit 2 bad usage, a bad
+date, a project folder that does not exist, or one that is not a git
+repository.
 """
 import importlib.util
 import json
@@ -71,6 +83,7 @@ def load(name):
 
 
 changelog = load("changelog")
+coverage = load("coverage")
 decisions = load("decisions")
 readme_block = load("readme_block")
 program = load("program")
@@ -79,7 +92,8 @@ git = changelog.git
 USAGE = ("usage: release.py plan  <project-dir> [--version X.Y.Z]\n"
          "       release.py cut   <project-dir> --version X.Y.Z --date YYYY-MM-DD\n"
          "                        (--pentest <report> | --no-pentest <reason>)\n"
-         "       release.py notes <project-dir> --version X.Y.Z")
+         "       release.py notes <project-dir> --version X.Y.Z\n"
+         "       release.py pick  <project-dir>")
 
 # host, then owner/repo, from https, ssh:// and scp-style git@host:path URLs.
 REMOTE = re.compile(r"^(?:[a-z][a-z+]*://)?(?:[^@/]+@)?([^/:]+)(?::\d+)?[:/]+(.+?)(?:\.git)?/*$")
@@ -639,6 +653,9 @@ def writes(release, today):
     verdict = getattr(release, "pentest", None)
     if verdict is not None:
         found.append((report_path(v), "pentest report, Result %s" % verdict.result))
+        marks = release.marks
+        found.append((coverage.NAME, "coverage ledger, %d of %d checked"
+                      % (coverage.checked_count(marks), len(marks))))
         if verdict.entry:
             found.append((decisions.NAME, verdict.entry))
     return found
@@ -763,6 +780,8 @@ RESULT = re.compile(r"^\*\*Result:\*\*\s*(\S*)\s*$")
 RANGE = re.compile(r"^\*\*Range:\*\*\s*\S")
 MODE = re.compile(r"^\*\*Mode:\*\*\s*(.+?)\s*$")
 FINDING_COLUMNS = ("ID", "Severity", "Category", "Where", "Description")
+LEAD_COLUMNS = ("ID", "Category", "Where", "Description", "Unknown")
+LEAD_ID = re.compile(r"^N[0-9]+$")
 SEVERITIES = ("critical", "high", "medium", "low")
 BLOCKING = ("critical", "high")
 TABLE_RULE = re.compile(r"^:?-+:?$")
@@ -778,10 +797,13 @@ class Refused(Exception):
 
 class Verdict:
     """What the pentest adds to a cut: the report to commit, the Security
-    lines, and on a skip the DECISIONS.md text with its new entry's number."""
+    lines, the files it checked and those with a lead (checked is None on a
+    skip), and on a skip the DECISIONS.md text with its new entry's number."""
 
-    def __init__(self, result, report, security, decisions_text=None, entry=None):
+    def __init__(self, result, report, security, checked=None, leads=(),
+                 decisions_text=None, entry=None):
         self.result, self.report, self.security = result, report, security
+        self.checked, self.leads = checked, leads
         self.decisions_text, self.entry = decisions_text, entry
 
 
@@ -793,13 +815,13 @@ def cells(line):
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def findings_table(lines):
-    """(columns, rows) of the whole "## Findings" section, up to the next "## "
+def findings_table(lines, heading="## Findings"):
+    """(columns, rows) of the whole heading section, up to the next "## "
     heading; None when there is no section or no header row. Every line in the
     section is read: a blank line, a comment or a second header row never ends
     it, so a finding cannot hide after one. A line that names a severity but is
     not a well-formed row raises Refused: cut fails closed on it."""
-    at = next((i for i, line in enumerate(lines) if line.strip() == "## Findings"), None)
+    at = next((i for i, line in enumerate(lines) if line.strip() == heading), None)
     if at is None:
         return None
     body = []
@@ -815,8 +837,8 @@ def findings_table(lines):
         severity = re.search(r"\b(%s)\b" % "|".join(SEVERITIES), text, re.I)
         if not (text.startswith("|") and text.endswith("|")):
             if severity or "|" in text:
-                raise unreadable("the Findings section has a line that is not a table row: %s"
-                                 % text[:80])
+                raise unreadable("the %s section has a line that is not a table row: %s"
+                                 % (heading[3:], text[:80]))
             continue
         row = cells(text)
         if all(TABLE_RULE.match(cell) for cell in row):
@@ -835,11 +857,11 @@ def unreadable(what):
 
 
 def read_report(path, version):
-    """The report's text and its findings, one dict per row; Refused when cut
-    must not take it."""
+    """The report's text, its findings, one dict per row, the file of each
+    lead, and the files it checked; Refused when cut must not take it."""
     if not os.path.isfile(path):
         raise unreadable("%s not found" % path)
-    with open(path, encoding="utf-8", errors="replace") as handle:
+    with open(path, encoding="utf-8", errors="surrogateescape") as handle:
         text = handle.read()
     lines = text.splitlines()
     title = next((REPORT_TITLE.match(line) for line in lines if line.startswith("# ")), None)
@@ -900,20 +922,44 @@ def read_report(path, version):
     for heading, name in (("## Assessed", "Assessed"), ("## Not assessed", "Not assessed")):
         if not listed(lines, heading):
             raise unreadable("no %s list" % name)
-    return text, findings
+    table = findings_table(lines, "## Needs validation")
+    if table is None:
+        raise unreadable("no Needs validation section")
+    columns, leads = table
+    if tuple(columns) != LEAD_COLUMNS:
+        raise unreadable("the Needs validation columns are %s, not %s"
+                         % (", ".join(columns), ", ".join(LEAD_COLUMNS)))
+    for row in leads:
+        if len(row) != len(LEAD_COLUMNS):
+            raise unreadable("a Needs validation row has %d cells, not %d: | %s |"
+                             % (len(row), len(LEAD_COLUMNS), " | ".join(row)))
+        # A lead never blocks, so a finding row here would ship unblocked.
+        if not LEAD_ID.match(row[0]):
+            raise unreadable("a Needs validation row has ID %s, not N<n>" % row[0])
+    checked = listed(lines, "## Files checked")
+    if not checked:
+        raise unreadable("no Files checked list")
+    return text, findings, [lead_file(row[2]) for row in leads], checked
+
+
+def lead_file(where):
+    """The file a Where names: its first word, before any ":", with no backticks.
+    A Where is FILE then SYMBOL, and FILE may have no line number."""
+    words = where.replace("`", "").split()
+    return words[0].split(":")[0] if words else where
 
 
 def listed(lines, heading):
-    """True when a "- " item sits under heading, before the next "## "."""
+    """The text of each "- " item under heading, before the next "## "; empty
+    when there is none."""
     at = next((i for i, line in enumerate(lines) if line.strip() == heading), None)
-    if at is None:
-        return False
-    for line in lines[at + 1:]:
+    items = []
+    for line in lines[at + 1:] if at is not None else []:
         if line.startswith("## "):
-            return False
+            break
         if line.lstrip().startswith("- "):
-            return True
-    return False
+            items.append(line.strip()[2:].strip())
+    return items
 
 
 def plural_word(count, word):
@@ -931,12 +977,24 @@ def sentence(text):
     return text if text.endswith((".", "!", "?")) else text + "."
 
 
-def pentest_verdict(project, version, today, report, reason):
+def pentest_verdict(project, version, today, report, reason, tag=None):
     """The Verdict for this cut; Refused when there is nothing cut may write."""
     if reason is None:
-        text, findings = read_report(report, version)
-        return Verdict("pass", text, [known_issue(finding, version) for finding in findings
-                                      if finding["Severity"] not in BLOCKING])
+        text, findings, leads, checked = read_report(report, version)
+        # The ledger trusts the list only for files git tracks, and for a
+        # file the range deleted; a file that is not a unit is skipped when
+        # the marks are worked out.
+        known = set(tracked(project)) | set(range_files(project, tag))
+        stray = next((path for path in checked if path not in known), None)
+        if stray is not None:
+            raise unreadable("Files checked names %s, which git does not track" % stray)
+        security = [known_issue(finding, version) for finding in findings
+                    if finding["Severity"] not in BLOCKING]
+        if leads:
+            security.append("- %s %s validation; see %s.\n"
+                            % (plural(len(leads), "lead"), "needs" if len(leads) == 1 else "need",
+                               report_path(version)))
+        return Verdict("pass", text, security, checked, leads)
     reason = " ".join(reason.split())
     if not reason or reason.lower() == "skip":
         raise Refused("A skip needs a reason")
@@ -952,7 +1010,29 @@ def pentest_verdict(project, version, today, report, reason):
     report_text = ("# Pentest v%s\n\n**Result:** skipped\n**Mode:** none\n**Reason:** %s\n"
                    "**Date:** %s\n" % (version, reason, today))
     return Verdict("skipped", report_text, ["- Released without pentest: %s\n" % sentence(reason)],
-                   current.rstrip("\n") + "\n" + added, "D%d · %s" % (entry, title))
+                   decisions_text=current.rstrip("\n") + "\n" + added,
+                   entry="D%d · %s" % (entry, title))
+
+
+def tracked(project):
+    return [path for path in git(project, "ls-files", "-z").stdout.split("\0") if path]
+
+
+def range_files(project, tag):
+    """The files the range since tag changes; with no tag, every tracked file."""
+    if tag is None:
+        return tracked(project)
+    return [path for path in git(project, "diff", "--name-only", "-z", tag + "..HEAD")
+            .stdout.split("\0") if path]
+
+
+def ledger(project):
+    """The ledger's marks, or None when there is none; Refused when pick and
+    cut cannot read it."""
+    try:
+        return coverage.read(project)
+    except coverage.Unreadable as problem:
+        raise Refused(str(problem))
 
 
 def rewritten(release, today):
@@ -970,6 +1050,7 @@ def rewritten(release, today):
     if release.overview:
         files["OVERVIEW.md"] = release_field(read(project, "OVERVIEW.md"), v)
     files[report_path(v)] = verdict.report
+    files[coverage.NAME] = coverage.render(release.marks, v, today)
     if verdict.decisions_text is not None:
         files[decisions.NAME] = verdict.decisions_text
     return files
@@ -1069,13 +1150,18 @@ def cut(project, version, today, report=None, reason=None):
         print("Nothing written.")
         return 1
     try:
-        release.pentest = pentest_verdict(project, show(release.version), today, report, reason)
+        release.pentest = verdict = pentest_verdict(project, show(release.version), today,
+                                                    report, reason, release.tag)
+        old = ledger(project)
     except Refused as refused:
         print()
         for line in refused.lines:
             print(line)
         print("Nothing written.")
         return 1
+    release.marks = coverage.marked(coverage.units(tracked(project)), old, show(release.version),
+                                    range_files(project, release.tag), verdict.checked,
+                                    verdict.leads)
     files = rewritten(release, today)
     # Checked before the first write: a read-only manifest found halfway
     # would leave the changelog cut and the versions not bumped.
@@ -1087,13 +1173,19 @@ def cut(project, version, today, report=None, reason=None):
         return 1
     for path, text in files.items():
         os.makedirs(os.path.dirname(os.path.join(project, path)), exist_ok=True)
-        with open(os.path.join(project, path), "w", encoding="utf-8", newline="") as handle:
+        # A tracked name that is not UTF-8 goes into the ledger as it came (D99).
+        with open(os.path.join(project, path), "w", encoding="utf-8", errors="surrogateescape",
+                  newline="") as handle:
             handle.write(text)
     found = writes(release, today)
     v = show(release.version)
     marker = write_marker(project, v, found)
     print()
     print_writes("Wrote", found + [(marker, "marks the v%s commit for the main-branch guard" % v)])
+    checked = coverage.checked_count(release.marks)
+    print("Coverage   %d of %d files checked by a pentest · %d not checked%s"
+          % (checked, len(release.marks), len(release.marks) - checked,
+             " · ledger started" if old is None else ""))
     return 0
 
 
@@ -1125,6 +1217,28 @@ def notes(project, version):
     return 0
 
 
+def pick(project):
+    try:
+        old = ledger(project)
+    except Refused as refused:
+        for line in refused.lines:
+            print(line)
+        return 1
+    tagged = last_tag(project)
+    found, count = coverage.pick(coverage.units(tracked(project)), old,
+                                 range_files(project, tagged[0] if tagged else None))
+    if old is None:
+        print("Old files  %d of %d not checked · no ledger yet, cut starts one" % (len(found), count))
+    elif not found:
+        print("Old files  0 · every unit is checked")
+    else:
+        print("Old files  %d of %d not checked · %s" % (len(found), count, coverage.NAME))
+    width = max((len(path) for path, _ in found), default=0) + 2
+    for path, mark in found:
+        print("  %s%s" % (path.ljust(width), mark))
+    return 0
+
+
 def is_date(text):
     try:
         return bool(DATE.match(text)) and bool(date.fromisoformat(text))
@@ -1147,6 +1261,8 @@ def main(argv):
                           options.get("--pentest"), options.get("--no-pentest"))
     elif command == "notes" and given == ["--version"] and parse(options["--version"]):
         run = lambda: notes(project, show(parse(options["--version"])))
+    elif command == "pick" and given == []:
+        run = lambda: pick(project)
     else:
         print(USAGE, file=sys.stderr)
         return 2

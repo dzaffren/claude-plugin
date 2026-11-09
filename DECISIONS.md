@@ -992,7 +992,7 @@ Status: active
 Why: the class files only add places to look. The Never-a-finding list (D5), the severity grid (D4), a proof that the pentester ran, and no network stay. A lead that Cloudflare calls needs_validation is dropped until slice needs-validation (spec O3).
 Rejected: Cloudflare's rules win for its own classes (conflicts with D4, D5 and the proof rule, and each needs a superseding entry).
 Source: specs/attack-classes.md
-Status: active
+Status: superseded by D101
 
 ## D93 · 2026-11-07 · The attack-class pin check speaks only when upstream changed a copied file
 
@@ -1056,6 +1056,35 @@ Rejected: replacing the byte with U+FFFD (a guard then checks text that differs 
 Source: specs/utf8-stdio.md
 Status: active
 
+## D100 · 2026-11-08 · A lead that the pentest cannot prove goes under Needs validation, with no severity, and never blocks
+
+Why: the pentester dropped each unproved lead, so a hole in a Windows-only branch was never seen on a Linux release. Each lead names the one fact that decides it. `cut` refuses a report without the section, so an absent section never reads as no leads (spec O5, scenario 5).
+Rejected: drop the lead, as D92 did until this slice (the user never hears of it), a severity for a lead (a guess about impact would block or pass a release with no proof), a cap at 10 leads (hides leads), an optional section (a pentester that ran out of turns leaves no section).
+Source: specs/needs-validation.md
+Status: active
+
+## D101 · 2026-11-08 · Where a class file and zuko's rules disagree, zuko's rules win, for leads too
+
+Why: the class files only add places to look. The Never-a-finding list (D5), the severity grid (D4), a proof that the pentester ran for each finding, and no network stay. A lead that Cloudflare calls `needs_validation` becomes a LEAD block. D5 stops a lead too, and an untrusted-text lead needs a trace to a tool call or a file write (D6) (spec O4).
+Rejected: Cloudflare's rules win for its own classes (conflicts with D4, D5 and the proof rule), only D5 applies to leads (every skill that reads PR text gives a lead), neither applies (DoS leads in every report).
+Supersedes: D92
+Source: specs/needs-validation.md
+Status: active
+
+## D102 · 2026-11-08 · Release notes count the leads, and the report names each lead without its trace or check
+
+Why: the notes and the committed report are public and permanent. One count line tells readers that leads exist. Each report row has the category, the place, the claim and the unknown fact. The trace and the check print in the terminal only, as D12 does for `PROOF` (spec O1, O2).
+Rejected: one notes line for each lead (unproved guesses on each release page), no notes line (readers do not know that leads exist), the trace and the check in the report (a near-exploit one click from the repo page).
+Source: specs/needs-validation.md
+Status: active
+
+## D103 · 2026-11-08 · A blind verifier checks each lead's trace, and a broken trace drops the lead
+
+Why: the pentester's word alone fills the section with guesses. The verifier gets `KIND: lead` and confirms only when each step of the trace is real, nothing upstream stops it, and the repo does not answer the unknown. It never sees the check (spec O3).
+Rejected: the pentester's leads go straight into the report (no second look, more noise), the verifier's finding rules for leads (rule 1 rejects every lead, because a lead has no observed outcome).
+Source: specs/needs-validation.md
+Status: active
+
 ## D104 · 2026-11-08 · A Windows workflow on branch pushes proves the suite while zuko is built on Linux
 
 Why: this slice is built on Linux, and its done line is 0 failures on Windows. GitHub's `windows-latest` runner is the only Windows that a Linux session can reach. GitHub starts a `workflow_dispatch` workflow only from the default branch, but a `push` trigger runs from a file on a branch. Claude pushes only when the user says so, so the user starts each run.
@@ -1089,4 +1118,25 @@ Status: active
 Why: Git Bash rewrites `/spec x pause 1` to `C:/Program Files/Git/spec x pause 1`, and the board shows it. The live board said `C:/Program Files/Git/ship utf8-stdio` on 2026-11-08. One repair in `board.py` covers each stage's call.
 Rejected: `MSYS_NO_PATHCONV=1` in six skill commands (one missed command shows the bug again), `--by` without its leading `/` (every caller and the board's text change).
 Source: specs/portable-suite.md
+Status: active
+
+## D109 · 2026-11-09 · A coverage unit is a tracked file outside tests, docs and root Markdown
+
+Why: `git ls-files` gives the list, a path stays the same across runs, and git says when it changed. zuko has 148 units. Prompt files under `plugins/` count, because agents obey them, and vendored `.agents/skills/` counts (spec O1, O2).
+Rejected: a function (a parser for each language, and a rename loses the history), Cloudflare's surface, boundary, subsystem and class units (a recon map each run, and the shape left out Cloudflare's phases), every tracked file (tests and docs use turns on nothing to attack), leaving out vendored skills (zuko loads them, and nothing would read them).
+Source: specs/coverage-ledger.md
+Status: active
+
+## D110 · 2026-11-09 · Each release pentest adds up to 10 old files, picked by release.py: leads, then resets, then path order
+
+Why: 10 files take zuko's 148 units through in about 15 releases and leave turns for the range. A script gives the same pick each run, so a test can predict it (spec O3, O5).
+Rejected: 5 files (about 30 releases), 20 files (a large range runs out of turns), the largest files first (vendored files crowd out small hooks), a random pick (no test can predict it), a pick in the prompt (prompt drift).
+Source: specs/coverage-ledger.md
+Status: active
+
+## D111 · 2026-11-09 · The coverage ledger is committed at docs/security/coverage.md, and cut refuses one it cannot read
+
+Why: the next release on any clone reads it, and the release commit carries it with the report. It names files, not holes. A ledger that cut cannot read stops the release, as a bad report does, so an empty ledger never reads as no coverage. `cut` prints the Coverage line, and the report stays as the skill wrote it (spec O4, O6).
+Rejected: a git-ignored ledger (lost on a new clone), a new ledger in place of a bad one (all history lost without a word), the Coverage line written into the report by cut (cut copies the report as it is).
+Source: specs/coverage-ledger.md
 Status: active

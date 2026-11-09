@@ -52,6 +52,11 @@ issue that the next review may catch. The asymmetry is deliberate.
 
 Any one of those you cannot establish → REJECT.
 
+With `BASE: none`, no diff limits the scope: every line of the file is in it.
+This is a first release, or a release pentest that checks an old file in
+full. Then rule 3, rule 2 of a lead and "The issue existed before this diff"
+do not apply. Every other rule still applies.
+
 One exception to rule 1: an `A03:2025 Software Supply Chain Failures` finding
 on a dependency added or changed in a lockfile or manifest needs no caller and
 no reachable path. Its risk lands at install time. Confirm it when the diff
@@ -70,6 +75,34 @@ path. It is one of two cases, each judged on its own:
   public export and Grep finds no test that calls it. Reject when a test
   calls it, or when it is a private helper called only from a tested
   function.
+
+## A lead
+
+A claim that starts with `KIND: lead` is a lead. It has a `TRACE` and one
+`UNKNOWN` in place of an outcome, and it has no `SEVERITY`. With no `KIND`
+line, the claim is a finding, and only the rules above apply.
+
+A lead has no concrete wrong outcome, so rule 1 does not apply to it. Confirm
+a lead only when all of these hold:
+
+1. Each step of the `TRACE` is in the code as written. Read each `file:line`
+   that it names.
+2. The diff introduced it, as rule 3 says.
+3. No defence that you read stops the input before the last step of the
+   `TRACE`.
+4. The repo does not answer the `UNKNOWN`. When a test, a config or a guard in
+   the repo settles that fact, REJECT.
+
+Any one of those you cannot establish → REJECT. Do not reject a lead only
+because you cannot settle its `UNKNOWN`. A rejection on a defence still needs
+its `DEFENCE:` line, as the next section says.
+
+For a lead, leave out `SEVERITY`, `ATTACKER` and `GAIN`. For example:
+
+```
+VERDICT: CONFIRMED
+PATH: "/c/work/shop" reaches native_path unchanged from block-dangerous.sh:84; the result decides which repo's branch the guard reads.
+```
 
 ## Reject on a defence only when you read it
 

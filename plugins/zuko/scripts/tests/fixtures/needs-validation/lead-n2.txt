@@ -1,0 +1,9 @@
+KIND: lead
+LEAD: On Windows, a supplier name such as ..\..\notes may reach open() as a path outside exports/.
+CATEGORY: A01:2025 Broken Access Control
+FILE: invoice_cli/exporters/suppliers.py:23
+SYMBOL: export_suppliers
+SNIPPET: with open(target, "w", newline="") as handle:
+TRACE: supplier "..\..\notes" in invoices.csv → cli.py main → export_suppliers(path) → os.path.join("exports", supplier + ".csv") → open(target, "w") at suppliers.py:23
+UNKNOWN: whether open() on Windows reads each \ in a supplier name as a path separator
+BASE: v1.4.2
