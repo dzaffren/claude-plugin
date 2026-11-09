@@ -4,8 +4,9 @@
 //
 // Ported from design-taste-frontend v2.1.5, scripts/lib/cdp.mjs
 // (https://github.com/Leonxlnx/taste-skill). Changes from upstream: a set
-// CHROME_PATH is used alone, with no fall back to the search; the profile
-// sweep, screenshots and wheel input are not ported.
+// CHROME_PATH is used alone, with no fall back to the search; taskkill starts
+// from System32, never from the current folder (D127); the profile sweep,
+// screenshots and wheel input are not ported.
 //
 // MIT License
 //
@@ -75,7 +76,7 @@ export class Browser {
     // On exit Chrome still holds the profile's files: stop it first, then remove the folder.
     let pid = 0;
     const drop = () => {
-      try { if (pid) { if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
+      try { if (pid) { if (process.platform === 'win32') spawnSync(join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe'), ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
       try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
     };
     process.once('exit', drop);
