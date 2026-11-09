@@ -1,6 +1,6 @@
 # exe-lookup
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** portable-suite
@@ -163,7 +163,7 @@ On the main path, the Stop hook asks `stop_scope.py` for its base commit, and `p
 | File | What changes | Why |
 | --- | --- | --- |
 | `plugins/zuko/scripts/lib/program.py:31` | On Windows, `argv()` raises `FileNotFoundError(ENOENT, "not found on PATH", name)` for a program that is not on PATH, and for a `#!` script when bash is not on PATH. A found file that cannot be read gives `[found] + args[1:]`. No path out gives the bare name back. The docstring says so. | O1, scenario 2 |
-| `plugins/zuko/scripts/lib/changelog.py:59` | `git()` passes its list through `program.argv()`. Add `import program`. `release.py` uses `changelog.git`, so its git calls follow. | scenario 1, rows 3 and 4 |
+| `plugins/zuko/scripts/lib/changelog.py:59` | `git()` passes its list through `program.argv()`. Load `program.py` by its path (O6). `release.py` uses `changelog.git`, so its git calls follow. | scenario 1, rows 3 and 4 |
 | `plugins/zuko/scripts/lib/decisions.py:238` | Same. | scenario 1, row 3 |
 | `plugins/zuko/scripts/lib/stop_scope.py:35` | Same. | scenario 1, row 1; scenario 2 |
 | `plugins/zuko/scripts/lib/release-commit.py:40` | Same. | scenario 1, row 2 |
@@ -174,7 +174,7 @@ On the main path, the Stop hook asks `stop_scope.py` for its base commit, and `p
 
 Reusing: `program.find()` and `program.argv()`; `release-commit.py`'s `spec_from_file_location` load; `run.sh`'s `is_windows`, `skip`, `expect_match` and `narrow_path`; the `HOME` and `GIT_CONFIG_NOSYSTEM` setup from `test-stop-scope.sh`.
 
-`git-command.py` must not `import program`. `block-attribution.sh:28` and the scope hooks load it from `python3 -`, and those processes have the current folder on `sys.path`. A `program.py` at the root of the repo would then load instead.
+No module may `import program`. `block-attribution.sh:28` and the scope hooks load `git-command.py` from `python3 -`, and tests load `release.py` the same way. Those processes have the current folder first on `sys.path`, so a `program.py` at the root of the repo would load instead (O6).
 
 ### Earn-it
 
@@ -203,7 +203,7 @@ Reusing: `program.find()` and `program.argv()`; `release-commit.py`'s `spec_from
 | 3. A cygpath.exe at the repo root never runs | `test-e2e-exe-lookup.sh`: `native_path("/tmp/msg.txt")` gives a `C:/` path, not `-m -- /tmp/msg.txt`. | `run.sh e2e-exe-lookup` |
 | 4. Off Windows nothing changes | The whole suite on Linux; `test-program.sh` "off Windows, the command is given back unchanged". | `bash plugins/zuko/scripts/tests/run.sh` |
 
-**E2E:** `test-e2e-exe-lookup.sh` in the `windows-suite` job, after the branch is pushed: `gh workflow run windows-suite.yml --ref feat/exe-lookup`, then `gh run watch`. On Linux it prints SKIP, and the `test-program.sh` checks carry the proof there. Write each Windows check red first: run the job once before the fix.
+**E2E:** `test-e2e-exe-lookup.sh` in the `windows-suite` job, after the branch is pushed: `gh workflow run windows-suite.yml --ref feat/exe-lookup`, then `gh run watch`. On Linux it prints SKIP, and the `test-program.sh` checks carry the proof there. Its first check runs a bare `git` from Python in the scratch repo and expects the planted copy, so each run proves the hole is real on that runner (O7).
 
 ### Chunks
 
@@ -231,6 +231,9 @@ Recorded as D118, D119.
 
 | O4 | The Windows test plants a copy of Git Bash's `/usr/bin/echo.exe` as `git.exe`. Assuming that it starts from a folder outside `/usr/bin`, through `msys-2.0.dll` on PATH. Nobody has run it. | unproven | spec p3 | poc | Accepted risk | The red Windows run before the fix shows that the planted file ran. If the copy does not start, `/build` picks another stand-in, 2026-11-09 |
 | O5 | `python3 -c` and `python3 -` put the current folder first on `sys.path`. Each hook that runs them, such as `block-dangerous.sh:6`, imports `json` from the project folder first. A `json.py` at the repo root then runs at each Bash call, on every OS. Checked on Linux with a planted `shlex.py`. | flag | spec p3 | user | Resolved | A new slice, `hook-import-path`, outside this shape. It is specced next, with its own review, 2026-11-09 |
+
+| O6 | The Changes table said "Add `import program`" to `changelog.py`, `decisions.py`, `stop_scope.py` and `release-commit.py`. `test-e2e-pentest-live.sh` loads `release.py` from `python3 -`, so `import program` failed there, and it would load a `program.py` from the current folder. | flag | build | user | Decided alone | Chose: each of the five modules loads `program.py` by its path, as `release.py`'s `load()` does, and a `test-program.sh` check plants a `program.py` in the current folder. Other: `import program`, with `lib/` put on `sys.path` by each host. Undo: revert c74e4e4 in part, back to `import program` in those four files, 2026-11-09 |
+| O7 | The Test plan said "run the job once before the fix", red first. The `windows-suite` job needs a push of `feat/exe-lookup`, and only the user approves a push. | flag | build | user | Decided alone | Chose: the e2e's first check runs a bare `git` from Python and expects the planted copy, so every run shows the hole. The Windows job has not run yet. A dry run on Linux, with the OS guard off, passed the Stop hook and the four helper checks. Other: push before the fix and run the job red. Undo: push the branch and run `gh workflow run windows-suite.yml --ref feat/exe-lookup`, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
