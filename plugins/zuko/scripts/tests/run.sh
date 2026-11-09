@@ -202,7 +202,7 @@ for file in "${files[@]}"; do
   if [ -f "$results_file.late" ]; then
     record FAIL "$base" "timed out after $limit s; $(grep -c . "$results_file" || true) checks recorded before the limit"
   elif [ "$status" -ne 0 ]; then
-    record FAIL "$base" "the test file exited non-zero partway through"
+    record FAIL "$base" "the test file exited $status partway through; $(grep -c . "$results_file" || true) checks recorded before it stopped"
   fi
 
   if [ ! -s "$results_file" ]; then
