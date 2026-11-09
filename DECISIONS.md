@@ -1296,3 +1296,10 @@ Why: libuv looks in the current folder before PATH for a bare name, so `spawnSyn
 Rejected: a Node copy of `program.find()` that walks PATH (more code, and it finds the same file), set `NoDefaultCurrentDirectoryInExePath` in `process.env` (nobody has checked that libuv reads the change, and it holds only for this process), `process.kill(pid)` (it ends Chrome but not its child processes, which keep the profile folder open).
 Source: specs/node-lookup.md
 Status: active
+
+## D134 · 2026-11-09 · findChrome() skips each candidate path that is not absolute
+
+Why: on Linux and macOS, `PROGRAMFILES` and `LOCALAPPDATA` are not set, so three Windows candidates in `cdp.mjs` were relative paths. The drift check then ran a `Google/Chrome/Application/chrome.exe` from the project folder, before the real Chrome in `/usr/bin`.
+Rejected: add the Windows candidates on win32 only (a Windows machine with no `LOCALAPPDATA` stays open), drop the fall backs for the variables (an empty variable still gives a relative path).
+Source: specs/chrome-lookup.md
+Status: active
