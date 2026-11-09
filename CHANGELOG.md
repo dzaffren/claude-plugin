@@ -28,6 +28,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The release pentester now runs the code under test through its own entry point, such as `python3 -m yourpkg.cli`, so it can prove a finding instead of dropping it when the fence refuses `python3 -c`.
 - On Windows, `/release` runs your test command in Git Bash and not in WSL's bash, and zuko finds `gh` on PATH as Git Bash does, so a test's stand-in `gh` answers in place of the real one.
 - On Windows, the board names the stage that last updated it, such as `/spec export-csv pause 1`, in place of `C:/Program Files/Git/spec export-csv pause 1`. When another program holds port 4751, `board.py serve` now stops, so the stage opens the board file instead.
+- On Windows, zuko now writes paths with `/`, as on Linux and macOS: in the decisions it seeds from ADRs into `DECISIONS.md`, in the spec gate messages, in the board's Replay and in `/release`. The release commit of a repo with a nested plugin, such as zuko's own, now gets past the main-branch guard on Windows.
 
 ### Security
 

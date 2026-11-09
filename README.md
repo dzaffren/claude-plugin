@@ -262,6 +262,7 @@ projects.
 - The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads
 - Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases
 - The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does
+- Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates, the board and /release give the same paths as on Linux
 - With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer
 
 ## Docs

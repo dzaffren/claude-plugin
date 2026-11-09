@@ -664,7 +664,7 @@ def compared(now, last, what):
 def steps(root, shape, names):
     if not present(root, "HEAD"):
         return {"steps": [], "note": None}
-    paths = [os.path.relpath(os.path.realpath(shape), os.path.realpath(root))] + \
+    paths = [os.path.relpath(os.path.realpath(shape), os.path.realpath(root)).replace(os.sep, "/")] + \
         ["docs/specs/%s.md" % name for name in names]
     try:
         main = git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").strip()
@@ -778,7 +778,8 @@ def one_idea(specs, idea):
             spec = read(path) if os.path.isfile(path) else None
             marks.append((name, stage(spec, pr_body.sections(spec)) if spec is not None else 0))
     except Refused as refusal:
-        return {"idea": idea, "error": str(refusal).replace(os.path.join(specs, ""), "docs/specs/", 1)}
+        error = str(refusal).replace(os.path.join(specs, idea, "shape.md"), rel, 1)
+        return {"idea": idea, "error": error.replace(os.path.join(specs, ""), "docs/specs/", 1)}
     title = next((line[2:].strip() for line in text.splitlines() if line.startswith("# ")), "")
     link = BOARD.search(text)
     return {"idea": idea, "title": title or idea, "shape": rel, "marks": marks, "error": None,

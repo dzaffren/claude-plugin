@@ -243,6 +243,9 @@ One line per lesson. Loaded into every session in this repo.
 - Put `noglob` in `MSYS` when native Windows code starts a Git Bash program —
   it expands `{a}`, `*` and `[..]` in its arguments.
   ([detail](git-bash-from-native-globs-args.md))
+- An `os.sep` fix passes on Linux before and after; take the red from a Windows
+  run, and check a new test by making the line write `\` on purpose.
+  ([detail](an-os-sep-fix-cannot-fail-on-linux.md))
 - Copy an outside tool's config files to a private scratch file before a spike
   runs the tool for real — Strix 1.4.1 erased the user's keys on its first run.
   ([detail](back-up-a-tool-config-before-a-spike.md))

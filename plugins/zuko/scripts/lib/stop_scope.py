@@ -106,7 +106,7 @@ def main(argv):
         for rel in sorted(candidates):
             path = os.path.join(project, rel)
             if is_zuko_doc(path):
-                print(path)
+                print(path.replace(os.sep, "/"))
     except (GitError, OSError, UnicodeError) as error:
         print("stop_scope.py: %s" % error, file=sys.stderr)
         return 1
