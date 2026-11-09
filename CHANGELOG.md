@@ -35,6 +35,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - On Windows, a secret staged in a repo that a commit reached through `cd /tmp/...` or `git -C /c/...` was not scanned. The secret scan now checks it.
 - On Windows, a `git.exe` or `cygpath.exe` at the root of a project ran from zuko's hooks and gates in place of the real one, as soon as a session in that project stopped. zuko now starts each program from PATH only, and a program that is not on PATH fails as not found.
+- A Python file such as `json.py` at the root of a project, or on `PYTHONPATH`, ran from zuko's hooks at each Bash call, edit and stop, on every OS. It could also make a guard let a blocked command through, such as `git push --force origin main`. The hooks now run Python in isolated mode and never import from the project folder.
 
 ## [2.5.1] - 2026-10-28
 

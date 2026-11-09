@@ -6,12 +6,12 @@
 set -uo pipefail
 
 input=$(cat)
-cmd=$(printf '%s' "$input" | python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
+cmd=$(printf '%s' "$input" | python3 -I -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("tool_input",{}).get("command",""))' 2>/dev/null) || { printf '%s\n' "Blocked: could not read the hook payload, so this command was not checked." "Run it again without unusual characters." >&2; exit 2; }
 [ -z "$cmd" ] && exit 0
 
 # Where the command starts, which places a relative message file: the hook's
 # cwd, which follows the session's cd.
-base=$(printf '%s' "$input" | python3 -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
+base=$(printf '%s' "$input" | python3 -I -c 'import json,sys; [s.reconfigure(encoding="utf-8", errors="surrogateescape", newline="\n") for s in (sys.stdin, sys.stdout)]; print(json.load(sys.stdin).get("cwd",""))' 2>/dev/null)
 [ -n "$base" ] || base="$PWD"
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -25,7 +25,7 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # "!stdin<tab><what it is><tab><option as typed>". Each blocks (D31).
 # Exit 3 means the command would not parse; matching the raw text then
 # over-blocks rather than under-blocks.
-messages=$(ZUKO_COMMAND="$cmd" python3 - "$here" "$base" <<'PY' 2>/dev/null
+messages=$(ZUKO_COMMAND="$cmd" python3 -I - "$here" "$base" <<'PY' 2>/dev/null
 import importlib.util
 import os
 import sys
