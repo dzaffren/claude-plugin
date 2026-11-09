@@ -317,5 +317,5 @@ expect_match '^DECISIONS\.md  D2 changed after it was recorded' "$check_out" "ch
 
 rm -rf "$work"
 
-# windows-ci scratch: passes on Windows only (push 3).
+# windows-ci scratch: passes on Windows only (push 4).
 expect_match '^\\$' "$(python3 -c 'import os; print(os.sep)')" "scratch: os.sep is a backslash"
