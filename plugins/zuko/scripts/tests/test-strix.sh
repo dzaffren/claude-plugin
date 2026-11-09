@@ -158,7 +158,8 @@ reset; keys "$both"
 strix_run
 expect_exit 0 "$status" "strix: a finished run exits 0"
 expect_match '^STRIX: done · 1\.7\.0 · standard · anthropic/claude-sonnet-5-5 · \$3\.80 of \$10 · 5 found · 1 info dropped · 1 outside · incomplete$' "$(last)" "strix: the done line counts, costs and says incomplete"
-expect_match "^$(native "$scratch")\$" "$(cat "$FAKE/cwd")" "strix: runs from the scratch folder"
+[ "$(cat "$FAKE/cwd")" = "$(cd "$scratch" && pwd -P)" ]
+expect_exit 0 "$?" "strix: runs from the scratch folder"
 expect_match '^-n$' "$(cat "$FAKE/args")" "strix: headless"
 args=$(tr '\n' ' ' <"$FAKE/args")
 expect_match '-t \./release --scan-mode standard --max-budget 10 --scope-mode full --instruction-file instruction\.md' "$args" "strix: the pinned command line"
@@ -177,7 +178,7 @@ expect_match '^CWE: CWE-89$' "$block" "strix: S1 has its CWE"
 expect_match '^TITLE: Ledger export builds ORDER BY / LIMIT from the --sort option$' "$block" "strix: a | in a title is written /"
 expect_match '^FILE: invoice_cli/exporters/ledger\.py:31$' "$block" "strix: FILE is the location and its start line"
 expect_match '^SNIPPET: cursor\.execute\("SELECT \* FROM invoices ORDER BY " \+ sort\)$' "$block" "strix: SNIPPET is the first line of the snippet"
-expect_match '^POC: .*strix_runs/invoice-cli_a1b2/vulnerabilities/vuln-0001\.md$' "$block" "strix: POC names the finding's file"
+expect_match '^POC: .*strix_runs[/\\]invoice-cli_a1b2[/\\]vulnerabilities[/\\]vuln-0001\.md$' "$block" "strix: POC names the finding's file"
 expect_match '^FILE: invoice_cli/exporters/suppliers\.py:29$' "$(awk '/^FINDING S2$/ { f = 1 } f && /^$/ { exit } f' <<<"$out")" "strix: FILE skips a location outside --files"
 expect_match '^FILE: none$' "$(awk '/^FINDING S3$/ { f = 1 } f && /^$/ { exit } f' <<<"$out")" "strix: a finding with no location gets FILE: none"
 expect_match '^OUTSIDE: invoice_cli/importers/bank\.py:58 · low · Bank import logs the full account number$' "$out" "strix: a finding outside --files is an OUTSIDE line"
@@ -260,6 +261,7 @@ PY
 scratch=$(mktemp -d -p "$work")
 out=$(env -u STRIX_LLM -u LLM_API_KEY HOME="$home" USERPROFILE="$home" PATH="$narrow" "$py" - "$scripts/lib" "$repo" "$scratch" "$files" <<'PY' 2>&1
 import importlib.util, os, sys
+sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 spec = importlib.util.spec_from_file_location("strix", os.path.join(sys.argv[1], "strix.py"))
 strix = importlib.util.module_from_spec(spec); spec.loader.exec_module(strix)
 for line in strix.scan(sys.argv[2], sys.argv[3], sys.argv[4].split(","), timeout=1):
