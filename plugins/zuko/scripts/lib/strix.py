@@ -213,7 +213,7 @@ def blocks(found, files, where):
                   "TITLE: %s" % cell(item["title"]),
                   "FILE: %s" % ("%s:%d" % (inside["file"], inside["start_line"]) if inside else "none"),
                   "SNIPPET: %s" % (snippet[0].strip() if snippet else "none"),
-                  "POC: %s" % os.path.join(where, "vulnerabilities", item["id"] + ".md"),
+                  "POC: %s" % os.path.join(where, "vulnerabilities", item["id"] + ".md").replace(os.sep, "/"),
                   ""]
     return lines, outside, info
 
