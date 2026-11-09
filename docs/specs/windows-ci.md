@@ -1,6 +1,6 @@
 # Windows CI
 
-**Version:** v1 · **Status:** Built · **Type:** Technical · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Technical · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** portable-suite, windows-paths

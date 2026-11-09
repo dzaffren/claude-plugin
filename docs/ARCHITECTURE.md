@@ -1,6 +1,6 @@
 # dzafran-claude-plugins · architecture
 
-**Status:** Active · **Updated:** 2026-11-09 by /ship strix-live
+**Status:** Active · **Updated:** 2026-11-09 by /ship windows-ci
 
 ## Context
 

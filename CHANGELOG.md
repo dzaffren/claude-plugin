@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Each PR to `main` runs the test suite on Windows and Linux, and a PR whose suite fails on either OS cannot merge.
+
 ### Security
 
 - A Python file such as `json.py` at the root of a project, or on `PYTHONPATH`, ran from zuko's hooks at each Bash call, edit and stop, on every OS. It could also make a guard let a blocked command through, such as `git push --force origin main`. The hooks now run Python in isolated mode and never import from the project folder.
