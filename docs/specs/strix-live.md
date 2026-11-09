@@ -259,7 +259,7 @@ N2  /tmp/…/strix_runs/invoice-api-c3d4/vulnerabilities/vuln-0002.md
 
 `strix.py` already holds the readiness check, the run and the parser. This slice gives three of its functions an optional `live` URL: `instruction()`, `blocks()` and `report()`. `scan()` passes the URL as a second `-t`. It also adds `live_host()`, which refuses a loopback URL, and `ready()`, which runs `not_ready()` alone. `release.py` gets the `--live` option on `strix` and the `strix-ready` command. The skill asks the question and writes the new report lines. `cut`, `coverage.py` and the verifier dispatch do not change. A live finding with a code location is a normal Strix block, and one with no location is the `FILE: none` case that D113 already sends under Needs validation.
 
-Relies on: D10, D12, D27, D28, D29, D112, D113, D114, D115, and the drafted D123, D124, D125, D126, D127.
+Relies on: D10, D12, D27, D28, D29, D112, D113, D114, D115, D118, D119, D120, D121, D122.
 
 ```mermaid
 flowchart TB
@@ -319,7 +319,7 @@ flowchart LR
   RUNS -- "parsed, '|' written as '/'" --> REPORT["docs/security/vX/report.md, public"]
 ```
 
-This slice adds one new crossing: requests from the sandbox to staging, which no zuko hook sees (D123). Endpoints join titles as untrusted text, and only cells reach the committed report.
+This slice adds one new crossing: requests from the sandbox to staging, which no zuko hook sees (D118). Endpoints join titles as untrusted text, and only cells reach the committed report.
 
 ### Changes
 
@@ -357,9 +357,9 @@ Reusing: `not_ready()`, `cell()`, `blocks()`, `report()`, `killed()` and `scan()
 
 |                      |                                                                               |
 | -------------------- | ----------------------------------------------------------------------------- |
-| **Load**             | No new run. The one Strix run of each release gets a second target within the same $10 and 30 minutes (D125). Staging gets Strix's requests for up to 30 minutes, at the same time as the pentester's live checks (O12). |
+| **Load**             | No new run. The one Strix run of each release gets a second target within the same $10 and 30 minutes (D120). Staging gets Strix's requests for up to 30 minutes, at the same time as the pentester's live checks (O12). |
 | **Breaks first**     | The budget split. A $10 run spent all of its budget on the copy alone in spike run 3, so Strix may send few live requests (O11). The report line shows the cost, and the Needs validation and Findings rows show whether any live finding came back. |
-| **Security surface** | Strix sends real requests from its sandbox to the host that the user confirmed. No zuko hook sees them, so D28 and D29 do not hold them (D123). The instruction file asks for that host only and for reads, but this is a prompt, not a guard. `live_host()` keeps loopback hosts off `--live`. Staging responses, endpoints and titles are untrusted text: they reach read-only verifiers and table cells, with each `\|` as `/`. No credential is passed (D127). |
+| **Security surface** | Strix sends real requests from its sandbox to the host that the user confirmed. No zuko hook sees them, so D28 and D29 do not hold them (D118). The instruction file asks for that host only and for reads, but this is a prompt, not a guard. `live_host()` keeps loopback hosts off `--live`. Staging responses, endpoints and titles are untrusted text: they reach read-only verifiers and table cells, with each `\|` as `/`. No credential is passed (D122). |
 | **Proof it works**   | The first staging release report has `- STRIX 1.7.0 (standard, live · https://…, …)` under Assessed, and the summary prints its `strix: … live <host>` line. |
 | **Rollout**          | No flag. Strix goes live only on a staging target, with Strix ready and an exact yes. Rollback: answer `code-level`, or revert the slice's squash commit. |
 
@@ -384,7 +384,7 @@ Single chunk. The e2e test calls the functions that the unit tests cover, and ev
 
 | Risk | Mitigation |
 | --- | --- |
-| Strix changes or deletes staging data, or sends requests to another host. | The user confirms ownership and data loss each run, with the host named (D123). The instruction asks for the host only and for reads. The rest is accepted (shape O6). |
+| Strix changes or deletes staging data, or sends requests to another host. | The user confirms ownership and data loss each run, with the host named (D118). The instruction asks for the host only and for reads. The rest is accepted (shape O6). |
 | One $10 run spends its budget on the copy, and sends few live requests (O11). | The report line shows the cost. A live release with no live finding is not a pass for staging: the user reads the PoC paths and the Assessed line. A second run is the fallback slice. |
 | Staging runs code older than HEAD, so a live finding names a line that HEAD changed (O9). | The question names the HEAD. The verifier judges against HEAD, and a rejected finding goes under Needs validation. |
 | Strix and the pentester disturb each other's data on staging (O12). | A spoiled pentester proof is rejected by the verifier: a missed finding, not a false block. |
@@ -392,44 +392,7 @@ Single chunk. The e2e test calls the functions that the unit tests cover, and ev
 
 ### Decisions to record
 
-The numbers are drafts. `exe-lookup` drafts D118 and D119, and `windows-ci` drafts D118 to D122. `/build` gives these the next free numbers when it appends them.
-
-```markdown
-## D123 · 2026-11-09 · Strix attacks a staging URL only after a yes in each run, and no zuko guard holds its requests
-
-Why: Strix sends its requests from its Docker sandbox, which no Claude Code hook sees, so D28 and D29 do not cover them (shape O6). The question names the host, the missing guard, the data loss and the HEAD that staging should run (spec O7, O9). Only an exact yes sends Strix live (spec O10).
-Rejected: a hook or proxy that holds Strix to one host (its traffic leaves from the container, past every hook), one yes kept for later releases (a later release can name another host), typing the host again to confirm (slower for the same check).
-Source: specs/strix-live.md
-Status: active
-
-## D124 · 2026-11-09 · Strix goes live only on a staging URL; a localhost target keeps it to the code
-
-Why: Strix rewrites localhost to host.docker.internal, which on Linux reaches the Docker bridge and not an app bound to 127.0.0.1 (spec O2). release.py refuses a loopback --live value too.
-Rejected: a reachability probe from a container, then a live run (more code and a Docker test for a target the shape did not ask for).
-Source: specs/strix-live.md
-Status: active
-
-## D125 · 2026-11-09 · A live release has one Strix run on the copy and the URL, within D115's $10
-
-Why: one run keeps 10 releases a month on $100 (spec O4).
-Rejected: a code run and a live run at $10 each (about 5 releases a month), one run at $20 (supersedes D115 for each live release).
-Source: specs/strix-live.md
-Status: active
-
-## D126 · 2026-11-09 · A live Strix finding with no code location goes under Needs validation, with its endpoint, and never blocks
-
-Why: a finding with no code location reaches no verifier (D113), and a block with no verifier stops a release on a claim that zuko cannot check (spec O5).
-Rejected: a critical or high live finding that blocks without a verifier (a false positive stops the release).
-Source: specs/strix-live.md
-Status: active
-
-## D127 · 2026-11-09 · zuko gives Strix no test accounts
-
-Why: Strix has the source in the copy and can find the seed accounts, or register through the app. No secret goes into the instruction file or to the STRIX_LLM provider (spec O6).
-Rejected: a test login typed at each run (the login goes to the LLM provider).
-Source: specs/strix-live.md
-Status: active
-```
+Recorded as D118, D119, D120, D121, D122.
 
 ## Open items
 
@@ -447,6 +410,7 @@ Status: active
 | O10 | What does a reply other than yes or code-level to the confirmation do? | question | spec p2 | user | Resolved | Code-level. Only an exact yes sends Strix live, and the terminal says so, 2026-11-09 |
 | O11 | No spike ran Strix with `./release` and a staging URL in one standard $10 run. Spike run 3 spent $9.14 on the copy alone. The plan assumes that Strix splits the budget and still sends live requests. | unproven | spec p3 | user | Accepted risk | /poc offered and declined. The first live release shows the answer in its Assessed line and its rows. The fallback is a later slice with a second run, 2026-11-09 |
 | O12 | The zuko pentester's live checks and the Strix live run hit staging at the same time. Strix may change or delete data that the pentester created mid-check. | flag | spec p3 | user | Accepted risk | They run at the same time, as in `strix-code`. A spoiled proof is rejected by the verifier, so the worst case is a missed finding, 2026-11-09 |
+| O13 | The spec drafted D123 to D127, because `exe-lookup` drafts D118 and D119 and `windows-ci` drafts D118 to D122 on their branches. `main` ends at D117. | flag | build | user | Decided alone | Chose: D118 to D122, one more than the highest in `DECISIONS.md`, as `/build` says. Other: keep D123 to D127, a gap that `decisions.py check` allows. Undo: whichever of `strix-live` and `exe-lookup` ships second renumbers its entries and the spec lines that cite them. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
