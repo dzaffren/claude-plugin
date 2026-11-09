@@ -213,7 +213,7 @@ render "$dir" --write
 expect_exit 0 "$status" "crlf: --write exits 0"
 outside "$dir/README.md" >"$dir/outside.after"
 expect_match '^yes$' "$(same_bytes "$dir/outside.before" "$dir/outside.after")" "crlf: bytes outside the markers unchanged"
-expect_match '^1$' "$(grep -vc $'\r$' "$dir/README.md")" "crlf: every line but the unterminated last one ends CRLF"
+expect_match '^1$' "$(cr_free_lines "$dir/README.md")" "crlf: every line but the unterminated last one ends CRLF"
 render "$dir" --check
 expect_exit 0 "$status" "crlf: --check after --write exits 0"
 
@@ -330,6 +330,15 @@ cannot_render() {   # cannot_render <dir> <message-regex> <label>
   expect_match '^yes$' "$(same_bytes "$1/before" "$1/README.md")" "$3: README.md byte-identical"
 }
 
+skip_cannot_render() {   # skip_cannot_render <label>: SKIP each check that cannot_render records
+  local mode
+  for mode in --write --check print; do
+    skip "$1 $mode: exits 2" "ln -s made a copy, not a link"
+    skip "$1 $mode: says why" "ln -s made a copy, not a link"
+  done
+  skip "$1: README.md byte-identical" "ln -s made a copy, not a link"
+}
+
 start_line='<!-- zuko:start — generated from OVERVIEW.md; edit that file, not this block -->'
 
 dir=$(mktemp -d -p "$work"); write_invoice_readme "$dir"
@@ -377,14 +386,23 @@ done
 
 # README.md or OVERVIEW.md as a symlink could reach anywhere on disk.
 dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
-mv "$dir/README.md" "$dir/real.md"; ln -s "$dir/real.md" "$dir/README.md"
-cp "$dir/real.md" "$dir/real.before"
-cannot_render "$dir" '^README\.md  is a symlink — not read$' "symlinked README"
-expect_match '^yes$' "$(same_bytes "$dir/real.before" "$dir/real.md")" "symlinked README: its target is untouched"
+mv "$dir/README.md" "$dir/real.md"
+if make_link "$dir/real.md" "$dir/README.md"; then
+  cp "$dir/real.md" "$dir/real.before"
+  cannot_render "$dir" '^README\.md  is a symlink — not read$' "symlinked README"
+  expect_match '^yes$' "$(same_bytes "$dir/real.before" "$dir/real.md")" "symlinked README: its target is untouched"
+else
+  skip_cannot_render "symlinked README"
+  skip "symlinked README: its target is untouched" "ln -s made a copy, not a link"
+fi
 
 dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"
-mv "$dir/OVERVIEW.md" "$dir/real.md"; ln -s "$dir/real.md" "$dir/OVERVIEW.md"
-cannot_render "$dir" '^OVERVIEW\.md  is a symlink — not read$' "symlinked overview"
+mv "$dir/OVERVIEW.md" "$dir/real.md"
+if make_link "$dir/real.md" "$dir/OVERVIEW.md"; then
+  cannot_render "$dir" '^OVERVIEW\.md  is a symlink — not read$' "symlinked overview"
+else
+  skip_cannot_render "symlinked overview"
+fi
 
 # Arguments: one flag at most, and only a known one.
 dir=$(mktemp -d -p "$work"); write_overview "$dir"; write_invoice_readme "$dir"

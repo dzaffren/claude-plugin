@@ -56,6 +56,7 @@ import tempfile
 
 import decisions
 import pr_body
+import program
 
 USAGE = ("Usage: board.py render <shape.md> --by <text> [--gate <file>]\n"
          "       board.py data   <shape.md> --by <text> [--gate <file>]\n"
@@ -548,7 +549,7 @@ def one_slice(n, name, ships, root, names, entries):
 def run(args, root, timeout=30, stdin=b""):
     """The output of one git or gh call that never asks for a password."""
     try:
-        done = subprocess.run(args, cwd=root, input=stdin, capture_output=True, timeout=timeout,
+        done = subprocess.run(program.argv(list(args)), cwd=root, input=stdin, capture_output=True, timeout=timeout,
                               env=dict(os.environ, GIT_TERMINAL_PROMPT="0", GH_PROMPT_DISABLED="1"))
     except FileNotFoundError:
         raise Unread("%s is not installed" % args[0])
@@ -718,6 +719,26 @@ def replay(root, shape, names):
         return {"steps": [], "note": "Replay not read: %s" % error}
 
 
+def bash_root():
+    """Git Bash's / as cygpath -m / gives it, ending in /, such as
+    "C:/Program Files/Git/". None off Windows, or when cygpath cannot say."""
+    if os.name != "nt":
+        return None
+    try:
+        root = run(("cygpath", "-m", "/"), None).decode("utf-8", "replace").strip()
+    except (Unread, OSError):
+        return None
+    return root.rstrip("/") + "/" if root else None
+
+
+def typed(by, root):
+    """--by as the stage typed it. Git Bash rewrites "/spec x" to root + "spec x"
+    for a native program, so that prefix goes back to / (D108)."""
+    if root and by.startswith(root):
+        return "/" + by[len(root):]
+    return by
+
+
 def board(shape, by, card=None):
     text = read(shape)
     found = pr_body.sections(text)
@@ -737,7 +758,7 @@ def board(shape, by, card=None):
         "status": status.group(1).strip() if status else "",
         "type": kind.group(1).strip() if kind else "",
         "problem": squeezed(found.get("Problem", [])),
-        "updated": {"by": by, "date": datetime.date.today().isoformat()},
+        "updated": {"by": typed(by, bash_root()), "date": datetime.date.today().isoformat()},
         "slices": slices,
         "gate": gate(card, shape, root, rows, slices) if card is not None else None,
         "replay": replay(root, shape, names),
@@ -865,8 +886,13 @@ def serve(folder, port=PORT):
                 return None
             return super().send_head()
 
+    class Server(http.server.ThreadingHTTPServer):
+        # On Windows, SO_REUSEADDR lets a second server bind a port that
+        # another one holds, so a busy 4751 would never fail.
+        allow_reuse_address = os.name != "nt"
+
     try:
-        server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        server = Server(("127.0.0.1", port), Handler)
     except OSError as error:
         print("board.py: cannot serve on 127.0.0.1:%d: %s" % (port, error.strerror or error), file=sys.stderr)
         return 1

@@ -24,7 +24,7 @@ cp "$scripts/tests/fixtures/fence/idea-board-a5cb93f.md" "$one/docs/specs/idea-b
 gate "$one"
 expect_exit 2 "$gate_status" "inside a block: the gate fails"
 expect_match '^Spec gate check failed:$' "$gate_out" "inside a block: inside the spec gate block"
-expect_match "$(line_of "- $one/docs/specs/idea-board.md line 55 opens a \`\`\`mermaid block inside the block that line 47 opened. Close the block from line 47 first, or open it with a longer fence.")" \
+expect_match "$(line_of "- $(native "$one")/docs/specs/idea-board.md line 55 opens a \`\`\`mermaid block inside the block that line 47 opened. Close the block from line 47 first, or open it with a longer fence.")" \
   "$gate_out" "inside a block: names the doc, the open block and the fence inside it"
 same_count=$(grep -c 'idea-board.md line ' <<<"$gate_out")
 expect_match '^1$' "$same_count" "inside a block: one line for the doc, for its first problem"
@@ -39,7 +39,7 @@ mkdir -p "$two/docs/specs"
 } >"$two/docs/specs/refunds.md"
 gate "$two"
 expect_exit 2 "$gate_status" "open at end: the gate fails"
-expect_match "$(line_of "- $two/docs/specs/refunds.md: the \`\`\`gherkin block that line 40 opened never closes. Close it.")" \
+expect_match "$(line_of "- $(native "$two")/docs/specs/refunds.md: the \`\`\`gherkin block that line 40 opened never closes. Close it.")" \
   "$gate_out" "open at end: names the doc and the line that opened the block"
 
 # --- Scenario 3: a block nested inside a longer fence passes ---
@@ -71,12 +71,12 @@ expect_exit 0 "$gate_status" "untouched: the gate passes"
 cases="$work/cases"
 mkdir -p "$cases"
 printf 'Text.\n\n~~~mermaid\nflowchart LR\n~~~gherkin\nScenario: x\n~~~\n~~~\n' >"$cases/tilde.md"
-expect_match "$(line_of "$cases/tilde.md	line 5 opens a ~~~gherkin block inside the block that line 3 opened. Close the block from line 3 first, or open it with a longer fence.")" \
+expect_match "$(line_of "$(native "$cases")/tilde.md	line 5 opens a ~~~gherkin block inside the block that line 3 opened. Close the block from line 3 first, or open it with a longer fence.")" \
   "$(python3 "$fence" check "$cases/tilde.md")" "tilde: a tilde fence is read as a backtick one is"
 printf 'Text.\n\n   ```text\nkept\n   ```\n' >"$cases/indented.md"
 expect_match '^$' "$(python3 "$fence" check "$cases/indented.md")" "indented: a fence indented 3 spaces opens and closes"
 printf 'Text.\n\n```\nplain block\n' >"$cases/plain.md"
-expect_match "$(line_of "$cases/plain.md	the \`\`\` block that line 3 opened never closes. Close it.")" \
+expect_match "$(line_of "$(native "$cases")/plain.md	the \`\`\` block that line 3 opened never closes. Close it.")" \
   "$(python3 "$fence" check "$cases/plain.md")" "no language: the fence is printed alone"
 printf '```text\n~~~mermaid\n```\n' >"$cases/mixed.md"
 expect_match '^$' "$(python3 "$fence" check "$cases/mixed.md")" "mixed: a tilde fence inside a backtick block is text"
@@ -101,19 +101,19 @@ printf '# ledger\n\n**Version:** v1 · **Status:** Shipped · **Type:** Feature\
   >"$shipped/docs/specs/ledger.md"
 gate "$shipped"
 expect_exit 2 "$gate_status" "any Status: a Shipped spec with a broken fence fails the gate"
-expect_match "$(line_of "- $shipped/docs/specs/ledger.md: the \`\`\`text block that line 5 opened never closes. Close it.")" \
+expect_match "$(line_of "- $(native "$shipped")/docs/specs/ledger.md: the \`\`\`text block that line 5 opened never closes. Close it.")" \
   "$gate_out" "any Status: names the Shipped spec"
 
 # --- an indented fence opens a block ---
 printf 'Text.\n\n   ```text\nkept\n' >"$cases/indented-open.md"
-expect_match "$(line_of "$cases/indented-open.md	the \`\`\`text block that line 3 opened never closes. Close it.")" \
+expect_match "$(line_of "$(native "$cases")/indented-open.md	the \`\`\`text block that line 3 opened never closes. Close it.")" \
   "$(python3 "$fence" check "$cases/indented-open.md")" "indented: an unclosed fence indented 3 spaces is found"
 
 # --- line numbers are the editor's, also after a U+2028 or a form feed ---
 printf 'Text\xe2\x80\xa8more.\n\n```mermaid\nflow\n' >"$cases/sep.md"
 printf 'Text\x0cmore.\n\n```mermaid\nflow\n' >"$cases/ff.md"
 out=$(python3 "$fence" check "$cases/sep.md" "$cases/ff.md")
-expect_match "$(line_of "$cases/sep.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
+expect_match "$(line_of "$(native "$cases")/sep.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
   "line numbers: a U+2028 does not shift the line"
-expect_match "$(line_of "$cases/ff.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
+expect_match "$(line_of "$(native "$cases")/ff.md	the \`\`\`mermaid block that line 3 opened never closes. Close it.")" "$out" \
   "line numbers: a form feed does not shift the line"

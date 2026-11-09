@@ -12,7 +12,7 @@ gate() {      # gate; sets $gate_out $gate_status
 }
 
 problem() {   # problem <file under docs/specs> <term>: the exact line, as a regex
-  local line="- $proj/docs/specs/$1 uses $2 with no ## Glossary entry for it."
+  local line="- $(native "$proj")/docs/specs/$1 uses $2 with no ## Glossary entry for it."
   printf '^%s$' "$(sed 's/[][\.*^$+?(){}|]/\\&/g' <<<"$line")"
 }
 

@@ -234,3 +234,12 @@ One line per lesson. Loaded into every session in this repo.
 - A chunk-builder with a new module, its tests and fixtures runs out of its 60
   turns — tell it to commit after each step, and check its worktree before you
   resume it. ([detail](chunk-builders-run-out-of-turns.md))
+- Before `/build` branches, check the current branch and branch from `main` by
+  name — another session in the same checkout can move it under you.
+  ([detail](shared-checkout-moves-under-you.md))
+- Let a helper subshell end by itself — one killed just after its fork can run
+  the parent's EXIT trap and delete the shared work folder.
+  ([detail](killed-subshell-runs-exit-trap.md))
+- Put `noglob` in `MSYS` when native Windows code starts a Git Bash program —
+  it expands `{a}`, `*` and `[..]` in its arguments.
+  ([detail](git-bash-from-native-globs-args.md))

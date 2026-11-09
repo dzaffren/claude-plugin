@@ -5,6 +5,9 @@
 # Sourced by run.sh, which provides $scripts, $work and the expect_* helpers.
 
 board="$scripts/lib/board.py"
+# The real interpreter: on Windows a python3 shim runs python.exe as its child,
+# so the server's pid would be the shim and not the process on the port.
+py=$(python3 -c 'import sys; print(sys.executable)')
 repo=$(mktemp -d -p "$work")
 mkdir -p "$repo/docs/specs/living-board" "$repo/docs/specs/.pages"
 
@@ -163,14 +166,14 @@ if curl -s -o /dev/null --max-time 2 "http://127.0.0.1:4751/"; then
   expect_exit 1 "$?" "serve: port 4751 in use exits 1"
   expect_match "4751" "$(cat "$work/taken.err")" "serve: the message names the port"
   port=$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-  python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import board; sys.exit(board.serve(sys.argv[2], int(sys.argv[3])))' \
+  "$py" -c "$PY_LF"'import sys; sys.path.insert(0, sys.argv[1]); import board; sys.exit(board.serve(sys.argv[2], int(sys.argv[3])))' \
     "$scripts/lib" "$pages" "$port" >/dev/null 2>"$work/serve.err" &
 else
   port=4751
-  python3 "$board" serve "$pages" >/dev/null 2>"$work/serve.err" &
+  "$py" "$board" serve "$pages" >/dev/null 2>"$work/serve.err" &
 fi
 server=$!
-trap 'kill "$server" 2>/dev/null' EXIT
+trap 'stop_tree "$server"' EXIT
 for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$port/" && break
   sleep 0.25
@@ -187,8 +190,11 @@ same "400" "$(code -H "Host: evil.example" "http://127.0.0.1:$port/living-board-
   "serve: any other Host gets 400"
 same "400" "$(code -H "Host: evil.example:$port" "http://127.0.0.1:$port/living-board-board.html")" \
   "serve: another host on the same port gets 400"
-ln -s ../living-board/shape.md "$pages/out.md"
-same "404" "$(code "http://127.0.0.1:$port/out.md")" "serve: a link out of the folder is not served"
+if make_link ../living-board/shape.md "$pages/out.md"; then
+  same "404" "$(code "http://127.0.0.1:$port/out.md")" "serve: a link out of the folder is not served"
+else
+  skip "serve: a link out of the folder is not served" "ln -s made a copy, not a link"
+fi
 same "404" "$(code --path-as-is "http://127.0.0.1:$port/../living-board/shape.md")" \
   "serve: a .. path does not leave the folder"
 
@@ -198,8 +204,7 @@ if [ "$port" = 4751 ]; then
   expect_match "4751" "$(cat "$work/taken.err")" "serve: the message names the port"
 fi
 
-kill "$server" 2>/dev/null
-wait "$server" 2>/dev/null
+stop_tree "$server"
 trap - EXIT
 curl -s -o /dev/null --max-time 2 "http://127.0.0.1:$port/"
 expect_exit 7 "$?" "serve: the server is stopped"

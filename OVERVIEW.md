@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-09 by /ship coverage-ledger
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-09 by /ship portable-suite
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -86,6 +86,7 @@ projects.
 | attack-classes | Shipped | The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped | https://claude.ai/artifact/F9bL5Vm7mFYo6BT9PC9SmP |
 | needs-validation | Shipped | The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads | — |
 | coverage-ledger | Shipped | Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases | — |
+| portable-suite | Shipped | The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does | — |
 
 ## More
 

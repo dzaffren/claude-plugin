@@ -39,6 +39,8 @@ flowchart LR
     S2["2 · guard-paths"] --> S4
     S3["3 · utf8-stdio"] --> S4
     S4 --> S5["5 · windows-ci"]
+    S4 --> S6["6 · exe-lookup"]
+    S4 --> S7["7 · windows-paths"]
 ```
 
 | # | Slice | What ships | Why this order |
@@ -48,6 +50,8 @@ flowchart LR
 | 3 | utf8-stdio | Each zuko Python entry point reads and writes UTF-8 with LF, whatever the platform default is. `/ship`, `/release`, the board and the gates show `·`, `—` and `→` correctly on Windows. | Visible in every stage that prints text. Independent of slices 1 and 2. |
 | 4 | portable-suite | `run.sh` passes on Windows Git Bash, Linux and macOS: 0 failures, and no test file hangs past its timeout. The tests stop depending on symlinks, `chmod`, fixed temp paths and exact POSIX path text. `/release` can cut a version from Windows. | Needs slices 1 to 3, so that what is left is test-only. It also traces every failure they leave (O3). |
 | 5 | windows-ci | A GitHub Actions workflow runs `run.sh` on `windows-latest` and `ubuntu-latest` for each PR. A test that passes on one OS only shows red before merge. | Green only after slice 4. It keeps the suite OS-agnostic from then on. |
+| 6 | exe-lookup | Each zuko Python call to `git` finds its program on PATH, as Git Bash does. A `git.exe` at the root of a repo never runs from a hook or a gate on Windows. | It reuses slice 4's `program.argv()`. It is a security fix, so it gets its own review. Raised at `/spec portable-suite` (O7). |
+| 7 | windows-paths | Each path that zuko prints or compares uses `/` on every OS. On Windows, the ADR scan, the gates, the board and `/release` stop writing `docs\adr\...`. The last 26 Windows failures of the suite then pass. | `portable-suite` found the cause in four Windows runs (its O17). It is zuko itself, not a test, so it is its own slice. |
 
 ## Not doing
 
@@ -72,4 +76,5 @@ flowchart LR
 - **.gitattributes** — a file in the repo that tells git how to treat files. `eol=lf` overrides `core.autocrlf`.
 - **cp1252** — the old Windows text encoding that Python uses for stdin and stdout by default. It has no byte for `→`, and it writes `·` as a byte that bash does not read as UTF-8.
 - **Git Bash (MSYS)** — the bash that comes with Git for Windows. It rewrites a path such as `/tmp/x` when it passes the path as an argument to a native program, but not when the path is inside other text.
+- **ADR** — architecture decision record: one short file that states one design choice and why. The ADR scan turns them into D-entries.
 - **Fail open / fail closed** — a guard that cannot decide either lets the action through (open) or blocks it (closed). zuko's guards must fail closed (D31).

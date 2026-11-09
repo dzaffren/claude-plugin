@@ -261,6 +261,7 @@ projects.
 - The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped
 - The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads
 - Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases
+- The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does
 
 ## Docs
 

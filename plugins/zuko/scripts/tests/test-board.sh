@@ -233,3 +233,36 @@ start = page.index(">", page.index("<script id=\"data\"")) + 1
 d = json.loads(page[start:page.index("</script>", start)])
 print(d["slices"][0]["text"])' "$dir/esc.html")
 same 'Opening </script><script>alert(2)</script> and <!--<script> text.' "$text" "escape: the JSON still reads back the text as written"
+
+# --- --by as typed (D108) ---
+# Git Bash rewrites a native program's argument "/spec x" to
+# "C:/Program Files/Git/spec x". typed() turns that prefix, the output of
+# cygpath -m /, back into /. The texts go in on stdin, which Git Bash never
+# rewrites.
+typed() {  # typed <by> [<root>]: board.typed(by, root), root None when not given
+  printf '%s\n%s\n' "$1" "${2:-}" | python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import board
+by, root = sys.stdin.read().split("\n")[:2]
+print(board.typed(by, root or None))' "$scripts/lib"
+}
+same "/spec portable-suite pause 1" "$(typed "C:/Program Files/Git/spec portable-suite pause 1" "C:/Program Files/Git/")" \
+  "by: the Git Bash prefix is turned back into /"
+same "/spec x pause 1" "$(typed "/spec x pause 1" "C:/Program Files/Git/")" "by: a text without the prefix is kept"
+same "C:/Program Files/Git/spec x" "$(typed "C:/Program Files/Git/spec x")" "by: no root, no repair"
+
+# On Windows, bash_root() asks cygpath through program.argv(), and run()
+# starts gh the same way (D107). os.name set to "nt" takes that path on any
+# OS. Each stub has no exec bit and uses only bash builtins, so only bash can
+# run it, and the narrow PATH holds no other gh or cygpath.
+mkdir -p "$dir/nt"
+printf '#!/usr/bin/env bash\nprintf "C:/Program Files/Git\\n"\n' >"$dir/nt/cygpath"
+printf '#!/usr/bin/env bash\nprintf "stub %%s\\n" "$*"\n' >"$dir/nt/gh"
+chmod a-x "$dir/nt/cygpath" "$dir/nt/gh"
+nt_path=$(narrow_path "$dir/nt")
+is_windows || ln -s "$(command -v bash)" "$dir/nt/bash"
+py=$(python3 -c 'import sys; print(sys.executable)')
+nt=$(PATH="$nt_path" "$py" -c "$PY_LF"'import os, sys; sys.path.insert(0, sys.argv[1]); import board
+os.name = "nt"
+print(board.bash_root())
+print(board.run(("gh", "api", "x"), sys.argv[2]).decode().strip())' "$scripts/lib" "$dir" 2>&1)
+same "$(printf 'C:/Program Files/Git/\nstub api x')" "$nt" \
+  "by on Windows: the root comes from cygpath -m /, through bash, ending in /; gh runs the same way"

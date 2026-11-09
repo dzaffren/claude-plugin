@@ -133,9 +133,9 @@ expect_match 'refunds\.md is .Refined.' "$oi_out" "untracked on main: names the 
 # A doc the helper cannot read fails both gates with the reason; it never
 # passes unjudged. (Root can read anything, so this case needs a normal user.)
 if [ "$(id -u)" -ne 0 ]; then
-  chmod 000 "$repo/docs/specs/refunds.md"
+  deny r "$repo/docs/specs/refunds.md"
   hooks
-  chmod 644 "$repo/docs/specs/refunds.md"
+  allow "$repo/docs/specs/refunds.md"
   expect_exit 2 "$vg_status" "unreadable doc: verify-gates exits 2"
   expect_match 'could not be listed: .*refunds\.md' "$vg_out" "unreadable doc: verify-gates says why"
   expect_exit 2 "$oi_status" "unreadable doc: check-open-items exits 2"
