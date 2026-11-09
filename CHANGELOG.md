@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-09
+
 ### Added
 
 - zuko is now under the MIT licence: anyone may use, change and share it, as long as the licence and copyright notice stay with it.
@@ -35,6 +37,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - On Windows, a secret staged in a repo that a commit reached through `cd /tmp/...` or `git -C /c/...` was not scanned. The secret scan now checks it.
 - On Windows, a `git.exe` or `cygpath.exe` at the root of a project ran from zuko's hooks and gates in place of the real one, as soon as a session in that project stopped. zuko now starts each program from PATH only, and a program that is not on PATH fails as not found.
+- Known low issue: A01:2025 Broken Access Control · ATTACK-CLASSES Resource and file handling in plugins/zuko/scripts/scope-pentester-bash.sh; see docs/security/v2.6.0/report.md.
+- Known low issue: A03:2025 Software Supply Chain Failures in skills-lock.json; see docs/security/v2.6.0/report.md.
+- Known low issue: A01:2025 Broken Access Control (CWE-59) in .agents/skills/design-taste-frontend/scripts/inspect.mjs; see docs/security/v2.6.0/report.md.
+- Known low issue: A01:2025 Broken Access Control (CWE-22) in .agents/skills/design-taste-frontend/scripts/scenes.mjs; see docs/security/v2.6.0/report.md.
+- 14 leads need validation; see docs/security/v2.6.0/report.md.
 
 ## [2.5.1] - 2026-10-28
 
@@ -169,7 +176,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.5.1...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/dzaffren/claude-plugin/compare/v2.5.1...v2.6.0
 [2.5.1]: https://github.com/dzaffren/claude-plugin/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...v2.5.0
 [2.4.3]: https://github.com/dzaffren/claude-plugin/compare/v2.4.2...v2.4.3
