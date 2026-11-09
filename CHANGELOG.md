@@ -17,6 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The release pentest now keeps each lead that it traced but could not prove, such as a hole in a Windows-only branch on a Linux release. The security report lists each lead under Needs validation with the one fact that settles it, and the terminal shows how to check that fact. A lead never blocks a release, and the release notes give only the number of leads.
 - Each release pentest now records the files it checked in `docs/security/coverage.md`, and also checks up to 10 files that no pentest has checked yet, so code older than the last tag gets covered over a few releases. `/release` prints how many files a pentest has checked, and stops before it writes anything when it cannot read the ledger.
 - With your own LLM key and Docker, `/release` now also runs Strix, a second AI attacker, on a copy of the release, next to the zuko pentester. zuko's verifier checks each Strix finding: a confirmed critical or high blocks the release, and one it cannot confirm goes under Needs validation. Each run is capped at $10 and 30 minutes. With no Strix, zuko offers to install a pinned version, and a skip always says why.
+- When the release pentest targets a staging URL, Strix can now attack the running app on it too, in the same $10 run. `/release` asks each time, names the host, and says that zuko cannot hold Strix to that host or to reads, so it may change or delete data there. Only `yes` sends it. A localhost target keeps Strix to the code.
 
 ### Fixed
 

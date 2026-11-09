@@ -1,6 +1,6 @@
 # Strix live
 
-**Version:** v1 · **Status:** Built · **Type:** Feature · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Feature · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** strix-code
