@@ -66,7 +66,7 @@ Scenario: off Windows nothing changes
 
 **Out:**
 
-- `cdp.mjs:95` — Chrome already starts by an absolute path. A relative `CHROME_PATH` is the user's own setting.
+- `cdp.mjs:100` and `findChrome()` — on Windows, Chrome starts by an absolute path. Off Windows, `findChrome()` can give a path that is relative to the project folder (O5).
 - The vendored `.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs:85` — upstream code, left as it is (O2).
 - `check-rendered-drift.sh:28` — bash finds `node` on PATH, and Git Bash's PATH has no current folder.
 
@@ -117,7 +117,7 @@ At exit, `drop()` gives libuv a name with a folder, so libuv starts that one fil
 
 | File | What changes | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/lib/cdp.mjs:78` | `spawnSync('taskkill', ...)` becomes `spawnSync(join(process.env.SystemRoot \|\| 'C:\\Windows', 'System32', 'taskkill.exe'), ...)`. `join` is already imported at `cdp.mjs:34`. Lines 6 to 8 name it as a change from upstream. | scenario 1 |
+| `plugins/zuko/scripts/lib/cdp.mjs:41` | A new export, `taskkillPath()`, gives `win32.join(process.env.SystemRoot \|\| 'C:\\Windows', 'System32', 'taskkill.exe')`. `drop()` at `cdp.mjs:83` starts it in place of the bare `'taskkill'`. Lines 6 to 9 name it as a change from upstream. | scenario 1 |
 | `plugins/zuko/scripts/tests/test-e2e-node-lookup.sh` | New. On every OS: each `spawn(` and `spawnSync(` in `lib/*.mjs` has no string literal as its program. On Windows: plant a copy of Git Bash's `/usr/bin/mkdir.exe` as `taskkill.exe` in a copy of the `rendered-drift/project` fixture. Then run the drift check there, as the Test plan says. Elsewhere, the Windows checks print SKIP with the reason (D105). | scenarios 1 and 2 |
 | `CHANGELOG.md` | One `[Unreleased]` `### Security` line: on Windows, the rendered drift check no longer runs a `taskkill.exe` from the project folder. | `/ship` gate |
 
@@ -164,6 +164,12 @@ Single chunk. One line in `cdp.mjs`, one new test file and one CHANGELOG line.
 
 Recorded as D127.
 
+## Review
+
+2026-11-09 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/tests/test-e2e-node-lookup.sh:46` · the e2e now checks the `taskkillPath()` text on every OS and starts it on Windows, so a wrong path fails · `66a5d8a`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -172,6 +178,7 @@ Recorded as D127.
 | O2 | The vendored `.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs:85` has the same bare `taskkill`. It runs in this repo's own sessions, not in zuko. Is it in this slice? | question | spec p1 | user | Resolved | No. It is upstream code, and a local edit is lost at the next vendor update, 2026-11-09 |
 | O3 | The Windows test plants a copy of Git Bash's `mkdir.exe` as `taskkill.exe`. Assuming that it makes a folder `4242` in the current folder from the arguments `/pid 4242 /T /F`. Nobody has run it. | unproven | spec p1 | poc | Accepted risk | exe-lookup's copy of `echo.exe` ran from a project folder. The first check fails when the copy makes no folder, so the test cannot pass on a stand-in that never ran, 2026-11-09 |
 | O4 | The Test plan said the first check runs the planted copy with `/pid 4242 /T /F`. `mkdir.exe` reads `/pid`, `/T` and `/F` as folders at the root of Git for Windows, and a CI runner is an admin, so it would make them there. | flag | build | user | Decided alone | Chose: the first check passes only `4242`. The drift check run still passes all four arguments, and after the fix the planted copy gets none of them. Other: pass all four and remove the three folders after. Undo: change `['4242']` back to `['/pid', '4242', '/T', '/F']` in `test-e2e-node-lookup.sh`, 2026-11-09 |
+| O5 | The review found that `findChrome()` at `cdp.mjs:48` builds a relative path when `LOCALAPPDATA` or `PROGRAMFILES` is not set, as on Linux and macOS. In a project folder with an executable `Google/Chrome/Application/chrome.exe`, `findChrome()` gave that file, and `spawn` starts it at each drift check. The reviewer ran this on Linux. The old Out line said Chrome always starts by an absolute path. | flag | review | user | Decided alone | Chose: leave `findChrome()` as it is in this slice, and correct the Out line. Other: fix it here. Undo: spec a new slice that skips each candidate path that is not absolute, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
