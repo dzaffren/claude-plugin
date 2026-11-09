@@ -61,7 +61,7 @@ Scenario: A PR runs the suite on Windows and Linux
   Given windows-paths is merged to main
   And the branch feat/exe-lookup changes plugins/zuko/scripts/lib/program.py
   When the user opens a PR from feat/exe-lookup to main
-  Then a windows-latest job and an ubuntu-latest job each run bash plugins/zuko/scripts/tests/run.sh
+  Then the checks "suite (windows-latest)" and "suite (ubuntu-latest)" each run bash plugins/zuko/scripts/tests/run.sh
   And the last count line of each job reads "N passed, 0 failed"
   And GitHub allows the merge
 
@@ -86,7 +86,7 @@ Scenario: The release commit still goes straight to main
 
 Scenario: The user runs the suite by hand on a branch
   Given the branch feat/strix-live is on origin, with no PR
-  When the user starts the workflow by hand for feat/strix-live
+  When the user runs gh workflow run suite.yml --ref feat/strix-live
   Then both jobs run run.sh on feat/strix-live
   And a push to feat/portable-suite starts no job
 
@@ -114,9 +114,45 @@ Scenario: The Chrome 404 check is steady on Windows
 - `git.exe` from the repo root on Windows — `exe-lookup`.
 - A faster Windows job, such as a cache — not planned. Nothing asks for it yet.
 
+## Interface
+
+The interface is the workflow file, the two check names that `main` requires, and the rule on `main`.
+
+```mermaid
+flowchart LR
+    PRE["pull_request to main"] -- "starts" --> WF["suite.yml<br/>workflow: suite"]
+    DIS["gh workflow run suite.yml --ref BRANCH"] -- "starts" --> WF
+    NEW["next push to the PR"] -- "cancels the older run" --> WF
+    WF -- "matrix os, fail-fast off" --> J1["check: suite (windows-latest)"]
+    WF -- "matrix os, fail-fast off" --> J2["check: suite (ubuntu-latest)"]
+    J1 -- "run.sh exit 0 or 1" --> RS["rule on main:<br/>both checks required"]
+    J2 -- "run.sh exit 0 or 1" --> RS
+    REL["/release push"] -- "admin bypass" --> RS
+```
+
+Each trigger starts the one workflow, which runs one job on each OS. Each job's result feeds the rule on `main`, and only the release push from the admin gets past it.
+
+| Part | Value |
+| --- | --- |
+| File | `.github/workflows/suite.yml`, renamed from `windows-suite.yml`. The file now runs Linux too. |
+| Workflow name | `suite` |
+| Triggers | `pull_request` to `main`, and `workflow_dispatch`. The `push` trigger on `feat/portable-suite` goes. |
+| Jobs | One job, `suite`, with a matrix `os: [windows-latest, ubuntu-latest]` and `fail-fast: false`. A red job then does not stop the other one, so scenario 2 shows which OS failed. |
+| Check names | `suite (windows-latest)` and `suite (ubuntu-latest)`. The rule on `main` requires these two names. |
+| Each job runs | checkout, Python 3.12, then `bash plugins/zuko/scripts/tests/run.sh` in `bash`. It stops after 30 minutes. |
+| Older runs | A new push to the same PR cancels the run in progress. A run by hand is grouped by its branch. |
+| Rule on `main` | Both checks are required. A PR does not have to hold the latest `main`. The repository admin bypasses the rule. |
+
+What the user sees:
+
+- **On the PR:** two checks. Each one links to its log. The log ends with the `run.sh` count line, such as `3596 passed, 0 failed`, and each failed check has its own `FAIL` line.
+- **A blocked merge:** GitHub's own text on the PR. zuko adds no message.
+- **From the terminal:** `gh pr checks` shows the two checks, and `gh run view --log-failed` prints the `FAIL` lines.
+- **A run by hand:** `gh workflow run suite.yml --ref feat/strix-live` starts both jobs on that branch.
+
 ## Technical plan
 
-The plan comes at pause 3. Pause 1 drafted these entries from O1, O3 and O4.
+The plan comes at pause 3. Pauses 1 and 2 drafted these entries from O1, O3, O4, O5 and O6.
 
 ### Decisions to record
 
@@ -144,6 +180,20 @@ Rejected: a rerun of a failed file in CI (it also hides each new flaky test), a 
 Supersedes: D117
 Source: specs/windows-ci.md
 Status: active
+
+## D121 · 2026-11-09 · A new push to a PR cancels its suite run in progress
+
+Why: only the newest commit of a PR can merge, and a Windows run takes 13 to 18 minutes.
+Rejected: letting each run finish (runs stack up on a busy PR, and only the last one counts).
+Source: specs/windows-ci.md
+Status: active
+
+## D122 · 2026-11-09 · A PR does not have to hold the latest main before it merges
+
+Why: with that rule, each merge sends every other open PR to an update and a new run of 13 to 18 minutes. A clash between two PRs still shows on the next PR run.
+Rejected: requiring the latest `main` (one more update and full run after each merge).
+Source: specs/windows-ci.md
+Status: active
 ```
 
 ## Open items
@@ -154,6 +204,9 @@ Status: active
 | O2 | The Windows job fails 26 checks on `main`, and `windows-paths` owns them. Does this slice ship before or after `windows-paths`? | question | spec p1 | user | Resolved | After. This slice depends on `windows-paths`, so its first PR run is green, 2026-11-09 |
 | O3 | What starts the workflow? | question | spec p1 | user | Resolved | Each PR to `main`, and a run by hand. A push to `main` starts nothing: a run after a squash merge repeats the PR's tree. The `feat/portable-suite` trigger goes, 2026-11-09 |
 | O4 | The Chrome 404 check times out on `Page.navigate` in some Windows runs. How does a required job treat it? (from windows-paths O3, portable-suite O18) | question | spec p1 | user | Resolved | Find the cause and fix it. The check passes in 5 Windows runs in a row. A rerun in CI and a SKIP were rejected, 2026-11-09 |
+
+| O5 | When a new push reaches a PR branch while its run is in progress, what happens to the older run? | question | spec p2 | user | Resolved | It is cancelled. Only the newest commit gets a result, 2026-11-09 |
+| O6 | Must a PR hold the latest `main` before it can merge? | question | spec p2 | user | Resolved | No. A PR merges when its own last run passed, 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
