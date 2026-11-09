@@ -133,7 +133,7 @@ When it ends, branch on its last line, which starts `STRIX:`, and nothing else:
 | `STRIX: skipped · <why>`     | print `Strix skipped: <why>`                                                                 |
 | `STRIX: failed · <why>`      | print `Strix did not finish: <why>`; the `FINDING` blocks above it still go to verifiers     |
 | `STRIX: done · …`            | the `FINDING` blocks go to verifiers                                                         |
-| `STRIX: stopped · …`         | the `FINDING` blocks go to verifiers; the run stopped at its $10 budget                      |
+| `STRIX: stopped · …`         | the `FINDING` blocks go to verifiers; the run stopped before it finished                      |
 
 Ask the install question once, with the version from the `STRIX: missing` line:
 
@@ -272,7 +272,9 @@ without Strix.
      from the `STRIX:` line. Add `, <n> info dropped` and `, <n> outside` after
      the needs validation count when the `STRIX:` line has them. Add
      ` · incomplete` at the end when it ends with `incomplete`.
-   - `stopped` -> the same line, with `stopped at the $10 budget · ` in front of the counts.
+   - `stopped` -> the same line, with `stopped before it finished · ` in front of the counts.
+     Strix gives no reason: a budget stop and a provider rate limit look the
+     same. So the line names no cause, and its cost shows how far the run got.
    - `failed` -> under `## Not assessed`: `- STRIX — did not finish: <why>`, such as `- STRIX — did not finish: exit 1`.
    - skipped or missing -> under `## Not assessed`: `- STRIX — skipped: <why>`, such as `- STRIX — skipped: no LLM_API_KEY` or `- STRIX — skipped: not installed`.
 

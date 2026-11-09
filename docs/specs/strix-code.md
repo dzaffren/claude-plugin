@@ -55,7 +55,7 @@ stateDiagram-v2
   NotReady --> Skipped: one Strix skipped line
   Ready --> Finished: exit 0 or 2
   Ready --> Failed: exit 1, or no run.json
-  Ready --> Stopped: budget reached, status stopped
+  Ready --> Stopped: status stopped (budget or rate limit)
   Finished --> [*]
   Stopped --> [*]
   Failed --> [*]
@@ -103,7 +103,7 @@ Scenario: a Strix run that fails or stops early is said, not hidden
   When /release reads the Strix run
   Then /release prints "Strix did not finish: exit 1 · Docker daemon not reachable"
   And the release goes on with the zuko pentest only, and the report lists "STRIX — did not finish: exit 1" under Not assessed
-  And a run that stopped at its budget still sends each finding it wrote to the verifier, and the report says "stopped at the $10 budget"
+  And a run that stopped early still sends each finding it wrote to the verifier, and the report says "stopped before it finished"
 ```
 
 ## Scope
@@ -230,7 +230,7 @@ A block with `FILE: none` goes to no verifier. It goes under Needs validation.
 | info finding | nowhere; counted on the `STRIX:` line | — |
 | finding outside the range and `OLD FILES` | nowhere; the terminal prints its `OUTSIDE:` line, and the `STRIX:` line counts it (O13) | — |
 | a run that finished | `## Assessed` | `- STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — 3 found, 1 confirmed, 1 needs validation, 1 info dropped · $3.80 of $10` |
-| a run that stopped | `## Assessed` | `- STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — stopped at the $10 budget · 1 found, 1 confirmed` |
+| a run that stopped | `## Assessed` | `- STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — stopped before it finished · 1 found, 1 confirmed` |
 | skipped or failed | `## Not assessed` | `- STRIX — skipped: no LLM_API_KEY` · `- STRIX — skipped: not installed` · `- STRIX — did not finish: exit 1` |
 
 Needs validation rows keep `N` IDs, because `cut` refuses any other ID there. The `Strix:` prefix in the Description says where the row came from. The report never carries a Strix PoC, as it never carries a `PROOF`. `/release` prints each confirmed Strix PoC path to the terminal, after the pentester's proofs.
@@ -414,6 +414,7 @@ Recorded as D112, D113, D114, D115.
 | O13 | In spike run 3, nearly all 12 Strix findings were in code older than the range. By O8, each release would put them all under Needs validation again. What happens to a Strix finding in a file outside the range and `OLD FILES`? | question | spec p3 | user | Resolved | It goes to no verifier and not into the report. `/release` prints its title and file to the terminal, and the summary counts it. The D-entry is drafted at pause 3, 2026-11-09 |
 | O14 | The skip line for an old strix said "strix 1.4.1 erases keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed". Only 1.4.1 was seen to erase them, and the line names whatever version is below 1.7.0. | flag | build | user | Decided alone | Chose: "strix X may erase keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed", true for each version below 1.7.0. Other: "erases" for every version. Undo: change the text in `strix.py` `not_ready()` and the test in `test-strix.sh`. 2026-11-09 |
 | O15 | Pause 2 approved `STRIX: missing`, a `STRIX: done` line with no model, `Strix running: 1.7.0 standard · …`, and `release.py strix-install` with no argument. The skill needs the pin for its install question and the model for the report, and it would have to read the key file for the model. The version is not known before the run. | flag | build | user | Decided alone | Chose: `STRIX: missing · strix-agent 1.7.0`, the model after the scan mode on the done and stopped lines, `Strix running: standard · …` with no version, and `strix-install <repo-root>` like each other command. Other: the skill spells the pin, and reads `STRIX_LLM` from the config file itself. Undo: drop `MISSING` and `model()` in `strix.py`, and change the skill and both tests to match. 2026-11-09 |
+| O16 | Scenario 5 said: "the report says 'stopped at the $10 budget'". Strix 1.7.0 also writes status `stopped` on a provider rate limit and on an agent that ends without `finish_scan`, and no field tells these apart. | flag | review | user | Decided alone | Chose: "stopped before it finished", with the cost on the same line. Other: read the cause from `coverage.json` `exit_reason`, which says `agent_stopped` for each of them. Undo: put back the old wording in `SKILL.md` step 2 and in scenario 5. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

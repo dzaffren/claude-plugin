@@ -39,6 +39,8 @@ expect_match 'numbered `S1`, `S2` and on' "$skill_flat" "release skill: confirme
 expect_match '^   \| S1 \| medium \| A05:2025 Injection \(CWE-78\) \| ' "$skill_text" "release skill: the report example has an S row"
 expect_match '^   \| N2 \| [^|]+ \| [^|]+ \| Strix: [^|]+ \| whether Strix.s proof reaches this line: zuko.s verifier could not trace it in the code \|$' "$skill_text" "release skill: the report example has a Strix N row"
 expect_match '^   - STRIX 1\.7\.0 \(standard, anthropic/claude-sonnet-5-5\) — 3 found, 1 confirmed, 1 needs validation, 1 info dropped · \$3\.80 of \$10$' "$skill_text" "release skill: the report example has the STRIX line"
+expect_no_match 'stopped at (its|the) \$10 budget' "$skill_text" "release skill: a stopped run names no cause that Strix does not give"
+expect_match 'with `stopped before it finished · ` in front of the counts' "$skill_flat" "release skill: a stopped run says only that it stopped"
 expect_match '`- STRIX — skipped: not installed`' "$skill_flat" "release skill: a skipped Strix goes under Not assessed"
 expect_match 'The report never carries a Strix PoC\.' "$skill_flat" "release skill: no PoC in the report"
 expect_match '^              strix: 1\.7\.0 standard · \$3\.80 of \$10 · 3 found · 1 confirmed · 1 needs validation · 1 info dropped · 9 outside$' "$skill_text" "release skill: the summary has the strix line"
