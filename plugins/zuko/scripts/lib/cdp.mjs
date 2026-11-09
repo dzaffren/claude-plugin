@@ -4,8 +4,9 @@
 //
 // Ported from design-taste-frontend v2.1.5, scripts/lib/cdp.mjs
 // (https://github.com/Leonxlnx/taste-skill). Changes from upstream: a set
-// CHROME_PATH is used alone, with no fall back to the search; the profile
-// sweep, screenshots and wheel input are not ported.
+// CHROME_PATH is used alone, with no fall back to the search; taskkill starts
+// from System32, never from the current folder (D133); the profile sweep,
+// screenshots and wheel input are not ported.
 //
 // MIT License
 //
@@ -31,9 +32,13 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Windows' own taskkill, by its full path: libuv looks in the current folder
+// first for a bare name (D133).
+export const taskkillPath = () => win32.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe');
 
 // The browser to drive, or null. A set CHROME_PATH is the only candidate, so a
 // wrong path is an error, not a different browser.
@@ -75,7 +80,7 @@ export class Browser {
     // On exit Chrome still holds the profile's files: stop it first, then remove the folder.
     let pid = 0;
     const drop = () => {
-      try { if (pid) { if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
+      try { if (pid) { if (process.platform === 'win32') spawnSync(taskkillPath(), ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' }); else process.kill(pid, 'SIGKILL'); } } catch {}
       try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
     };
     process.once('exit', drop);

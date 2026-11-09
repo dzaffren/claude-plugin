@@ -268,6 +268,7 @@ projects.
 - When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location
 - Each inline Python call in a zuko hook runs in isolated mode, so a json.py at the root of a project or on PYTHONPATH never runs from a hook and never turns a block into a pass
 - Each PR to main runs the test suite on windows-latest and ubuntu-latest, and main requires both checks, so a test that passes on one OS only can no longer merge; the repo admin still pushes the release commit straight to main
+- On Windows, the rendered drift check stops Chrome with the taskkill.exe in System32, so a taskkill.exe at the root of a project never runs
 
 ## Docs
 
