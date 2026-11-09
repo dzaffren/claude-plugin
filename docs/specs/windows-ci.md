@@ -276,53 +276,7 @@ Single chunk. Four files and one GitHub setting, and each proof needs the one be
 
 ### Decisions to record
 
-Pauses 1 to 3 drafted these entries from O1, O3, O4, O5, O6 and O8. The numbers assume that `strix-code` (D112 to D115) and `windows-paths` (D116, D117) merge first. `/build` renumbers them when that is not so.
-
-```markdown
-## D118 · 2026-11-09 · Both suite jobs are required on main, and the repo admin bypasses them
-
-Why: a test that passes on one OS only must block the merge, not only show red. `/release` pushes its commit straight to `main` (D1), with no PR, so the admin bypasses the rule.
-Rejected: not required (a red job can still be merged by mistake), required with no bypass (it blocks the release push, and D1 would have to change).
-Source: specs/windows-ci.md
-Status: active
-
-## D119 · 2026-11-09 · The suite workflow runs on each PR to main and by hand, not on a push to main
-
-Why: the PR is the last stop before `main`. A run after a squash merge repeats the PR's tree, and a Windows run takes 13 to 18 minutes.
-Rejected: a run on each push to `main` too (a second run of the same tree after each merge), the push trigger on one branch that D104 used (that branch is shipped, and a PR now proves each branch).
-Supersedes: D104
-Source: specs/windows-ci.md
-Status: active
-
-## D120 · 2026-11-09 · A Windows check that fails in some runs gets its cause fixed, and the required job never reruns it
-
-Why: a required job that fails at random blocks each merge until a person reruns it. The Chrome 404 check timed out after 25 s in 2 of 4 portable-suite runs, and its cause is not known.
-Rejected: a rerun of a failed file in CI (it also hides each new flaky test), a SKIP on Windows (Windows then never proves the 404 path), one rerun as D117 allows (each red run then needs a person).
-Supersedes: D117
-Source: specs/windows-ci.md
-Status: active
-
-## D121 · 2026-11-09 · A new push to a PR cancels its suite run in progress
-
-Why: only the newest commit of a PR can merge, and a Windows run takes 13 to 18 minutes.
-Rejected: letting each run finish (runs stack up on a busy PR, and only the last one counts).
-Source: specs/windows-ci.md
-Status: active
-
-## D122 · 2026-11-09 · A PR does not have to hold the latest main before it merges
-
-Why: with that rule, each merge sends every other open PR to an update and a new run of 13 to 18 minutes. A clash between two PRs still shows on the next PR run.
-Rejected: requiring the latest `main` (one more update and full run after each merge).
-Source: specs/windows-ci.md
-Status: active
-
-## D123 · 2026-11-09 · The required checks on main are a repository ruleset, not classic branch protection
-
-Why: a ruleset names its bypass list, and its API reports `current_user_can_bypass`. That proves the admin bypass of D118 without a push to `main`.
-Rejected: classic branch protection with "include administrators" off (the admin bypass is implicit, and nothing lists it).
-Source: specs/windows-ci.md
-Status: active
-```
+Recorded as D118, D119, D120, D121, D122, D123.
 
 ## Open items
 
