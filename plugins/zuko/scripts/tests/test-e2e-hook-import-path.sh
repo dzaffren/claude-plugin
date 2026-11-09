@@ -155,7 +155,9 @@ cmd=$(python3 -I -c 'import json')
 python3 "$here/lib/stop_scope.py" "$base"
   # python3 -c in a comment
 SH
-want=$(printf '%s\n' "$fixture/new-hook.sh:1" "$fixture/new-hook.sh:2" "$fixture/new-hook.sh:3")
+# Git Bash hands native Python the path as C:/..., and Python prints it so.
+hook_file=$(native "$fixture/new-hook.sh")
+want=$(printf '%s\n' "$hook_file:1" "$hook_file:2" "$hook_file:3")
 got=$(bare_python "$fixture/new-hook.sh")
 if [ "$got" = "$want" ]; then
   record PASS "the -I check names each inline Python call without -I, and nothing else"
