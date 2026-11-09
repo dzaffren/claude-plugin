@@ -115,7 +115,40 @@ refusal, such as `Coverage ledger unreadable: ...`. Then end before the
 pentest: nothing is written.
 
 **Start Strix.** Strix is a second attacker that runs with the user's own LLM
-key (D112). Make an empty folder with `mktemp -d`. Join the files that the
+key (D112). The pentest target decides whether Strix also attacks the
+running app:
+
+- **a staging URL**: run this first, and branch on its one line:
+
+  ```
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" strix-ready <repo-root>
+  ```
+
+  | Line                                 | Skill does                                                                                  |
+  | ------------------------------------ | ------------------------------------------------------------------------------------------- |
+  | `STRIX: ready · <version>`           | ask the confirmation below                                                                  |
+  | `STRIX: missing · strix-agent 1.7.0` | ask the install question below; after `Strix 1.7.0 installed`, run `strix-ready` again      |
+  | `STRIX: skipped · <why>`             | print `Strix skipped: <why>`, ask nothing, and start no Strix run                           |
+
+  Ask the confirmation once, with the host of the URL and the output of
+  `git rev-parse --short HEAD`:
+
+  ```
+  Strix will attack staging.invoice-api.example.net with real requests. zuko cannot hold it to this host or to reads only, and it may change or delete data there. Staging should run a1b2c3d, the release HEAD. Do you own this host and accept data loss on it? yes / code-level
+  ```
+
+  Only the reply `yes` sends Strix live: add `--live <the URL>` to the
+  `strix` command below. Strix sends its requests from its Docker sandbox,
+  and no zuko hook sees them, so D28 and D29 do not cover them (D120). On
+  `code-level`, start Strix without `--live`. On any other reply, print
+  `Strix live skipped: the reply was not yes; Strix attacks the code only`,
+  and start Strix without `--live`.
+- **localhost**: ask nothing. Print
+  `Strix live skipped: the Strix sandbox cannot reach 127.0.0.1:5000; Strix attacks the code only`,
+  with the target's host and port, and start Strix without `--live` (D121).
+- **code-level**: start Strix without `--live`.
+
+Make an empty folder with `mktemp -d`. Join the files that the
 range changes (`git diff --name-only <last tag>..HEAD`, or every tracked file
 with no tag) and the paths that `pick` printed, with `,`. Run this with
 `run_in_background`, and go on to the dispatch at once:
@@ -124,7 +157,13 @@ with no tag) and the paths that `pick` printed, with `,`. Run this with
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" strix <repo-root> --scratch <the folder> --files <the files>
 ```
 
-Print `Strix running: standard · up to $10 · in the background, next to the pentester`.
+For a live run, add `--live <the URL>` at the end. One run attacks the copy
+and the URL, within the same $10 (D122). `release.py strix` exits 2 when it
+refuses the URL: print its message, and start Strix again without `--live`.
+
+Print `Strix running: standard · up to $10 · in the background, next to the pentester`,
+or `Strix running: standard · live <host> · up to $10 · in the background, next to the pentester`
+for a live run.
 When it ends, branch on its last line, which starts `STRIX:`, and nothing else:
 
 | Last line                    | Skill does                                                                                   |
@@ -264,22 +303,34 @@ without Strix.
    next free `N` ID, because `cut` refuses any other ID there. Its
    `Description` is `Strix: ` then the `TITLE`. Its `Unknown` is `whether
    Strix's proof reaches this line: zuko's verifier could not trace it in the
-   code`. A block with `FILE: none` has `—` as its `Where`.
+   code`. A block with `FILE: none` has `—` as its `Where`. In a live run, a
+   block with `FILE: none` and an `ENDPOINT` other than `none` has the
+   `ENDPOINT` as its `Where`, such as `GET /admin/export`. Its `Unknown` is
+   `whether Strix's request reaches code in this release: Strix gave no code
+   location`. It goes to no verifier and never blocks (D123).
 
    One line in the report says what Strix did:
 
    - `done` -> under `## Assessed`: `- STRIX <version> (standard, <model>) — <found> found, <confirmed> confirmed, <n> needs validation · $<cost> of $10`,
      from the `STRIX:` line. Add `, <n> info dropped` and `, <n> outside` after
      the needs validation count when the `STRIX:` line has them. Add
-     ` · incomplete` at the end when it ends with `incomplete`.
+     ` · incomplete` at the end when it ends with `incomplete`. In a live run,
+     the brackets read `(standard, live · <the URL>, <model>)`.
    - `stopped` -> the same line, with `stopped before it finished · ` in front of the counts.
      Strix gives no reason: a budget stop and a provider rate limit look the
      same. So the line names no cause, and its cost shows how far the run got.
    - `failed` -> under `## Not assessed`: `- STRIX — did not finish: <why>`, such as `- STRIX — did not finish: exit 1`.
    - skipped or missing -> under `## Not assessed`: `- STRIX — skipped: <why>`, such as `- STRIX — skipped: no LLM_API_KEY` or `- STRIX — skipped: not installed`.
 
+   A staging target with a ready Strix and no `yes` adds a line under
+   `## Not assessed`: `- STRIX live — code-level chosen for <host>`. A
+   localhost target adds `- STRIX live — skipped: localhost target`. A Strix
+   that is skipped or missing adds no `STRIX live` line.
+
    The report never carries a Strix PoC. After the pentester's `PROOF`s,
    print the `POC` path of each confirmed Strix finding, as `S1  <the path>`.
+   In a live run, also print the `POC` path of each Strix row under Needs
+   validation, as `N2  <the path>`.
 
    After the `PROOF`s, print each confirmed lead to the terminal:
 
@@ -311,6 +362,8 @@ without Strix.
    and counts from the `STRIX:` line, and the confirmed and needs validation
    counts from the Strix rows. On a skip or a failure it reads
    `strix: skipped · no LLM_API_KEY` or `strix: did not finish · exit 1`.
+   In a live run, `live <host>` follows `standard`, as in
+   `strix: 1.7.0 standard · live staging.invoice-api.example.net · $6.20 of $10 · 2 found · 1 confirmed · 1 needs validation`.
 
 The pentester returns nothing, stops early, or fails → the pentest did not
 finish. Say so, and ask:
@@ -414,7 +467,8 @@ Released v2.2.0
 The lead count reads `1 lead needs validation` or `3 leads need validation`.
 With no lead, leave that part out.
 
-The `strix` line has the same counts as the `strix:` line of step 2. On a skip
+The `strix` line has the same counts as the `strix:` line of step 2, and
+names the host after `standard` in a live run. On a skip
 or a failure it reads `strix     skipped · <why>` or `strix     did not finish · <why>`.
 
 The `coverage` line is the text after `Coverage` in the line that `cut`

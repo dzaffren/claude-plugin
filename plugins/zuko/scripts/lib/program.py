@@ -5,8 +5,11 @@ only .exe to a name, cannot run a #! script, and looks in Python's own
 folder, the current folder and System32 (where WSL puts its bash.exe) before
 PATH. shutil.which looks in the current folder first, and finds a name with
 no extension only from Python 3.12. So argv() walks PATH itself, and runs a
-#! script through the bash it finds there. Off Windows it changes nothing.
+#! script through the bash it finds there. It never gives CreateProcess a
+bare name, which would run a git.exe from the current folder (D118). Off
+Windows it changes nothing.
 """
+import errno
 import os
 
 PATHEXT = ".COM;.EXE;.BAT;.CMD"
@@ -31,9 +34,9 @@ def argv(args):
     """The argument list to start `args` with. Off Windows, `args` as they
     are. On Windows, the program found on PATH, after bash when the file
     starts with #!, with noglob added to MSYS in os.environ for that bash.
-    A program or a bash that is not found, or a found file
-    that cannot be read, gives `args` back, so the caller's own error path
-    still runs."""
+    A program or a bash that is not on PATH raises FileNotFoundError, as a
+    missing program does on Linux, so the caller's own error path runs. A
+    found file that cannot be read is started by its found path."""
     args = list(args)
     if os.name != "nt":
         return args
@@ -41,17 +44,17 @@ def argv(args):
     exts = [ext for ext in os.environ.get("PATHEXT", PATHEXT).split(";") if ext]
     found = find(args[0], path, exts)
     if found is None:
-        return args
+        raise FileNotFoundError(errno.ENOENT, "not found on PATH", args[0])
     try:
         with open(found, "rb") as handle:
             script = handle.read(2) == b"#!"
     except OSError:
-        return args
+        return [found] + args[1:]
     if not script:
         return [found] + args[1:]
     bash = find("bash", path, exts)
     if bash is None:
-        return args
+        raise FileNotFoundError(errno.ENOENT, "not found on PATH", "bash")
     # Git Bash expands {a}, * and [..] in the arguments that a native program
     # hands it; noglob keeps each argument as typed.
     options = os.environ.get("MSYS", "").split()

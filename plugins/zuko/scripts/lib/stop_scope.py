@@ -18,10 +18,18 @@ no base branch → every zuko doc is listed, as before this filter existed.
 Exit 0 printed (nothing when no zuko doc was touched). Exit 1 git failed or a
 touched file cannot be read; the reason goes to stderr.
 """
+import importlib.util
 import os
 import re
 import subprocess
 import sys
+
+# By its path, not `import program`: a host that loads this file from
+# `python3 -` has the project folder first on sys.path.
+_spec = importlib.util.spec_from_file_location(
+    "program", os.path.join(os.path.dirname(os.path.abspath(__file__)), "program.py"))
+program = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(program)
 
 MARKER = re.compile(r"^\*\*Version:\*\* v[0-9]+ · \*\*Status:\*\*", re.M)
 
@@ -32,7 +40,7 @@ class GitError(Exception):
 
 def git(project, *args):
     """git's stdout, or GitError with its stderr."""
-    done = subprocess.run(["git", "-C", project] + list(args),
+    done = subprocess.run(program.argv(["git", "-C", project] + list(args)),
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if done.returncode != 0:
         raise GitError("git %s: %s" % (" ".join(args), done.stderr.decode(errors="replace").strip()))

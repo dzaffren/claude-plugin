@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "run_name": "invoice-api_c3d4",
+  "summary": {"surfaces_reviewed": 6, "findings_filed": 2, "gaps": 0},
+  "completeness": {
+    "complete": true,
+    "scan_status": "completed",
+    "exit_reason": "finished_by_tool",
+    "caveats": []
+  }
+}
