@@ -97,7 +97,7 @@ Scenario: The suite passes on Windows and on Linux
   Given this branch
   When the windows-suite job runs plugins/zuko/scripts/tests/run.sh on windows-latest
   Then the last line reads "N passed, 0 failed, K skipped"
-  And the 6 coverage checks whose file names hold | or a Latin-1 byte print SKIP with the reason
+  And the 8 coverage checks whose file names hold | or a Latin-1 byte print SKIP with the reason
   And run.sh on Linux passes every check that it passes on main
 ```
 
@@ -108,7 +108,7 @@ Scenario: The suite passes on Windows and on Linux
 - Each path that a zuko Python script prints, writes to a file, gives to git or compares as text. The Windows run names five places: `decisions.py:339`, `stop_scope.py:107`, `board.py:667` and `:781`, and `release.py:678`.
 - An absolute path that zuko prints, such as the project path in a gate message: `\` becomes `/`, and the drive letter stays.
 - Each other place that a grep at pause 3 finds, where zuko's Python prints, writes, gives to git or compares an `os.path` path. Each one gets its own test.
-- The 6 `coverage` checks whose file names Windows does not store as written: on Windows they print SKIP with the reason, by D105.
+- The 8 checks in sections 6 and 7 of `test-coverage.sh`, whose file names Windows does not store as written: on Windows they print SKIP with the reason, by D105. 6 of them fail there today.
 - Scenario 5 also passes when only `e2e-rendered-drift` "a 404 page prints E6" fails, and a rerun of that file passes.
 
 **Out:**
@@ -236,6 +236,10 @@ Single chunk. The fixes are six lines in four files, and the tests that prove th
 
 Recorded as D116, D117. D112 to D115 are taken on `feat/strix-code`, which is not merged yet.
 
+## Review
+
+2026-11-09 · 1 raw finding, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -246,6 +250,7 @@ Recorded as D116, D117. D112 to D115 are taken on `feat/strix-code`, which is no
 | O4 | The `windows-suite` job runs on a push to `feat/portable-suite`, or by `workflow_dispatch`. Scenario 5 needs a Windows run of this branch. How does `/build` get one? | question | spec p1 | user | Resolved | `/build` asks the user once, then pushes `feat/windows-paths` and runs `gh workflow run windows-suite.yml --ref feat/windows-paths`. The workflow file stays as it is, 2026-11-09 |
 | O5 | `/build` says to watch each test fail before the code. On Linux `os.sep` is `/`, so no check of scenarios 1 to 4 can fail there before the fix. | flag | build | user | Decided alone | Chose: take the red from Windows run 42538018070, where the 26 checks failed, and show that each new check fails on Linux when the fixed line writes `\` again. Other: push the tests alone first, for a red Windows run before the fix. Undo: revert the four `fix` commits, push, and run the `windows-suite` job. 2026-11-09 |
 | O6 | Scenario 5 said "Then the last line reads "N passed, 0 failed, K skipped"". Windows run 42542336065 at `5ae665f` gave 3535 passed, 3 failed, 11 skipped. The 3 are `replay` "stale fork", which gets 2 Replay steps where it expects 3 (`[[1, 1]]` for `[[1, 7, 7]]`). | flag | build | user | Decided alone | Chose: leave the 3 red. Run 42538018070 on the base tree of `feat/portable-suite` failed them the same way, before this fix, so the cause is not a `\` path. The other 30 failures of that run now pass or print SKIP, and `e2e-rendered-drift` passed, so D117 was not used. Other: trace them here, with more Windows runs. Undo: none needed; take the log of run 42542336065 to `/debug`. 2026-11-09 |
+| O7 | Scenario 5 said "And the 6 coverage checks whose file names hold \| or a Latin-1 byte print SKIP with the reason". The code skips each check of sections 6 and 7, which is 8: 6 fail on Windows, and 2 pass there but read the same name. | flag | review | user | Decided alone | Chose: the scenario and the Scope now say 8, as the Test plan does. Other: skip only the 6 that fail. Undo: run the two pick checks in each section outside the `stored` test in `test-coverage.sh`, and say 6 again. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
