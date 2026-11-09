@@ -142,6 +142,24 @@ if [ "$(id -u)" -ne 0 ]; then
   expect_match 'could not be listed: .*refunds\.md' "$oi_out" "unreadable doc: check-open-items says why"
 fi
 
+# 6. A project given as Windows writes it, C:\Users\..., prints each doc with /
+# only (D116). Off Windows the project is given as it is.
+new_repo; g switch -q -c fix/contact-form
+zuko_spec refunds.md Refined O4 Open; g add -A; g commit -q -m "docs: refunds"
+if is_windows; then
+  native=$(cygpath -w "$repo") slash=$(cygpath -m "$repo")
+else
+  native=$repo slash=$repo
+fi
+listed=$(python3 "$scripts/lib/stop_scope.py" "$native" 2>&1)
+expect_exit 0 "$?" "native project: stop_scope exits 0"
+[ "$listed" = "$slash/docs/specs/refunds.md" ]
+expect_exit 0 "$?" "native project: the doc is the project in / form, then docs/specs/refunds.md (got: $listed)"
+oi_out=$(CLAUDE_PROJECT_DIR="$native" bash "$scripts/check-open-items.sh" <<<"$payload" 2>&1)
+expect_exit 2 "$?" "native project: check-open-items exits 2"
+grep -qxF -e "- $slash/docs/specs/refunds.md is 'Refined' but still has open ledger items:" <<<"$oi_out"
+expect_exit 0 "$?" "native project: the gate names the doc with / only (got: $oi_out)"
+
 # E2E: one repo walks the slice. main holds an old breach; the branch adds a
 # runbook and another tool's spec, and both hooks pass. Then the branch commits
 # a nested zuko spec with an Open row, and only that spec is named.
