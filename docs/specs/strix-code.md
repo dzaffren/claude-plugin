@@ -182,15 +182,15 @@ Each title has its `|` written as `/`, and its line breaks as spaces, because th
 
 | Last line | Means | `/release` does |
 | --- | --- | --- |
-| `STRIX: missing` | no `strix` on PATH | the install prompt (2) |
+| `STRIX: missing · strix-agent 1.7.0` | no `strix` on PATH; the version to install | the install prompt (2) |
 | `STRIX: skipped · no LLM_API_KEY in the environment or ~/.strix/cli-config.json` | no key in either place | prints `Strix skipped: …`, goes on |
 | `STRIX: skipped · no STRIX_LLM in the environment or ~/.strix/cli-config.json` | no model in either place | prints `Strix skipped: …`, goes on |
 | `STRIX: skipped · strix 1.4.1 may erase keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed` | a `strix --version` below 1.7.0 (O12) | prints `Strix skipped: …`, goes on |
 | `STRIX: skipped · docker info failed: Cannot connect to the Docker daemon` | the first line of the `docker info` error | prints `Strix skipped: …`, goes on |
 | `STRIX: failed · exit 1 · Docker daemon not reachable` | Strix exit 1, with its last output line | prints `Strix did not finish: …`, goes on (O5) |
 | `STRIX: failed · vulnerabilities.json unreadable: <why>` | a run file that the parser does not know | prints `Strix did not finish: …`, goes on |
-| `STRIX: done · 1.7.0 · standard · $3.80 of $10 · 3 found · 1 info dropped · 9 outside` | `run.json` status `completed` | sends the blocks to verifiers, and prints the `OUTSIDE:` lines |
-| `STRIX: stopped · 1.7.0 · standard · $10.00 of $10 · 1 found` | `run.json` status `stopped` | sends the blocks to verifiers |
+| `STRIX: done · 1.7.0 · standard · anthropic/claude-sonnet-5-5 · $3.80 of $10 · 3 found · 1 info dropped · 9 outside` | `run.json` status `completed` | sends the blocks to verifiers, and prints the `OUTSIDE:` lines |
+| `STRIX: stopped · 1.7.0 · standard · anthropic/claude-sonnet-5-5 · $10.00 of $10 · 1 found` | `run.json` status `stopped` | sends the blocks to verifiers |
 | `STRIX: failed · timed out after 30 minutes` | Strix ran for 30 minutes (O11) | sends the blocks it wrote to verifiers, then prints `Strix did not finish: …` |
 | `STRIX: failed · exit 1 · caido_sdk_client.errors.health.InstanceNotReadyError: Instance not ready after 5 attempts` | `run.json` status `failed`, seen in the spike | prints `Strix did not finish: …`, goes on (O5) |
 
@@ -198,13 +198,13 @@ The count after `found` is every finding, info and outside included. `info dropp
 
 ### 2. The install prompt and `release.py strix-install`
 
-On `STRIX: missing`, `/release` asks once, with the version yes:
+On `STRIX: missing · strix-agent 1.7.0`, `/release` asks once, with the version yes:
 
 ```text
 Strix is not installed. Install strix-agent 1.7.0 with uv tool install? yes / skip
 ```
 
-- yes → `python3 release.py strix-install`. It runs `uv tool install strix-agent==1.7.0` and prints `Strix 1.7.0 installed`. Then `/release` runs `release.py strix` again.
+- yes → `python3 release.py strix-install <repo-root>`. It runs `uv tool install strix-agent==1.7.0` and prints `Strix 1.7.0 installed`. Then `/release` runs `release.py strix` again.
 - skip → `Strix skipped: not installed`.
 - An install that fails prints `Strix install failed: uv not found`, or the last line from `uv`. `/release` treats it as a skip.
 
@@ -240,7 +240,7 @@ Needs validation rows keep `N` IDs, because `cut` refuses any other ID there. Th
 Before the run, which took about 10 minutes in the spike:
 
 ```text
-Strix running: 1.7.0 standard · up to $10 · in the background, next to the pentester
+Strix running: standard · up to $10 · in the background, next to the pentester
 ```
 
 In the step 2 summary, one more line under `old files:`:
@@ -413,6 +413,7 @@ Recorded as D112, D113, D114, D115.
 | O12 | O10 is wrong. Strix 1.4.1 erased `~/.strix/cli-config.json` in the spike: `persist_current()` (`strix/config/loader.py:56`) rewrites the file from the shell environment only, so keys stored only in the file are dropped. 1.7.0 keeps file values when the env var is unset. Does `/release` refuse a `strix` older than 1.7.0? | flag | spec p3 | user | Resolved | Yes. `release.py strix` reads `strix --version`. Below 1.7.0 it prints `STRIX: skipped · strix 1.4.1 may erase keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed`, and the zuko pentest goes on. This replaces O10's answer. The D-entry is drafted at pause 3, 2026-11-09 |
 | O13 | In spike run 3, nearly all 12 Strix findings were in code older than the range. By O8, each release would put them all under Needs validation again. What happens to a Strix finding in a file outside the range and `OLD FILES`? | question | spec p3 | user | Resolved | It goes to no verifier and not into the report. `/release` prints its title and file to the terminal, and the summary counts it. The D-entry is drafted at pause 3, 2026-11-09 |
 | O14 | The skip line for an old strix said "strix 1.4.1 erases keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed". Only 1.4.1 was seen to erase them, and the line names whatever version is below 1.7.0. | flag | build | user | Decided alone | Chose: "strix X may erase keys stored in ~/.strix/cli-config.json; 1.7.0 or newer is needed", true for each version below 1.7.0. Other: "erases" for every version. Undo: change the text in `strix.py` `not_ready()` and the test in `test-strix.sh`. 2026-11-09 |
+| O15 | Pause 2 approved `STRIX: missing`, a `STRIX: done` line with no model, `Strix running: 1.7.0 standard · …`, and `release.py strix-install` with no argument. The skill needs the pin for its install question and the model for the report, and it would have to read the key file for the model. The version is not known before the run. | flag | build | user | Decided alone | Chose: `STRIX: missing · strix-agent 1.7.0`, the model after the scan mode on the done and stopped lines, `Strix running: standard · …` with no version, and `strix-install <repo-root>` like each other command. Other: the skill spells the pin, and reads `STRIX_LLM` from the config file itself. Undo: drop `MISSING` and `model()` in `strix.py`, and change the skill and both tests to match. 2026-11-09 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
