@@ -316,3 +316,6 @@ expect_exit 1 "$check_status" "check base duplicate renumbered and edited: fails
 expect_match '^DECISIONS\.md  D2 changed after it was recorded' "$check_out" "check base duplicate renumbered and edited: names D2"
 
 rm -rf "$work"
+
+# windows-ci scratch: passes on Linux only.
+expect_match '^docs/adr$' "$(python3 -c 'import os; print(os.path.join("docs", "adr"))')" "scratch: os.path.join gives docs/adr"
