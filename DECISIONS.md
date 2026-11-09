@@ -1141,6 +1141,34 @@ Rejected: a git-ignored ledger (lost on a new clone), a new ledger in place of a
 Source: specs/coverage-ledger.md
 Status: active
 
+## D112 · 2026-11-09 · Strix runs from release.py on its own copy, next to the pentester, and a skip or a failure never stops the release
+
+Why: the pentester stays the floor for a user with no key (shape O5). `release.py` runs Strix, so a stub `strix` can test the readiness check, the run and the parser, and the skill branches on one `STRIX:` line. A skip or a failure prints why, and the report lists Strix under Not assessed (spec O5). Spike run 1 hung for 3 minutes and spent $0, so `release.py` stops a run after 30 minutes. The $10 budget stops the spend (spec O2, O11).
+Rejected: a typed reason when Strix fails (Strix is optional, and the pentester still ran), the skill running `strix` in Bash (no test can walk it), the pentester's scratch copy (Strix mounts its target writable), no time limit (a hung run holds `/release`).
+Source: specs/strix-code.md
+Status: active
+
+## D113 · 2026-11-09 · A Strix finding in the release's files goes to a blind verifier; a rejected one goes under Needs validation, and the others stay in the terminal
+
+Why: Strix proves each finding in its own sandbox, so a rejection can mean only that the verifier could not trace it (spec O4). Its `BASE` is the pentester's: the last tag, or none for an old file (spec O8). In spike run 3, nearly all 12 findings were in older files, and they would come back in each report. So a finding outside the range and `OLD FILES` is printed and counted only (spec O13). An info finding is not a hole (spec O7). A Strix run marks no file checked, because Strix does not say which files it read (spec O6).
+Rejected: dropping a rejected finding (loses a sandbox proof), `BASE: none` for each Strix finding (an old hole blocks an unrelated release), old-code findings under Needs validation (the same rows in each report), info as low, marking the range files checked (Strix may not open them).
+Source: specs/strix-code.md
+Status: active
+
+## D114 · 2026-11-09 · zuko installs Strix only on request, with a pinned uv tool install, and refuses a strix older than 1.7.0
+
+Why: `uv tool install strix-agent==1.7.0` pins the version and runs no remote script (spec O3). In spike run 1, Strix 1.4.1 erased the keys in `~/.strix/cli-config.json`: its `persist_current()` rewrites the file from the environment only. 1.7.0 keeps them (spec O12). A skip, or no `uv`, gives one Strix skipped line, as D80 does for Node.
+Rejected: `curl -sSL https://strix.ai/install | bash` (an unpinned remote script), `pipx install` (no pipx on this machine), any `strix` on PATH (spec O10: 1.4.1 erases keys), the file's keys copied into the environment for 1.4.1 (zuko would work around a Strix bug).
+Source: specs/strix-code.md
+Status: active
+
+## D115 · 2026-11-09 · Each Strix run is standard mode with a $10 budget
+
+Why: spike run 3 took 10 minutes and $9.14, and the budget ended it. 10 runs use about $91 of the $100 a month (spec O2).
+Rejected: quick with $5 (a shallower run), deep with $25 (4 runs a month).
+Source: specs/strix-code.md
+Status: active
+
 ## D116 · 2026-11-09 · zuko's Python writes `/` in each path that it prints, writes to a file, gives to git or compares as text
 
 Why: on Windows, `os.path` builds `docs\adr\0001-use-make.md`, and 26 checks of the Windows suite failed on it. git always gives `/`, so `DECISIONS.md`, the gate messages, the board's Replay and the release marker disagreed with it. `.replace(os.sep, "/")` is the idiom of `stop_scope.py:78`, and on Linux and macOS it changes nothing.

@@ -1,0 +1,12 @@
+{
+  "run_name": "invoice-cli_a1b2",
+  "status": "completed",
+  "end_time": "2026-11-09T09:12:40+00:00",
+  "scan_results": {},
+  "llm_usage": {
+    "requests": 118,
+    "total_tokens": 9412003,
+    "cost": 3.8027,
+    "agents": []
+  }
+}

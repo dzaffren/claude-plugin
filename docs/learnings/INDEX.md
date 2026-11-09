@@ -246,3 +246,9 @@ One line per lesson. Loaded into every session in this repo.
 - An `os.sep` fix passes on Linux before and after; take the red from a Windows
   run, and check a new test by making the line write `\` on purpose.
   ([detail](an-os-sep-fix-cannot-fail-on-linux.md))
+- Copy an outside tool's config files to a private scratch file before a spike
+  runs the tool for real — Strix 1.4.1 erased the user's keys on its first run.
+  ([detail](back-up-a-tool-config-before-a-spike.md))
+- A lib module that `release.py` loads by path loads its own siblings by path
+  too — a plain import breaks where a test loads `release.py` from elsewhere.
+  ([detail](a-module-loaded-by-path-loads-siblings-by-path.md))

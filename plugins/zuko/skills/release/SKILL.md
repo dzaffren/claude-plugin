@@ -114,6 +114,41 @@ file, then the mark that put it on the list. When `pick` exits 1, print its
 refusal, such as `Coverage ledger unreadable: ...`. Then end before the
 pentest: nothing is written.
 
+**Start Strix.** Strix is a second attacker that runs with the user's own LLM
+key (D112). Make an empty folder with `mktemp -d`. Join the files that the
+range changes (`git diff --name-only <last tag>..HEAD`, or every tracked file
+with no tag) and the paths that `pick` printed, with `,`. Run this with
+`run_in_background`, and go on to the dispatch at once:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" strix <repo-root> --scratch <the folder> --files <the files>
+```
+
+Print `Strix running: standard · up to $10 · in the background, next to the pentester`.
+When it ends, branch on its last line, which starts `STRIX:`, and nothing else:
+
+| Last line                    | Skill does                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `STRIX: missing · strix-agent 1.7.0` | ask the install question below                                                        |
+| `STRIX: skipped · <why>`     | print `Strix skipped: <why>`                                                                 |
+| `STRIX: failed · <why>`      | print `Strix did not finish: <why>`; the `FINDING` blocks above it still go to verifiers     |
+| `STRIX: done · …`            | the `FINDING` blocks go to verifiers                                                         |
+| `STRIX: stopped · …`         | the `FINDING` blocks go to verifiers; the run stopped before it finished                      |
+
+Ask the install question once, with the version from the `STRIX: missing` line:
+
+```
+Strix is not installed. Install strix-agent 1.7.0 with uv tool install? yes / skip
+```
+
+On yes, run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/release.py" strix-install <repo-root>`.
+It prints `Strix 1.7.0 installed` -> start the `strix` command again, in a new
+empty folder. It prints `Strix install failed: ...` -> print that line, and
+Strix is skipped as not installed. On skip, print `Strix skipped: not installed`.
+
+A skip or a failure never stops the release (D112): the pentest goes on
+without Strix.
+
 1. Dispatch the `zuko:pentester` agent with `RANGE`, `OLD FILES`, `VERSION`,
    the repo, and the target when the release runs live. `OLD FILES` is the
    paths that `pick` printed, joined with `, `, or `none` when it printed no
@@ -135,6 +170,19 @@ pentest: nothing is written.
    `SYMBOL`, `SNIPPET`, `TRACE`, `UNKNOWN` and the same `BASE`. Never send
    `CHECK`. A lead holds when its verifier returns `VERDICT: CONFIRMED`. Drop
    each other lead.
+
+   Send the Strix claims when the Strix run and the pentester have both
+   returned. Send each Strix `FINDING` block to its own verifier in the same
+   way, blind (D113). The claim is the `TITLE`. `CATEGORY` is the OWASP 2025
+   category from `owasp.md` that fits the `CWE` and the title, then the CWE in
+   brackets: `A05:2025 Injection (CWE-78)`. `SEVERITY`, `FILE` and `SNIPPET`
+   come from the block. `SYMBOL` is the function around `FILE`'s line, which
+   you read in the repo. `PROOF` is the Proof of Concept section of the `POC`
+   file. `BASE` is the same as for a pentester finding in that file. A Strix
+   finding holds when its verifier returns `VERDICT: CONFIRMED`. A rejected
+   one goes under Needs validation, and so does a block with `FILE: none`,
+   which goes to no verifier. Print each `OUTSIDE:` line to the user as it is.
+   It goes to no verifier and not into the report.
 3. Write the report to a file in the session's scratchpad directory (`mktemp`
    when there is none), in this format, from the confirmed findings and the
    confirmed leads only:
@@ -152,18 +200,21 @@ pentest: nothing is written.
    | ID | Severity | Category | Where | Description |
    | -- | -------- | -------- | ----- | ----------- |
    | P1 | medium | A05:2025 Injection | exporters/ledger.py:31 export_ledger | order reaches ORDER BY unchecked |
+   | S1 | medium | A05:2025 Injection (CWE-78) | exporters/suppliers.py:29 export_suppliers | Supplier export passes the supplier name to a shell |
 
    ## Needs validation
 
    | ID | Category | Where | Description | Unknown |
    | -- | -------- | ----- | ----------- | ------- |
    | N1 | A05:2025 Injection | exporters/suppliers.py:29 export_suppliers | on Windows, a supplier name may reach a cmd.exe shell string unquoted | whether cmd.exe on Windows runs the text after & in a supplier name as its own command |
+   | N2 | A09:2025 Security Logging and Alerting Failures (CWE-532) | importers/bank.py:58 import_rows | Strix: Bank import logs the full account number | whether Strix's proof reaches this line: zuko's verifier could not trace it in the code |
 
    ## Assessed
 
    - A05:2025 Injection — 4 subprocess calls, 2 SQL strings
    - ATTACK-CLASSES (Cloudflare c1c8a8c) — Injection, Obvious things: exporters/ledger.py
    - AI-AND-LLM (Cloudflare c1c8a8c) — tool-argument injection, indirect injection: exporters/assistant.py
+   - STRIX 1.7.0 (standard, anthropic/claude-sonnet-5-5) — 3 found, 1 confirmed, 1 needs validation, 1 info dropped · $3.80 of $10
 
    ## Not assessed
 
@@ -206,6 +257,30 @@ pentest: nothing is written.
    A lead has no severity and never changes `**Result:**`. The table never
    carries a `TRACE` or a `CHECK`.
 
+   Each confirmed Strix finding is its own row in `## Findings`, numbered
+   `S1`, `S2` and on, with the `SEVERITY` that the verifier returned, as for a
+   pentester finding. `Where` is `FILE` then `SYMBOL`, and `Description` is the
+   `TITLE`. Each other Strix block is a row in `## Needs validation`, with the
+   next free `N` ID, because `cut` refuses any other ID there. Its
+   `Description` is `Strix: ` then the `TITLE`. Its `Unknown` is `whether
+   Strix's proof reaches this line: zuko's verifier could not trace it in the
+   code`. A block with `FILE: none` has `—` as its `Where`.
+
+   One line in the report says what Strix did:
+
+   - `done` -> under `## Assessed`: `- STRIX <version> (standard, <model>) — <found> found, <confirmed> confirmed, <n> needs validation · $<cost> of $10`,
+     from the `STRIX:` line. Add `, <n> info dropped` and `, <n> outside` after
+     the needs validation count when the `STRIX:` line has them. Add
+     ` · incomplete` at the end when it ends with `incomplete`.
+   - `stopped` -> the same line, with `stopped before it finished · ` in front of the counts.
+     Strix gives no reason: a budget stop and a provider rate limit look the
+     same. So the line names no cause, and its cost shows how far the run got.
+   - `failed` -> under `## Not assessed`: `- STRIX — did not finish: <why>`, such as `- STRIX — did not finish: exit 1`.
+   - skipped or missing -> under `## Not assessed`: `- STRIX — skipped: <why>`, such as `- STRIX — skipped: no LLM_API_KEY` or `- STRIX — skipped: not installed`.
+
+   The report never carries a Strix PoC. After the pentester's `PROOF`s,
+   print the `POC` path of each confirmed Strix finding, as `S1  <the path>`.
+
    After the `PROOF`s, print each confirmed lead to the terminal:
 
    ```
@@ -222,6 +297,7 @@ pentest: nothing is written.
               A05 Injection        1 medium
               needs validation: 1 lead (2 dropped by the verifier)
               old files: 10 picked, 9 checked
+              strix: 1.7.0 standard · $3.80 of $10 · 3 found · 1 confirmed · 1 needs validation · 1 info dropped · 9 outside
               not assessed: A01, A07 — no running server (slice 5b)
               class files not read: 8 — no matching code in the range
    ```
@@ -231,7 +307,10 @@ pentest: nothing is written.
    dropped count is the number of leads that the verifiers rejected. With no
    rejected lead, leave out the part in brackets. The picked count is the
    number of paths that `pick` printed. The checked count is the number of
-   those paths in `FILES CHECKED:`.
+   those paths in `FILES CHECKED:`. The `strix:` line takes its version, cost
+   and counts from the `STRIX:` line, and the confirmed and needs validation
+   counts from the Strix rows. On a skip or a failure it reads
+   `strix: skipped · no LLM_API_KEY` or `strix: did not finish · exit 1`.
 
 The pentester returns nothing, stops early, or fails → the pentest did not
 finish. Say so, and ask:
@@ -324,6 +403,7 @@ also covers a resumed release. No `hub page:` link on the overview's
 ```
 Released v2.2.0
   pentest   passed: 0 critical, 0 high, 1 medium, 1 low · 1 lead needs validation · docs/security/v2.2.0/report.md
+  strix     1.7.0 standard · $3.80 of $10 · 1 confirmed · 1 needs validation
   coverage  13 of 148 files checked by a pentest · 135 not checked
   commit    a1b2c3d chore(release): v2.2.0
   tag       v2.2.0, annotated, pushed
@@ -333,6 +413,9 @@ Released v2.2.0
 
 The lead count reads `1 lead needs validation` or `3 leads need validation`.
 With no lead, leave that part out.
+
+The `strix` line has the same counts as the `strix:` line of step 2. On a skip
+or a failure it reads `strix     skipped · <why>` or `strix     did not finish · <why>`.
 
 The `coverage` line is the text after `Coverage` in the line that `cut`
 printed, as it is. It includes `· ledger started` for the release that
