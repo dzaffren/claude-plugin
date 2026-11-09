@@ -261,3 +261,9 @@ One line per lesson. Loaded into every session in this repo.
 - A test that runs `cut` needs the fake `gh` on PATH, or `cut` asks the real
   GitHub and fails its gate before the pentest check.
   ([detail](a-cut-test-needs-a-fake-gh.md))
+- A CI runner has no git identity — each test commit or merge passes
+  `-c user.name`, and `user.useConfigOnly=true` shows the gap locally.
+  ([detail](a-ci-runner-has-no-git-identity.md))
+- Signal a process group only after `ps -o pgid=` shows the pid leads it — a
+  group kill that should fail can reach the test file itself.
+  ([detail](a-group-kill-can-reach-the-caller.md))

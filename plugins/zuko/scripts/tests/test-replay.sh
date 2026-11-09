@@ -314,7 +314,7 @@ commit "$stale" "docs(spec): s-two pause 1"
 git -C "$stale" checkout -q main
 spec "$stale" s-one shipped
 commit "$stale" "docs(spec): ship s-one"
-git -C "$stale" merge -q --squash s-two >/dev/null
+git -C "$stale" -c user.name=Test -c user.email=test@example.com merge -q --squash s-two >/dev/null
 commit "$stale" "feat(spec): s-two"
 git init -q --bare -b main "$work/stale.git"
 git -C "$stale" push -q "$work/stale.git" main s-two:refs/pull/1/head

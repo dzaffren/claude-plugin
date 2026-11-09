@@ -6,7 +6,8 @@
     server.py listen <host> <portfile> <logfile>  accepts TCP connections and logs each one,
                                                   to prove that nothing reached a far host
 
-Each binds port 0 and writes the port it got to <portfile>.
+Each binds port 0 and writes the port it got to <portfile>. http404 serves each
+connection in its own thread, so an idle connection from Chrome cannot block it.
 """
 import http.server
 import socket
@@ -38,7 +39,7 @@ class NotFound(http.server.BaseHTTPRequestHandler):
 
 
 if mode == "http404":
-    server = http.server.HTTPServer((host, 0), NotFound)
+    server = http.server.ThreadingHTTPServer((host, 0), NotFound)
     open(portfile, "w").write(str(server.server_address[1]))
     server.serve_forever()
 elif mode == "listen":
