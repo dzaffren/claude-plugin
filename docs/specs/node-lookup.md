@@ -76,7 +76,7 @@ Scenario: off Windows nothing changes
 
 `drop()` in `cdp.mjs` starts `taskkill.exe` by its full path, `%SystemRoot%\System32\taskkill.exe`. libuv does no PATH search for a name with a folder in it, so the current folder is never searched. Windows ships `taskkill.exe` in `System32` only, so a PATH walk would find the same file.
 
-Relies on: D105, D119, D127
+Relies on: D105, D119, D133
 
 ```mermaid
 flowchart TB
@@ -137,7 +137,7 @@ Reusing: `run.sh`'s `is_windows`, `skip`, `expect_exit`, `expect_match` and `exp
 | **Load**             | One `taskkill` call at the end of each drift check, as before. Nothing new. |
 | **Breaks first**     | Nothing scales here. A new bare program name in `lib/*.mjs` fails the check on every OS. |
 | **Security surface** | The drift check runs in an untrusted project folder. The fix trusts `SystemRoot`, which comes from the user's environment, not from the project. No secrets, no stored data. |
-| **Proof it works**   | The `windows-suite` job on `feat/node-lookup` ends with `0 failed`, and each `e2e-node-lookup` check prints PASS, not SKIP. |
+| **Proof it works**   | The `suite` check on `windows-latest` for this PR ends with `0 failed`, and each `e2e-node-lookup` check prints PASS, not SKIP. |
 | **Rollout**          | No flag. It ships in the next zuko release. Rollback: `git revert` of the fix commit. |
 
 ### Test plan
@@ -147,7 +147,7 @@ Reusing: `run.sh`'s `is_windows`, `skip`, `expect_exit`, `expect_match` and `exp
 | 1. A taskkill.exe at the repo root never runs | `test-e2e-node-lookup.sh`, Windows only. First, a bare `spawnSync('taskkill', ['4242'])` from Node in `acme-shop` makes a folder `4242`, so the hole is real on this runner. Then the drift check on `clean.html` exits 0. No folder with a number for its name appears in `acme-shop`, and the list of `zuko-chrome-*` folders in the temp folder is the same as before the run. | `bash plugins/zuko/scripts/tests/run.sh e2e-node-lookup` |
 | 2. Off Windows nothing changes | The whole suite on Linux, `e2e-rendered-drift` included. The bare-name check in `test-e2e-node-lookup.sh` passes. | `bash plugins/zuko/scripts/tests/run.sh` |
 
-**E2E:** `test-e2e-node-lookup.sh` in the `windows-suite` job, after the branch is pushed: `gh workflow run windows-suite.yml --ref feat/node-lookup`, then `gh run watch`. On Linux, its Windows checks print SKIP, and the bare-name check carries the proof.
+**E2E:** `test-e2e-node-lookup.sh` in the `suite` check on `windows-latest`, which runs on each PR to `main` (D128). On Linux, its Windows checks print SKIP, and the bare-name and `taskkillPath()` checks carry the proof.
 
 ### Chunks
 
@@ -162,7 +162,7 @@ Single chunk. One line in `cdp.mjs`, one new test file and one CHANGELOG line.
 
 ### Decisions to record
 
-Recorded as D127.
+Recorded as D133.
 
 ## Review
 

@@ -1,5 +1,5 @@
 # One walk through node-lookup: on Windows, a taskkill.exe at the root of the
-# project folder never runs from the rendered drift check (D127). The planted
+# project folder never runs from the rendered drift check (D133). The planted
 # taskkill.exe is a copy of Git Bash's mkdir.exe, so when it runs, it leaves a
 # folder named after Chrome's pid in the project folder.
 # Sourced by run.sh, which provides $scripts, $work and the expect_* helpers.

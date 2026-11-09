@@ -107,8 +107,13 @@ allow() {              # allow <file>: undo deny
 stop_tree() {          # stop_tree <pid>: stop a background job and each process it started
   if is_windows && [ -r "/proc/$1/winpid" ]; then
     taskkill //F //T //PID "$(cat "/proc/$1/winpid")" >/dev/null 2>&1
-  else
+  elif [ "$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')" = "$1" ]; then
     kill -TERM -- "-$1" 2>/dev/null || kill "$1" 2>/dev/null
+  else
+    # Not a group leader. A test file inherits `set -o monitor` from run.sh,
+    # and there bash's kill can signal the job's group for -pid: the group of
+    # the test file itself.
+    kill "$1" 2>/dev/null
   fi
   wait "$1" 2>/dev/null
   return 0
@@ -202,7 +207,7 @@ for file in "${files[@]}"; do
   if [ -f "$results_file.late" ]; then
     record FAIL "$base" "timed out after $limit s; $(grep -c . "$results_file" || true) checks recorded before the limit"
   elif [ "$status" -ne 0 ]; then
-    record FAIL "$base" "the test file exited non-zero partway through"
+    record FAIL "$base" "the test file exited $status partway through; $(grep -c . "$results_file" || true) checks recorded before it stopped"
   fi
 
   if [ ! -s "$results_file" ]; then

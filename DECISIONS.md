@@ -1090,7 +1090,7 @@ Status: active
 Why: this slice is built on Linux, and its done line is 0 failures on Windows. GitHub's `windows-latest` runner is the only Windows that a Linux session can reach. GitHub starts a `workflow_dispatch` workflow only from the default branch, but a `push` trigger runs from a file on a branch. Claude pushes only when the user says so, so the user starts each run.
 Rejected: the user's Windows machine (the last two full runs there stopped on low memory, utf8-stdio O7), Linux plus the docs only (nothing then proves the Windows claim), a dispatch-only workflow merged to `main` first (one more PR and merge before the first proof).
 Source: specs/portable-suite.md
-Status: active
+Status: superseded by D128
 
 ## D105 · 2026-11-08 · A check whose setup Windows refuses prints SKIP with the reason, and never counts as a pass
 
@@ -1181,7 +1181,7 @@ Status: active
 Why: `e2e-rendered-drift` "a 404 page prints E6 with its status" fails in some Windows runs with `CDP timeout: Page.navigate`. It failed in portable-suite runs 2 and 4 and passed in runs 1 and 3 (its O18). The cause is Chrome's start time on the runner, and its fix belongs to `windows-ci`.
 Rejected: only a run with 0 failed counts (each run takes about 17 minutes, and this slice does not touch that check).
 Source: specs/windows-paths.md
-Status: active
+Status: superseded by D129
 
 ## D118 · 2026-11-09 · On Windows, program.argv() never hands CreateProcess a bare program name
 
@@ -1246,7 +1246,51 @@ Rejected: fix the fourteen calls only (a new hook could bring the hole back with
 Source: specs/hook-import-path.md
 Status: active
 
-## D127 · 2026-11-09 · On Windows, zuko's Node starts taskkill by its path in System32
+## D127 · 2026-11-09 · Both suite jobs are required on main, and the repo admin bypasses them
+
+Why: a test that passes on one OS only must block the merge, not only show red. `/release` pushes its commit straight to `main` (D1), with no PR, so the admin bypasses the rule.
+Rejected: not required (a red job can still be merged by mistake), required with no bypass (it blocks the release push, and D1 would have to change).
+Source: specs/windows-ci.md
+Status: active
+
+## D128 · 2026-11-09 · The suite workflow runs on each PR to main and by hand, not on a push to main
+
+Why: the PR is the last stop before `main`. A run after a squash merge repeats the PR's tree, and a Windows run takes 13 to 18 minutes.
+Rejected: a run on each push to `main` too (a second run of the same tree after each merge), the push trigger on one branch that D104 used (that branch is shipped, and a PR now proves each branch).
+Supersedes: D104
+Source: specs/windows-ci.md
+Status: active
+
+## D129 · 2026-11-09 · A Windows check that fails in some runs gets its cause fixed, and the required job never reruns it
+
+Why: a required job that fails at random blocks each merge until a person reruns it. The Chrome 404 check timed out after 25 s in 2 of 4 portable-suite runs, and its cause is not known.
+Rejected: a rerun of a failed file in CI (it also hides each new flaky test), a SKIP on Windows (Windows then never proves the 404 path), one rerun as D117 allows (each red run then needs a person).
+Supersedes: D117
+Source: specs/windows-ci.md
+Status: active
+
+## D130 · 2026-11-09 · A new push to a PR cancels its suite run in progress
+
+Why: only the newest commit of a PR can merge, and a Windows run takes 13 to 18 minutes.
+Rejected: letting each run finish (runs stack up on a busy PR, and only the last one counts).
+Source: specs/windows-ci.md
+Status: active
+
+## D131 · 2026-11-09 · A PR does not have to hold the latest main before it merges
+
+Why: with that rule, each merge sends every other open PR to an update and a new run of 13 to 18 minutes. A clash between two PRs still shows on the next PR run.
+Rejected: requiring the latest `main` (one more update and full run after each merge).
+Source: specs/windows-ci.md
+Status: active
+
+## D132 · 2026-11-09 · The required checks on main are a repository ruleset, not classic branch protection
+
+Why: a ruleset names its bypass list, and its API reports `current_user_can_bypass`. That proves the admin bypass of D127 without a push to `main`.
+Rejected: classic branch protection with "include administrators" off (the admin bypass is implicit, and nothing lists it).
+Source: specs/windows-ci.md
+Status: active
+
+## D133 · 2026-11-09 · On Windows, zuko's Node starts taskkill by its path in System32
 
 Why: libuv looks in the current folder before PATH for a bare name, so `spawnSync('taskkill')` in `cdp.mjs` ran a `taskkill.exe` from the project folder at the end of each drift check. Windows ships `taskkill.exe` in `System32` only.
 Rejected: a Node copy of `program.find()` that walks PATH (more code, and it finds the same file), set `NoDefaultCurrentDirectoryInExePath` in `process.env` (nobody has checked that libuv reads the change, and it holds only for this process), `process.kill(pid)` (it ends Chrome but not its child processes, which keep the profile folder open).

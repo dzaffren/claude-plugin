@@ -5,7 +5,7 @@
 // Ported from design-taste-frontend v2.1.5, scripts/lib/cdp.mjs
 // (https://github.com/Leonxlnx/taste-skill). Changes from upstream: a set
 // CHROME_PATH is used alone, with no fall back to the search; taskkill starts
-// from System32, never from the current folder (D127); the profile sweep,
+// from System32, never from the current folder (D133); the profile sweep,
 // screenshots and wheel input are not ported.
 //
 // MIT License
@@ -37,7 +37,7 @@ import { join, win32 } from 'node:path';
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Windows' own taskkill, by its full path: libuv looks in the current folder
-// first for a bare name (D127).
+// first for a bare name (D133).
 export const taskkillPath = () => win32.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe');
 
 // The browser to drive, or null. A set CHROME_PATH is the only candidate, so a

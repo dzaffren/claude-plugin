@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Each PR to `main` runs the test suite on Windows and Linux, and a PR whose suite fails on either OS cannot merge.
+
 ### Security
 
 - On Windows, the rendered drift check ran a `taskkill.exe` from the project folder each time it stopped Chrome, in `/spec` pause 2 and `/design`. It now starts the `taskkill.exe` in `System32`.
