@@ -5,8 +5,9 @@
 // Ported from design-taste-frontend v2.1.5, scripts/lib/cdp.mjs
 // (https://github.com/Leonxlnx/taste-skill). Changes from upstream: a set
 // CHROME_PATH is used alone, with no fall back to the search; taskkill starts
-// from System32, never from the current folder (D133); the profile sweep,
-// screenshots and wheel input are not ported.
+// from System32, never from the current folder (D133); a candidate path that
+// is not absolute is skipped (D134); the profile sweep, screenshots and wheel
+// input are not ported.
 //
 // MIT License
 //
@@ -32,7 +33,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, win32 } from 'node:path';
+import { isAbsolute, join, win32 } from 'node:path';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,7 +42,8 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const taskkillPath = () => win32.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'taskkill.exe');
 
 // The browser to drive, or null. A set CHROME_PATH is the only candidate, so a
-// wrong path is an error, not a different browser.
+// wrong path is an error, not a different browser. An unset variable makes a
+// candidate relative, and a relative path reads from the project folder (D134).
 export function findChrome() {
   if (process.env.CHROME_PATH) return existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : null;
   const home = process.env.HOME || process.env.USERPROFILE || '';
@@ -66,7 +68,7 @@ export function findChrome() {
     '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium',
     '/usr/bin/chromium-browser', '/snap/bin/chromium', '/usr/bin/microsoft-edge',
   ];
-  for (const c of candidates) if (c && existsSync(c)) return c;
+  for (const c of candidates) if (isAbsolute(c) && existsSync(c)) return c;
   return null;
 }
 

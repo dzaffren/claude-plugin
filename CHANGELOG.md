@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- On Linux and macOS, the rendered drift check ran a `Google/Chrome/Application/chrome.exe` from the project folder in place of the installed Chrome, in `/spec` pause 2 and `/design`. It now starts a browser only from an absolute path.
 - On Windows, the rendered drift check ran a `taskkill.exe` from the project folder each time it stopped Chrome, in `/spec` pause 2 and `/design`. It now starts the `taskkill.exe` in `System32`.
 - A Python file such as `json.py` at the root of a project, or on `PYTHONPATH`, ran from zuko's hooks at each Bash call, edit and stop, on every OS. It could also make a guard let a blocked command through, such as `git push --force origin main`. The hooks now run Python in isolated mode and never import from the project folder.
 
