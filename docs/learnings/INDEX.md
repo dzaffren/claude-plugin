@@ -255,3 +255,9 @@ One line per lesson. Loaded into every session in this repo.
 - A refused board publish can be another session's live gate card — read
   which stage published it, and serve locally instead of overwriting it.
   ([detail](one-board-many-sessions.md))
+- A newline in a grep pattern makes two patterns that each pass alone — check
+  that one line follows another with `grep -A1`, not one pattern.
+  ([detail](a-newline-in-a-grep-pattern-is-two-patterns.md))
+- A test that runs `cut` needs the fake `gh` on PATH, or `cut` asks the real
+  GitHub and fails its gate before the pentest check.
+  ([detail](a-cut-test-needs-a-fake-gh.md))

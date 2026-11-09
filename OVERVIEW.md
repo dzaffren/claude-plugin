@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-09 by /ship exe-lookup
+**Status:** Active · **Release:** v2.5.1 · **Updated:** 2026-11-09 by /ship strix-live
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -90,6 +90,7 @@ projects.
 | windows-paths | Shipped | Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates, the board and /release give the same paths as on Linux | — |
 | strix-code | Shipped | With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer | — |
 | exe-lookup | Shipped | On Windows, zuko's hooks and gates start git and cygpath from PATH only, so a git.exe or cygpath.exe at the root of a project never runs, and a program that is not on PATH fails as not found | — |
+| strix-live | Shipped | When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location | — |
 
 ## More
 
