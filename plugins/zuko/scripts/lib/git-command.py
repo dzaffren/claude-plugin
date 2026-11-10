@@ -83,6 +83,9 @@ BACKTICK_ESCAPE = re.compile(r"\\([$`\\])")
 # A -c option group: -c, -lc, -ec.
 SHELL_C = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$")
 
+# Shell options that take the next word as their value.
+SHELL_OPTIONS_WITH_VALUE = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
+
 # Where bash starts a new word, so that a `#` after one starts a comment. Not
 # `)`: after `$(date)` bash keeps `#x` in the word, and after a subshell's `)`
 # it starts a comment, so a `#` there is unclear.
@@ -546,16 +549,30 @@ def shell_strings(tokens):
                 found.append(" ".join(words[at + 1:]))
                 break
             if os.path.basename(word) in SHELLS:
-                for option_at in range(at + 1, len(words)):
-                    option = words[option_at]
-                    if not option.startswith("-"):
-                        break
-                    if SHELL_C.match(option):
-                        if option_at + 1 < len(words):
-                            found.append(words[option_at + 1])
-                        break
+                string = shell_string(words[at + 1:])
+                if string is not None:
+                    found.append(string)
         words = []
     return found
+
+
+def shell_string(args):
+    """The string a shell runs from -c: its first word that is not an option,
+    when a -c group is among its options. `--` ends the options, and
+    `-o pipefail`, `-O extglob` and `--rcfile f` take a value."""
+    has_c = False
+    rest = list(args)
+    while rest:
+        word = rest.pop(0)
+        if word in ("--", "-"):
+            break
+        if word.startswith(("-", "+")):
+            has_c = has_c or bool(SHELL_C.match(word))
+            if word in SHELL_OPTIONS_WITH_VALUE and rest:
+                rest.pop(0)
+            continue
+        return word if has_c else None
+    return rest[0] if has_c and rest else None
 
 
 def tokenise(command, depth=0):

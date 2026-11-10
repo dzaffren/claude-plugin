@@ -662,6 +662,11 @@ done
 for form in "bash -c 'git push --force origin main'" \
   "sh -lc 'git push --force origin main'" \
   "sudo bash -c 'git push --force origin main'" \
+  "bash -o pipefail -c 'git push --force origin main'" \
+  "bash --rcfile /dev/null -c 'git push --force origin main'" \
+  "bash -O extglob -c 'git push --force origin main'" \
+  "bash +x -c 'git push --force origin main'" \
+  "bash -c -- 'git push --force origin main'" \
   "eval 'git push --force origin main'" \
   'eval git push --force origin main' \
   "bash -c 'bash -c \"bash -c \\\"git push --force origin main\\\"\"'"; do
