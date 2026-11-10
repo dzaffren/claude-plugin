@@ -30,6 +30,8 @@ print(json.dumps(p))')
 
 scan 'git commit -m x' "$wt"
 expect_exit 2 "$scan_status" "a secret staged where the session sits is blocked"
+scan 'echo "$(git commit -m x)"' "$wt"
+expect_exit 2 "$scan_status" "a commit in a quoted substitution has its staged diff scanned"
 
 # A lone surrogate the payload parse cannot print used to end in `|| exit 0`
 # before the staged diff was read (pentest P4).
