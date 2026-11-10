@@ -1296,3 +1296,15 @@ Why: libuv looks in the current folder before PATH for a bare name, so `spawnSyn
 Rejected: a Node copy of `program.find()` that walks PATH (more code, and it finds the same file), set `NoDefaultCurrentDirectoryInExePath` in `process.env` (nobody has checked that libuv reads the change, and it holds only for this process), `process.kill(pid)` (it ends Chrome but not its child processes, which keep the profile folder open).
 Source: specs/node-lookup.md
 Status: active
+
+## D134 · 2026-11-10 · The pentester fence judges each command with `\` as `/`, and again as typed
+
+Why: Git Bash takes `\` as a separator, and bash on Linux and macOS takes it as part of a
+name. The fence folded every `\` to `/` on every OS, so `cp x '<scratch>\evil.txt'` passed
+as inside the scratch dir and wrote next to it in `/tmp` (pentest v2.6.0 P1). Judging both
+readings keeps every Git Bash block and adds the POSIX one.
+Rejected: folding `\` only when `os.name` is `nt` (the Linux suite no longer proves the
+Windows reading), refusing every `\` (blocks `grep 'a\.b'` and `printf 'a\n'`), folding
+only (pentest P1).
+Source: specs/fence-backslash.md
+Status: active
