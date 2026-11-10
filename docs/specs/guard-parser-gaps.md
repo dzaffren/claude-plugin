@@ -1,6 +1,6 @@
 # Guard parser gaps
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** None
 
@@ -43,7 +43,7 @@ each against the real hook: exit 0 before the fix, exit 2 for the plain command.
 dependency. Pauses 1 and 3 merged, pause 2 skipped.
 
 The fix is on `fix/heredoc-delimiter` as `ff74829`, `200ec61` and `f34c28c`,
-made by `/debug` before this spec, and `d8ab6fa`, from `/review` (O2).
+made by `/debug` before this spec, and `5b345b4`, from `/review` (O2).
 
 ## Flow
 
@@ -164,7 +164,7 @@ Reusing: `INNER_HEREDOC` and the `run_hook` test helper, unchanged.
 | **Breaks first**     | Nothing at 10×. Each change is linear in the command                                             |
 | **Security surface** | Closes v2.7.0 S1, S3 and S4. Each change can only add blocks: a refusal is a block (D52)         |
 | **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` passes, with the new cases               |
-| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `ff74829`, `200ec61`, `f34c28c` and `d8ab6fa` |
+| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `ff74829`, `200ec61`, `f34c28c` and `5b345b4` |
 
 ### Test plan
 
@@ -197,8 +197,8 @@ None — no choice here rejected an option.
 
 2026-11-10 · 2 raw findings, 0 survived. Both were on main before this branch, and both are fixed here on the user's call (O2).
 
-- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:191` · refuse a top-level `<<` that `INNER_HEREDOC` does not match · `d8ab6fa`
-- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:99` · skip the value of `--shallow-file` · `d8ab6fa`
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:191` · refuse a top-level `<<` that `INNER_HEREDOC` does not match · `5b345b4`
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:99` · skip the value of `--shallow-file` · `5b345b4`
 
 2026-11-10 · 0 raw findings, 0 survived. Clean.
 

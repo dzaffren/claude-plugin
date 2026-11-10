@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-10 by /ship review-leads
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-10 by /ship guard-parser-gaps
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -97,6 +97,7 @@ projects.
 | fence-backslash | Shipped | The pentester fence judges each command with \\ as /, as Git Bash reads it, and again as typed, so on Linux and macOS a write to a \\ sibling of the scratch dir no longer passes | — |
 | chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS | — |
 | review-leads | Shipped | /review keeps each lead it traced but could not settle under Needs validation, with the one unknown fact and a check, and the PR body shows it | — |
+| guard-parser-gaps | Shipped | The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file | — |
 
 ## More
 
