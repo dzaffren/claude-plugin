@@ -647,6 +647,9 @@ EOF' \
   'cat <<EOF
 `echo \`git push --force origin main\``
 EOF' \
+  'cat <<EOF
+$(echo "it'"'"'s"; git push --force origin main)
+EOF' \
   "cat <<EOF
   EOF
 it's
@@ -688,7 +691,10 @@ for form in "echo '\$(git push --force origin main)'" \
 EOF" \
   'python3 release.py plan "$(git rev-parse --show-toplevel)"' \
   'echo "$(( (1 << 2) * 3 ))"' \
-  'echo eval "it'"'"'s"'; do
+  'echo eval "it'"'"'s"' \
+  'cat <<EOF
+$(echo "it'"'"'s")
+EOF'; do
   run_hook "$form"
   expect_exit 0 "$hook_status" "nested: text is not a command, $(printf '%q' "$form")"
 done

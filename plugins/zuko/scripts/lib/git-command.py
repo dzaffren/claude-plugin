@@ -250,8 +250,9 @@ def strip_heredocs(command):
     has no line the walk can trust as its end.
 
     bash runs each `$( )` and backtick in the body of a heredoc whose
-    delimiter is not quoted. Each one is added at the end, as its own line in
-    double quotes, so tokenise reads it as a nested command.
+    delimiter is not quoted. The command in each one, with its own heredoc
+    bodies and comments dropped, is added at the end as lines of their own,
+    so tokenise reads it as a command.
     """
     lines = command.split("\n")
     kept = []
@@ -284,11 +285,11 @@ def strip_heredocs(command):
             if index >= len(lines):
                 raise ValueError("heredoc %s is never closed" % delimiter)
             if not quoted:
-                found.extend(within_recursion(body_substitutions, "\n".join(lines[start:index])))
+                found.extend(within_recursion(body_commands, "\n".join(lines[start:index])))
             index += 1
     if state["quote"]:
         raise ValueError("unbalanced %s quote" % state["quote"])
-    return "\n".join(kept + ['"%s"' % text for text in found])
+    return "\n".join(kept + found)
 
 
 def within_recursion(scan, text):
@@ -500,10 +501,10 @@ def ansi_quoted_end(text, index):
     raise ValueError("a $' quote is never closed")
 
 
-def body_substitutions(body):
-    """Each `$( )` and backtick in an unquoted heredoc body, as written. bash
-    reads quotes there as text, and a backslash escapes `$`, a backtick or a
-    backslash."""
+def body_commands(body):
+    """The command in each `$( )` and backtick of an unquoted heredoc body,
+    with its own heredoc bodies and comments dropped. bash reads quotes there
+    as text, and a backslash escapes `$`, a backtick or a backslash."""
     found = []
     index = 0
     while index < len(body):
@@ -513,7 +514,7 @@ def body_substitutions(body):
             index = substitution_or_arithmetic_end(body, index, found)
         else:
             index += 1
-    return found
+    return [strip_heredocs(inner_command(sub)) for sub in found]
 
 
 def quoted_substitutions(text):
@@ -540,8 +541,14 @@ def quoted_substitutions(text):
             index = quoted_end(text, index + 1, found)
         else:
             index += 1
-    return [BACKTICK_ESCAPE.sub(r"\1", inner[1:-1]) if inner.startswith("`") else inner[2:-1]
-            for inner in found]
+    return [inner_command(sub) for sub in found]
+
+
+def inner_command(substitution):
+    """The command inside a `$( )` or backtick, as written in the text."""
+    if substitution.startswith("`"):
+        return BACKTICK_ESCAPE.sub(r"\1", substitution[1:-1])
+    return substitution[2:-1]
 
 
 def shell_strings(tokens):
