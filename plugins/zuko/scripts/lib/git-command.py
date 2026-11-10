@@ -9,6 +9,10 @@ quoted argument, a heredoc body or a comment is text, not a command, so it is
 not printed. A comment follows bash's rule: it starts at an unquoted `#` at the
 start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 
+A command that bash runs from inside another one is a command too (D138): a
+`$( )` or backtick in double quotes or in an unquoted heredoc body, the
+string of a `bash -c`, and the words after `eval`.
+
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
 chain, then by git's own `-C`. The prefix is empty when the text cannot say
