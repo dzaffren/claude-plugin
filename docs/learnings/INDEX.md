@@ -267,6 +267,9 @@ One line per lesson. Loaded into every session in this repo.
 - Signal a process group only after `ps -o pgid=` shows the pid leads it — a
   group kill that should fail can reach the test file itself.
   ([detail](a-group-kill-can-reach-the-caller.md))
+- Run a hook script by hand with `</dev/null` — it reads its payload from
+  stdin first and waits forever on an open one.
+  ([detail](run-a-hook-script-with-no-stdin.md))
 - A path built from an environment variable is relative wherever the variable
   is unset — build it with each variable unset on each OS before calling it
   absolute.

@@ -133,7 +133,7 @@ sequenceDiagram
 
 | File | What changes | Why |
 | --- | --- | --- |
-| `plugins/zuko/scripts/lib/cdp.mjs:69` | The loop tests `isAbsolute(c) && existsSync(c)`. Line 35 imports `isAbsolute` from `node:path`. Lines 6 to 9 name the skip as a change from upstream (D134). | scenarios 1 and 2 |
+| `plugins/zuko/scripts/lib/cdp.mjs:69` | The loop tests `isAbsolute(c) && existsSync(c)`. Line 35 imports `isAbsolute` from `node:path`. Lines 6 to 9 name the skip as a change from upstream (D135). | scenarios 1 and 2 |
 | `plugins/zuko/scripts/tests/test-e2e-chrome-lookup.sh` | New. On every OS: plant a file at each relative candidate in a scratch `acme-shop`, unset the five variables, and check that `findChrome()` gives an absolute path or null. Off Windows: plant an executable `chrome.exe` in a copy of the `rendered-drift/project` fixture, and run the drift check there, as the Test plan says. On Windows, the drift run prints SKIP with the reason (D105). | scenarios 1 and 2 |
 | `CHANGELOG.md` | One `[Unreleased]` `### Security` line: on Linux and macOS, the rendered drift check no longer runs a `chrome.exe` from the project folder. | `/ship` gate |
 
@@ -179,7 +179,7 @@ Single chunk. One line in `cdp.mjs`, one new test file and one CHANGELOG line.
 
 ### Decisions to record
 
-Recorded as D134.
+Recorded as D135.
 
 ## Review
 

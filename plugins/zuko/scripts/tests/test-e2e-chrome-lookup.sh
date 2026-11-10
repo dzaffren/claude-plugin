@@ -1,5 +1,5 @@
 # One walk through chrome-lookup: a chrome.exe planted in the project folder
-# never runs from the rendered drift check (D134). On Linux and macOS the
+# never runs from the rendered drift check (D135). On Linux and macOS the
 # Windows variables are not set, so findChrome() built relative candidates.
 # Sourced by run.sh, which provides $scripts, $work and the expect_* helpers.
 

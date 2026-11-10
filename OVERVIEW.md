@@ -94,6 +94,7 @@ projects.
 | hook-import-path | Shipped | Each inline Python call in a zuko hook runs in isolated mode, so a json.py at the root of a project or on PYTHONPATH never runs from a hook and never turns a block into a pass | — |
 | windows-ci | Shipped | Each PR to main runs the test suite on windows-latest and ubuntu-latest, and main requires both checks, so a test that passes on one OS only can no longer merge; the repo admin still pushes the release commit straight to main | — |
 | node-lookup | Shipped | On Windows, the rendered drift check stops Chrome with the taskkill.exe in System32, so a taskkill.exe at the root of a project never runs | — |
+| fence-backslash | Shipped | The pentester fence judges each command with \\ as /, as Git Bash reads it, and again as typed, so on Linux and macOS a write to a \\ sibling of the scratch dir no longer passes | — |
 | chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS | — |
 
 ## More

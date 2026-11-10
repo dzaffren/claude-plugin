@@ -6,7 +6,7 @@
 // (https://github.com/Leonxlnx/taste-skill). Changes from upstream: a set
 // CHROME_PATH is used alone, with no fall back to the search; taskkill starts
 // from System32, never from the current folder (D133); a candidate path that
-// is not absolute is skipped (D134); the profile sweep, screenshots and wheel
+// is not absolute is skipped (D135); the profile sweep, screenshots and wheel
 // input are not ported.
 //
 // MIT License
@@ -43,7 +43,7 @@ export const taskkillPath = () => win32.join(process.env.SystemRoot || 'C:\\Wind
 
 // The browser to drive, or null. A set CHROME_PATH is the only candidate, so a
 // wrong path is an error, not a different browser. An unset variable makes a
-// candidate relative, and a relative path reads from the project folder (D134).
+// candidate relative, and a relative path reads from the project folder (D135).
 export function findChrome() {
   if (process.env.CHROME_PATH) return existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : null;
   const home = process.env.HOME || process.env.USERPROFILE || '';

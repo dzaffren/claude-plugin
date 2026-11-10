@@ -1297,7 +1297,19 @@ Rejected: a Node copy of `program.find()` that walks PATH (more code, and it fin
 Source: specs/node-lookup.md
 Status: active
 
-## D134 · 2026-11-09 · findChrome() skips each candidate path that is not absolute
+## D134 · 2026-11-10 · The pentester fence judges each command with `\` as `/`, and again as typed
+
+Why: Git Bash takes `\` as a separator, and bash on Linux and macOS takes it as part of a
+name. The fence folded every `\` to `/` on every OS, so `cp x '<scratch>\evil.txt'` passed
+as inside the scratch dir and wrote next to it in `/tmp` (pentest v2.6.0 P1). Judging both
+readings keeps every Git Bash block and adds the POSIX one.
+Rejected: folding `\` only when `os.name` is `nt` (the Linux suite no longer proves the
+Windows reading), refusing every `\` (blocks `grep 'a\.b'` and `printf 'a\n'`), folding
+only (pentest P1).
+Source: specs/fence-backslash.md
+Status: active
+
+## D135 · 2026-11-09 · findChrome() skips each candidate path that is not absolute
 
 Why: on Linux and macOS, `PROGRAMFILES` and `LOCALAPPDATA` are not set, so three Windows candidates in `cdp.mjs` were relative paths. The drift check then ran a `Google/Chrome/Application/chrome.exe` from the project folder, before the real Chrome in `/usr/bin`.
 Rejected: add the Windows candidates on win32 only (a Windows machine with no `LOCALAPPDATA` stays open), drop the fall backs for the variables (an empty variable still gives a relative path).

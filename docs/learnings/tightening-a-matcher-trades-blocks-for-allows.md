@@ -42,3 +42,10 @@ same swap stopped folding `\..` and never saw `C:/` as absolute, and Git Bash
 honours both, so three escapes opened. The old matcher had blocked them only by
 accident. Feed the new matcher the old one's blocked inputs in the shell's own
 spellings (`\`, a drive letter, a leading `\`) before shipping.
+
+**Again:** 2026-11-09 · /debug fence-backslash (pentest v2.6.0 P1). The same
+fix folded every `\` to `/` on every OS. On Linux and macOS `\` is part of a
+name, so `<scratch>\evil.txt` read as a file in the scratch dir while it was a
+sibling of it in `/tmp`. The fold had replaced the old reading instead of adding
+to it. When a guard must hold under two shells' rules, judge each reading and
+let the command through only when every reading passes.
