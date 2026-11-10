@@ -239,7 +239,7 @@ Single chunk. The change is four prompt files and two tests, about 120 lines.
 | ---- | ---------- |
 | A test checks prompt text, so it cannot show that the reviewer writes good leads. | The same limit as `needs-validation`. The first real review of a Windows-only branch is the proof. |
 | The reviewer calls a problem a lead to skip the work of proving it. | The rule "a lead that a command can prove is a finding" is copied from the pentester, and the blind verifier still rejects a broken trace. |
-| A lead line breaks the ship gate's placeholder check. | The existing rule bans a brace pair, `TODO` and `[TBD]` in each `## Review` line. The fixture's lead line passes `verify-ship-gates.sh`. |
+| A lead line breaks the ship gate's placeholder check. | The existing rule bans a brace pair and the to-do and to-be-decided markers in each `## Review` line. The fixture's lead line passes `verify-ship-gates.sh`. |
 
 ### Decisions to record
 
