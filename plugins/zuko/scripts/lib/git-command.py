@@ -92,9 +92,11 @@ JOINED_OPENERS = ("((", "$(", "${", "$[", "<<")
 CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
 
 # git's own options, which sit before the subcommand. These take a value.
+# git 2.52.0 also takes --attr-source's, --config-env's and --shallow-file's
+# as the next word.
 GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
-    "--super-prefix",
+    "--super-prefix", "--attr-source", "--config-env", "--shallow-file",
 }
 
 
@@ -185,7 +187,14 @@ def openers_in(line, state):
                 closers.append(closers[-1])
             elif closers and char == closers[-1]:
                 closers.pop()
-            match = HEREDOC.match(line, at)
+            match = INNER_HEREDOC.match(line, at)
+            if not match and line.startswith("<<", at):
+                # A delimiter read only in part (`<<E-F`), or quoted in a form
+                # the walk does not read (`<<'E-F'`, `<<\EOF`), hides where
+                # bash ends the body, and the lines after it.
+                word = re.split(r"[ \t;&|()<>]", line[at + 2:].lstrip("-").lstrip(" \t"), 1)[0]
+                raise ValueError("cannot tell where heredoc %s ends; put the command in a file"
+                                 % (word or "after <<"))
             if match:
                 delimiters.append(match.group(2))
                 at = match.end() - 1
@@ -434,12 +443,15 @@ def main():
     except ValueError as err:
         sys.stderr.write("git-command.py: cannot parse the command: %s\n" % err)
         return 3
+    # One call per line, for the shell guards. A newline inside a quoted word
+    # prints as a space, as the space between words does, so one call never
+    # splits into two lines that each miss the check.
     if len(sys.argv) == 3 and sys.argv[1] == "--dir":
         for where, args in invocations_with_dirs(tokens, sys.argv[2]):
-            print("%s\t%s" % (where or "", " ".join(args)))
+            print(("%s\t%s" % (where or "", " ".join(args))).replace("\n", " "))
         return 0
     for args in invocations(tokens):
-        print(" ".join(args))
+        print(" ".join(args).replace("\n", " "))
     return 0
 
 

@@ -60,6 +60,33 @@ for form in 'git push origin +main' \
   expect_exit 2 "$hook_status" "force push blocked: $form"
 done
 
+# git 2.52.0 takes the value of --attr-source, --config-env and
+# --shallow-file as the next word too. A walk that did not know them read that value as the subcommand.
+for form in 'git --attr-source HEAD push --force origin main' \
+  'git --config-env core.editor=EDITOR push -f origin main' \
+  'git --shallow-file HEAD push --force origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "force push after a global option with a value blocked: $form"
+done
+run_hook 'git --config-env core.editor=EDITOR commit -m x'
+expect_exit 2 "$hook_status" "commit on main after --config-env with a value is blocked"
+run_hook 'git --shallow-file HEAD commit -m x'
+expect_exit 2 "$hook_status" "commit on main after --shallow-file with a value is blocked"
+
+# A newline inside a quoted argument is part of that one argument. The parser
+# prints each git call on one line, so the newline must not split the call:
+# `push --receive-pack=true;` and `git-receive-pack origin +feat` would each
+# miss the force check.
+for form in "git push --receive-pack='true;
+git-receive-pack' origin +feat" \
+  "git push -o 'a
+b' --force origin main" \
+  "git push \"--push-option=x
+y\" -f origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "force push with a newline in an argument blocked: $(printf '%q' "$form")"
+done
+
 # A command that will not parse is judged on its raw text. An unclosed heredoc
 # fails the parse, and bash still runs the push in front of it.
 unclosed=$(printf '\ncat <<EOF\nnever closed')
@@ -505,6 +532,48 @@ git push --force origin main
   expect_match "^Blocked: this command could not be checked: cannot tell where a heredoc inside \"\\$\\( \\)\" ends" "$hook_err" "heredoc in \"\$( )\": the unclear-end block says why, $(printf '%q' "$form")"
 done
 
+# bash reads the whole word after << as the delimiter: in `<<E-F` it is
+# `E-F`, so the body ends at the line `E-F` and the push after it runs. A walk
+# that read `E` would drop the push as body.
+for form in 'cat <<E-F' 'cat <<-E-F' 'cat <<E.F' 'cat << E/F'; do
+  delimiter=${form##*<<}
+  delimiter=${delimiter#-}
+  delimiter=${delimiter# }
+  run_hook "$form
+$delimiter
+git push --force origin main
+E"
+  expect_exit 2 "$hook_status" "heredoc delimiter read whole: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell where heredoc ${delimiter//./\\.} ends" "$hook_err" "heredoc delimiter read whole: the block says why, $(printf '%q' "$form")"
+done
+
+# A quoted or backslashed delimiter is a heredoc too. A walk that did not see
+# it read the body as commands, and an apostrophe there hid the push after
+# the delimiter in a quote.
+for form in "cat <<'E-F'" 'cat <<"E-F"' 'cat <<\EOF' 'cat <<-\E-F'; do
+  delimiter=${form##*<<}
+  delimiter=${delimiter#-}
+  delimiter=${delimiter//[\'\"\\]/}
+  run_hook "$form
+it's
+$delimiter
+git push --force origin main
+echo \\'"
+  expect_exit 2 "$hook_status" "quoted heredoc delimiter: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell where heredoc " "$hook_err" "quoted heredoc delimiter: the block says why, $(printf '%q' "$form")"
+done
+
+# The forms bash and zuko use every day still parse, and the push after the
+# body is still read.
+for form in "cat <<'EOF'" 'cat <<"EOF"' 'cat <<EOF' 'cat <<-EOF' 'cat << EOF'; do
+  run_hook "$form
+it's
+EOF
+git push --force origin main"
+  expect_exit 2 "$hook_status" "everyday heredoc: the push after the body is read, $(printf '%q' "$form")"
+  expect_match "^Blocked: force push" "$hook_err" "everyday heredoc: blocked as a force push, $(printf '%q' "$form")"
+done
+
 # bash may end a body before the walk does (at `EOF)`, or at a closing
 # backtick), or never open it (`<<` in single quotes or `${ }`). A `<<` on a
 # line the walk reads as body may then open a real heredoc, so the walk counts
@@ -558,8 +627,8 @@ EOF
 )\""
 parsed=$(printf '%s' "$commit_form" | python3 "$scripts/lib/git-command.py" 2>&1)
 expect_exit 0 "$?" "commit form: the heredoc commit parses"
-expect_match "^commit -m \\\$\\(cat <<'EOF'\$" "$parsed" "commit form: the commit is read"
-expect_match "^Body with quotes, it's, \`backticks\` and \\\$\\(dollar\\) text\\.\$" "$parsed" "commit form: the body is in the -m word"
+expect_match "^commit -m \\\$\\(cat <<'EOF' fix\\(x\\): subject  Body with quotes, it's, \`backticks\` and \\\$\\(dollar\\) text\\. EOF \\)\$" "$parsed" "commit form: the commit and its body are read as one call, on one line"
+expect_exit 1 "$(printf '%s\n' "$parsed" | wc -l | tr -d ' ')" "commit form: one call prints one line"
 run_hook "$commit_form" "$repo"
 expect_exit 2 "$hook_status" "commit form: blocked on main"
 expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: the block is the commit-on-main one"

@@ -274,3 +274,6 @@ One line per lesson. Loaded into every session in this repo.
   is unset — build it with each variable unset on each OS before calling it
   absolute.
   ([detail](an-env-path-is-relative-where-the-var-is-unset.md))
+- When a fix adds a stricter copy of a pattern for one call site, grep every
+  other use of the original and fix it too, or say why it is safe.
+  ([detail](a-stricter-twin-belongs-on-every-path.md))

@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- zuko's force-push and commit-on-main guards missed a `git push --force` or a commit on `main` written after a heredoc whose delimiter they could not read, such as `<<E-F` or `<<'E-F'`, after a newline inside a quoted argument, or after `--attr-source`, `--config-env` or `--shallow-file` and its value. They now block each of these.
+
 ## [2.7.0] - 2026-11-10
 
 ### Added
