@@ -92,9 +92,10 @@ JOINED_OPENERS = ("((", "$(", "${", "$[", "<<")
 CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
 
 # git's own options, which sit before the subcommand. These take a value.
+# git 2.52.0 also takes --attr-source's and --config-env's as the next word.
 GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
-    "--super-prefix",
+    "--super-prefix", "--attr-source", "--config-env",
 }
 
 

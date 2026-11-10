@@ -60,6 +60,16 @@ for form in 'git push origin +main' \
   expect_exit 2 "$hook_status" "force push blocked: $form"
 done
 
+# git 2.52.0 takes the value of --attr-source and --config-env as the next
+# word too. A walk that did not know them read that value as the subcommand.
+for form in 'git --attr-source HEAD push --force origin main' \
+  'git --config-env core.editor=EDITOR push -f origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "force push after a global option with a value blocked: $form"
+done
+run_hook 'git --config-env core.editor=EDITOR commit -m x'
+expect_exit 2 "$hook_status" "commit on main after --config-env with a value is blocked"
+
 # A newline inside a quoted argument is part of that one argument. The parser
 # prints each git call on one line, so the newline must not split the call:
 # `push --receive-pack=true;` and `git-receive-pack origin +feat` would each
