@@ -75,7 +75,7 @@ expect_match 'Leave it, and add a row as `ledger\.md` › "Deciding alone" says\
 # --- /review: the Review section (scenario 3, O2, O8) ---
 expect_match 'After the fixes, write the result into the spec, just above `## Open items`\. The ship gate and the PR body read it\.' \
   "$review_all" "review: writes its result into the spec"
-expect_match '2026-10-13 · 7 raw findings, 4 survived, 4 fixed\.' "$review_all" "review: the run line"
+expect_match '2026-10-13 · 7 raw findings, 4 survived, 4 fixed, 1 lead needs validation\.' "$review_all" "review: the run line"
 expect_match 'A fix line has four parts: the category, `file:line`, the fix in a few words, and the fix commit\.' \
   "$review_all" "review: the four parts of a fix line"
 expect_match 'A clean run writes one line: `2026-10-14 · 3 raw findings, 0 survived\. Clean\.`' "$review_all" "review: a clean run is one line"
