@@ -22,6 +22,11 @@ found three inputs where the printed lines miss a git call that bash runs:
 - `git --attr-source HEAD push --force origin main`. The parser did not know that
   `--attr-source` takes a value, so it read `HEAD` as the subcommand (S4).
 
+`/review` found two more of the same kind, both already on `main` (O2):
+`<<'E-F'` or `<<\EOF`, which the parser did not see as a heredoc at all, so an
+apostrophe in the body hid the push after it in a quote; and
+`git --shallow-file HEAD push --force`.
+
 Each one let a force push or a commit on `main` through with no prompt. I ran
 each against the real hook: exit 0 before the fix, exit 2 for the plain command.
 
@@ -37,8 +42,8 @@ each against the real hook: exit 0 before the fix, exit 2 for the plain command.
 **Path:** light. A bug fix in 2 files, with no new interface, data or
 dependency. Pauses 1 and 3 merged, pause 2 skipped.
 
-The fix is already on `fix/heredoc-delimiter` as `ff74829`, `200ec61` and
-`f34c28c`, made by `/debug` before this spec.
+The fix is on `fix/heredoc-delimiter` as `ff74829`, `200ec61` and `f34c28c`,
+made by `/debug` before this spec, and `d8ab6fa`, from `/review` (O2).
 
 ## Flow
 
@@ -59,11 +64,12 @@ push and commit that bash runs.
 ## Acceptance criteria
 
 ```gherkin
-Scenario: a heredoc delimiter with a dash is read whole
+Scenario: a heredoc delimiter the walk cannot read whole is refused
   Given a command "cat <<E-F", then a line "E-F", then "git push --force origin main", then "E"
   When block-dangerous.sh judges it
   Then it exits 2 with "cannot tell where heredoc E-F ends"
-  And "<<-E-F", "<<E.F" and "<< E/F" are blocked the same way
+  And "<<-E-F", "<<E.F", "<< E/F", "<<'E-F'", "<<\"E-F\"", "<<\EOF" and "<<-\E-F" are blocked the same way
+  And "<<'EOF'", "<<\"EOF\"", "<<EOF", "<<-EOF" and "<< EOF" still parse, and the push after the body is blocked as a force push
 
 Scenario: a newline in a quoted argument does not split the call
   Given "git push --receive-pack='true;" and "git-receive-pack' origin +feat" on two lines
@@ -75,7 +81,7 @@ Scenario: a global option that takes a value is skipped with its value
   Given "git --attr-source HEAD push --force origin main"
   When block-dangerous.sh judges it
   Then it exits 2 as a force push
-  And "git --config-env core.editor=EDITOR commit -m x" on main is blocked as a commit on main
+  And "--config-env core.editor=EDITOR" and "--shallow-file HEAD" before a push or a commit on main are blocked the same way
 
 Scenario: the standard heredoc commit still parses as one call
   Given git commit -m "$(cat <<'EOF'" with a body of two lines that holds quotes and backticks
@@ -103,10 +109,11 @@ Scenario: the standard heredoc commit still parses as one call
 
 ### Approach
 
-Three changes in `git-command.py`. `openers_in` refuses a top-level heredoc
-when `HEREDOC` matches and `INNER_HEREDOC` does not (`git-command.py:190`), as
-the `$( )` path already does. `GLOBAL_OPTIONS_WITH_VALUE` gains
-`--attr-source` and `--config-env` (`git-command.py:98`), which
+Three changes in `git-command.py`. `openers_in` refuses a top-level `<<` that
+`INNER_HEREDOC` does not match (`git-command.py:191`), as the `$( )` path
+already does: a delimiter read in part, or quoted in a form the walk does not
+read. `GLOBAL_OPTIONS_WITH_VALUE` gains `--attr-source`, `--config-env` and
+`--shallow-file` (`git-command.py:99`), which
 `subcommand_args` and `git_dir` both read. `main` prints a newline in a word as
 a space (`git-command.py:446`, `:449`), as it already prints the space between
 words.
@@ -142,9 +149,9 @@ sequenceDiagram
 
 | File                                                    | What changes                                                                                      | Why         |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------- |
-| `plugins/zuko/scripts/lib/git-command.py:190`           | Refuse a top-level heredoc whose delimiter does not end at a shell metacharacter                  | Scenario 1  |
+| `plugins/zuko/scripts/lib/git-command.py:191`           | Refuse a top-level `<<` that `INNER_HEREDOC` does not match                                       | Scenario 1  |
 | `plugins/zuko/scripts/lib/git-command.py:446`, `:449`   | Print a newline in a word as a space, in both output forms                                        | Scenario 2  |
-| `plugins/zuko/scripts/lib/git-command.py:98`            | Add `--attr-source` and `--config-env` to `GLOBAL_OPTIONS_WITH_VALUE`                              | Scenario 3  |
+| `plugins/zuko/scripts/lib/git-command.py:99`            | Add `--attr-source`, `--config-env` and `--shallow-file` to `GLOBAL_OPTIONS_WITH_VALUE`            | Scenario 3  |
 | `plugins/zuko/scripts/tests/test-block-dangerous.sh`    | The cases for scenarios 1 to 3, and the commit-form check now expects one line                    | Scenarios 1–4 |
 
 Reusing: `INNER_HEREDOC` and the `run_hook` test helper, unchanged.
@@ -157,16 +164,16 @@ Reusing: `INNER_HEREDOC` and the `run_hook` test helper, unchanged.
 | **Breaks first**     | Nothing at 10×. Each change is linear in the command                                             |
 | **Security surface** | Closes v2.7.0 S1, S3 and S4. Each change can only add blocks: a refusal is a block (D52)         |
 | **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` passes, with the new cases               |
-| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `ff74829`, `200ec61` and `f34c28c` |
+| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `ff74829`, `200ec61`, `f34c28c` and `d8ab6fa` |
 
 ### Test plan
 
 | Scenario                              | Test                                    | Command                                                  |
 | ------------------------------------- | --------------------------------------- | -------------------------------------------------------- |
-| 1. A dashed delimiter is read whole   | `test-block-dangerous.sh:543`           | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` |
-| 2. A newline does not split the call  | `test-block-dangerous.sh:84`            | same                                                     |
-| 3. A value option is skipped whole    | `test-block-dangerous.sh:68`, `:71`     | same                                                     |
-| 4. The heredoc commit is one line     | `test-block-dangerous.sh:600`           | same                                                     |
+| 1. An unreadable delimiter is refused | `test-block-dangerous.sh:546`, `:562`, `:573` | `bash plugins/zuko/scripts/tests/run.sh block-dangerous` |
+| 2. A newline does not split the call  | `test-block-dangerous.sh:87`            | same                                                     |
+| 3. A value option is skipped whole    | `test-block-dangerous.sh:69`, `:74`     | same                                                     |
+| 4. The heredoc commit is one line     | `test-block-dangerous.sh:630`           | same                                                     |
 
 **E2E:** `test-block-dangerous.sh` runs the real hook script on each payload,
 as Claude Code runs it, in a scratch repo on `main`.
@@ -186,11 +193,22 @@ Single chunk.
 
 None — no choice here rejected an option.
 
+## Review
+
+2026-11-10 · 2 raw findings, 0 survived. Both were on main before this branch, and both are fixed here on the user's call (O2).
+
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:191` · refuse a top-level `<<` that `INNER_HEREDOC` does not match · `d8ab6fa`
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:99` · skip the value of `--shallow-file` · `d8ab6fa`
+
+2026-11-10 · 0 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | -- | ---- | ---- | --------- | ----- | ------ | ------ |
 | O1 | S2 and S5 need the parser to read a nested command (`"$( )"`, `eval`, `bash -c`). Leave all of S2 and S5 to a later slice `nested-git-commands`? | question | spec p1 | user | Resolved | Yes. All of S2 and S5 go to `nested-git-commands`; this slice ships S1, S3 and S4. 2026-11-10 |
+| O2 | /review found two bypasses of the same kind, both on main before this branch, so the verifiers rejected them: `<<'E-F'` or `<<\EOF` with an apostrophe in the body, and `git --shallow-file HEAD push --force`. Fix them here? | question | review | user | Resolved | Yes. Both are fixed on this branch, test-first, as part of scenarios 1 and 3. 2026-11-10 |
+| O3 | The re-review found one more bypass, on main before this branch: `strip_heredocs` ends a body at a line that equals the delimiter after `.strip()`, so a body line `  EOF` ends it early for the walk but not for bash, and an apostrophe after it hides a push. | flag | review | user | Decided alone | Chose: leave it to `nested-git-commands`, with S2 and S5. Other: fix it here, by comparing the line as bash does (exact, or with leading tabs dropped for `<<-`). Undo: add that comparison to `strip_heredocs` and a test with a `  EOF` body line. 2026-11-10 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
