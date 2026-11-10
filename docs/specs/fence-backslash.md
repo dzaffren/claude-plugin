@@ -52,7 +52,7 @@ allowed each of these four commands:
 **Path:** light. A bug fix in 2 files, with no new interface, data or
 dependency. Pauses 1 and 3 merged, pause 2 skipped.
 
-The fix is already on `fix/fence-backslash` as `93da11a`, made by `/debug`
+The fix is already on `fix/fence-backslash` as `a0fdba5`, made by `/debug`
 before this spec. `/build` checks it against this spec.
 
 ## Flow
@@ -176,7 +176,7 @@ helpers.
 | **Breaks first**     | Nothing at 10×. Each pass is linear in the tokens                                                             |
 | **Security surface** | Closes pentest P1. The fence trusts no token; the second pass can only add blocks, never allows              |
 | **Proof it works**   | `bash plugins/zuko/scripts/tests/run.sh scope-pentester-bash` passes, with the four new `blocks` cases        |
-| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `93da11a`                                      |
+| **Rollout**          | No flag. It ships with the next zuko release. Rollback: revert `a0fdba5`                                      |
 
 ### Test plan
 
