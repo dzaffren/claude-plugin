@@ -1,6 +1,6 @@
 # Review leads
 
-**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Depends on:** needs-validation
 

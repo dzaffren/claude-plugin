@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Each PR to `main` runs the test suite on Windows and Linux, and a PR whose suite fails on either OS cannot merge.
+- `/review` lists each lead it traced but could not settle, such as a Windows-only path reviewed on Linux, under Needs validation with the one unknown fact and a check you can run. The PR body shows it, and it never blocks `/ship`.
 
 ### Security
 

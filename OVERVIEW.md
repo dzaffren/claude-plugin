@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.6.0 · **Updated:** 2026-11-10 by /ship chrome-lookup
+**Status:** Active · **Release:** v2.6.0 · **Updated:** 2026-11-10 by /ship review-leads
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -96,6 +96,7 @@ projects.
 | node-lookup | Shipped | On Windows, the rendered drift check stops Chrome with the taskkill.exe in System32, so a taskkill.exe at the root of a project never runs | — |
 | fence-backslash | Shipped | The pentester fence judges each command with \\ as /, as Git Bash reads it, and again as typed, so on Linux and macOS a write to a \\ sibling of the scratch dir no longer passes | — |
 | chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS | — |
+| review-leads | Shipped | /review keeps each lead it traced but could not settle under Needs validation, with the one unknown fact and a check, and the PR body shows it | — |
 
 ## More
 
