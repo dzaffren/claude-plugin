@@ -101,16 +101,16 @@ The reviewer writes a LEAD block, and `/review` sends it to the verifier without
 **1. The reviewer's LEAD block** (`agents/reviewer.md`, after the finding template):
 
 ```
-LEAD: {one sentence, the possible defect only}
-CATEGORY: {A0N:2025 name, or correctness}
-FILE: {path:line}
-SYMBOL: {the function or class the line sits in}
-SNIPPET: {the line, as written; on a deleted line, as it was on the base branch}
-CHANGE: {added, deleted, or caller}
-EVIDENCE: {the command and its output, verbatim — whenever the trace rests on command output}
-TRACE: {the input, then each file:line it passes, to the line where harm would happen}
-UNKNOWN: {the one fact that decides it, which no command the review can run will show}
-CHECK: {a safe check the user can run to settle the fact}
+LEAD: <one sentence, the possible defect only>
+CATEGORY: <A0N:2025 name, or correctness>
+FILE: <path:line>
+SYMBOL: <the function or class the line sits in>
+SNIPPET: <the line, as written; on a deleted line, as it was on the base branch>
+CHANGE: <added, deleted, or caller>
+EVIDENCE: <the command and its output, verbatim — whenever the trace rests on command output>
+TRACE: <the input, then each file:line it passes, to the line where harm would happen>
+UNKNOWN: <the one fact that decides it, which no command the review can run will show>
+CHECK: <a safe check the user can run to settle the fact>
 ```
 
 A lead has no `SEVERITY`, no `RAISED` and no `FAILING CASE`. Only a security or correctness problem can be a lead. A coverage, quality or decisions finding never is. The rules are the pentester's lead rules: exactly one `UNKNOWN`, a lead that a command can prove is a finding, an unfinished trace is not a lead, and D5 and D6 stop a lead. Never put a `|` in `LEAD` or `UNKNOWN`.
