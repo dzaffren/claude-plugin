@@ -219,7 +219,9 @@ survived — that number is how the user knows the filter is working.
 
 A diff that touches no category prints
 `Security   no category checked — the diff changes README.md only`, naming
-what it does change. Nothing survived → `Findings   7 raw, 0 survived — clean`.
+what it does change. Nothing survived and no lead holds →
+`Findings   7 raw, 0 survived — clean`. A run whose only survivor is a lead
+prints `Findings   3 raw, 0 survived · 1 lead needs validation`.
 A clean review is a real outcome, not a failure to look hard enough.
 
 Fix what survived without asking, whatever its severity — verification

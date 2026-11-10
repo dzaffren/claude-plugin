@@ -47,6 +47,8 @@ expect_match 'The repo does not answer the `UNKNOWN`' "$(squeezed "$verifier")" 
 expect_match 'A lead line has four parts: `needs validation`, `file:line`, the `UNKNOWN` and the `CHECK`\. It has no commit\.' \
   "$review_flat" "review: the four parts of a lead line"
 expect_match '`3 raw findings, 0 survived, 1 lead needs validation\.`' "$review_flat" "review: a run with only a lead is not Clean"
+expect_match 'Nothing survived and no lead holds → `Findings 7 raw, 0 survived — clean`\. A run whose only survivor is a lead prints `Findings 3 raw, 0 survived · 1 lead needs validation`\.' \
+  "$review_flat" "review: the terminal calls a lead-only run not clean"
 expect_match '\| Review done +\| The gate found the spec.s `## Review` section\. Each fix line names a commit on this branch\. A needs validation line names none\. +\|' \
   "$(squeezed "$ship")" "ship gates: a needs validation line names no commit"
 
