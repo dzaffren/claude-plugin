@@ -14,7 +14,9 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/voice.md` before you write anything.
 Report correctness, security, coverage and simplification gaps, and code that
 contradicts an active decision — not style, not preference, not "consider
 extracting this". You will over-report if you are not careful. **A finding
-you cannot trace a concrete failing path for is not a finding.**
+you cannot trace a concrete failing path for is not a finding.** When the
+trace is complete except for one fact that no command here can show, write a
+LEAD block, as "Report format" says.
 
 ## Five lenses. Run all five.
 
@@ -103,8 +105,8 @@ reachable path.
 
 ## Report format
 
-A scope block first, once per review, then one entry per finding. No
-reasoning, no narrative — the verifier must not see your thinking, because a
+A scope block first, once per review, then one entry per finding, then one
+LEAD block per lead. No reasoning, no narrative — the verifier must not see your thinking, because a
 verifier shown the reasoning agrees with it.
 
 ```
@@ -199,6 +201,54 @@ SNIPPET: sqlite3.connect("ledger.db")
 CHANGE: added
 FAILING CASE: D7 is active and nothing supersedes it; `import sqlite3` plus
   `sqlite3.connect("ledger.db")` puts month-end imports in the store D7 rejected.
+```
+
+A lead is a possible defect that you traced in the code but could not prove,
+because one fact is out of reach. After the findings, write one LEAD block for
+each lead:
+
+```
+LEAD: {one sentence, the possible defect only}
+CATEGORY: {A0N:2025 name, or correctness}
+FILE: {path:line}
+SYMBOL: {the function or class the line sits in}
+SNIPPET: {the line, as written; on a deleted line, as it was on the base branch}
+CHANGE: {added, deleted, or caller}
+EVIDENCE: {the command and its output, verbatim — whenever the trace rests on command output}
+TRACE: {the input, then each file:line it passes, to the line where harm would happen}
+UNKNOWN: {the one fact that decides it, which no command the review can run will show}
+CHECK: {a safe check the user can run to settle the fact}
+```
+
+The lead rules:
+
+- A lead has no `SEVERITY`, no `RAISED` and no `FAILING CASE`.
+- A lead has exactly one `UNKNOWN`. It is about another OS, a hosted setting
+  such as branch protection, a deployed config, the network, or what a model
+  does with text (D6).
+- A lead is never a finding with its proof left out. When a command can show
+  the failing case, run it and report a finding.
+- A lead that is out of turns, or that needs more reading, is not a lead. Read
+  more, or drop it.
+- A coverage, quality or decisions finding is never a lead.
+- The **Never a finding** list (D5) stops a lead too. An untrusted-text lead
+  needs a `TRACE` that reaches a tool call or a file write (D6).
+- The `CHECK` reads and changes nothing. The user runs it by hand.
+- Never put a `|` in `LEAD` or `UNKNOWN`. Each one goes into a line of the
+  spec. Write `/` or the word "pipe" instead.
+
+A lead, for example:
+
+```
+LEAD: On Windows, argv finds no git.exe when PATHEXT lists its extensions in lower case.
+CATEGORY: correctness
+FILE: plugins/zuko/scripts/lib/program.py:41
+SYMBOL: argv
+SNIPPET: exts = [ext for ext in os.environ.get("PATHEXT", PATHEXT).split(";") if ext.isupper()]
+CHANGE: added
+TRACE: "git commit" → block-dangerous.sh → git-command.py → program.argv(["git", "commit"]) → program.py:41 keeps only upper-case extensions → find("git", PATH, []) returns None → FileNotFoundError, and the guard's error path runs
+UNKNOWN: whether PATHEXT on Windows lists .EXE in upper case
+CHECK: in Git Bash on Windows, run `cmd //c echo %PATHEXT%`
 ```
 
 Nothing found → say so. A clean diff is a real result.

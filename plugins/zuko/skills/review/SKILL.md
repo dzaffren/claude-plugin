@@ -140,6 +140,13 @@ such a vote counts as not-rejected. A rejection for "unreachable",
 Small diff: one verifier, must confirm. Large diff: three verifiers with the
 reachability / impact / defenses lenses, 2-of-3 to keep.
 
+A reviewer can also return LEAD blocks: a trace that is complete except for
+one fact that no command in the review can show. Send each lead to its own
+`finding-verifier`, with `KIND: lead` first: `KIND: lead`, the `LEAD` claim,
+`CATEGORY`, `FILE`, `SYMBOL`, `SNIPPET`, `CHANGE`, `EVIDENCE`, `TRACE`,
+`UNKNOWN` and `BASE`. Never send `CHECK`. A lead holds when the vote that
+keeps a finding keeps it. Drop each other lead.
+
 A verifier that hits its turn limit is recorded as not confirmed. It is never
 resumed with added context — no hint about callers, no description of the
 change, nothing the finder knew. A message like that is the finder's reasoning
@@ -161,7 +168,7 @@ Report only what survived, in this layout:
 Security   checked A01 Broken Access Control, A05 Injection,
            A10 Mishandling of Exceptional Conditions
            not checked: 7 categories, listed at the end
-Findings   7 raw, 4 survived
+Findings   7 raw, 4 survived · 1 lead needs validation
 
 critical · A01:2025 Broken Access Control · routes/export.py:14 in export_ledger (deleted)
   The diff removes @login_required from export_ledger.
@@ -183,10 +190,22 @@ coverage · invoice_api/auth.py:22 in is_admin
   is_admin() changed and no test changed.
   Fix: a test for the new roles-lookup-fails path.
 
+Needs validation   1 lead, not fixed, does not block /ship
+  correctness · plugins/zuko/scripts/lib/program.py:41 in argv
+    Lead: On Windows, argv finds no git.exe when PATHEXT lists its extensions in lower case.
+    Unknown: whether PATHEXT on Windows lists .EXE in upper case
+    Check: in Git Bash on Windows, run `cmd //c echo %PATHEXT%`
+
 Not checked
   A02 no config or deployment file changed
   ...
 ```
+
+The raw count includes each lead. The Findings line names the leads that
+hold, such as `Findings   5 raw, 2 survived · 1 lead needs validation`, and
+the Needs validation part lists them after the findings. With no lead that
+holds, both stay out. The Needs validation part has the `LEAD` claim, the
+`UNKNOWN` and the `CHECK`, never the `TRACE`.
 
 Each finding gives what is wrong in one sentence, the concrete failing case,
 `file:line` with its symbol, and the fix. `(deleted)` or `(caller)` goes after
@@ -200,7 +219,9 @@ survived — that number is how the user knows the filter is working.
 
 A diff that touches no category prints
 `Security   no category checked — the diff changes README.md only`, naming
-what it does change. Nothing survived → `Findings   7 raw, 0 survived — clean`.
+what it does change. Nothing survived and no lead holds →
+`Findings   7 raw, 0 survived — clean`. A run whose only survivor is a lead
+prints `Findings   3 raw, 0 survived · 1 lead needs validation`.
 A clean review is a real outcome, not a failure to look hard enough.
 
 Fix what survived without asking, whatever its severity — verification
@@ -212,26 +233,38 @@ can catch it, one commit per finding, then re-run the full suite and the e2e
 test, and confirm green. A coverage finding is fixed like any other: its fix
 is a test.
 
+Never fix a lead. Its `UNKNOWN` decides whether there is a defect, and only
+the user can settle it. A lead never blocks `/ship` (D136).
+
 A Decisions finding is fixed by changing the code to obey the entry. Add a
 row, as `ledger.md` › "Deciding alone" says, with "supersede the entry
 through `/spec`" as the other choice. `/review` never edits `DECISIONS.md`.
 
 After the fixes, write the result into the spec, just above `## Open items`.
 The ship gate and the PR body read it. Add a `## Review` heading when the spec
-has none. Under it, add one line for this run, then one line for each fix:
+has none. Under it, add one line for this run, then one line for each fix,
+then one line for each lead that holds:
 
 ```markdown
 ## Review
 
-2026-10-13 · 7 raw findings, 4 survived, 4 fixed.
+2026-10-13 · 7 raw findings, 4 survived, 4 fixed, 1 lead needs validation.
 
 - A01 Broken Access Control · `routes/export.py:14` · put back `@login_required` on `export_ledger` · `9c1d2e3`
 - coverage · `invoice_api/auth.py:22` · a test for the roles-lookup-fails path · `e02b9f6`
+- needs validation · `plugins/zuko/scripts/lib/program.py:41` · whether PATHEXT on Windows lists .EXE in upper case · in Git Bash on Windows, run `cmd //c echo %PATHEXT%`
 ```
 
 A fix line has four parts: the category, `file:line`, the fix in a few words,
-and the fix commit. A clean run writes one line:
-`2026-10-14 · 3 raw findings, 0 survived. Clean.` A second run adds its lines
+and the fix commit. A lead line has four parts: `needs validation`,
+`file:line`, the `UNKNOWN` and the `CHECK`. It has no commit. With leads, the
+run line ends with their count, such as
+`2026-10-13 · 7 raw findings, 4 survived, 4 fixed, 1 lead needs validation.`
+A clean run writes one line:
+`2026-10-14 · 3 raw findings, 0 survived. Clean.` A run whose only survivor
+is a lead is not clean. It writes
+`3 raw findings, 0 survived, 1 lead needs validation.` after the date, then
+its lead line. A second run adds its lines
 below the first. Do not change or remove a line. Do not put a brace pair,
 `TODO` or `[TBD]` in a line: the ship gate reads each one as a blank. Name the
 thing in other words, such as "a leftover to-do note". Commit the spec as
