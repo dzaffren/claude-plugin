@@ -76,6 +76,10 @@ MAX_NESTING = 3
 # The shells whose -c string is a command, as block-pentest-target.sh lists them.
 SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "fish"}
 
+# Inside backticks, bash drops a backslash before `$`, a backtick or a
+# backslash, so `\`` there is a nested backtick.
+BACKTICK_ESCAPE = re.compile(r"\\([$`\\])")
+
 # A -c option group: -c, -lc, -ec.
 SHELL_C = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$")
 
@@ -487,7 +491,8 @@ def quoted_substitutions(text):
             index = quoted_end(text, index + 1, found)
         else:
             index += 1
-    return [inner[1:-1] if inner.startswith("`") else inner[2:-1] for inner in found]
+    return [BACKTICK_ESCAPE.sub(r"\1", inner[1:-1]) if inner.startswith("`") else inner[2:-1]
+            for inner in found]
 
 
 def shell_strings(tokens):
