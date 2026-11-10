@@ -67,7 +67,7 @@ expect_no_match 'hand the user the compare URL' "$(squeezed "$ship")" "ship pr: 
 # --- /ship: its own choices, and a late row (O4, O12) ---
 expect_match 'When `/ship` makes a choice alone, such as a test left red because the base branch fails the same way, add a row as `ledger\.md` › "Deciding alone" says\. Commit the spec, then run the gate again\.' \
   "$gates" "ship gates: /ship adds a row for its own choice"
-expect_match '\| Review done +\| The gate found the spec.s `## Review` section\. Each fix line names a commit on this branch +\|' \
+expect_match '\| Review done +\| The gate found the spec.s `## Review` section\. Each fix line names a commit on this branch\. A needs validation line names none\. +\|' \
   "$gates" "ship gates: Review done reads the spec's Review section (O9)"
 expect_match 'Leave it, and add a row as `ledger\.md` › "Deciding alone" says\. Commit the spec and push\. Then render the body again, as "The PR" says, and replace it with `gh pr edit --body-file \{git-dir\}/zuko-pr-body\.md`\.' \
   "$ci" "ship ci: a late row renders the body again (O12)"
