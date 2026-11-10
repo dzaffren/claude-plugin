@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.6.0 · **Updated:** 2026-11-10 by /ship review-leads
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-10 by /ship review-leads
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal

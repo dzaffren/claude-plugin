@@ -6,6 +6,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-10
+
 ### Added
 
 - Each PR to `main` runs the test suite on Windows and Linux, and a PR whose suite fails on either OS cannot merge.
@@ -17,6 +19,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - On Windows, the rendered drift check ran a `taskkill.exe` from the project folder each time it stopped Chrome, in `/spec` pause 2 and `/design`. It now starts the `taskkill.exe` in `System32`.
 - A Python file such as `json.py` at the root of a project, or on `PYTHONPATH`, ran from zuko's hooks at each Bash call, edit and stop, on every OS. It could also make a guard let a blocked command through, such as `git push --force origin main`. The hooks now run Python in isolated mode and never import from the project folder.
 - On Linux and macOS, the release pentester's fence let it write a file next to its scratch copy in `/tmp`, outside the folder it may write to. The fence now blocks that write, and still blocks each Git Bash path it blocked before.
+- Known medium issue: A06:2025 Insecure Design (CWE-436) in plugins/zuko/scripts/lib/git-command.py; see docs/security/v2.7.0/report.md.
+- Known medium issue: A06:2025 Insecure Design (CWE-436) in plugins/zuko/scripts/lib/git-command.py; see docs/security/v2.7.0/report.md.
+- Known medium issue: A06:2025 Insecure Design (CWE-436) in plugins/zuko/scripts/lib/git-command.py; see docs/security/v2.7.0/report.md.
+- Known medium issue: A06:2025 Insecure Design (CWE-436) in plugins/zuko/scripts/lib/git-command.py; see docs/security/v2.7.0/report.md.
+- Known low issue: A06:2025 Insecure Design (CWE-436) in plugins/zuko/scripts/lib/git-command.py; see docs/security/v2.7.0/report.md.
+- 11 leads need validation; see docs/security/v2.7.0/report.md.
 
 ## [2.6.0] - 2026-11-09
 
@@ -188,7 +196,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/block-dangerous.sh; see docs/security/v2.2.0/report.md.
 - Known low issue: A10:2025 Mishandling of Exceptional Conditions in plugins/zuko/scripts/secret-scan.sh; see docs/security/v2.2.0/report.md.
 
-[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.6.0...HEAD
+[unreleased]: https://github.com/dzaffren/claude-plugin/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/dzaffren/claude-plugin/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/dzaffren/claude-plugin/compare/v2.5.1...v2.6.0
 [2.5.1]: https://github.com/dzaffren/claude-plugin/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/dzaffren/claude-plugin/compare/v2.4.3...v2.5.0

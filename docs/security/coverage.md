@@ -1,17 +1,17 @@
 # Coverage
 
-**Updated:** v2.6.0 · 2026-11-09
-**Units:** 152 · **Checked:** 34 · **Lead:** 9 · **Not checked:** 109
+**Updated:** v2.7.0 · 2026-11-10
+**Units:** 152 · **Checked:** 44 · **Lead:** 7 · **Not checked:** 101
 
 | File | Mark |
 | ---- | ---- |
-| .agents/skills/design-taste-frontend/README.md | unchecked |
+| .agents/skills/design-taste-frontend/README.md | v2.7.0 |
 | .agents/skills/design-taste-frontend/SKILL.md | unchecked |
 | .agents/skills/design-taste-frontend/assets/app.css | unchecked |
-| .agents/skills/design-taste-frontend/assets/base.css | unchecked |
-| .agents/skills/design-taste-frontend/assets/base.js | unchecked |
-| .agents/skills/design-taste-frontend/assets/charts.js | unchecked |
-| .agents/skills/design-taste-frontend/assets/scenes/stage.css | unchecked |
+| .agents/skills/design-taste-frontend/assets/base.css | v2.7.0 |
+| .agents/skills/design-taste-frontend/assets/base.js | v2.7.0 |
+| .agents/skills/design-taste-frontend/assets/charts.js | v2.7.0 |
+| .agents/skills/design-taste-frontend/assets/scenes/stage.css | v2.7.0 |
 | .agents/skills/design-taste-frontend/assets/scenes/stage.js | unchecked |
 | .agents/skills/design-taste-frontend/evals/evals.json | unchecked |
 | .agents/skills/design-taste-frontend/library/app.json | unchecked |
@@ -74,14 +74,14 @@
 | .claude/skills/migrate-radix-to-base | unchecked |
 | .claude/skills/shadcn | unchecked |
 | .gitattributes | v2.6.0 |
-| .github/workflows/windows-suite.yml | v2.6.0 |
+| .github/workflows/suite.yml | v2.7.0 |
 | .gitignore | unchecked |
 | LICENSE | unchecked |
 | plugins/zuko/.claude-plugin/plugin.json | v2.6.0 |
 | plugins/zuko/agents/chunk-builder.md | unchecked |
 | plugins/zuko/agents/finding-verifier.md | unchecked |
 | plugins/zuko/agents/pentester.md | v2.6.0 |
-| plugins/zuko/agents/reviewer.md | unchecked |
+| plugins/zuko/agents/reviewer.md | v2.7.0 |
 | plugins/zuko/hooks/hooks.json | unchecked |
 | plugins/zuko/references/attack-classes/AI-AND-LLM.md | unchecked |
 | plugins/zuko/references/attack-classes/ATTACK-CLASSES.md | unchecked |
@@ -106,23 +106,23 @@
 | plugins/zuko/references/slicing.md | unchecked |
 | plugins/zuko/references/visual-page.md | unchecked |
 | plugins/zuko/references/voice.md | unchecked |
-| plugins/zuko/scripts/auto-format.sh | v2.6.0 |
-| plugins/zuko/scripts/block-attribution.sh | lead in v2.6.0 |
-| plugins/zuko/scripts/block-dangerous.sh | lead in v2.6.0 |
-| plugins/zuko/scripts/block-pentest-target.sh | lead in v2.6.0 |
+| plugins/zuko/scripts/auto-format.sh | lead in v2.7.0 |
+| plugins/zuko/scripts/block-attribution.sh | lead in v2.7.0 |
+| plugins/zuko/scripts/block-dangerous.sh | lead in v2.7.0 |
+| plugins/zuko/scripts/block-pentest-target.sh | lead in v2.7.0 |
 | plugins/zuko/scripts/check-attack-pin.sh | v2.6.0 |
 | plugins/zuko/scripts/check-design-drift.sh | v2.6.0 |
-| plugins/zuko/scripts/check-open-items.sh | v2.6.0 |
+| plugins/zuko/scripts/check-open-items.sh | v2.7.0 |
 | plugins/zuko/scripts/check-rendered-drift.sh | v2.6.0 |
-| plugins/zuko/scripts/check-skill-pin.sh | v2.6.0 |
+| plugins/zuko/scripts/check-skill-pin.sh | v2.7.0 |
 | plugins/zuko/scripts/lib/board.html | unchecked |
 | plugins/zuko/scripts/lib/board.py | v2.6.0 |
-| plugins/zuko/scripts/lib/cdp.mjs | lead in v2.6.0 |
+| plugins/zuko/scripts/lib/cdp.mjs | v2.7.0 |
 | plugins/zuko/scripts/lib/changelog.py | v2.6.0 |
 | plugins/zuko/scripts/lib/coverage.py | v2.6.0 |
 | plugins/zuko/scripts/lib/decisions.py | v2.6.0 |
 | plugins/zuko/scripts/lib/fence.py | v2.6.0 |
-| plugins/zuko/scripts/lib/git-command.py | lead in v2.6.0 |
+| plugins/zuko/scripts/lib/git-command.py | v2.7.0 |
 | plugins/zuko/scripts/lib/glossary.py | v2.6.0 |
 | plugins/zuko/scripts/lib/pr_body.py | v2.6.0 |
 | plugins/zuko/scripts/lib/program.py | v2.6.0 |
@@ -131,17 +131,17 @@
 | plugins/zuko/scripts/lib/release.py | v2.6.0 |
 | plugins/zuko/scripts/lib/rendered-drift.mjs | v2.6.0 |
 | plugins/zuko/scripts/lib/stop_scope.py | v2.6.0 |
-| plugins/zuko/scripts/lib/strix.py | lead in v2.6.0 |
+| plugins/zuko/scripts/lib/strix.py | lead in v2.7.0 |
 | plugins/zuko/scripts/lib/token-files.sh | v2.6.0 |
 | plugins/zuko/scripts/load-decisions.sh | unchecked |
 | plugins/zuko/scripts/load-learnings.sh | unchecked |
 | plugins/zuko/scripts/load-overview.sh | unchecked |
 | plugins/zuko/scripts/render-readme-block.sh | unchecked |
 | plugins/zuko/scripts/route-to-zuko.sh | unchecked |
-| plugins/zuko/scripts/scope-pentester-bash.sh | lead in v2.6.0 |
-| plugins/zuko/scripts/scope-verifier-bash.sh | v2.6.0 |
-| plugins/zuko/scripts/secret-scan.sh | lead in v2.6.0 |
-| plugins/zuko/scripts/verify-gates.sh | v2.6.0 |
+| plugins/zuko/scripts/scope-pentester-bash.sh | lead in v2.7.0 |
+| plugins/zuko/scripts/scope-verifier-bash.sh | v2.7.0 |
+| plugins/zuko/scripts/secret-scan.sh | lead in v2.7.0 |
+| plugins/zuko/scripts/verify-gates.sh | v2.7.0 |
 | plugins/zuko/scripts/verify-ship-gates.sh | unchecked |
 | plugins/zuko/skills/build/SKILL.md | unchecked |
 | plugins/zuko/skills/debug/SKILL.md | unchecked |
@@ -149,10 +149,10 @@
 | plugins/zuko/skills/design/SKILL.md | unchecked |
 | plugins/zuko/skills/learn/SKILL.md | unchecked |
 | plugins/zuko/skills/poc/SKILL.md | unchecked |
-| plugins/zuko/skills/release/SKILL.md | lead in v2.6.0 |
-| plugins/zuko/skills/review/SKILL.md | unchecked |
+| plugins/zuko/skills/release/SKILL.md | v2.7.0 |
+| plugins/zuko/skills/review/SKILL.md | v2.7.0 |
 | plugins/zuko/skills/shape/SKILL.md | unchecked |
-| plugins/zuko/skills/ship/SKILL.md | unchecked |
+| plugins/zuko/skills/ship/SKILL.md | v2.7.0 |
 | plugins/zuko/skills/spec/SKILL.md | unchecked |
 | plugins/zuko/skills/spec/references/spec-template.md | unchecked |
 | plugins/zuko/skills/status/SKILL.md | unchecked |
