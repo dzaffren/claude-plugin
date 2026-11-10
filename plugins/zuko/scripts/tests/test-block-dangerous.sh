@@ -60,6 +60,20 @@ for form in 'git push origin +main' \
   expect_exit 2 "$hook_status" "force push blocked: $form"
 done
 
+# A newline inside a quoted argument is part of that one argument. The parser
+# prints each git call on one line, so the newline must not split the call:
+# `push --receive-pack=true;` and `git-receive-pack origin +feat` would each
+# miss the force check.
+for form in "git push --receive-pack='true;
+git-receive-pack' origin +feat" \
+  "git push -o 'a
+b' --force origin main" \
+  "git push \"--push-option=x
+y\" -f origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "force push with a newline in an argument blocked: $(printf '%q' "$form")"
+done
+
 # A command that will not parse is judged on its raw text. An unclosed heredoc
 # fails the parse, and bash still runs the push in front of it.
 unclosed=$(printf '\ncat <<EOF\nnever closed')
@@ -573,8 +587,8 @@ EOF
 )\""
 parsed=$(printf '%s' "$commit_form" | python3 "$scripts/lib/git-command.py" 2>&1)
 expect_exit 0 "$?" "commit form: the heredoc commit parses"
-expect_match "^commit -m \\\$\\(cat <<'EOF'\$" "$parsed" "commit form: the commit is read"
-expect_match "^Body with quotes, it's, \`backticks\` and \\\$\\(dollar\\) text\\.\$" "$parsed" "commit form: the body is in the -m word"
+expect_match "^commit -m \\\$\\(cat <<'EOF' fix\\(x\\): subject  Body with quotes, it's, \`backticks\` and \\\$\\(dollar\\) text\\. EOF \\)\$" "$parsed" "commit form: the commit and its body are read as one call, on one line"
+expect_exit 1 "$(printf '%s\n' "$parsed" | wc -l | tr -d ' ')" "commit form: one call prints one line"
 run_hook "$commit_form" "$repo"
 expect_exit 2 "$hook_status" "commit form: blocked on main"
 expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: the block is the commit-on-main one"

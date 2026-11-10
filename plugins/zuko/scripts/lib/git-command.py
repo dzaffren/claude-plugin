@@ -437,12 +437,15 @@ def main():
     except ValueError as err:
         sys.stderr.write("git-command.py: cannot parse the command: %s\n" % err)
         return 3
+    # One call per line, for the shell guards. A newline inside a quoted word
+    # prints as a space, as the space between words does, so one call never
+    # splits into two lines that each miss the check.
     if len(sys.argv) == 3 and sys.argv[1] == "--dir":
         for where, args in invocations_with_dirs(tokens, sys.argv[2]):
-            print("%s\t%s" % (where or "", " ".join(args)))
+            print(("%s\t%s" % (where or "", " ".join(args))).replace("\n", " "))
         return 0
     for args in invocations(tokens):
-        print(" ".join(args))
+        print(" ".join(args).replace("\n", " "))
     return 0
 
 
