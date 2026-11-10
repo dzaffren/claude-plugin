@@ -624,7 +624,9 @@ for form in 'echo "$(git push --force origin main)"' \
   'echo "`git push --force origin main`"' \
   'echo "it'"'"'s $(git push --force origin main)"' \
   'echo "$(echo "$(git push --force origin main)")"' \
-  'echo "`echo \`git push --force origin main\``"'; do
+  'echo "`echo \`git push --force origin main\``"' \
+  'echo "$((git push --force origin main) )"' \
+  'echo "$((git push --force origin main); true)"'; do
   run_hook "$form"
   expect_exit 2 "$hook_status" "nested: a push in a quoted substitution is blocked, $(printf '%q' "$form")"
   expect_match '^Blocked: force push' "$hook_err" "nested: the block is the force-push one, $(printf '%q' "$form")"
@@ -675,7 +677,8 @@ for form in "echo '\$(git push --force origin main)'" \
   "cat <<'EOF'
 \$(git push --force origin main)
 EOF" \
-  'python3 release.py plan "$(git rev-parse --show-toplevel)"'; do
+  'python3 release.py plan "$(git rev-parse --show-toplevel)"' \
+  'echo "$(( (1 << 2) * 3 ))"'; do
   run_hook "$form"
   expect_exit 0 "$hook_status" "nested: text is not a command, $(printf '%q' "$form")"
 done

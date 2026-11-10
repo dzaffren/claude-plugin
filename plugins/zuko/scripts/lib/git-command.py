@@ -331,10 +331,8 @@ def substitution_end(text, at):
             index = quoted_end(text, index + 1, [])
         elif text.startswith("$'", index):
             index = ansi_quoted_end(text, index + 2)
-        elif text.startswith("$((", index):
-            index = arithmetic_end(text, index, [])
         elif char == "`" or text.startswith("$(", index):
-            index = substitution_end(text, index)
+            index = arithmetic_end(text, index, []) or substitution_end(text, index)
         elif char == "#" and word_start:
             newline = text.find("\n", index)
             index = len(text) if newline < 0 else newline
@@ -397,21 +395,35 @@ def quoted_end(text, index, found):
             continue
         if char == '"':
             return index + 1
-        if text.startswith("$((", index):
-            index = arithmetic_end(text, index, found)
-            continue
         if char == "`" or text.startswith("$(", index):
-            end = substitution_end(text, index)
-            found.append(text[index:end])
-            index = end
+            index = substitution_or_arithmetic_end(text, index, found)
             continue
         index += 1
     raise ValueError('a " quote is never closed')
 
 
+def substitution_or_arithmetic_end(text, at, found):
+    """The index after the `$( )`, backtick or `$(( ))` at `at`. A
+    substitution's text goes on `found`, and so does each one in arithmetic."""
+    end = arithmetic_end(text, at, found)
+    if end is None:
+        end = substitution_end(text, at)
+        found.append(text[at:end])
+    return end
+
+
 def arithmetic_end(text, at, found):
-    """The index after the `))` that closes the `$((` at `at`. A `<<` there
-    is a shift. The text of each `$( )` and backtick in it goes on `found`."""
+    """The index after the `))` that closes the `$((` at `at`, or None when it
+    is not arithmetic. A `<<` there is a shift. The text of each `$( )` and
+    backtick in it goes on `found`.
+
+    bash reads `$((git push) )` and `$((git push); true)` as a `$( )` that
+    starts with a subshell: the `(` after `$(` closes with no `)` right after
+    it. Then it is not arithmetic.
+    """
+    if not text.startswith("$((", at):
+        return None
+    inner = []
     index = at + 3
     depth = 2
     while index < len(text):
@@ -419,19 +431,20 @@ def arithmetic_end(text, at, found):
         if char == "\\":
             index += 2
             continue
-        if char == "`" or (text.startswith("$(", index) and not text.startswith("$((", index)):
-            end = substitution_end(text, index)
-            found.append(text[index:end])
-            index = end
+        if char == "`" or text.startswith("$(", index):
+            index = substitution_or_arithmetic_end(text, index, inner)
             continue
         if char == "(":
             depth += 1
         elif char == ")":
             depth -= 1
-            if depth == 0:
-                return index + 1
+            if depth == 1:
+                if text[index + 1:index + 2] != ")":
+                    return None
+                found.extend(inner)
+                return index + 2
         index += 1
-    raise ValueError("a $(( )) is never closed")
+    return None
 
 
 def ansi_quoted_end(text, index):
@@ -456,12 +469,8 @@ def body_substitutions(body):
     while index < len(body):
         if body[index] == "\\":
             index += 2
-        elif body.startswith("$((", index):
-            index = arithmetic_end(body, index, found)
         elif body[index] == "`" or body.startswith("$(", index):
-            end = substitution_end(body, index)
-            found.append(body[index:end])
-            index = end
+            index = substitution_or_arithmetic_end(body, index, found)
         else:
             index += 1
     return found
