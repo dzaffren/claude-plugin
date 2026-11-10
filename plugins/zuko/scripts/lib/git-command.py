@@ -92,10 +92,11 @@ JOINED_OPENERS = ("((", "$(", "${", "$[", "<<")
 CHANGES_THE_WALK = re.compile(r"""['"`]|<<|\\$""")
 
 # git's own options, which sit before the subcommand. These take a value.
-# git 2.52.0 also takes --attr-source's and --config-env's as the next word.
+# git 2.52.0 also takes --attr-source's, --config-env's and --shallow-file's
+# as the next word.
 GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
-    "--super-prefix", "--attr-source", "--config-env",
+    "--super-prefix", "--attr-source", "--config-env", "--shallow-file",
 }
 
 
@@ -186,10 +187,14 @@ def openers_in(line, state):
                 closers.append(closers[-1])
             elif closers and char == closers[-1]:
                 closers.pop()
-            match = HEREDOC.match(line, at)
-            if match and not INNER_HEREDOC.match(line, at):
+            match = INNER_HEREDOC.match(line, at)
+            if not match and line.startswith("<<", at):
+                # A delimiter read only in part (`<<E-F`), or quoted in a form
+                # the walk does not read (`<<'E-F'`, `<<\EOF`), hides where
+                # bash ends the body, and the lines after it.
+                word = re.split(r"[ \t;&|()<>]", line[at + 2:].lstrip("-").lstrip(" \t"), 1)[0]
                 raise ValueError("cannot tell where heredoc %s ends; put the command in a file"
-                                 % re.split(r"[ \t;&|()<>]", line[match.start(2):], 1)[0])
+                                 % (word or "after <<"))
             if match:
                 delimiters.append(match.group(2))
                 at = match.end() - 1

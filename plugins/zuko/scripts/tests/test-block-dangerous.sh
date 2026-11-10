@@ -60,15 +60,18 @@ for form in 'git push origin +main' \
   expect_exit 2 "$hook_status" "force push blocked: $form"
 done
 
-# git 2.52.0 takes the value of --attr-source and --config-env as the next
-# word too. A walk that did not know them read that value as the subcommand.
+# git 2.52.0 takes the value of --attr-source, --config-env and
+# --shallow-file as the next word too. A walk that did not know them read that value as the subcommand.
 for form in 'git --attr-source HEAD push --force origin main' \
-  'git --config-env core.editor=EDITOR push -f origin main'; do
+  'git --config-env core.editor=EDITOR push -f origin main' \
+  'git --shallow-file HEAD push --force origin main'; do
   run_hook "$form"
   expect_exit 2 "$hook_status" "force push after a global option with a value blocked: $form"
 done
 run_hook 'git --config-env core.editor=EDITOR commit -m x'
 expect_exit 2 "$hook_status" "commit on main after --config-env with a value is blocked"
+run_hook 'git --shallow-file HEAD commit -m x'
+expect_exit 2 "$hook_status" "commit on main after --shallow-file with a value is blocked"
 
 # A newline inside a quoted argument is part of that one argument. The parser
 # prints each git call on one line, so the newline must not split the call:
@@ -542,6 +545,33 @@ git push --force origin main
 E"
   expect_exit 2 "$hook_status" "heredoc delimiter read whole: blocked, $(printf '%q' "$form")"
   expect_match "^Blocked: this command could not be checked: cannot tell where heredoc ${delimiter//./\\.} ends" "$hook_err" "heredoc delimiter read whole: the block says why, $(printf '%q' "$form")"
+done
+
+# A quoted or backslashed delimiter is a heredoc too. A walk that did not see
+# it read the body as commands, and an apostrophe there hid the push after
+# the delimiter in a quote.
+for form in "cat <<'E-F'" 'cat <<"E-F"' 'cat <<\EOF' 'cat <<-\E-F'; do
+  delimiter=${form##*<<}
+  delimiter=${delimiter#-}
+  delimiter=${delimiter//[\'\"\\]/}
+  run_hook "$form
+it's
+$delimiter
+git push --force origin main
+echo \\'"
+  expect_exit 2 "$hook_status" "quoted heredoc delimiter: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell where heredoc " "$hook_err" "quoted heredoc delimiter: the block says why, $(printf '%q' "$form")"
+done
+
+# The forms bash and zuko use every day still parse, and the push after the
+# body is still read.
+for form in "cat <<'EOF'" 'cat <<"EOF"' 'cat <<EOF' 'cat <<-EOF' 'cat << EOF'; do
+  run_hook "$form
+it's
+EOF
+git push --force origin main"
+  expect_exit 2 "$hook_status" "everyday heredoc: the push after the body is read, $(printf '%q' "$form")"
+  expect_match "^Blocked: force push" "$hook_err" "everyday heredoc: blocked as a force push, $(printf '%q' "$form")"
 done
 
 # bash may end a body before the walk does (at `EOF)`, or at a closing
