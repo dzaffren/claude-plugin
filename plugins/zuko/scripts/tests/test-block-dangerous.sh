@@ -669,6 +669,9 @@ for form in "bash -c 'git push --force origin main'" \
   "bash -c -- 'git push --force origin main'" \
   "eval 'git push --force origin main'" \
   'eval git push --force origin main' \
+  "X=1 eval 'git push --force origin main'" \
+  "command eval 'git push --force origin main'" \
+  "if eval 'git push --force origin main'; then :; fi" \
   "bash -c 'bash -c \"bash -c \\\"git push --force origin main\\\"\"'"; do
   run_hook "$form"
   expect_exit 2 "$hook_status" "nested: a push in a shell string is blocked, $(printf '%q' "$form")"
@@ -684,7 +687,8 @@ for form in "echo '\$(git push --force origin main)'" \
 \$(git push --force origin main)
 EOF" \
   'python3 release.py plan "$(git rev-parse --show-toplevel)"' \
-  'echo "$(( (1 << 2) * 3 ))"'; do
+  'echo "$(( (1 << 2) * 3 ))"' \
+  'echo eval "it'"'"'s"'; do
   run_hook "$form"
   expect_exit 0 "$hook_status" "nested: text is not a command, $(printf '%q' "$form")"
 done

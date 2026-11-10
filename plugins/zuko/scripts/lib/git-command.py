@@ -80,8 +80,17 @@ SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "fish"}
 # backslash, so `\`` there is a nested backtick.
 BACKTICK_ESCAPE = re.compile(r"\\([$`\\])")
 
+# NAME=value before a command.
+ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
 # A -c option group: -c, -lc, -ec.
 SHELL_C = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$")
+
+# Words that can stand before `eval` where bash still runs it as a command:
+# a keyword, `command`, `builtin` or `time`. As any other word's argument,
+# as in `git log -S eval`, it is text.
+EVAL_LEADS = {"command", "builtin", "time", "!", "if", "then", "else", "elif",
+              "do", "while", "until", "{"}
 
 # Shell options that take the next word as their value.
 SHELL_OPTIONS_WITH_VALUE = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
@@ -537,7 +546,7 @@ def quoted_substitutions(text):
 
 def shell_strings(tokens):
     """The command string of each `bash -c` and the like, and the words after
-    each `eval`, joined as eval joins them."""
+    each `eval` that bash runs as a command, joined as eval joins them."""
     found = []
     words = []
     for token in tokens + ["\n"]:
@@ -545,7 +554,8 @@ def shell_strings(tokens):
             words.append(token)
             continue
         for at, word in enumerate(words):
-            if word == "eval":
+            if word == "eval" and all(lead in EVAL_LEADS or ASSIGNMENT.match(lead)
+                                      for lead in words[:at]):
                 found.append(" ".join(words[at + 1:]))
                 break
             if os.path.basename(word) in SHELLS:
