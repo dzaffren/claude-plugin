@@ -245,6 +245,12 @@ Single chunk. The change is four prompt files and two tests, about 120 lines.
 
 Recorded as D136, D137.
 
+## Review
+
+2026-11-10 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/skills/review/SKILL.md:222` · a lead-only run no longer prints clean · `2227578`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
