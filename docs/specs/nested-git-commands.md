@@ -231,6 +231,18 @@ Single chunk.
 
 Recorded as D138.
 
+## Review
+
+2026-11-11 · 7 raw findings, 7 survived, 7 fixed.
+
+- A06 Insecure Design · `plugins/zuko/scripts/lib/git-command.py:494` · undo backtick escapes in a nested backtick · `abaf7ba`
+- A06 Insecure Design · `plugins/zuko/scripts/lib/git-command.py:397` · read `$((cmd) )` as a substitution · `e1e019e`
+- A06 Insecure Design · `plugins/zuko/scripts/lib/git-command.py:351` · skip a parameter expansion whole inside `$( )` · `d00dd8e`
+- A06 Insecure Design · `plugins/zuko/scripts/lib/git-command.py:509` · find a shell's -c string past options with a value · `63f9214`
+- correctness · `plugins/zuko/scripts/lib/git-command.py:503` · read eval only in command position · `abb52a8`
+- correctness · `plugins/zuko/scripts/lib/git-command.py:275` · add a heredoc body's commands as plain lines · `9972592`
+- quality · `plugins/zuko/scripts/lib/git-command.py:8` · the module docstring names the nested commands · `1aa9b29`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
@@ -243,6 +255,8 @@ Recorded as D138.
 | O6 | The plan named one function, `nested_commands(text, tokens)`. | flag | build | user | Decided alone | Chose: two functions, `quoted_substitutions` on the text and `shell_strings` on the tokens, because one reads quotes and the other reads words. Other: one function with both inputs. Undo: merge them in `git-command.py`. 2026-11-11 |
 | O7 | 2000 nested `"$(` levels raised `RecursionError`, not `ValueError`. `block-dangerous.sh` blocked it on exit 1, but each caller that catches only `ValueError` would crash. | flag | build | user | Decided alone | Chose: `within_recursion` turns the error into a `ValueError`, so every caller blocks it as a parse failure. A test in `test-block-dangerous.sh` proves it. Other: a level counter inside the scanner. Undo: revert that part of `66f0907`. 2026-11-11 |
 | O8 | The replay (O4) ran 27752 unique logged commands through the `origin/main` parser and the new one. | flag | build | user | Decided alone | Chose: ship. 222 changed. 221 only add read-only git lines (`rev-parse`, `rev-list`, `log` and others), with no new push or commit line. 1 is newly refused: three backticks in double quotes, which bash 5.1.8 also refuses as a syntax error. Other: none needed. Undo: none. 2026-11-11 |
+| O9 | The diff has 7 findings, and the large-diff rule sends each one to three verifiers. Each finding turns on what bash runs, and a verifier cannot run bash (lesson `verifiers-cannot-run-code.md`). | flag | review | user | Decided alone | Chose: run each failing case myself, through bash 5.1.8 and both parsers, in place of 21 verifier agents. All 7 reproduced. F1 to F4 also pass the `origin/main` parser, but each is a form that this slice's new code says it reads. Other: three verifiers for each finding. Undo: rerun `/review`. 2026-11-11 |
+| O10 | The F5 fix needed a test in `test-scope-verifier-bash.sh`, a file that the plan did not name. | flag | review | user | Decided alone | Chose: two `allows` cases there for `git log -S eval` and `git log --grep eval`. Other: test only through `block-dangerous.sh`, which does not show the fence's false block. Undo: drop the two lines in `abb52a8`. 2026-11-11 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
