@@ -84,6 +84,66 @@ Scenario: a lead that the repo settles is dropped
 - A lead that blocks `/ship`. A lead only reports (O2). No later slice.
 - The Cloudflare class files in `/review`. The pentest-depth shape rejected this (its O7). No later slice.
 
+## Interface
+
+Four text contracts. Each one copies the matching contract of the release pentest, so the verifier and `pr_body.py` read a lead from `/review` as they read one today.
+
+```mermaid
+flowchart LR
+  R["reviewer.md: LEAD block"] -- "KIND: lead, no CHECK" --> V["finding-verifier.md: lead rules"]
+  V -- "VERDICT: CONFIRMED" --> T["/review terminal: Needs validation"]
+  T -- "run line + one line for each lead" --> S["spec ## Review"]
+  S -- "pr_body.py render, word for word" --> P["PR body"]
+```
+
+The reviewer writes a LEAD block, and `/review` sends it to the verifier without its `CHECK`. A confirmed lead prints under Needs validation, then goes into `## Review` as one line, which the PR body copies.
+
+**1. The reviewer's LEAD block** (`agents/reviewer.md`, after the finding template):
+
+```
+LEAD: {one sentence, the possible defect only}
+CATEGORY: {A0N:2025 name, or correctness}
+FILE: {path:line}
+SYMBOL: {the function or class the line sits in}
+SNIPPET: {the line, as written; on a deleted line, as it was on the base branch}
+CHANGE: {added, deleted, or caller}
+EVIDENCE: {the command and its output, verbatim — whenever the trace rests on command output}
+TRACE: {the input, then each file:line it passes, to the line where harm would happen}
+UNKNOWN: {the one fact that decides it, which no command the review can run will show}
+CHECK: {a safe check the user can run to settle the fact}
+```
+
+A lead has no `SEVERITY`, no `RAISED` and no `FAILING CASE`. Only a security or correctness problem can be a lead. A coverage, quality or decisions finding never is. The rules are the pentester's lead rules: exactly one `UNKNOWN`, a lead that a command can prove is a finding, an unfinished trace is not a lead, and D5 and D6 stop a lead. Never put a `|` in `LEAD` or `UNKNOWN`.
+
+**2. What the verifier gets:** `KIND: lead`, the `LEAD` claim, `CATEGORY`, `FILE`, `SYMBOL`, `SNIPPET`, `CHANGE`, `EVIDENCE`, `TRACE`, `UNKNOWN` and `BASE`. It never gets `CHECK`. A small diff needs one `CONFIRMED`. A large diff needs 2 of 3. `finding-verifier.md` keeps its lead rules as they are.
+
+**3. The terminal report:**
+
+```
+Findings   5 raw, 2 survived · 1 lead needs validation
+
+...findings, as today...
+
+Needs validation   1 lead, not fixed, does not block /ship
+  correctness · plugins/zuko/scripts/lib/program.py:41 in argv
+    Lead: argv may not find git.exe when PATHEXT lists extensions in lower case.
+    Unknown: whether PATHEXT on Windows lists .EXE in upper case
+    Check: in Git Bash on Windows, run `cmd //c echo %PATHEXT%`
+```
+
+The raw count includes each lead. With no lead that holds, the Findings line and the report stay as they are today.
+
+**4. The `## Review` lines:**
+
+```markdown
+2026-11-12 · 5 raw findings, 2 survived, 2 fixed, 1 lead needs validation.
+
+- A05 Injection · `plugins/zuko/scripts/lib/git-command.py:120` · quote the branch name · `4f2a9c1`
+- needs validation · `plugins/zuko/scripts/lib/program.py:41` · whether PATHEXT on Windows lists .EXE in upper case · in Git Bash on Windows, run `cmd //c echo %PATHEXT%`
+```
+
+A lead line has four parts: `needs validation`, `file:line`, the `UNKNOWN` and the `CHECK`. It has no commit. The lead lines come after the fix lines.
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
