@@ -1,6 +1,6 @@
 # Review leads
 
-**Version:** v1 · **Status:** Draft · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Depends on:** needs-validation
 
@@ -143,6 +143,119 @@ The raw count includes each lead. With no lead that holds, the Findings line and
 ```
 
 A lead line has four parts: `needs validation`, `file:line`, the `UNKNOWN` and the `CHECK`. It has no commit. The lead lines come after the fix lines.
+
+## Technical plan
+
+### Approach
+
+Only prompt text changes, plus one test. `finding-verifier.md` already judges `KIND: lead` (D103), and `pr_body.py` already copies each `## Review` line word for word (`pr_body.py:99`). So this slice teaches the reviewer to write a lead and `/review` to route it. It also tells `/ship` that a lead line has no commit.
+
+Relies on: D5, D6, D7, D17, D102, D103, D136, D137
+
+```mermaid
+flowchart TB
+  subgraph prompts
+    RV["agents/reviewer.md"] -- "LEAD block" --> RS["skills/review/SKILL.md"]
+    RS -- "KIND: lead, no CHECK" --> FV["agents/finding-verifier.md (unchanged)"]
+    RS -- "lead line in ## Review" --> SH["skills/ship/SKILL.md: Review done"]
+  end
+  subgraph scripts
+    PB["lib/pr_body.py (unchanged)"]
+  end
+  RS -- "spec ## Review" --> PB
+  T["tests/test-e2e-review-leads.sh"] -- "greps the contract, renders a fixture" --> PB
+```
+
+The reviewer writes the block, and the review skill routes it to the unchanged verifier and into `## Review`. The ship skill accepts a lead line with no commit, and `pr_body.py` copies the line as it is.
+
+```mermaid
+sequenceDiagram
+  participant U as user
+  participant S as /review
+  participant R as reviewer
+  participant V as finding-verifier
+  participant F as spec
+  U->>S: /review
+  S->>R: diff, BASE, discipline quote
+  R-->>S: SCOPE, 4 findings, 1 LEAD (program.py:41)
+  S->>V: KIND: lead, LEAD, TRACE, UNKNOWN, BASE (no CHECK)
+  V-->>S: VERDICT: CONFIRMED
+  S-->>U: Findings 5 raw, 2 survived · 1 lead needs validation
+  S->>F: run line, 2 fix lines, 1 needs validation line
+```
+
+### Changes
+
+| File | What changes | Why |
+| ---- | ------------ | --- |
+| `plugins/zuko/agents/reviewer.md:17` | The bold rule gains one sentence: a problem whose trace is complete except for one fact out of reach goes in a LEAD block. | Scenario 1 |
+| `plugins/zuko/agents/reviewer.md:104` | "Report format" adds the LEAD template from Interface §1, its rules, and one example for `program.py:41`. It also says LEAD blocks come after the findings. | Scenario 1 |
+| `plugins/zuko/skills/review/SKILL.md` › Verification | Send each lead to its own verifier, as Interface §2 says. The large-diff vote is the same. A lead holds on `CONFIRMED`. Each other lead is dropped. | Scenarios 1, 4 |
+| `plugins/zuko/skills/review/SKILL.md` › Report and fix | The Findings line and the Needs validation part from Interface §3. Never fix a lead. The `## Review` lead line from Interface §4, and a run line with leads, such as `3 raw findings, 0 survived, 1 lead needs validation.`, which is not `Clean`. | Scenarios 2, 3 |
+| `plugins/zuko/skills/ship/SKILL.md:105` | Review done: "Each fix line names a commit on this branch. A needs validation line names none." | Scenario 3 |
+| `plugins/zuko/scripts/tests/test-decision-pr.sh:70` | The Review done pattern matches the new cell. | Keeps the suite green |
+| `plugins/zuko/scripts/tests/test-e2e-review-leads.sh` | New: the e2e test. | All four |
+
+Reusing: the pentester's lead rules (`agents/pentester.md`, step 4), the verifier's lead section (`agents/finding-verifier.md` › "A lead"), the release step's blind send (`skills/release/SKILL.md:207`), `pr_body.py check` and `render`, and the `expect_*` helpers that `run.sh` provides.
+
+### Earn-it
+
+| Added | Triggered by |
+| ----- | ------------ |
+| The LEAD block in `reviewer.md` | Scenario 1: the reviewer has no way to report a lead today |
+| `test-e2e-review-leads.sh` | The slice test: one e2e test walks the slice |
+
+Nothing else is added. The verifier and `pr_body.py` stay as they are.
+
+### Non-functionals
+
+|                      |                                                                               |
+| -------------------- | ----------------------------------------------------------------------------- |
+| **Load**             | One `/review` for each slice. A lead costs one verifier run on a small diff, or three on a large one, the same as a finding. |
+| **Breaks first**     | A reviewer that writes many leads costs verifier turns. The rules cap a lead at one `UNKNOWN` that no command can show. An unfinished trace is not a lead. |
+| **Security surface** | The reviewer reads untrusted diff text. A diff could steer it into a harmful `CHECK`. zuko never runs a `CHECK`: the user runs it by hand, and the verifier never sees it. The template asks for a safe check. |
+| **Proof it works**   | A review report with `· 1 lead needs validation` on its Findings line, and the same lead line in the PR body. |
+| **Rollout**          | No flag. The text applies from the next session (lesson: skills load at session start). Rollback is `git revert` of the slice's commits. |
+
+### Test plan
+
+| Scenario | Test | Command |
+| -------- | ---- | ------- |
+| 1 · a Windows-only branch becomes a lead | `test-e2e-review-leads.sh` part 1: the LEAD template and rules in `reviewer.md`, and the blind send in `review/SKILL.md` | `bash plugins/zuko/scripts/tests/run.sh test-e2e-review-leads` |
+| 2 · a lead that holds is reported, not fixed | part 1: the Findings line, the Needs validation part and the never-fix rule in `review/SKILL.md` | same |
+| 3 · the lead reaches the spec and the PR body | part 2: a fixture spec with a run line, a fix line and a lead line. `pr_body.py check` passes, and `render` prints the lead line word for word. Part 1 checks the ship rule. | same |
+| 4 · a lead that the repo settles is dropped | part 1: the verifier still has its rule 4 for leads, and `review/SKILL.md` drops each lead that is not `CONFIRMED` | same |
+| the suite | all test files | `bash plugins/zuko/scripts/tests/run.sh` |
+
+**E2E:** `test-e2e-review-leads.sh`, which checks the prompt contract and then renders the fixture spec into a PR body.
+
+### Chunks
+
+Single chunk. The change is four prompt files and two tests, about 120 lines.
+
+### Risks
+
+| Risk | Mitigation |
+| ---- | ---------- |
+| A test checks prompt text, so it cannot show that the reviewer writes good leads. | The same limit as `needs-validation`. The first real review of a Windows-only branch is the proof. |
+| The reviewer calls a problem a lead to skip the work of proving it. | The rule "a lead that a command can prove is a finding" is copied from the pentester, and the blind verifier still rejects a broken trace. |
+| A lead line breaks the ship gate's placeholder check. | The existing rule bans a brace pair, `TODO` and `[TBD]` in each `## Review` line. The fixture's lead line passes `verify-ship-gates.sh`. |
+
+### Decisions to record
+
+## D136 · 2026-11-10 · A lead in /review is reported under Needs validation and never blocks /ship
+
+Why: a lead turns on one fact that the review cannot observe, such as how a path behaves on Windows. The user settles it by hand, as with a release pentest lead (D102).
+Rejected: an Open `unproven` ledger row that sets the spec back to Draft (it would stop every slice that touches a Windows-only branch until someone has a Windows machine), dropping the lead as today (the user never hears of it).
+Source: docs/specs/review-leads.md
+Status: active
+
+## D137 · 2026-11-10 · Security findings carry no BOUNDARY field
+
+Why: issue #115's rule (a lower-trust principal, a boundary it crosses, an observed result) is already met. The verifier names the `ATTACKER` and the `GAIN`, the pentester shows a `PROOF` it ran, and the D4 grid sets the tier.
+Rejected: a required `BOUNDARY` line on each security finding in the reviewer, the pentester and the verifier (one more field in each finding, and it restates `ATTACKER`).
+Source: docs/specs/review-leads.md
+Status: active
 
 ## Open items
 
