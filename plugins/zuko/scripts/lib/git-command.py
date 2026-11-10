@@ -331,6 +331,8 @@ def substitution_end(text, at):
             index = quoted_end(text, index + 1, [])
         elif text.startswith("$'", index):
             index = ansi_quoted_end(text, index + 2)
+        elif text.startswith("${", index):
+            index = parameter_end(text, index)
         elif char == "`" or text.startswith("$(", index):
             index = arithmetic_end(text, index, []) or substitution_end(text, index)
         elif char == "#" and word_start:
@@ -445,6 +447,32 @@ def arithmetic_end(text, at, found):
                 return index + 2
         index += 1
     return None
+
+
+def parameter_end(text, at):
+    """The index after the `}` that closes the `${` at `at`. A `)` in it,
+    as in `${x:-)}`, does not close a `$( )` around it."""
+    index = at + 2
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+        elif char == "'":
+            close = text.find("'", index + 1)
+            if close < 0:
+                raise ValueError("a ' quote inside ${ } is never closed")
+            index = close + 1
+        elif char == '"':
+            index = quoted_end(text, index + 1, [])
+        elif text.startswith("${", index):
+            index = parameter_end(text, index)
+        elif char == "`" or text.startswith("$(", index):
+            index = substitution_or_arithmetic_end(text, index, [])
+        elif char == "}":
+            return index + 1
+        else:
+            index += 1
+    raise ValueError("a ${ } is never closed")
 
 
 def ansi_quoted_end(text, index):

@@ -626,7 +626,8 @@ for form in 'echo "$(git push --force origin main)"' \
   'echo "$(echo "$(git push --force origin main)")"' \
   'echo "`echo \`git push --force origin main\``"' \
   'echo "$((git push --force origin main) )"' \
-  'echo "$((git push --force origin main); true)"'; do
+  'echo "$((git push --force origin main); true)"' \
+  'echo "$(echo ${x:-)}; git push --force origin main)"'; do
   run_hook "$form"
   expect_exit 2 "$hook_status" "nested: a push in a quoted substitution is blocked, $(printf '%q' "$form")"
   expect_match '^Blocked: force push' "$hook_err" "nested: the block is the force-push one, $(printf '%q' "$form")"
