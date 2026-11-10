@@ -243,19 +243,7 @@ Single chunk. The change is four prompt files and two tests, about 120 lines.
 
 ### Decisions to record
 
-## D136 · 2026-11-10 · A lead in /review is reported under Needs validation and never blocks /ship
-
-Why: a lead turns on one fact that the review cannot observe, such as how a path behaves on Windows. The user settles it by hand, as with a release pentest lead (D102).
-Rejected: an Open `unproven` ledger row that sets the spec back to Draft (it would stop every slice that touches a Windows-only branch until someone has a Windows machine), dropping the lead as today (the user never hears of it).
-Source: docs/specs/review-leads.md
-Status: active
-
-## D137 · 2026-11-10 · Security findings carry no BOUNDARY field
-
-Why: issue #115's rule (a lower-trust principal, a boundary it crosses, an observed result) is already met. The verifier names the `ATTACKER` and the `GAIN`, the pentester shows a `PROOF` it ran, and the D4 grid sets the tier.
-Rejected: a required `BOUNDARY` line on each security finding in the reviewer, the pentester and the verifier (one more field in each finding, and it restates `ATTACKER`).
-Source: docs/specs/review-leads.md
-Status: active
+Recorded as D136, D137.
 
 ## Open items
 
