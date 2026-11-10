@@ -1329,3 +1329,10 @@ Why: issue #115's rule (a lower-trust principal, a boundary it crosses, an obser
 Rejected: a required `BOUNDARY` line on each security finding in the reviewer, the pentester and the verifier (one more field in each finding, and it restates `ATTACKER`).
 Source: specs/review-leads.md
 Status: active
+
+## D138 · 2026-11-10 · The shared parser reads the commands nested in a Bash command, to a depth of 3
+
+Why: the v2.7.0 pentest proved S2 and S5: a git call in `"$( )"`, in backticks in double quotes, or in a `bash -c` or `eval` string passed every git guard. A `$( )` in an unquoted heredoc body did too. `tokenise` now reads each nested command with the same parse, and adds its words as one more line, so all six callers judge it.
+Rejected: refusing every `"$(` (971 of 28611 local Bash calls use it, the standard commit form among them), the nested read in `main` only (block-attribution.sh and release-commit.py call `tokenise` directly), a bash parser library such as bashlex (the hooks use the standard library only), no depth cap (each level parses its text again, D51).
+Source: specs/nested-git-commands.md
+Status: active
