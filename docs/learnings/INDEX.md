@@ -270,3 +270,7 @@ One line per lesson. Loaded into every session in this repo.
 - Run a hook script by hand with `</dev/null` — it reads its payload from
   stdin first and waits forever on an open one.
   ([detail](run-a-hook-script-with-no-stdin.md))
+- A path built from an environment variable is relative wherever the variable
+  is unset — build it with each variable unset on each OS before calling it
+  absolute.
+  ([detail](an-env-path-is-relative-where-the-var-is-unset.md))
