@@ -19,17 +19,21 @@ for r in "${rel[@]}"; do
 done
 
 # Every OS: with the variables unset, findChrome() gives an absolute path or null.
-vars=(-u LOCALAPPDATA -u PROGRAMFILES -u 'PROGRAMFILES(X86)' -u HOME -u USERPROFILE -u CHROME_PATH)
+# Node removes them itself: Windows keeps ProgramFiles and LocalAppData in any
+# case, and env -u removes only the exact name.
+empty=''
 want='^(true .+|null)$'
 if is_windows; then
   # Program Files comes first and holds the runner's Chrome, so point it at an
   # empty folder: only a planted relative candidate can then be found.
   empty=$(cygpath -w "$(mktemp -d -p "$work")")
-  vars=(-u LOCALAPPDATA -u HOME -u USERPROFILE -u CHROME_PATH "PROGRAMFILES=$empty" "PROGRAMFILES(X86)=$empty")
   want='^null$'
 fi
-found=$(cd "$repo" && env "${vars[@]}" \
-  node -e "import(require('node:url').pathToFileURL(process.argv[1])).then((m) => { const c = m.findChrome(); console.log(c === null ? 'null' : require('node:path').isAbsolute(c) + ' ' + c); })" "$lib/cdp.mjs" 2>&1)
+found=$(cd "$repo" && node -e "
+  const [cdp, empty] = process.argv.slice(1);
+  for (const k of Object.keys(process.env)) if (/^(localappdata|programfiles|programfiles\(x86\)|home|userprofile|chrome_path)$/i.test(k)) delete process.env[k];
+  if (empty) { process.env.PROGRAMFILES = empty; process.env['PROGRAMFILES(X86)'] = empty; }
+  import(require('node:url').pathToFileURL(cdp)).then((m) => { const c = m.findChrome(); console.log(c === null ? 'null' : require('node:path').isAbsolute(c) + ' ' + c); })" "$lib/cdp.mjs" "$empty" 2>&1)
 expect_match "$want" "$found" "findChrome() in acme-shop gives no relative path [$found]"
 
 if is_windows; then
