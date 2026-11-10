@@ -505,6 +505,21 @@ git push --force origin main
   expect_match "^Blocked: this command could not be checked: cannot tell where a heredoc inside \"\\$\\( \\)\" ends" "$hook_err" "heredoc in \"\$( )\": the unclear-end block says why, $(printf '%q' "$form")"
 done
 
+# bash reads the whole word after << as the delimiter: in `<<E-F` it is
+# `E-F`, so the body ends at the line `E-F` and the push after it runs. A walk
+# that read `E` would drop the push as body.
+for form in 'cat <<E-F' 'cat <<-E-F' 'cat <<E.F' 'cat << E/F'; do
+  delimiter=${form##*<<}
+  delimiter=${delimiter#-}
+  delimiter=${delimiter# }
+  run_hook "$form
+$delimiter
+git push --force origin main
+E"
+  expect_exit 2 "$hook_status" "heredoc delimiter read whole: blocked, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: cannot tell where heredoc ${delimiter//./\\.} ends" "$hook_err" "heredoc delimiter read whole: the block says why, $(printf '%q' "$form")"
+done
+
 # bash may end a body before the walk does (at `EOF)`, or at a closing
 # backtick), or never open it (`<<` in single quotes or `${ }`). A `<<` on a
 # line the walk reads as body may then open a real heredoc, so the walk counts

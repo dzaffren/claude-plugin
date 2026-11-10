@@ -186,6 +186,9 @@ def openers_in(line, state):
             elif closers and char == closers[-1]:
                 closers.pop()
             match = HEREDOC.match(line, at)
+            if match and not INNER_HEREDOC.match(line, at):
+                raise ValueError("cannot tell where heredoc %s ends; put the command in a file"
+                                 % re.split(r"[ \t;&|()<>]", line[match.start(2):], 1)[0])
             if match:
                 delimiters.append(match.group(2))
                 at = match.end() - 1
