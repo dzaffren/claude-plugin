@@ -1,6 +1,6 @@
 # Nested git commands
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** guard-parser-gaps
 
@@ -169,8 +169,8 @@ sequenceDiagram
 | ---- | ------------ | --- |
 | `plugins/zuko/scripts/lib/git-command.py:199` | `openers_in` also returns, for each delimiter, whether it is quoted (`match.group(1)`) and whether it is `<<-` | Scenario 2 |
 | `plugins/zuko/scripts/lib/git-command.py:245` | For an unquoted delimiter, find each `$( )` and backtick in the body, after a `\` that escapes `$` or a backtick is skipped, and add its inner text as a line at the end. End the body at a line that equals the delimiter as bash compares it: exact, or with leading tabs dropped for `<<-`, not after `.strip()` (`:248`) | Scenario 2 |
-| `plugins/zuko/scripts/lib/git-command.py` | New `substitution_end(text, at)`: the index after the `)` that closes the `$(` at `at`, read with a new quote context, nested `$( )`, backticks and heredoc bodies. Refuses a `case` or an end it cannot find. `$((` is arithmetic and is skipped | Scenarios 1, 5 |
-| `plugins/zuko/scripts/lib/git-command.py` | New `nested_commands(text, tokens)`: the inner text of each `$( )` and backtick in double quotes, of the string after a `-c` group for `bash`, `sh`, `zsh`, `dash`, `ksh` or `fish` at any word, and of the words after `eval`. Unquoted `$( )` is not taken: shlex already splits it | Scenarios 1, 3 |
+| `plugins/zuko/scripts/lib/git-command.py` | New `substitution_end(text, at)`: the index after the `)` that closes the `$(` at `at`, read with a new quote context, nested `$( )`, backticks and heredoc bodies. Refuses a `case` or an end it cannot find. `arithmetic_end` reads `$((` to its `))`, where `<<` is a shift | Scenarios 1, 5 |
+| `plugins/zuko/scripts/lib/git-command.py` | New `quoted_substitutions(text)`: the inner text of each `$( )` and backtick in double quotes. Unquoted `$( )` is not taken: shlex already splits it. New `shell_strings(tokens)`: the string after a `-c` group for `bash`, `sh`, `zsh`, `dash`, `ksh` or `fish` at any word, and the words after `eval`. New `within_recursion`: Python's recursion limit is a parse failure (O7) | Scenarios 1, 3, 5 |
 | `plugins/zuko/scripts/lib/git-command.py:258` | `tokenise(command, depth=0)` adds `"\n"` and `tokenise(strip_heredocs(inner), depth + 1)` for each nested command. Over depth 3 it raises `ValueError` | Scenarios 1–3, 5 |
 | `plugins/zuko/scripts/tests/test-block-dangerous.sh` | The cases for scenarios 1 to 5 | Scenarios 1–5 |
 | `plugins/zuko/scripts/tests/test-secret-scan.sh` | `echo "$(git commit -m x)"` with a staged key is blocked | Scenario 1 |
@@ -240,6 +240,9 @@ Recorded as D138.
 | O3 | A command string held in a variable, as in `eval "$X"` or `bash -c "$X"`, still passes. A bare `$X` command word passes today too. | flag | spec p1 | user | Accepted risk | The value is not in the text, the same hole as a bare `$X`. Refusing a `$` in each `-c` or `eval` string would block real commands such as `bash -c 'cd "$1" && ls' _ dir`. 2026-11-10 |
 | O4 | `substitution_end` finds where each `$( )` ends as bash does, for the 971 `"$(` commands in the local logs, with no new false block. Nobody has run it. | unproven | spec p3 | user | Accepted risk | No /poc. `/build` runs the replay in the test plan before ship, and fixes or refuses each new block it finds. 2026-11-10 |
 | O5 | A commit whose directory the parser cannot know is checked only in the start and project dirs. `cd <repo on main> && (git commit -m x)` exits 0 on `origin/main`. I ran it. A nested commit after a `cd` gets the same unknown directory. | flag | spec p3 | user | Accepted risk | Not here. The fix is in `block-dangerous.sh` and `secret-scan.sh`, in a later slice `unknown-dir-commit`. 2026-11-10 |
+| O6 | The plan named one function, `nested_commands(text, tokens)`. | flag | build | user | Decided alone | Chose: two functions, `quoted_substitutions` on the text and `shell_strings` on the tokens, because one reads quotes and the other reads words. Other: one function with both inputs. Undo: merge them in `git-command.py`. 2026-11-11 |
+| O7 | 2000 nested `"$(` levels raised `RecursionError`, not `ValueError`. `block-dangerous.sh` blocked it on exit 1, but each caller that catches only `ValueError` would crash. | flag | build | user | Decided alone | Chose: `within_recursion` turns the error into a `ValueError`, so every caller blocks it as a parse failure. A test in `test-block-dangerous.sh` proves it. Other: a level counter inside the scanner. Undo: revert that part of `66f0907`. 2026-11-11 |
+| O8 | The replay (O4) ran 27752 unique logged commands through the `origin/main` parser and the new one. | flag | build | user | Decided alone | Chose: ship. 222 changed. 221 only add read-only git lines (`rev-parse`, `rev-list`, `log` and others), with no new push or commit line. 1 is newly refused: three backticks in double quotes, which bash 5.1.8 also refuses as a syntax error. Other: none needed. Undo: none. 2026-11-11 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

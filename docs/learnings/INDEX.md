@@ -277,3 +277,6 @@ One line per lesson. Loaded into every session in this repo.
 - When a fix adds a stricter copy of a pattern for one call site, grep every
   other use of the original and fix it too, or say why it is safe.
   ([detail](a-stricter-twin-belongs-on-every-path.md))
+- A parser that recurses on its input turns RecursionError into the error its
+  callers catch — test it past 1000 levels.
+  ([detail](a-recursive-parser-must-fail-as-a-parse-error.md))
