@@ -272,23 +272,7 @@ Single chunk.
 
 ### Decisions to record
 
-```markdown
-## D139 · 2026-11-11 · The git guards read a path to git or gh as the program, and git's dashed form only with a path
-
-Why: the v2.7.0 pentest proved S5: `/usr/bin/git push --force origin main` passed every git guard, and `/usr/libexec/git-core/git-push` did too. bash runs the same program for each path, so the parser tests the last path part, with `.exe` dropped, for git and gh in one helper.
-Rejected: a list of known install paths (misses `./git` and each new install), the dashed form for every `git-NAME` word (`grep -rn git-commit docs/` on `main` would block as a commit), git only (`/usr/bin/gh pr create` passes the attribution guard the same way).
-Source: specs/git-spellings.md
-Status: active
-```
-
-```markdown
-## D140 · 2026-11-11 · An inline git alias is read as one more line, and an alias the text does not show is refused
-
-Why: the v2.7.0 pentest proved S5: `git -c alias.p=push p --force origin main` passed every git guard. The parser adds the call again with the alias replaced, and keeps the original line, because git ignores an alias with a builtin's name. An alias set by `--config-env`, `GIT_CONFIG_KEY_n`, `git config` or a `$` value has no value in the text, so the command is refused (D52).
-Rejected: replace the call by its expansion (`git -c alias.push=status push --force` would read as `status --force` and pass), let a hidden alias through (`git config alias.p push && git p --force` passes), read `~/.gitconfig` and `.git/config` aliases now (a hook runs `git config` on each call, and the slice fails Fits: later slice config-aliases).
-Source: specs/git-spellings.md
-Status: active
-```
+Recorded as D139, D140.
 
 ## Open items
 
