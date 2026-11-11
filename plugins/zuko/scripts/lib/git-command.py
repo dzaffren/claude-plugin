@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Print the git invocations a shell command actually runs.
 
-Reads one shell command on stdin. Prints one line per bare `git` token — its
+Reads one shell command on stdin. Prints one line per `git` word — bare, or
+a path to git or git.exe, or a path to git's dashed form `git-push` (D139) — its
 arguments, unquoted and space-joined, with redirections and git's own options
 dropped so the subcommand comes first. A preceding word does not hide it:
 `sudo git commit` and `VAR=x git commit` both count. A `git commit` inside a
@@ -11,7 +12,9 @@ start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 
 A command that bash runs from inside another one is a command too (D138): a
 `$( )` or backtick in double quotes or in an unquoted heredoc body, the
-string of a `bash -c`, and the words after `eval`.
+string of a `bash -c`, and the words after `eval`. So is the command that git
+runs for an alias set with `-c alias.NAME=VALUE` (D140). An alias whose value
+the text does not show is refused.
 
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
@@ -789,7 +792,7 @@ def program_word(token, program):
 
 
 def invocations_with_dirs(tokens, base, program="git"):
-    """(directory, arguments) for every bare `program` token, `git` unless
+    """(directory, arguments) for every `program` word, `git` unless
     told otherwise. git's own options and a GIT_DIR= prefix apply to git only.
 
     A move is trusted only where the shell is sure to keep it for the git call:
@@ -844,9 +847,10 @@ def invocations_with_dirs(tokens, base, program="git"):
 
 
 def invocations(tokens, program="git"):
-    """The arguments of every bare `program` token, `git` unless told otherwise.
+    """The arguments of every `program` word, `git` unless told otherwise: the
+    bare name, or a path to it, as `program_word` reads it.
 
-    Bare is the whole test. Quoting collapses "how to git commit" into one
+    That is the whole test. Quoting collapses "how to git commit" into one
     token, and heredoc bodies are gone by now, so prose can never produce a
     `git` token on its own. Everything else is treated as a real invocation —
     `sudo git`, `VAR=x git`, `do git` inside a loop — because a guard that
