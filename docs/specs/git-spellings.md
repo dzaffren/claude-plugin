@@ -284,7 +284,7 @@ Recorded as D139, D140.
 
 2026-11-11 · 4 raw findings, 1 survived, 1 fixed.
 
-- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:777` · a `NAME=value` word is never a program word, and each program word opens its own call · `b1f5a9f`
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:777` · a `NAME=value` word is never a program word, and each program word opens its own call · `a055d5b`
 
 ## Open items
 
