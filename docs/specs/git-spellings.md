@@ -1,6 +1,6 @@
 # Git spellings
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** nested-git-commands
 
@@ -257,6 +257,12 @@ whose exit code or output changes. Each new block must be a real git call by a
 path or an alias. The script and its output stay in the scratchpad, because
 the logs hold private data. Then the full suite:
 `bash plugins/zuko/scripts/tests/run.sh`.
+
+**Replay result (2026-11-11):** 28009 distinct commands. 321 print more
+lines, and none of those lines matches a guard. 320 are paths such as
+`git-naming.md` and `git-command.py`, which now print a call such as
+`naming.md`. 1 is a new refusal: a `--config-env alias.p` probe from this
+slice's own spec work. 0 new blocks of a real command.
 
 ### Chunks
 
