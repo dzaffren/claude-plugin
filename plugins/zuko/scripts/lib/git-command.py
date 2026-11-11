@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Print the git invocations a shell command actually runs.
 
-Reads one shell command on stdin. Prints one line per bare `git` token — its
+Reads one shell command on stdin. Prints one line per `git` word — bare, or
+a path to git or git.exe, or a path to git's dashed form `git-push` (D139) — its
 arguments, unquoted and space-joined, with redirections and git's own options
 dropped so the subcommand comes first. A preceding word does not hide it:
 `sudo git commit` and `VAR=x git commit` both count. A `git commit` inside a
@@ -11,7 +12,9 @@ start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 
 A command that bash runs from inside another one is a command too (D138): a
 `$( )` or backtick in double quotes or in an unquoted heredoc body, the
-string of a `bash -c`, and the words after `eval`.
+string of a `bash -c`, and the words after `eval`. So is the command that git
+runs for an alias set with `-c alias.NAME=VALUE` (D140). An alias whose value
+the text does not show is refused.
 
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
@@ -128,6 +131,15 @@ GLOBAL_OPTIONS_WITH_VALUE = {
     "-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path",
     "--super-prefix", "--attr-source", "--config-env", "--shallow-file",
 }
+
+# `-c alias.NAME=VALUE`. Alias names ignore case: `alias.P` sets `p`.
+ALIAS_OPTION = re.compile(r"^alias\.([^=]+)=(.*)$", re.S | re.I)
+
+# Where a config key `alias.NAME` stands in a word: the whole word, as `git
+# config` takes it, after the `=` of `GIT_CONFIG_KEY_0=` or `--config-env=`, or
+# in quotes, as GIT_CONFIG_PARAMETERS holds it. A message that only mentions
+# `alias.p` in a sentence does not match.
+ALIAS_KEY = r"(^|[='])alias\.%s('?=|'?$)"
 
 
 def openers_in(line, state):
@@ -596,6 +608,68 @@ def shell_string(args):
     return rest[0] if has_c and rest else None
 
 
+def alias_strings(tokens):
+    """For each git call whose subcommand is an alias that the call sets with
+    `-c alias.NAME=VALUE`, the command git runs for it (D140). A plain value is
+    the same words with the alias replaced, so the next parse reads a chain.
+    A `!` value is a shell command with the call's arguments after it, in a
+    directory the walk cannot know. The call as written stays, because git
+    ignores an alias that has a builtin's name.
+
+    An alias the text names but does not show the value of, as in
+    `--config-env alias.p=X`, `GIT_CONFIG_KEY_0=alias.p` or `git config
+    alias.p push`, raises ValueError, and so does a value with `$` or a
+    backtick: shlex has dropped the quotes that say whether bash expands it."""
+    found = []
+    words = []
+    for index, token in enumerate(tokens + ["\n"]):
+        if not is_separator(token):
+            words.append((index, token))
+            continue
+        for at, (_, word) in enumerate(words):
+            if program_word(word, "git") != []:
+                continue
+            aliases = {}
+            read = set()
+            at_sub = at + 1
+            while at_sub < len(words):
+                option = words[at_sub][1]
+                if is_redirection(option):
+                    at_sub += 2
+                elif option.isdigit() and at_sub + 1 < len(words) and is_redirection(words[at_sub + 1][1]):
+                    at_sub += 1
+                elif option.startswith("-"):
+                    if option in GLOBAL_OPTIONS_WITH_VALUE and at_sub + 1 < len(words):
+                        value_at, value = words[at_sub + 1]
+                        alias = ALIAS_OPTION.match(value) if option == "-c" else None
+                        if alias and not any(ch in alias.group(2) for ch in "$`"):
+                            aliases[alias.group(1).lower()] = alias.group(2)
+                            read.add(value_at)
+                        at_sub += 2
+                    else:
+                        at_sub += 1
+                else:
+                    break
+            if at_sub >= len(words):
+                continue
+            name = words[at_sub][1].lower()
+            named = re.compile(ALIAS_KEY % re.escape(name), re.I)
+            if any(named.search(other) for other_at, other in enumerate(tokens)
+                   if other_at not in read):
+                raise ValueError("the git alias %s gets a value this guard cannot read; "
+                                 "write out the command it stands for" % name)
+            if name not in aliases:
+                continue
+            value = aliases[name]
+            plain = [word for _, word in words]
+            if value.startswith("!"):
+                found.append('cd "$GIT_PREFIX" && %s %s' % (value[1:], shlex.join(plain[at_sub + 1:])))
+            else:
+                found.append(shlex.join(plain[:at_sub] + shlex.split(value) + plain[at_sub + 1:]))
+        words = []
+    return found
+
+
 def tokenise(command, depth=0):
     """The words of `command`, then, after a newline token, the words of each
     command nested in it: a `$( )` or backtick in double quotes, the string of
@@ -609,7 +683,8 @@ def tokenise(command, depth=0):
     lex.whitespace = " \t\r"
     lex.commenters = ""                  # strip_heredocs drops comments, as bash reads them
     tokens = list(lex)
-    nested = within_recursion(quoted_substitutions, command) + shell_strings(tokens)
+    nested = (within_recursion(quoted_substitutions, command) + shell_strings(tokens)
+              + alias_strings(tokens))
     if nested and depth >= MAX_NESTING:
         raise ValueError("commands nested more than %d deep; put the inner command in a file" % MAX_NESTING)
     for inner in nested:
@@ -699,8 +774,28 @@ def git_dir(args, current):
     return current
 
 
+def program_word(token, program):
+    """The arguments a call of `program` starts with when bash runs `token`, or
+    None. bash runs the same program from a path, and Windows from any case and
+    with `.exe`, so the last part of a `/` or `\\` path is the name (D139). With
+    a path, git's dashed form `git-push` is `git push`. Without one it is text,
+    as in `grep -rn git-commit docs/`. A `NAME=value` word sets a variable,
+    so `A=/x/git` runs nothing."""
+    if ASSIGNMENT.match(token):
+        return None
+    parts = re.split(r"[/\\]", token)
+    name = parts[-1].lower()
+    if name.endswith(".exe"):
+        name = name[:-len(".exe")]
+    if name == program:
+        return []
+    if program == "git" and len(parts) > 1 and name.startswith("git-") and len(name) > len("git-"):
+        return [name[len("git-"):]]
+    return None
+
+
 def invocations_with_dirs(tokens, base, program="git"):
-    """(directory, arguments) for every bare `program` token, `git` unless
+    """(directory, arguments) for every `program` word, `git` unless
     told otherwise. git's own options and a GIT_DIR= prefix apply to git only.
 
     A move is trusted only where the shell is sure to keep it for the git call:
@@ -721,21 +816,25 @@ def invocations_with_dirs(tokens, base, program="git"):
     moved = False
     at_start = True
     moving = False          # the last token was a tracked `cd` or `pushd`
-    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= prefix on this command
-    args = None
+    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= word in this command
+    calls = []
     for token in tokens:
         if is_separator(token):
             if moving:
                 current = None                    # a bare `cd` goes home
-            if args is not None:
-                found.append((where(args), subcommand_args(args)))
-                args = None
+            found.extend((where(args), subcommand_args(args)) for args in calls)
+            calls = []
             if moved and token != "&&":
                 current = None
             at_start, moving, overridden = True, False, False
             continue
-        if args is not None:
-            args.append(token)
+        if re.match(r"GIT_(DIR|WORK_TREE)=", token):
+            overridden = True
+        if calls:
+            for args in calls:
+                args.append(token)
+            if (start := program_word(token, program)) is not None:
+                calls.append(start)
         elif moving:
             current = resolve(current, token)
             moving = False
@@ -744,20 +843,21 @@ def invocations_with_dirs(tokens, base, program="git"):
                 moving = moved = True
             else:
                 current, moved = None, True
-        elif token == program:
-            args = []
-        elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
-            overridden = True
+        elif (start := program_word(token, program)) is not None:
+            calls.append(start)
         at_start = False
-    if args is not None:
-        found.append((where(args), subcommand_args(args)))
+    found.extend((where(args), subcommand_args(args)) for args in calls)
     return found
 
 
 def invocations(tokens, program="git"):
-    """The arguments of every bare `program` token, `git` unless told otherwise.
+    """The arguments of every `program` word, `git` unless told otherwise: the
+    bare name, or a path to it, as `program_word` reads it. Each one runs to the
+    end of its command, so a later word starts a call of its own and is also an
+    argument of the one before: in `env -C /srv/git git push --force` the
+    `git` after the path is still read.
 
-    Bare is the whole test. Quoting collapses "how to git commit" into one
+    That is the whole test. Quoting collapses "how to git commit" into one
     token, and heredoc bodies are gone by now, so prose can never produce a
     `git` token on its own. Everything else is treated as a real invocation —
     `sudo git`, `VAR=x git`, `do git` inside a loop — because a guard that
@@ -769,19 +869,17 @@ def invocations(tokens, program="git"):
     drops redirections for it.
     """
     found = []
-    args = None
+    calls = []
     for token in tokens:
         if is_separator(token):
-            if args is not None:
-                found.append(subcommand_args(args))
-                args = None
+            found.extend(subcommand_args(args) for args in calls)
+            calls = []
             continue
-        if args is not None:
+        for args in calls:
             args.append(token)
-        elif token == program:
-            args = []
-    if args is not None:
-        found.append(subcommand_args(args))
+        if (start := program_word(token, program)) is not None:
+            calls.append(start)
+    found.extend(subcommand_args(args) for args in calls)
     return found
 
 

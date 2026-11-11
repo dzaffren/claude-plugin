@@ -378,6 +378,15 @@ expect_match 'Generated with \[Claude Code\]' "$hook_err" "a blocked PR quotes t
 expect_match 'commit messages, PR$' "$hook_err" "a blocked PR cites the ban on PR bodies"
 expect_no_match 'settings\.json' "$hook_err" "a blocked PR does not offer the commit settings fix"
 
+# A path to gh is gh (D139).
+run_hook '/usr/bin/gh pr create --title "fix: round refunds" --body "Rounds each refund to the cent.
+
+Co-Authored-By: Claude <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "blocks attribution in a gh pr create run by its path"
+expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "the gh path block names the PR body"
+run_hook 'X=/a/gh gh pr create --title "fix: round refunds" --body "Co-Authored-By: Claude <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "a NAME=value word ending in /gh does not hide the real gh"
+
 # Every spelling below is read from gh 2.92.0's own help, pasted verbatim:
 #   -b, --body string          Body for the pull request
 #   -F, --body-file file       Read body text from file (use "-" to read from standard input)

@@ -280,3 +280,6 @@ One line per lesson. Loaded into every session in this repo.
 - A parser that recurses on its input turns RecursionError into the error its
   callers catch — test it past 1000 levels.
   ([detail](a-recursive-parser-must-fail-as-a-parse-error.md))
+- A matcher widened to add blocks must keep every old output — check old
+  lines are a subset of new, and probe the new trigger just before the old one.
+  ([detail](widening-a-matcher-can-swallow-the-real-match.md))

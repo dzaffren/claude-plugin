@@ -729,7 +729,93 @@ run_hook "$commit_form" "$repo"
 expect_exit 2 "$hook_status" "commit form: blocked on main"
 expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: the block is the commit-on-main one"
 
+# git-spellings: a path to git is git, and a path to git's dashed form is the
+# subcommand it names (D139).
+for form in '/usr/bin/git push --force origin main' \
+  './git push --force origin main' \
+  '~/bin/git push --force origin main' \
+  'git.exe push --force origin main' \
+  'GIT.EXE push --force origin main' \
+  '"C:/Program Files/Git/cmd/git.exe" push --force origin main' \
+  '"C:\Program Files\Git\cmd\git.exe" push --force origin main' \
+  '/usr/libexec/git-core/git-push --force origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a path to git is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the path block is the force-push one, $(printf '%q' "$form")"
+done
+# A path-shaped word before the real git does not hide it, and the call the
+# old parser read from the first bare git is still read.
+for form in 'A=/x/git git push --force origin main' \
+  'GIT_DIR=/srv/git git push --force origin main' \
+  'env -C /srv/git git push --force origin main' \
+  'env -C /srv/git -u HOME git push --force origin main' \
+  'git push origin git +main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a word before git does not hide it, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the hidden-git block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook 'GIT_WORK_TREE=/home/me/git git commit -m x' "$repo"
+expect_exit 2 "$hook_status" "spellings: a GIT_WORK_TREE ending in /git does not hide a commit on main"
+run_hook '/usr/bin/git commit -m "fix: round refunds"' "$repo"
+expect_exit 2 "$hook_status" "spellings: /usr/bin/git commit on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the path commit block is the commit-on-main one"
+
+# An inline alias is read as the command git runs for it (D140).
+for form in 'git -c alias.p=push p --force origin main' \
+  'git -c alias.P=push p --force origin main' \
+  'git -c alias.a=b -c "alias.b=push --force" a origin main' \
+  'sudo /usr/bin/git -c alias.p=push p --force origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: an inline alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the alias block is the force-push one, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'git -c alias.p=push p --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_match '^p --force origin main$' "$parsed" "spellings: the call as written is still printed"
+expect_match '^push --force origin main$' "$parsed" "spellings: the call with the alias replaced is printed too"
+run_hook 'git -c alias.push=status push --force origin main'
+expect_exit 2 "$hook_status" "spellings: git ignores an alias with a builtin's name, so the push it runs is still blocked"
+run_hook 'git -c alias.c=commit c -m "fix: round refunds"' "$repo"
+expect_exit 2 "$hook_status" "spellings: an alias for commit on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the alias commit block is the commit-on-main one"
+
+# A ! alias is a shell command, and git adds the call's arguments after it.
+for form in "git -c 'alias.p=!git push --force origin main' p" \
+  "git -c 'alias.p=!git push' p --force origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a shell alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the shell alias block is the force-push one, $(printf '%q' "$form")"
+done
+
+# An alias whose value the text does not show is refused.
+for form in 'git --config-env alias.p=PUSH p --force origin main' \
+  'git --config-env=alias.p=PUSH p --force origin main' \
+  'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.p GIT_CONFIG_VALUE_0=push git p --force origin main' \
+  "GIT_CONFIG_PARAMETERS=\"'alias.p'='push'\" git p --force origin main" \
+  'git config alias.p push && git p --force origin main' \
+  'git -c "alias.p=$PUSH" p origin main' \
+  "git -c 'alias.p=!f() { git push \"\$@\"; }; f' p --force origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a hidden alias is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git alias p' "$hook_err" "spellings: the refusal names the alias, $(printf '%q' "$form")"
+done
+
+# Text stays text, and the standard forms still pass, on main.
+for form in 'grep -rn git-commit docs/' \
+  'cat plugins/zuko/scripts/lib/git-command.py' \
+  'git -c alias.st=status st' \
+  'git --config-env alias.p=PUSH status' \
+  'git -c core.pager=cat log --oneline -5' \
+  '/usr/bin/git status'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "spellings: a standard form passes on main, $(printf '%q' "$form")"
+done
+
 git -C "$repo" checkout -q -b feat/thing
+for form in '/usr/bin/git commit -m "fix: round refunds"' \
+  'git commit -m "docs: say what alias.commit does"'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "spellings: a commit passes on a feature branch, $(printf '%q' "$form")"
+done
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
 run_hook "$commit_form" "$repo"
@@ -755,6 +841,10 @@ expect_match '^Blocked: committing directly on main\. Create a branch first\.' "
 
 run_hook "cd $on_main && git commit -m x" "$repo"
 expect_exit 2 "$hook_status" "a commit after cd into a mktemp -d repo on main is blocked"
+
+run_hook "git -C $on_main -c alias.c=commit c -m 'fix: round refunds'" "$repo"
+expect_exit 2 "$hook_status" "spellings: an alias commit with -C into a repo on main is blocked from a feature branch"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the -C alias block is the commit-on-main one"
 rm -rf "$on_main"
 
 rm -rf "$work"
