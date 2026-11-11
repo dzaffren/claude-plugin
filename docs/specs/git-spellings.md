@@ -1,6 +1,6 @@
 # Git spellings
 
-**Version:** v1 · **Status:** Draft · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** nested-git-commands
 
@@ -298,8 +298,8 @@ Status: active
 | O2 | A command word made by a substitution or a variable (`$(which git) push --force`, `G=git; $G push --force`) passes. Refuse each `$` command word, or accept? | question | spec p1 | user | Accepted risk | The value is not in the text, as for `eval "$X"` in nested-git-commands O3. A refusal would also block `"$PYTHON" x.py` and `$EDITOR file`. 2026-11-11 |
 | O3 | An alias whose value the text does not show (`--config-env`, `GIT_CONFIG_KEY_n`, `git config alias.p push && git p`, `-c "alias.p=$X"`): refuse, or let through? | question | spec p1 | user | Resolved | Refuse. block-dangerous.sh says the command could not be checked (D52). 2026-11-11 |
 | O4 | `/usr/bin/gh pr create` with a Claude co-author body passes the attribution guard. Include gh paths here? | question | spec p1 | user | Resolved | Include. One rule for git and gh, and one test in `test-block-attribution.sh`. 2026-11-11 |
-| O5 | shlex drops quotes, so the parser cannot tell `-c 'alias.p=!f() { git push "$@"; }; f'` (bash keeps the `$`) from `-c "alias.p=$X"` (bash expands it). This slice refuses each alias value with `$` or a backtick, so the common `!f() { ...; }; f` alias form is refused too | flag | spec p1 | user | Open | — |
-| O6 | git's dashed form is read only in a word with a path separator. A bare `git-push --force origin main` passes, but it runs only when git's libexec folder is on PATH. It is not on PATH on this Linux machine. I did not check Git for Windows | flag | spec p1 | user | Open | — |
+| O5 | shlex drops quotes, so the parser cannot tell `-c 'alias.p=!f() { git push "$@"; }; f'` (bash keeps the `$`) from `-c "alias.p=$X"` (bash expands it). This slice refuses each alias value with `$` or a backtick, so the common `!f() { ...; }; f` alias form is refused too | flag | spec p1 | user | Accepted risk | Claude rarely writes an inline shell alias, and the refusal names the fix: split the command. Reading the raw quotes adds code to the part of the parser that broke most in #146 and #147. 2026-11-11 |
+| O6 | git's dashed form is read only in a word with a path separator. A bare `git-push --force origin main` passes, but it runs only when git's libexec folder is on PATH. It is not on PATH on this Linux machine. I did not check Git for Windows | flag | spec p1 | user | Accepted risk | Reading every `git-NAME` word would block `grep -rn git-commit docs/` on `main` as a commit. 2026-11-11 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
