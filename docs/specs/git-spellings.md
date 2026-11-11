@@ -274,11 +274,17 @@ Single chunk.
 | ---- | ---------- |
 | A word that is a path to a file named `git`, or a script path such as `tools/git-commit`, now starts a call. On `main` that blocks a real command | Only a word with a subcommand that a guard matches can block. The replay over real commands finds each new block before ship |
 | An alias value that git splits in a different way from `shlex.split` | `shlex.split` raises on a quote it cannot close, and that is a refusal. git's own split joins quotes the same way for the values that the tests use |
-| The `!` alias line and the lines after it lose their known directory | Unknown means the guard checks both the start and the project directory (D52's path). It can only block more |
+| The `!` alias line and the lines after it lose their known directory | Unknown means the guard checks both the start and the project directory (D52's path). A `-C` target is not among them, so a `!` alias commit into another repo on `main` still passes, as on the base (O10) |
 
 ### Decisions to record
 
 Recorded as D139, D140.
+
+## Review
+
+2026-11-11 · 4 raw findings, 1 survived, 1 fixed.
+
+- A01 Broken Access Control · `plugins/zuko/scripts/lib/git-command.py:777` · a `NAME=value` word is never a program word, and each program word opens its own call · `b1f5a9f`
 
 ## Open items
 
@@ -291,6 +297,9 @@ Recorded as D139, D140.
 | O5 | shlex drops quotes, so the parser cannot tell `-c 'alias.p=!f() { git push "$@"; }; f'` (bash keeps the `$`) from `-c "alias.p=$X"` (bash expands it). This slice refuses each alias value with `$` or a backtick, so the common `!f() { ...; }; f` alias form is refused too | flag | spec p1 | user | Accepted risk | Claude rarely writes an inline shell alias, and the refusal names the fix: split the command. Reading the raw quotes adds code to the part of the parser that broke most in #146 and #147. 2026-11-11 |
 | O6 | git's dashed form is read only in a word with a path separator. A bare `git-push --force origin main` passes, but it runs only when git's libexec folder is on PATH. It is not on PATH on this Linux machine. I did not check Git for Windows | flag | spec p1 | user | Accepted risk | Reading every `git-NAME` word would block `grep -rn git-commit docs/` on `main` as a commit. 2026-11-11 |
 | O7 | Scope said the last path part is `git` or `gh`, "in any case for `.exe`". Windows also runs `GIT push` as git | flag | build | user | Decided alone | Chose: compare the whole name in any case, so `GIT.EXE` and `Git` are read as git. Other: ignore case for `.exe` only. Undo: in `program_word`, lower-case only the `.exe` check. 2026-11-11 |
+| O8 | `/review` found that an alias that one nesting level sets and another level uses is neither read nor refused. The base lets the same commands through | flag | review | user | Decided alone | Chose: leave it open; the verifiers dropped it 0 of 3 as pre-existing. Other: check `alias.NAME` against the tokens of every level, and carry a call's `-c alias.*` into its `!` line. Undo: a later slice, or `/spec continue git-spellings`. 2026-11-11 |
+| O9 | `/review` found that git and `shlex.split` read a backslash in an alias value in different ways, so the parser can print other words than git runs. The base lets the same commands through | flag | review | user | Decided alone | Chose: leave it open; the verifiers dropped it 1 of 3 as pre-existing. Other: refuse an alias value with a backslash, or port git's `split_cmdline`. Undo: a later slice, or `/spec continue git-spellings`. 2026-11-11 |
+| O10 | `/review` found that a `!` alias drops the call's `-C` target, so the commit-on-main check can judge the wrong repo. The base lets the same commands through | flag | review | user | Decided alone | Chose: leave it open; the verifiers dropped it 0 of 3 as pre-existing. Other: start the `!` line with a `cd` to the directory that `git_dir` resolves. Undo: a later slice, or `/spec continue git-spellings`. 2026-11-11 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
