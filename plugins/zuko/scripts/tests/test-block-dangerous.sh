@@ -765,7 +765,44 @@ run_hook 'git -c alias.c=commit c -m "fix: round refunds"' "$repo"
 expect_exit 2 "$hook_status" "spellings: an alias for commit on main is blocked"
 expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the alias commit block is the commit-on-main one"
 
+# A ! alias is a shell command, and git adds the call's arguments after it.
+for form in "git -c 'alias.p=!git push --force origin main' p" \
+  "git -c 'alias.p=!git push' p --force origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a shell alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the shell alias block is the force-push one, $(printf '%q' "$form")"
+done
+
+# An alias whose value the text does not show is refused.
+for form in 'git --config-env alias.p=PUSH p --force origin main' \
+  'git --config-env=alias.p=PUSH p --force origin main' \
+  'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.p GIT_CONFIG_VALUE_0=push git p --force origin main' \
+  "GIT_CONFIG_PARAMETERS=\"'alias.p'='push'\" git p --force origin main" \
+  'git config alias.p push && git p --force origin main' \
+  'git -c "alias.p=$PUSH" p origin main' \
+  "git -c 'alias.p=!f() { git push \"\$@\"; }; f' p --force origin main"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a hidden alias is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git alias p' "$hook_err" "spellings: the refusal names the alias, $(printf '%q' "$form")"
+done
+
+# Text stays text, and the standard forms still pass, on main.
+for form in 'grep -rn git-commit docs/' \
+  'cat plugins/zuko/scripts/lib/git-command.py' \
+  'git -c alias.st=status st' \
+  'git --config-env alias.p=PUSH status' \
+  'git -c core.pager=cat log --oneline -5' \
+  '/usr/bin/git status'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "spellings: a standard form passes on main, $(printf '%q' "$form")"
+done
+
 git -C "$repo" checkout -q -b feat/thing
+for form in '/usr/bin/git commit -m "fix: round refunds"' \
+  'git commit -m "docs: say what alias.commit does"'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "spellings: a commit passes on a feature branch, $(printf '%q' "$form")"
+done
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
 run_hook "$commit_form" "$repo"
