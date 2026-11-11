@@ -9,6 +9,10 @@ quoted argument, a heredoc body or a comment is text, not a command, so it is
 not printed. A comment follows bash's rule: it starts at an unquoted `#` at the
 start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 
+A command that bash runs from inside another one is a command too (D138): a
+`$( )` or backtick in double quotes or in an unquoted heredoc body, the
+string of a `bash -c`, and the words after `eval`.
+
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
 chain, then by git's own `-C`. The prefix is empty when the text cannot say
@@ -38,7 +42,7 @@ HEREDOC = re.compile(r'<<-?[ \t]*(["\']?)(\w+)\1')
 
 # The same inside a double-quoted `$( )` or backticks, where the walk must
 # know the whole delimiter: in `<<EOF-1` bash's is `EOF-1`, not `EOF`.
-INNER_HEREDOC = re.compile(HEREDOC.pattern + r"(?=[ \t;&|()<>]|$)")
+INNER_HEREDOC = re.compile(HEREDOC.pattern + r"(?=[ \t\n;&|()<>]|$)")
 
 # What ends one command. shlex glues a run of punctuation into a single token,
 # so `&&\n` and a blank line both arrive as one token — test the characters,
@@ -68,6 +72,32 @@ MAX_COMMAND_CHARS = 65536
 
 class TooLong(ValueError):
     pass
+
+# Each nested command is parsed again, one level deeper. Past this depth the
+# command is refused, as block-pentest-target.sh refuses shells nested deeper.
+MAX_NESTING = 3
+
+# The shells whose -c string is a command, as block-pentest-target.sh lists them.
+SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "fish"}
+
+# Inside backticks, bash drops a backslash before `$`, a backtick or a
+# backslash, so `\`` there is a nested backtick.
+BACKTICK_ESCAPE = re.compile(r"\\([$`\\])")
+
+# NAME=value before a command.
+ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+# A -c option group: -c, -lc, -ec.
+SHELL_C = re.compile(r"^-[A-Za-z]*c[A-Za-z]*$")
+
+# Words that can stand before `eval` where bash still runs it as a command:
+# a keyword, `command`, `builtin` or `time`. As any other word's argument,
+# as in `git log -S eval`, it is text.
+EVAL_LEADS = {"command", "builtin", "time", "!", "if", "then", "else", "elif",
+              "do", "while", "until", "{"}
+
+# Shell options that take the next word as their value.
+SHELL_OPTIONS_WITH_VALUE = {"-o", "+o", "-O", "+O", "--rcfile", "--init-file"}
 
 # Where bash starts a new word, so that a `#` after one starts a comment. Not
 # `)`: after `$(date)` bash keeps `#x` in the word, and after a subshell's `)`
@@ -196,7 +226,8 @@ def openers_in(line, state):
                 raise ValueError("cannot tell where heredoc %s ends; put the command in a file"
                                  % (word or "after <<"))
             if match:
-                delimiters.append(match.group(2))
+                delimiters.append((match.group(2), match.group(0).startswith("<<-"),
+                                   bool(match.group(1))))
                 at = match.end() - 1
                 word_start = False
             else:
@@ -221,9 +252,15 @@ def strip_heredocs(command):
     the lines after the heredoc into a string. A body that bash may join to
     the next line at a backslash, or that holds a heredoc the walk would drop,
     has no line the walk can trust as its end.
+
+    bash runs each `$( )` and backtick in the body of a heredoc whose
+    delimiter is not quoted. The command in each one, with its own heredoc
+    bodies and comments dropped, is added at the end as lines of their own,
+    so tokenise reads it as a command.
     """
     lines = command.split("\n")
     kept = []
+    found = []
     index = 0
     state = {"quote": None, "word_start": True, "lost": False, "closers": [], "tail": "",
              "inner": []}
@@ -242,20 +279,328 @@ def strip_heredocs(command):
                 raise ValueError('cannot tell where a heredoc inside "$( )" ends; put the command in a file')
             if body and (line.lstrip("\t") if dash else line) == delimiter:
                 state["inner"].pop(0)
-        for delimiter in delimiters:
+        for delimiter, dash, quoted in delimiters:
             # Bodies are never scanned for quotes: an apostrophe in prose is
-            # an apostrophe, not the start of a string.
-            while index < len(lines) and lines[index].strip() != delimiter:
+            # an apostrophe, not the start of a string. The end is the line
+            # bash compares: the delimiter alone, or after tabs for `<<-`.
+            start = index
+            while index < len(lines) and (lines[index].lstrip("\t") if dash else lines[index]) != delimiter:
                 index += 1
             if index >= len(lines):
                 raise ValueError("heredoc %s is never closed" % delimiter)
+            if not quoted:
+                found.extend(within_recursion(body_commands, "\n".join(lines[start:index])))
             index += 1
     if state["quote"]:
         raise ValueError("unbalanced %s quote" % state["quote"])
-    return "\n".join(kept)
+    return "\n".join(kept + found)
 
 
-def tokenise(command):
+def within_recursion(scan, text):
+    """scan(text), with Python's recursion limit read as a parse failure:
+    each nested `$( )` is one more call, and every caller handles ValueError."""
+    try:
+        return scan(text)
+    except RecursionError:
+        raise ValueError("substitutions nested too deep; put the inner command in a file")
+
+
+def substitution_end(text, at):
+    """The index after the `)` or backtick that closes the `$(` or backtick
+    at `at`, as bash reads it.
+
+    Inside `$( )` bash starts a new command: its own quotes, nested `$( )`
+    and backticks, comments and heredoc bodies, so a `)` in any of them does
+    not close it. A `case` there has a `)` that closes nothing, so it is
+    refused. Inside backticks, a backslash escapes the next character, and the
+    next backtick closes it.
+    """
+    if text[at] == "`":
+        index = at + 1
+        while index < len(text):
+            if text[index] == "\\":
+                index += 1
+            elif text[index] == "`":
+                return index + 1
+            index += 1
+        raise ValueError("a backtick is never closed")
+    index = at + 2
+    depth = 1
+    heredocs = []
+    word_start = True
+    while index < len(text):
+        char = text[index]
+        if char == "\n" and heredocs:
+            index = heredoc_bodies_end(text, index + 1, heredocs)
+            heredocs = []
+            word_start = True
+            continue
+        if char == "\\":
+            index += 2
+            word_start = False
+            continue
+        if char == "'":
+            close = text.find("'", index + 1)
+            if close < 0:
+                raise ValueError("a ' quote inside $( ) is never closed")
+            index = close + 1
+        elif char == '"':
+            index = quoted_end(text, index + 1, [])
+        elif text.startswith("$'", index):
+            index = ansi_quoted_end(text, index + 2)
+        elif text.startswith("${", index):
+            index = parameter_end(text, index)
+        elif char == "`" or text.startswith("$(", index):
+            index = arithmetic_end(text, index, []) or substitution_end(text, index)
+        elif char == "#" and word_start:
+            newline = text.find("\n", index)
+            index = len(text) if newline < 0 else newline
+            continue
+        elif text.startswith("<<", index) and not text.startswith("<<<", index):
+            match = INNER_HEREDOC.match(text, index)
+            if not match:
+                raise ValueError("cannot tell where a heredoc inside $( ) ends; put the command in a file")
+            heredocs.append((match.group(2), match.group(0).startswith("<<-")))
+            index = match.end()
+        elif text.startswith("<<<", index):
+            index += 3
+        elif word_start and re.match(r"case[ \t\n]", text[index:index + 5]):
+            raise ValueError("cannot tell where a $( ) with a case in it ends; put the command in a file")
+        else:
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+                if depth == 0:
+                    return index + 1
+            word_start = char in WORD_BREAKS or char in "\n)"
+            index += 1
+            continue
+        word_start = False
+    raise ValueError("a $( ) is never closed")
+
+
+def heredoc_bodies_end(text, index, heredocs):
+    """The index after the bodies of `heredocs`, which start at `index`.
+
+    bash 5.1 also ends a body in `$( )` at a line such as `EOF)`, which other
+    versions read as body text, so a line that starts with the delimiter and
+    is not the delimiter alone is refused.
+    """
+    for delimiter, dash in heredocs:
+        while True:
+            if index >= len(text):
+                raise ValueError("heredoc %s inside $( ) is never closed" % delimiter)
+            newline = text.find("\n", index)
+            end = len(text) if newline < 0 else newline
+            line = text[index:end]
+            line = line.lstrip("\t") if dash else line
+            index = end + 1
+            if line == delimiter:
+                break
+            if line.startswith(delimiter):
+                raise ValueError("cannot tell where heredoc %s inside $( ) ends; put the command in a file" % delimiter)
+    return min(index, len(text))
+
+
+def quoted_end(text, index, found):
+    """The index after the `"` that closes a double-quoted word whose text
+    starts at `index`. The text of each `$( )` and backtick in it goes on
+    `found`."""
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index + 1
+        if char == "`" or text.startswith("$(", index):
+            index = substitution_or_arithmetic_end(text, index, found)
+            continue
+        index += 1
+    raise ValueError('a " quote is never closed')
+
+
+def substitution_or_arithmetic_end(text, at, found):
+    """The index after the `$( )`, backtick or `$(( ))` at `at`. A
+    substitution's text goes on `found`, and so does each one in arithmetic."""
+    end = arithmetic_end(text, at, found)
+    if end is None:
+        end = substitution_end(text, at)
+        found.append(text[at:end])
+    return end
+
+
+def arithmetic_end(text, at, found):
+    """The index after the `))` that closes the `$((` at `at`, or None when it
+    is not arithmetic. A `<<` there is a shift. The text of each `$( )` and
+    backtick in it goes on `found`.
+
+    bash reads `$((git push) )` and `$((git push); true)` as a `$( )` that
+    starts with a subshell: the `(` after `$(` closes with no `)` right after
+    it. Then it is not arithmetic.
+    """
+    if not text.startswith("$((", at):
+        return None
+    inner = []
+    index = at + 3
+    depth = 2
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == "`" or text.startswith("$(", index):
+            index = substitution_or_arithmetic_end(text, index, inner)
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 1:
+                if text[index + 1:index + 2] != ")":
+                    return None
+                found.extend(inner)
+                return index + 2
+        index += 1
+    return None
+
+
+def parameter_end(text, at):
+    """The index after the `}` that closes the `${` at `at`. A `)` in it,
+    as in `${x:-)}`, does not close a `$( )` around it."""
+    index = at + 2
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+        elif char == "'":
+            close = text.find("'", index + 1)
+            if close < 0:
+                raise ValueError("a ' quote inside ${ } is never closed")
+            index = close + 1
+        elif char == '"':
+            index = quoted_end(text, index + 1, [])
+        elif text.startswith("${", index):
+            index = parameter_end(text, index)
+        elif char == "`" or text.startswith("$(", index):
+            index = substitution_or_arithmetic_end(text, index, [])
+        elif char == "}":
+            return index + 1
+        else:
+            index += 1
+    raise ValueError("a ${ } is never closed")
+
+
+def ansi_quoted_end(text, index):
+    """The index after the `'` that closes a `$'...'` word, where a backslash
+    escapes the next character."""
+    while index < len(text):
+        if text[index] == "\\":
+            index += 2
+            continue
+        if text[index] == "'":
+            return index + 1
+        index += 1
+    raise ValueError("a $' quote is never closed")
+
+
+def body_commands(body):
+    """The command in each `$( )` and backtick of an unquoted heredoc body,
+    with its own heredoc bodies and comments dropped. bash reads quotes there
+    as text, and a backslash escapes `$`, a backtick or a backslash."""
+    found = []
+    index = 0
+    while index < len(body):
+        if body[index] == "\\":
+            index += 2
+        elif body[index] == "`" or body.startswith("$(", index):
+            index = substitution_or_arithmetic_end(body, index, found)
+        else:
+            index += 1
+    return [strip_heredocs(inner_command(sub)) for sub in found]
+
+
+def quoted_substitutions(text):
+    """The text inside each `$( )` and backtick that sits in double quotes.
+
+    An unquoted one is not taken: shlex splits it at its `(` or backtick, so
+    the walk already reads the command in it. Its quotes are the walk's
+    quotes, so this walk goes on through it.
+    """
+    found = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+        elif text.startswith("$'", index):
+            index = ansi_quoted_end(text, index + 2)
+        elif char == "'":
+            close = text.find("'", index + 1)
+            if close < 0:
+                raise ValueError("unbalanced ' quote")
+            index = close + 1
+        elif char == '"':
+            index = quoted_end(text, index + 1, found)
+        else:
+            index += 1
+    return [inner_command(sub) for sub in found]
+
+
+def inner_command(substitution):
+    """The command inside a `$( )` or backtick, as written in the text."""
+    if substitution.startswith("`"):
+        return BACKTICK_ESCAPE.sub(r"\1", substitution[1:-1])
+    return substitution[2:-1]
+
+
+def shell_strings(tokens):
+    """The command string of each `bash -c` and the like, and the words after
+    each `eval` that bash runs as a command, joined as eval joins them."""
+    found = []
+    words = []
+    for token in tokens + ["\n"]:
+        if not is_separator(token):
+            words.append(token)
+            continue
+        for at, word in enumerate(words):
+            if word == "eval" and all(lead in EVAL_LEADS or ASSIGNMENT.match(lead)
+                                      for lead in words[:at]):
+                found.append(" ".join(words[at + 1:]))
+                break
+            if os.path.basename(word) in SHELLS:
+                string = shell_string(words[at + 1:])
+                if string is not None:
+                    found.append(string)
+        words = []
+    return found
+
+
+def shell_string(args):
+    """The string a shell runs from -c: its first word that is not an option,
+    when a -c group is among its options. `--` ends the options, and
+    `-o pipefail`, `-O extglob` and `--rcfile f` take a value."""
+    has_c = False
+    rest = list(args)
+    while rest:
+        word = rest.pop(0)
+        if word in ("--", "-"):
+            break
+        if word.startswith(("-", "+")):
+            has_c = has_c or bool(SHELL_C.match(word))
+            if word in SHELL_OPTIONS_WITH_VALUE and rest:
+                rest.pop(0)
+            continue
+        return word if has_c else None
+    return rest[0] if has_c and rest else None
+
+
+def tokenise(command, depth=0):
+    """The words of `command`, then, after a newline token, the words of each
+    command nested in it: a `$( )` or backtick in double quotes, the string of
+    a `bash -c`, and the words after `eval` (D138). A newline is a separator,
+    so each caller judges a nested command as one of its own."""
     command = CONTINUATION.sub("", command)
     if len(command) > MAX_COMMAND_CHARS:
         raise TooLong("the command is over %d characters" % MAX_COMMAND_CHARS)
@@ -263,7 +608,14 @@ def tokenise(command):
     lex.whitespace_split = True
     lex.whitespace = " \t\r"
     lex.commenters = ""                  # strip_heredocs drops comments, as bash reads them
-    return list(lex)
+    tokens = list(lex)
+    nested = within_recursion(quoted_substitutions, command) + shell_strings(tokens)
+    if nested and depth >= MAX_NESTING:
+        raise ValueError("commands nested more than %d deep; put the inner command in a file" % MAX_NESTING)
+    for inner in nested:
+        tokens.append("\n")
+        tokens.extend(tokenise(strip_heredocs(inner), depth + 1))
+    return tokens
 
 
 def is_separator(token):

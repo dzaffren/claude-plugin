@@ -618,6 +618,102 @@ git push --force origin main' \
   expect_match '^push --force origin main$' "$parsed" "heredoc in \"\$( )\": the push is read in $(printf '%q' "$form")"
 done
 
+# nested-git-commands: bash runs the command inside a double-quoted `$( )` or
+# backticks, so the parser reads it as a command of its own (v2.7.0 S2).
+for form in 'echo "$(git push --force origin main)"' \
+  'echo "`git push --force origin main`"' \
+  'echo "it'"'"'s $(git push --force origin main)"' \
+  'echo "$(echo "$(git push --force origin main)")"' \
+  'echo "`echo \`git push --force origin main\``"' \
+  'echo "$((git push --force origin main) )"' \
+  'echo "$((git push --force origin main); true)"' \
+  'echo "$(echo ${x:-)}; git push --force origin main)"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "nested: a push in a quoted substitution is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "nested: the block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook "echo \"done: \$(git commit -m 'fix: round refunds')\"" "$repo"
+expect_exit 2 "$hook_status" "nested: a commit in a quoted substitution on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "nested: the quoted-substitution block is the commit-on-main one"
+
+# bash runs each `$( )` and backtick in a heredoc body whose delimiter is not
+# quoted. A body line "  EOF" is body text to bash, so it does not end the body.
+for form in 'cat <<EOF
+$(git push --force origin main)
+EOF' \
+  'cat <<EOF
+`git push --force origin main`
+EOF' \
+  'cat <<EOF
+`echo \`git push --force origin main\``
+EOF' \
+  'cat <<EOF
+$(echo "it'"'"'s"; git push --force origin main)
+EOF' \
+  "cat <<EOF
+  EOF
+it's
+EOF
+git push --force origin main
+# '"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "nested: a push run from a heredoc body is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "nested: the heredoc-body block is the force-push one, $(printf '%q' "$form")"
+done
+
+# A shell's -c string and eval's words are a command.
+for form in "bash -c 'git push --force origin main'" \
+  "sh -lc 'git push --force origin main'" \
+  "sudo bash -c 'git push --force origin main'" \
+  "bash -o pipefail -c 'git push --force origin main'" \
+  "bash --rcfile /dev/null -c 'git push --force origin main'" \
+  "bash -O extglob -c 'git push --force origin main'" \
+  "bash +x -c 'git push --force origin main'" \
+  "bash -c -- 'git push --force origin main'" \
+  "eval 'git push --force origin main'" \
+  'eval git push --force origin main' \
+  "X=1 eval 'git push --force origin main'" \
+  "command eval 'git push --force origin main'" \
+  "if eval 'git push --force origin main'; then :; fi" \
+  "bash -c 'bash -c \"bash -c \\\"git push --force origin main\\\"\"'"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "nested: a push in a shell string is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "nested: the shell-string block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook "bash -c 'git commit -m x'" "$repo"
+expect_exit 2 "$hook_status" "nested: a commit in bash -c on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "nested: the bash -c block is the commit-on-main one"
+
+# Text stays text: single quotes and a quoted heredoc body run nothing.
+for form in "echo '\$(git push --force origin main)'" \
+  "cat <<'EOF'
+\$(git push --force origin main)
+EOF" \
+  'python3 release.py plan "$(git rev-parse --show-toplevel)"' \
+  'echo "$(( (1 << 2) * 3 ))"' \
+  'echo eval "it'"'"'s"' \
+  'cat <<EOF
+$(echo "it'"'"'s")
+EOF'; do
+  run_hook "$form"
+  expect_exit 0 "$hook_status" "nested: text is not a command, $(printf '%q' "$form")"
+done
+
+# A nested command the walk cannot read whole, or one nested too deep, is refused.
+for form in 'echo "$(case x in x) git push --force origin main;; esac)"' \
+  "bash -c 'bash -c \"bash -c \\\"bash -c x\\\"\"'"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "nested: an unreadable nested command is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked' "$hook_err" "nested: the refusal says why, $(printf '%q' "$form")"
+done
+
+# Python stops at about 1000 nested calls. The scan of 2000 nested "$( )" is
+# refused as a parse failure, not a crash, so every caller blocks it.
+deep=$(python3 -c 'print("echo " + "\"$(echo " * 2000 + "x" + ")\"" * 2000, end="")')
+parsed=$(printf '%s' "$deep" | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_exit 3 "$?" "nested: 2000 nested substitutions are a parse failure"
+expect_match 'nested too deep' "$parsed" "nested: the deep-nest refusal says why"
+
 # The standard commit form: the body stays in the -m word, as before.
 commit_form="git commit -m \"\$(cat <<'EOF'
 fix(x): subject
@@ -636,6 +732,15 @@ expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: t
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
+run_hook "$commit_form" "$repo"
+expect_exit 0 "$hook_status" "commit form: allowed on a feature branch"
+run_hook "gh pr create --title \"fix: round refunds\" --body \"\$(cat <<'EOF'
+Rounds each refund to the cent.
+
+It's tested.
+EOF
+)\"" "$repo"
+expect_exit 0 "$hook_status" "nested: the gh pr create heredoc body form is allowed"
 
 # The session sits on a feature branch. A mktemp -d repo on main is a Git Bash
 # path on Windows, /tmp/tmp.X, which native Python could not place, so the

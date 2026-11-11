@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-10 by /ship guard-parser-gaps
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-11 by /ship nested-git-commands
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -98,6 +98,7 @@ projects.
 | chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS | — |
 | review-leads | Shipped | /review keeps each lead it traced but could not settle under Needs validation, with the one unknown fact and a check, and the PR body shows it | — |
 | guard-parser-gaps | Shipped | The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file | — |
+| nested-git-commands | Shipped | The git guards now see a git call that bash runs inside another command: a $( ) or backticks in double quotes or a heredoc body, and a bash -c or eval string | — |
 
 ## More
 

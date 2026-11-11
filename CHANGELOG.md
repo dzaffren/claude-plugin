@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Security
 
 - zuko's force-push and commit-on-main guards missed a `git push --force` or a commit on `main` written after a heredoc whose delimiter they could not read, such as `<<E-F` or `<<'E-F'`, after a newline inside a quoted argument, or after `--attr-source`, `--config-env` or `--shallow-file` and its value. They now block each of these.
+- zuko's git guards missed a git call that bash runs inside another command. This covers a `$( )` or backticks inside double quotes or a heredoc body, and the string given to `bash -c` or `eval`. The guards now read each of these and block a force push, a commit on `main`, a secret or an attribution line there, as they do at the top level.
 
 ## [2.7.0] - 2026-11-10
 
