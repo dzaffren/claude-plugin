@@ -384,6 +384,8 @@ run_hook '/usr/bin/gh pr create --title "fix: round refunds" --body "Rounds each
 Co-Authored-By: Claude <noreply@anthropic.com>"'
 expect_exit 2 "$hook_status" "blocks attribution in a gh pr create run by its path"
 expect_match 'Blocked: the PR body carries Claude attribution\.' "$hook_err" "the gh path block names the PR body"
+run_hook 'X=/a/gh gh pr create --title "fix: round refunds" --body "Co-Authored-By: Claude <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "a NAME=value word ending in /gh does not hide the real gh"
 
 # Every spelling below is read from gh 2.92.0's own help, pasted verbatim:
 #   -b, --body string          Body for the pull request

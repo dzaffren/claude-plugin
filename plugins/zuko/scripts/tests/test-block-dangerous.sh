@@ -743,6 +743,19 @@ for form in '/usr/bin/git push --force origin main' \
   expect_exit 2 "$hook_status" "spellings: a path to git is read, $(printf '%q' "$form")"
   expect_match '^Blocked: force push' "$hook_err" "spellings: the path block is the force-push one, $(printf '%q' "$form")"
 done
+# A path-shaped word before the real git does not hide it, and the call the
+# old parser read from the first bare git is still read.
+for form in 'A=/x/git git push --force origin main' \
+  'GIT_DIR=/srv/git git push --force origin main' \
+  'env -C /srv/git git push --force origin main' \
+  'env -C /srv/git -u HOME git push --force origin main' \
+  'git push origin git +main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a word before git does not hide it, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the hidden-git block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook 'GIT_WORK_TREE=/home/me/git git commit -m x' "$repo"
+expect_exit 2 "$hook_status" "spellings: a GIT_WORK_TREE ending in /git does not hide a commit on main"
 run_hook '/usr/bin/git commit -m "fix: round refunds"' "$repo"
 expect_exit 2 "$hook_status" "spellings: /usr/bin/git commit on main is blocked"
 expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the path commit block is the commit-on-main one"

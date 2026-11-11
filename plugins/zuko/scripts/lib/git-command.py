@@ -779,7 +779,10 @@ def program_word(token, program):
     None. bash runs the same program from a path, and Windows from any case and
     with `.exe`, so the last part of a `/` or `\\` path is the name (D139). With
     a path, git's dashed form `git-push` is `git push`. Without one it is text,
-    as in `grep -rn git-commit docs/`."""
+    as in `grep -rn git-commit docs/`. A `NAME=value` word sets a variable,
+    so `A=/x/git` runs nothing."""
+    if ASSIGNMENT.match(token):
+        return None
     parts = re.split(r"[/\\]", token)
     name = parts[-1].lower()
     if name.endswith(".exe"):
@@ -813,21 +816,25 @@ def invocations_with_dirs(tokens, base, program="git"):
     moved = False
     at_start = True
     moving = False          # the last token was a tracked `cd` or `pushd`
-    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= prefix on this command
-    args = None
+    overridden = False      # a GIT_DIR= or GIT_WORK_TREE= word in this command
+    calls = []
     for token in tokens:
         if is_separator(token):
             if moving:
                 current = None                    # a bare `cd` goes home
-            if args is not None:
-                found.append((where(args), subcommand_args(args)))
-                args = None
+            found.extend((where(args), subcommand_args(args)) for args in calls)
+            calls = []
             if moved and token != "&&":
                 current = None
             at_start, moving, overridden = True, False, False
             continue
-        if args is not None:
-            args.append(token)
+        if re.match(r"GIT_(DIR|WORK_TREE)=", token):
+            overridden = True
+        if calls:
+            for args in calls:
+                args.append(token)
+            if (start := program_word(token, program)) is not None:
+                calls.append(start)
         elif moving:
             current = resolve(current, token)
             moving = False
@@ -837,18 +844,18 @@ def invocations_with_dirs(tokens, base, program="git"):
             else:
                 current, moved = None, True
         elif (start := program_word(token, program)) is not None:
-            args = start
-        elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
-            overridden = True
+            calls.append(start)
         at_start = False
-    if args is not None:
-        found.append((where(args), subcommand_args(args)))
+    found.extend((where(args), subcommand_args(args)) for args in calls)
     return found
 
 
 def invocations(tokens, program="git"):
     """The arguments of every `program` word, `git` unless told otherwise: the
-    bare name, or a path to it, as `program_word` reads it.
+    bare name, or a path to it, as `program_word` reads it. Each one runs to the
+    end of its command, so a later word starts a call of its own and is also an
+    argument of the one before: in `env -C /srv/git git push --force` the
+    `git` after the path is still read.
 
     That is the whole test. Quoting collapses "how to git commit" into one
     token, and heredoc bodies are gone by now, so prose can never produce a
@@ -862,19 +869,17 @@ def invocations(tokens, program="git"):
     drops redirections for it.
     """
     found = []
-    args = None
+    calls = []
     for token in tokens:
         if is_separator(token):
-            if args is not None:
-                found.append(subcommand_args(args))
-                args = None
+            found.extend(subcommand_args(args) for args in calls)
+            calls = []
             continue
-        if args is not None:
+        for args in calls:
             args.append(token)
-        elif (start := program_word(token, program)) is not None:
-            args = start
-    if args is not None:
-        found.append(subcommand_args(args))
+        if (start := program_word(token, program)) is not None:
+            calls.append(start)
+    found.extend(subcommand_args(args) for args in calls)
     return found
 
 
