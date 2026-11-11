@@ -129,6 +129,15 @@ GLOBAL_OPTIONS_WITH_VALUE = {
     "--super-prefix", "--attr-source", "--config-env", "--shallow-file",
 }
 
+# `-c alias.NAME=VALUE`. Alias names ignore case: `alias.P` sets `p`.
+ALIAS_OPTION = re.compile(r"^alias\.([^=]+)=(.*)$", re.S | re.I)
+
+# Where a config key `alias.NAME` stands in a word: the whole word, as `git
+# config` takes it, after the `=` of `GIT_CONFIG_KEY_0=` or `--config-env=`, or
+# in quotes, as GIT_CONFIG_PARAMETERS holds it. A message that only mentions
+# `alias.p` in a sentence does not match.
+ALIAS_KEY = r"(^|[='])alias\.%s('?=|'?$)"
+
 
 def openers_in(line, state):
     """Heredoc delimiters opened by this line, and where its comment starts
@@ -596,6 +605,68 @@ def shell_string(args):
     return rest[0] if has_c and rest else None
 
 
+def alias_strings(tokens):
+    """For each git call whose subcommand is an alias that the call sets with
+    `-c alias.NAME=VALUE`, the command git runs for it (D140). A plain value is
+    the same words with the alias replaced, so the next parse reads a chain.
+    A `!` value is a shell command with the call's arguments after it, in a
+    directory the walk cannot know. The call as written stays, because git
+    ignores an alias that has a builtin's name.
+
+    An alias the text names but does not show the value of, as in
+    `--config-env alias.p=X`, `GIT_CONFIG_KEY_0=alias.p` or `git config
+    alias.p push`, raises ValueError, and so does a value with `$` or a
+    backtick: shlex has dropped the quotes that say whether bash expands it."""
+    found = []
+    words = []
+    for index, token in enumerate(tokens + ["\n"]):
+        if not is_separator(token):
+            words.append((index, token))
+            continue
+        for at, (_, word) in enumerate(words):
+            if program_word(word, "git") != []:
+                continue
+            aliases = {}
+            read = set()
+            at_sub = at + 1
+            while at_sub < len(words):
+                option = words[at_sub][1]
+                if is_redirection(option):
+                    at_sub += 2
+                elif option.isdigit() and at_sub + 1 < len(words) and is_redirection(words[at_sub + 1][1]):
+                    at_sub += 1
+                elif option.startswith("-"):
+                    if option in GLOBAL_OPTIONS_WITH_VALUE and at_sub + 1 < len(words):
+                        value_at, value = words[at_sub + 1]
+                        alias = ALIAS_OPTION.match(value) if option == "-c" else None
+                        if alias and not any(ch in alias.group(2) for ch in "$`"):
+                            aliases[alias.group(1).lower()] = alias.group(2)
+                            read.add(value_at)
+                        at_sub += 2
+                    else:
+                        at_sub += 1
+                else:
+                    break
+            if at_sub >= len(words):
+                continue
+            name = words[at_sub][1].lower()
+            named = re.compile(ALIAS_KEY % re.escape(name), re.I)
+            if any(named.search(other) for other_at, other in enumerate(tokens)
+                   if other_at not in read):
+                raise ValueError("the git alias %s gets a value this guard cannot read; "
+                                 "write out the command it stands for" % name)
+            if name not in aliases:
+                continue
+            value = aliases[name]
+            plain = [word for _, word in words]
+            if value.startswith("!"):
+                found.append('cd "$GIT_PREFIX" && %s %s' % (value[1:], shlex.join(plain[at_sub + 1:])))
+            else:
+                found.append(shlex.join(plain[:at_sub] + shlex.split(value) + plain[at_sub + 1:]))
+        words = []
+    return found
+
+
 def tokenise(command, depth=0):
     """The words of `command`, then, after a newline token, the words of each
     command nested in it: a `$( )` or backtick in double quotes, the string of
@@ -609,7 +680,8 @@ def tokenise(command, depth=0):
     lex.whitespace = " \t\r"
     lex.commenters = ""                  # strip_heredocs drops comments, as bash reads them
     tokens = list(lex)
-    nested = within_recursion(quoted_substitutions, command) + shell_strings(tokens)
+    nested = (within_recursion(quoted_substitutions, command) + shell_strings(tokens)
+              + alias_strings(tokens))
     if nested and depth >= MAX_NESTING:
         raise ValueError("commands nested more than %d deep; put the inner command in a file" % MAX_NESTING)
     for inner in nested:

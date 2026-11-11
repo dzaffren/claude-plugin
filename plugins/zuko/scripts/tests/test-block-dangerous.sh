@@ -747,6 +747,24 @@ run_hook '/usr/bin/git commit -m "fix: round refunds"' "$repo"
 expect_exit 2 "$hook_status" "spellings: /usr/bin/git commit on main is blocked"
 expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the path commit block is the commit-on-main one"
 
+# An inline alias is read as the command git runs for it (D140).
+for form in 'git -c alias.p=push p --force origin main' \
+  'git -c alias.P=push p --force origin main' \
+  'git -c alias.a=b -c "alias.b=push --force" a origin main' \
+  'sudo /usr/bin/git -c alias.p=push p --force origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: an inline alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the alias block is the force-push one, $(printf '%q' "$form")"
+done
+parsed=$(printf '%s' 'git -c alias.p=push p --force origin main' | python3 "$scripts/lib/git-command.py" 2>&1)
+expect_match '^p --force origin main$' "$parsed" "spellings: the call as written is still printed"
+expect_match '^push --force origin main$' "$parsed" "spellings: the call with the alias replaced is printed too"
+run_hook 'git -c alias.push=status push --force origin main'
+expect_exit 2 "$hook_status" "spellings: git ignores an alias with a builtin's name, so the push it runs is still blocked"
+run_hook 'git -c alias.c=commit c -m "fix: round refunds"' "$repo"
+expect_exit 2 "$hook_status" "spellings: an alias for commit on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the alias commit block is the commit-on-main one"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"
@@ -773,6 +791,10 @@ expect_match '^Blocked: committing directly on main\. Create a branch first\.' "
 
 run_hook "cd $on_main && git commit -m x" "$repo"
 expect_exit 2 "$hook_status" "a commit after cd into a mktemp -d repo on main is blocked"
+
+run_hook "git -C $on_main -c alias.c=commit c -m 'fix: round refunds'" "$repo"
+expect_exit 2 "$hook_status" "spellings: an alias commit with -C into a repo on main is blocked from a feature branch"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the -C alias block is the commit-on-main one"
 rm -rf "$on_main"
 
 rm -rf "$work"
