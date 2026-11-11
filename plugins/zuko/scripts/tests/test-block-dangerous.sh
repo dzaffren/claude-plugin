@@ -729,6 +729,24 @@ run_hook "$commit_form" "$repo"
 expect_exit 2 "$hook_status" "commit form: blocked on main"
 expect_match '^Blocked: committing directly on main' "$hook_err" "commit form: the block is the commit-on-main one"
 
+# git-spellings: a path to git is git, and a path to git's dashed form is the
+# subcommand it names (D139).
+for form in '/usr/bin/git push --force origin main' \
+  './git push --force origin main' \
+  '~/bin/git push --force origin main' \
+  'git.exe push --force origin main' \
+  'GIT.EXE push --force origin main' \
+  '"C:/Program Files/Git/cmd/git.exe" push --force origin main' \
+  '"C:\Program Files\Git\cmd\git.exe" push --force origin main' \
+  '/usr/libexec/git-core/git-push --force origin main'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "spellings: a path to git is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "spellings: the path block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook '/usr/bin/git commit -m "fix: round refunds"' "$repo"
+expect_exit 2 "$hook_status" "spellings: /usr/bin/git commit on main is blocked"
+expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the path commit block is the commit-on-main one"
+
 git -C "$repo" checkout -q -b feat/thing
 run_hook 'git commit -m x'
 expect_exit 0 "$hook_status" "the same commit on a feature branch is allowed"

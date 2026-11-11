@@ -699,6 +699,23 @@ def git_dir(args, current):
     return current
 
 
+def program_word(token, program):
+    """The arguments a call of `program` starts with when bash runs `token`, or
+    None. bash runs the same program from a path, and Windows from any case and
+    with `.exe`, so the last part of a `/` or `\\` path is the name (D139). With
+    a path, git's dashed form `git-push` is `git push`. Without one it is text,
+    as in `grep -rn git-commit docs/`."""
+    parts = re.split(r"[/\\]", token)
+    name = parts[-1].lower()
+    if name.endswith(".exe"):
+        name = name[:-len(".exe")]
+    if name == program:
+        return []
+    if program == "git" and len(parts) > 1 and name.startswith("git-") and len(name) > len("git-"):
+        return [name[len("git-"):]]
+    return None
+
+
 def invocations_with_dirs(tokens, base, program="git"):
     """(directory, arguments) for every bare `program` token, `git` unless
     told otherwise. git's own options and a GIT_DIR= prefix apply to git only.
@@ -744,8 +761,8 @@ def invocations_with_dirs(tokens, base, program="git"):
                 moving = moved = True
             else:
                 current, moved = None, True
-        elif token == program:
-            args = []
+        elif (start := program_word(token, program)) is not None:
+            args = start
         elif re.match(r"GIT_(DIR|WORK_TREE)=", token):
             overridden = True
         at_start = False
@@ -778,8 +795,8 @@ def invocations(tokens, program="git"):
             continue
         if args is not None:
             args.append(token)
-        elif token == program:
-            args = []
+        elif (start := program_word(token, program)) is not None:
+            args = start
     if args is not None:
         found.append(subcommand_args(args))
     return found

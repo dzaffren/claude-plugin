@@ -131,7 +131,7 @@ Scenario: text stays text, and the standard forms still pass
 **In:**
 
 - A word whose last path part is `git`, `git.exe`, `gh` or `gh.exe`, in any
-  case for `.exe`, with `/` or `\` as the path separator.
+  case, with `/` or `\` as the path separator (O7).
 - A word with a `/` or `\` whose last part is `git-NAME`: git's dashed form,
   read as `git NAME`.
 - `-c alias.NAME=VALUE` among git's own options, for the call whose
@@ -284,6 +284,7 @@ Recorded as D139, D140.
 | O4 | `/usr/bin/gh pr create` with a Claude co-author body passes the attribution guard. Include gh paths here? | question | spec p1 | user | Resolved | Include. One rule for git and gh, and one test in `test-block-attribution.sh`. 2026-11-11 |
 | O5 | shlex drops quotes, so the parser cannot tell `-c 'alias.p=!f() { git push "$@"; }; f'` (bash keeps the `$`) from `-c "alias.p=$X"` (bash expands it). This slice refuses each alias value with `$` or a backtick, so the common `!f() { ...; }; f` alias form is refused too | flag | spec p1 | user | Accepted risk | Claude rarely writes an inline shell alias, and the refusal names the fix: split the command. Reading the raw quotes adds code to the part of the parser that broke most in #146 and #147. 2026-11-11 |
 | O6 | git's dashed form is read only in a word with a path separator. A bare `git-push --force origin main` passes, but it runs only when git's libexec folder is on PATH. It is not on PATH on this Linux machine. I did not check Git for Windows | flag | spec p1 | user | Accepted risk | Reading every `git-NAME` word would block `grep -rn git-commit docs/` on `main` as a commit. 2026-11-11 |
+| O7 | Scope said the last path part is `git` or `gh`, "in any case for `.exe`". Windows also runs `GIT push` as git | flag | build | user | Decided alone | Chose: compare the whole name in any case, so `GIT.EXE` and `Git` are read as git. Other: ignore case for `.exe` only. Undo: in `program_word`, lower-case only the `.exe` check. 2026-11-11 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
