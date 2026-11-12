@@ -29,7 +29,7 @@ deny() { echo "$1" >&2; exit 2; }
 # block-attribution.sh still fall back to the raw text; this hook runs on every
 # Bash call, so its block covers theirs. The parser writes to stderr only when
 # it fails, and then its last ": " part is the reason.
-git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" 2>&1)
+git_args=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --base "$base" 2>&1)
 parsed=$?
 [ "$parsed" -eq 4 ] && deny "Blocked: this command is over 65536 characters, too long to check. Put the long text in a heredoc or a file, then run it again."
 [ "$parsed" -ne 0 ] && deny "Blocked: this command could not be checked: ${git_args##*: }. bash runs the lines before a broken quote or heredoc. Close it, or put the text in a file, then run it again."
@@ -45,6 +45,39 @@ fi
 if grep -qE "$expand_re" <<<"$git_args"; then
   deny "Blocked: this push has a brace or glob character, which the shell can expand into a force flag. Write the arguments out in full, or ask the user first."
 fi
+
+# A push deletes a branch on the remote with a :name refspec, or with each
+# name after --delete, -d bundled or any prefix of --delete (git takes --de).
+# --prune deletes each remote branch that has no local one. Only main and
+# master are judged (D30), and a name the text cannot show can be either.
+deletes_main() {   # deletes_main <push call>
+  local word words name deleting=
+  read -r -a words <<<"$1"
+  for word in "${words[@]:1}"; do
+    case "$word" in
+      --de*) deleting=1 ;;
+      --pru*) return 0 ;;
+      --*) ;;
+      -*d*) deleting=1 ;;
+    esac
+  done
+  for word in "${words[@]:1}"; do
+    case "$word" in
+      -*) continue ;;
+      :?*) name=${word#:} ;;
+      *) [ -n "$deleting" ] || continue; name=$word ;;
+    esac
+    case "${name##*/}" in main|master) return 0 ;; esac
+    case "$name" in *[\$\`]*) return 0 ;; esac
+  done
+  return 1
+}
+
+while IFS= read -r call; do
+  case "$call" in push|push\ *)
+    deletes_main "$call" && deny "Blocked: this push can delete main or master on the remote. Ask the user first." ;;
+  esac
+done <<<"$git_args"
 
 if grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)[[:space:]]+(/([[:space:]]|$)|/[a-z]+([[:space:]]|$)|~|\.\.)' <<<"$cmd"; then
   deny "Blocked: recursive delete of a top-level or home path."

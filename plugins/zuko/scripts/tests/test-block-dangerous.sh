@@ -1080,4 +1080,152 @@ expect_exit 2 "$hook_status" "branch-switch-commit: a commit after more than 64 
 expect_match '^Blocked: this command could not be checked' "$hook_err" "branch-switch-commit: the 64-dir refusal says why"
 rm -rf "$parent"
 
+# config-aliases: git reads aliases and each remote's push refspecs from its
+# config files, so one that an earlier command saved changes what a later
+# command does (v2.6.0 N9). Each form passed the guard on main on 2026-11-12.
+cfg="$work/cfg"
+git init -q -b main "$cfg"
+git -C "$cfg" -c user.email=t@example.com -c user.name=Tester commit -q --allow-empty --no-verify -m "chore(repo): first commit"
+git -C "$cfg" config alias.pf 'push --force'
+git -C "$cfg" config alias.ci commit
+git -C "$cfg" config alias.pub '!git push --force'
+git -C "$cfg" config alias.fp '!f() { git push "$@"; }; f'
+git -C "$cfg" config alias.a b
+git -C "$cfg" config alias.b 'push --force'
+git -C "$cfg" config alias.st 'status -sb'
+git -C "$cfg" config alias.lg 'log --oneline'
+git -C "$cfg" config alias.log 'log --oneline'
+parsed=$(printf '%s' 'git pf origin main' | python3 "$scripts/lib/git-command.py" --base "$cfg" 2>&1)
+expect_match '^push --force origin main$' "$parsed" "config-aliases: the call with the config alias replaced is printed"
+for form in 'git pf origin main' 'git pub origin main' 'git fp --force origin main' 'git a origin main' \
+  'git -C . pf origin main' 'sudo git pf origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a config alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "config-aliases: the config alias block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook "cd $cfg && git pf origin main" "$repo"
+expect_exit 2 "$hook_status" "config-aliases: the alias of the repo a cd moves to is read"
+run_hook "git -C $cfg pf origin main" "$repo"
+expect_exit 2 "$hook_status" "config-aliases: the alias of the repo -C names is read"
+run_hook 'git ci -m x' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config alias for commit on main is blocked"
+expect_match '^Blocked: committing directly on main\. Create a branch first\.' "$hook_err" "config-aliases: the config alias commit block is the commit-on-main one"
+printf '[alias]\n\tpp = push --force\n' >"$work/global.cfg"
+GIT_CONFIG_GLOBAL="$work/global.cfg" run_hook 'git pp origin main' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: an alias in the global config is read"
+
+# A + refspec in remote.*.push forces a push with no refspec, and one that
+# names only the source. A true remote.*.mirror makes it a mirror push.
+run_hook 'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: an inline + push refspec is read"
+expect_match '^Blocked: force push' "$hook_err" "config-aliases: the inline refspec block is the force-push one"
+git -C "$cfg" config remote.origin.push +main:main
+for form in 'git push origin' 'git push origin main' 'git push' 'git -c alias.p=push p origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a config + push refspec is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "config-aliases: the config refspec block is the force-push one, $(printf '%q' "$form")"
+done
+git -C "$cfg" config remote.origin.push refs/heads/main:refs/heads/main
+run_hook 'git push origin' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a config push refspec with no + passes"
+git -C "$cfg" config --unset remote.origin.push
+git -C "$cfg" config remote.origin.mirror true
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config mirror flag is read"
+git -C "$cfg" config remote.origin.mirror false
+run_hook 'git push origin' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a false mirror flag passes"
+git -C "$cfg" config --unset remote.origin.mirror
+
+# A command that sets the push config it then reads is refused.
+for form in 'git config remote.origin.push +main:main && git push origin' \
+  'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main:main git push origin' \
+  'git --config-env remote.origin.push=SPEC push origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a set push key is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.origin\.push' "$hook_err" "config-aliases: the refusal names the key, $(printf '%q' "$form")"
+done
+
+# The review found the refusal ran only on a call written as push, in the
+# same words as the set: a push that an alias or a bash -c runs passed, and so
+# did a set inside a bash -c. Each form force-pushed main in a scratch repo.
+git -C "$cfg" config alias.p push
+for form in 'git config remote.origin.push +main:main && bash -c "git push origin"' \
+  'bash -c "git config remote.origin.push +main:main" && git push origin' \
+  'git config remote.origin.push +main:main && git -c alias.q=push q origin' \
+  'git config remote.origin.push +main:main && git p origin' \
+  "git -c remote.origin.push=+main:main -c 'alias.q=!git push' q origin"; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a set push key is refused for a nested push, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.origin\.push' "$hook_err" "config-aliases: the nested refusal names the key, $(printf '%q' "$form")"
+done
+for form in 'bash -c "git push origin main"' 'git p origin main' 'git -c alias.q=push q origin main' \
+  'git -c remote.origin.push=refs/heads/main:refs/heads/main status && git push origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a nested push with no set key passes, $(printf '%q' "$form")"
+done
+git -C "$cfg" config --unset alias.p
+
+# The review found two writes that name no key: git remote add --mirror, and
+# a write to a config file. git does a mirror or a forced push after each.
+for form in 'git remote add --mirror=push backup git@github.com:acme/shop.git && git push backup' \
+  'git remote add --mirror backup git@github.com:acme/shop.git && git push backup' \
+  'git remote add --mi=push backup git@github.com:acme/shop.git && git push backup'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a push after a mirror remote add is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.\*\.mirror' "$hook_err" "config-aliases: the mirror refusal says why, $(printf '%q' "$form")"
+done
+for form in "printf '[remote \"origin\"]\\n\\tpush = +main:main\\n' >> .git/config && git push origin" \
+  'cat push.cfg >> ~/.gitconfig && git push origin' \
+  "bash -c 'tee -a .git/config < push.cfg' && git push origin"; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a push after a config file write is refused, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: the git push reads git's config file" "$hook_err" "config-aliases: the file refusal says why, $(printf '%q' "$form")"
+done
+for form in 'git remote add --mirror=fetch backup git@github.com:acme/shop.git && git push origin main' \
+  'git remote add backup git@github.com:acme/shop.git && git push -u backup feat/thing' \
+  'git add .gitconfig && git push origin feat/thing' 'cat .git/config' 'git remote -v && git push origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a push after a remote add or a config file read passes, $(printf '%q' "$form")"
+done
+
+# The review found a plain glob refspec in remote.*.push put a * on the push
+# line, so every push was blocked as a shell glob. git gives it no shell, and
+# a refspec with no + or : neither forces nor deletes.
+git -C "$cfg" config remote.origin.push 'refs/heads/*:refs/heads/*'
+parsed=$(printf '%s' 'git push origin' | python3 "$scripts/lib/git-command.py" --base "$cfg" 2>&1)
+expect_no_match '\*' "$parsed" "config-aliases: a plain config refspec adds no line"
+for form in 'git push -u origin feat/thing' 'git push origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a plain glob config refspec passes, $(printf '%q' "$form")"
+done
+git -C "$cfg" config remote.origin.push '+refs/heads/*:refs/heads/*'
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a + glob config refspec is still a force push"
+expect_match '^Blocked: force push' "$hook_err" "config-aliases: the + glob config refspec block is the force-push one"
+git -C "$cfg" config remote.origin.push :main
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config refspec that deletes main is blocked"
+expect_match '^Blocked: this push can delete main or master on the remote' "$hook_err" "config-aliases: the config delete block says why"
+git -C "$cfg" config --unset remote.origin.push
+
+# A push that can delete main or master on the remote is blocked. A delete of
+# a feature branch after its merge passes.
+for form in 'git push origin :main' 'git push --delete origin main' 'git push -d origin master' \
+  'git push --de origin refs/heads/main' 'git push origin --delete "$BRANCH"' 'git push -qd origin main' \
+  'git push --prune origin main' 'git push origin :refs/heads/master'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a delete of main is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: this push can delete main or master on the remote\. Ask the user first\.' "$hook_err" "config-aliases: the delete block says why, $(printf '%q' "$form")"
+done
+for form in 'git push origin --delete feat/basket' 'git push origin :feat/basket' 'git push -d origin fix/refund-cap' \
+  'git st' 'git lg -5' 'git log -1' 'git push origin main' 'git push -u origin feat/thing' 'git push origin :' \
+  'git fetch --prune origin' 'git push --dry-run origin main' 'git log --oneline main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a standard form passes on main, $(printf '%q' "$form")"
+done
+git -C "$cfg" checkout -q -b feat/thing
+run_hook 'git ci -m x' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a config alias for commit passes on a feature branch"
+
 rm -rf "$work"

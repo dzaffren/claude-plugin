@@ -13,8 +13,12 @@ start of a word, so the `#` in `x#` or `${#name}` is part of the word.
 A command that bash runs from inside another one is a command too (D138): a
 `$( )` or backtick in double quotes or in an unquoted heredoc body, the
 string of a `bash -c`, and the words after `eval`. So is the command that git
-runs for an alias set with `-c alias.NAME=VALUE` (D140). An alias whose value
-the text does not show is refused.
+runs for an alias set with `-c alias.NAME=VALUE` (D140), or saved in git's
+config, and a push with each refspec that `remote.*.push` adds to it. The
+config is the one git reads in each directory the command can run in, from
+the start dir that `--base <dir>`, `--dir` or `--candidate-dirs` names, or
+else this process's working directory. A key whose value the text does not
+show is refused.
 
 With `--dir <base>`, each line is prefixed with the directory that invocation
 runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
@@ -159,6 +163,38 @@ ALIAS_OPTION = re.compile(r"^alias\.([^=]+)=(.*)$", re.S | re.I)
 # in quotes, as GIT_CONFIG_PARAMETERS holds it. A message that only mentions
 # `alias.p` in a sentence does not match.
 ALIAS_KEY = r"(^|[='])alias\.%s('?=|'?$)"
+
+# The config keys that change what a git call runs: an alias, and a remote's
+# push refspecs and mirror flag, as `git config --get-regexp` takes them.
+CONFIG_KEYS = r"^(alias\..*|remote\..*\.(push|mirror))$"
+
+# `-c remote.NAME.push=VALUE` and `-c remote.NAME.mirror=VALUE`.
+PUSH_OPTION = re.compile(r"^remote\..*\.(push|mirror)=(.*)$", re.S | re.I)
+
+# Where a push key stands in a word, in the places ALIAS_KEY looks.
+PUSH_KEY = re.compile(r"(?:^|[='])(remote\.[^=']*\.(?:push|mirror))(?:'?=|'?$)", re.I)
+
+# A word that names a config file git reads: `.git/config`, `~/.gitconfig`,
+# `/etc/gitconfig` or `~/.config/git/config`. A write to it names no key.
+CONFIG_FILE = re.compile(r"git/config|gitconfig", re.I)
+
+# The words a `!` alias gets as `$@` or `$*`, quoted or not.
+ALL_ARGS = re.compile(r'"\$[@*]"|\$[@*]')
+
+# The values git reads as false. A key with no `=` is true.
+FALSE = {"false", "no", "off", "0", ""}
+
+# The start dir whose config git reads: the <base> of --base, --dir or
+# --candidate-dirs, or else this process's working directory.
+config_base = None
+
+# What read_config found in each directory, so each parse asks git once.
+config_cache = {}
+
+# What one parse found across each command nested in it: why the push config
+# can change before git reads it, and whether a push runs. A push that an
+# alias or a `bash -c` runs reads the config that the outer text sets.
+parse_state = {"sets": [], "push": False}
 
 
 def openers_in(line, state):
@@ -627,20 +663,69 @@ def shell_string(args):
     return rest[0] if has_c and rest else None
 
 
-def alias_strings(tokens):
-    """For each git call whose subcommand is an alias that the call sets with
-    `-c alias.NAME=VALUE`, the command git runs for it (D140). A plain value is
-    the same words with the alias replaced, so the next parse reads a chain.
-    A `!` value is a shell command with the call's arguments after it, in a
-    directory the walk cannot know. The call as written stays, because git
-    ignores an alias that has a builtin's name.
+def read_config(directory):
+    """The (key, value) pairs of CONFIG_KEYS that git reads in `directory`:
+    the system, global and repo files, with their includes, in git's order.
+    A key with no `=` has the value None. A git that cannot start, or a
+    directory git cannot read, gives none, as git then runs no alias there."""
+    if directory not in config_cache:
+        pairs = []
+        try:
+            result = subprocess.run(program.argv(["git", "-C", native_path(directory), "config", "--null",
+                                                  "--get-regexp", CONFIG_KEYS]),
+                                    capture_output=True, timeout=5)
+        except subprocess.TimeoutExpired:
+            raise ValueError("git config did not answer in 5 seconds")
+        except (OSError, ValueError):
+            result = None
+        if result is not None and result.returncode == 0:
+            for entry in result.stdout.decode("utf-8", "surrogateescape").split("\0"):
+                if entry:
+                    key, newline, value = entry.partition("\n")
+                    pairs.append((key, value if newline else None))
+        config_cache[directory] = pairs
+    return config_cache[directory]
 
-    An alias the text names but does not show the value of, as in
+
+def config_entries(tokens):
+    """read_config of each directory a git call in `tokens` can run in: the
+    start dir, the project dir, and each one that candidate_dirs lists."""
+    dirs = candidate_dirs(tokens, config_base or os.getcwd())
+    if os.environ.get("CLAUDE_PROJECT_DIR"):
+        dirs.append(os.environ["CLAUDE_PROJECT_DIR"])
+    return [pair for directory in dict.fromkeys(dirs) for pair in read_config(directory)]
+
+
+def config_strings(tokens):
+    """For each git call, the commands git runs for the config it reads (D140,
+    config-aliases). An alias that the call sets with `-c alias.NAME=VALUE`,
+    or else each one in git's config, is the same words with the alias
+    replaced, so the next parse reads a chain. A `!` value is a shell command
+    with the call's arguments after it and in place of `$@`, in a directory
+    the walk cannot know. The call as written stays, because git ignores an
+    alias that has a builtin's name.
+
+    The second list holds the words of each push call with a `remote.*.push`
+    refspec that forces or deletes, `+` or `:`, at its end, and with
+    `--mirror` for a true `remote.*.mirror`. git gives these values to no
+    shell, so the words are not parsed again, and a plain refspec, glob or
+    not, is left out. The call as written stays here too: a refspec on it
+    still takes a `+`.
+
+    A key the text names but does not show the value of, as in
     `--config-env alias.p=X`, `GIT_CONFIG_KEY_0=alias.p` or `git config
-    alias.p push`, raises ValueError, and so does a value with `$` or a
-    backtick: shlex has dropped the quotes that say whether bash expands it."""
+    alias.p push`, raises ValueError, and so does an inline value with `$` or
+    a backtick: shlex has dropped the quotes that say whether bash expands it.
+    A push key in such a place, a word outside a git call that names a config
+    file, and a `git remote` with `--mirror` go to parse_state, which tokenise refuses when a
+    push runs anywhere in the command. An inline push key of a call whose
+    alias is a `!` value goes there too: git hands it to the shell's git."""
     found = []
+    pushed = []
     words = []
+    config = None
+    read_all = set()
+    git_words = set()
     for index, token in enumerate(tokens + ["\n"]):
         if not is_separator(token):
             words.append((index, token))
@@ -648,7 +733,9 @@ def alias_strings(tokens):
         for at, (_, word) in enumerate(words):
             if program_word(word, "git") != []:
                 continue
+            git_words.update(index for index, _ in words[at:])
             aliases = {}
+            pushes = []
             read = set()
             at_sub = at + 1
             while at_sub < len(words):
@@ -661,8 +748,12 @@ def alias_strings(tokens):
                     if option in GLOBAL_OPTIONS_WITH_VALUE and at_sub + 1 < len(words):
                         value_at, value = words[at_sub + 1]
                         alias = ALIAS_OPTION.match(value) if option == "-c" else None
+                        push = PUSH_OPTION.match(value) if option == "-c" else None
                         if alias and not any(ch in alias.group(2) for ch in "$`"):
                             aliases[alias.group(1).lower()] = alias.group(2)
+                            read.add(value_at)
+                        elif push and not any(ch in push.group(2) for ch in "$`"):
+                            pushes.append((push.group(1).lower(), push.group(2)))
                             read.add(value_at)
                         at_sub += 2
                     else:
@@ -672,43 +763,82 @@ def alias_strings(tokens):
             if at_sub >= len(words):
                 continue
             name = words[at_sub][1].lower()
+            hidden = [other for other_at, other in enumerate(tokens) if other_at not in read]
             named = re.compile(ALIAS_KEY % re.escape(name), re.I)
-            if any(named.search(other) for other_at, other in enumerate(tokens)
-                   if other_at not in read):
+            if any(named.search(other) for other in hidden):
                 raise ValueError("the git alias %s gets a value this guard cannot read; "
                                  "write out the command it stands for" % name)
-            if name not in aliases:
-                continue
-            value = aliases[name]
             plain = [word for _, word in words]
-            if value.startswith("!"):
-                found.append('cd "$GIT_PREFIX" && %s %s' % (value[1:], shlex.join(plain[at_sub + 1:])))
+            if name in aliases:
+                values = [aliases[name]]
             else:
-                found.append(shlex.join(plain[:at_sub] + shlex.split(value) + plain[at_sub + 1:]))
+                config = config_entries(tokens) if config is None else config
+                values = [value for key, value in config if key == "alias." + name and value]
+            for value in values:
+                if value.startswith("!"):
+                    args = shlex.join(plain[at_sub + 1:])
+                    found.append('cd "$GIT_PREFIX" && %s %s' % (ALL_ARGS.sub(lambda _: args, value[1:]), args))
+                elif [part.lower() for part in shlex.split(value)[:1]] != [name]:
+                    found.append(shlex.join(plain[:at_sub] + shlex.split(value) + plain[at_sub + 1:]))
+            if not any(value.startswith("!") for value in values):
+                read_all |= read
+            if name == "remote" and any(other.startswith("--mi") and not other.endswith("=fetch")
+                                        for _, other in words[at_sub + 1:]):
+                parse_state["sets"].append("the git push reads remote.*.mirror, which git remote add "
+                                           "--mirror sets; run the git remote add first, then the push")
+            if name != "push":
+                continue
+            parse_state["push"] = True
+            if not pushes:
+                config = config_entries(tokens) if config is None else config
+                pushes = [(key.rsplit(".", 1)[1], value) for key, value in config
+                          if key.startswith("remote.") and key.endswith((".push", ".mirror"))]
+            for kind, value in pushes:
+                if kind == "push" and value and value.startswith(("+", ":")):
+                    pushed.append(plain + [value])
+                elif kind == "mirror" and (value is None or value.lower() not in FALSE):
+                    pushed.append(plain + ["--mirror"])
         words = []
-    return found
+    for other_at, other in enumerate(tokens):
+        if other_at in read_all:
+            continue
+        if key := PUSH_KEY.search(other):
+            parse_state["sets"].append("the git push reads %s, which this command sets; "
+                                       "run the git config first, then the push" % key.group(1))
+        elif other_at not in git_words and CONFIG_FILE.search(other):
+            parse_state["sets"].append("the git push reads git's config file, which this command "
+                                       "names; run that command first, then the push")
+    return found, pushed
 
 
 def tokenise(command, depth=0):
     """The words of `command`, then, after a newline token, the words of each
     command nested in it: a `$( )` or backtick in double quotes, the string of
-    a `bash -c`, and the words after `eval` (D138). A newline is a separator,
-    so each caller judges a nested command as one of its own."""
+    a `bash -c`, the words after `eval` (D138), and each git call as its
+    config makes git run it. A newline is a separator, so each caller judges
+    a nested command as one of its own."""
     command = CONTINUATION.sub("", command)
     if len(command) > MAX_COMMAND_CHARS:
         raise TooLong("the command is over %d characters" % MAX_COMMAND_CHARS)
+    if depth == 0:
+        parse_state["sets"], parse_state["push"] = [], False
     lex = shlex.shlex(command, posix=True, punctuation_chars="();<>|&`\n")
     lex.whitespace_split = True
     lex.whitespace = " \t\r"
     lex.commenters = ""                  # strip_heredocs drops comments, as bash reads them
     tokens = list(lex)
-    nested = (within_recursion(quoted_substitutions, command) + shell_strings(tokens)
-              + alias_strings(tokens))
+    expanded, pushed = config_strings(tokens)
+    nested = within_recursion(quoted_substitutions, command) + shell_strings(tokens) + expanded
     if nested and depth >= MAX_NESTING:
         raise ValueError("commands nested more than %d deep; put the inner command in a file" % MAX_NESTING)
     for inner in nested:
         tokens.append("\n")
         tokens.extend(tokenise(strip_heredocs(inner), depth + 1))
+    for words in pushed:
+        tokens.append("\n")
+        tokens.extend(words)
+    if depth == 0 and parse_state["push"] and parse_state["sets"]:
+        raise ValueError(parse_state["sets"][0])
     return tokens
 
 
@@ -968,7 +1098,13 @@ def hidden_words(tokens, program="git"):
 
 
 def main():
+    global config_base
     command = sys.stdin.read()
+    args = sys.argv[1:]
+    if args[:1] == ["--base"] and len(args) >= 2:
+        config_base, args = args[1], args[2:]
+    elif len(args) == 2 and args[0] in ("--dir", "--candidate-dirs"):
+        config_base = args[1]
     try:
         tokens = tokenise(strip_heredocs(command))
     except TooLong as err:
@@ -980,21 +1116,21 @@ def main():
     # One call per line, for the shell guards. A newline inside a quoted word
     # prints as a space, as the space between words does, so one call never
     # splits into two lines that each miss the check.
-    if len(sys.argv) == 2 and sys.argv[1] == "--hidden-words":
+    if args == ["--hidden-words"]:
         return 1 if hidden_words(tokens) else 0
-    if len(sys.argv) == 3 and sys.argv[1] == "--candidate-dirs":
+    if len(args) == 2 and args[0] == "--candidate-dirs":
         try:
-            print("\n".join(candidate_dirs(tokens, sys.argv[2])))
+            print("\n".join(candidate_dirs(tokens, args[1])))
         except ValueError as err:
             sys.stderr.write("git-command.py: cannot check the command: %s\n" % err)
             return 3
         return 0
-    if len(sys.argv) == 3 and sys.argv[1] == "--dir":
-        for where, args in invocations_with_dirs(tokens, sys.argv[2]):
-            print(("%s\t%s" % (where or "", " ".join(args))).replace("\n", " "))
+    if len(args) == 2 and args[0] == "--dir":
+        for where, call in invocations_with_dirs(tokens, args[1]):
+            print(("%s\t%s" % (where or "", " ".join(call))).replace("\n", " "))
         return 0
-    for args in invocations(tokens):
-        print(" ".join(args).replace("\n", " "))
+    for call in invocations(tokens):
+        print(" ".join(call).replace("\n", " "))
     return 0
 
 
