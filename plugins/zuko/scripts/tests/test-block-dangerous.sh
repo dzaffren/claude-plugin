@@ -810,7 +810,128 @@ for form in 'grep -rn git-commit docs/' \
   expect_exit 0 "$hook_status" "spellings: a standard form passes on main, $(printf '%q' "$form")"
 done
 
+# main-branch-commits: six more subcommands make commits on the branch they run
+# on. Each passed the guard on main on 2026-11-12 (v2.6.0 N9).
+for form in 'git merge feat' 'git cherry-pick feat' 'git rebase feat' 'git pull' \
+  'git revert HEAD' 'git am x.patch'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "main-branch-commits: blocked on main, $form"
+  sub=${form#git }
+  expect_match "^Blocked: git ${sub%% *} " "$hook_err" "main-branch-commits: the block names the subcommand, $form"
+  expect_match 'Create a branch first[.,]' "$hook_err" "main-branch-commits: the block says to create a branch, $form"
+done
+run_hook 'git pull' "$repo"
+expect_match 'git pull --ff-only' "$hook_err" "main-branch-commits: the pull block names --ff-only"
+
+# A word that can undo --ff-only, or that the allow-list does not know, is
+# blocked: the printed line has lost its quotes, so `-m "a --ff-only"` reads as
+# --ff-only. git 2.52.0 takes the last of --ff, --no-ff and --ff-only.
+for form in 'git merge --no-ff feat' 'git pull --rebase' 'git merge --continue' \
+  'git cherry-pick --continue' 'git rebase -i HEAD~2' 'git merge' \
+  'git -c alias.m=merge m feat' 'git -C . merge feat' 'cd . && git rebase feat' \
+  'git status && git merge feat' 'echo "$(git cherry-pick feat)"' \
+  "bash -c 'git revert HEAD'" '/usr/bin/git am x.patch' \
+  'git merge --ff-only --no-ff feat' "git merge -m 'a --ff-only' feat" \
+  'git pull --ff-only $OPTS' 'git pull --ff-only `echo --no-ff`' \
+  'git merge --ff-only origin/main`echo " --no-ff"`' \
+  'git pull --ff-only $(echo --no-ff)' "git pull --ff-only \$'--no-ff'" \
+  'git merge --ff-only {--no-ff,feat}' 'git pull --ff-only origin "main --no-ff"' \
+  'git merge --ff-only > --no-ff' 'git pull --abort' 'git pull --quit' \
+  'git merge --ff-only -m x feat' 'git cherry-pick --ff-only feat' \
+  'git merge --abort && git merge feat' \
+  'echo --no-ff feat | xargs git merge --ff-only' 'echo --no-ff feat | xargs git pull --ff-only' \
+  'xargs git merge --ff-only < args.txt' 'echo --no-ff | xargs -I{} git merge --ff-only {} feat' \
+  'find . -name x -exec git merge --ff-only {} +' 'sudo git pull --ff-only'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "main-branch-commits: blocked on main, $(printf '%q' "$form")"
+done
+run_hook "git -C $repo merge feat" "$wt"
+expect_exit 2 "$hook_status" "main-branch-commits: -C into main is blocked from a feature worktree"
+
+# A fast-forward makes no commit, and an abort or quit ends one without a
+# commit. The forms below are the ones the logs hold.
+for form in 'git pull --ff-only' 'git pull -q --ff-only origin main' \
+  'git merge --ff-only origin/main 2>&1' 'git merge -q --ff-only origin/main' \
+  'git pull --ff-only origin main 2>&1 | tail -3' 'git merge --ff-only @{u}' \
+  'git fetch -q origin && git merge -q --ff-only origin/main' \
+  'git merge --abort' 'git cherry-pick --quit' 'git am --abort' \
+  'git rebase --abort' 'git revert --abort 2> err.txt' \
+  'git status' 'git log --oneline -5' 'git fetch origin' 'git merge-base main feat' \
+  'git rebase--helper' 'git amend' 'grep -rn "git merge feat" docs/' \
+  'gh issue close 10 --comment "shipped as `contradiction-check`" && git merge -q --ff-only origin/main' \
+  'echo `date`; git pull --ff-only' "echo 'a \`b\`'; git pull -q --ff-only" \
+  'GIT_TERMINAL_PROMPT=0 git pull --ff-only' 'if git pull --ff-only; then echo ok; fi' \
+  'command git merge --abort' 'x=$(git pull --ff-only)' '(git pull --ff-only)' \
+  'ls | xargs echo; git pull --ff-only' 'git status | xargs echo && git merge --ff-only origin/main'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "main-branch-commits: allowed on main, $(printf '%q' "$form")"
+done
+
+# bash gives a git call words its printed line cannot show when an unquoted
+# backtick ends the call, or when another program such as xargs runs git and
+# adds the words it reads. --hidden-words says when that happens.
+for form in 'git pull --ff-only `echo --no-ff`' 'git pull --ff-only x`echo y`' \
+  'echo "$(git pull --ff-only `echo --no-ff`)"' 'echo --no-ff | xargs git merge --ff-only' \
+  'xargs -I{} git merge --ff-only {} feat < a.txt' 'env git pull --ff-only'; do
+  printf '%s' "$form" | python3 "$scripts/lib/git-command.py" --hidden-words >/dev/null 2>&1
+  expect_exit 1 "$?" "main-branch-commits: --hidden-words sees words the line cannot show, $(printf '%q' "$form")"
+done
+for form in 'gh x --comment "a `b` c"; git merge --ff-only o/m' 'echo `date`; git pull --ff-only' \
+  'git pull --ff-only "`echo x`"' 'git pull --ff-only' 'A=1 git pull --ff-only' \
+  'while git pull --ff-only; do :; done' 'ls | xargs echo; git pull --ff-only'; do
+  printf '%s' "$form" | python3 "$scripts/lib/git-command.py" --hidden-words >/dev/null 2>&1
+  expect_exit 0 "$?" "main-branch-commits: --hidden-words passes a call that shows all its words, $(printf '%q' "$form")"
+done
+
+# A rebase leaves HEAD detached while it runs, and its --continue moves the
+# branch it started on. A rebase of main is still on main.
+rebasing=$(mktemp -d)
+git -C "$rebasing" init -q -b main
+git -C "$rebasing" config user.email t@example.com
+git -C "$rebasing" config user.name Tester
+echo one >"$rebasing/f"
+git -C "$rebasing" add f
+git -C "$rebasing" commit -q --no-verify -m "chore(repo): first commit"
+git -C "$rebasing" checkout -q -b feat
+echo two >"$rebasing/f"
+git -C "$rebasing" commit -q --no-verify -am "feat: two"
+git -C "$rebasing" checkout -q main
+echo three >"$rebasing/f"
+git -C "$rebasing" commit -q --no-verify -am "feat: three"
+for backend in --merge --apply; do
+  git -C "$rebasing" rebase "$backend" feat >/dev/null 2>&1
+  for form in 'git rebase --continue' 'git rebase --skip' 'git merge feat' 'git commit -m x'; do
+    run_hook "$form" "$rebasing"
+    expect_exit 2 "$hook_status" "main-branch-commits: blocked in a $backend rebase of main, $form"
+    expect_match ' on main\.' "$hook_err" "main-branch-commits: the block in a $backend rebase names main, $form"
+  done
+  for form in 'git rebase --abort' 'git status' 'git add f'; do
+    run_hook "$form" "$rebasing"
+    expect_exit 0 "$hook_status" "main-branch-commits: allowed in a $backend rebase of main, $form"
+  done
+  git -C "$rebasing" rebase --abort
+done
+git -C "$rebasing" checkout -q -b other
+git -C "$rebasing" rebase feat >/dev/null 2>&1
+run_hook 'git rebase --continue' "$rebasing"
+expect_exit 0 "$hook_status" "main-branch-commits: a rebase of a feature branch may continue"
+git -C "$rebasing" rebase --abort
+git -C "$rebasing" checkout -q --detach
+run_hook 'git merge feat' "$rebasing"
+expect_exit 0 "$hook_status" "main-branch-commits: a detached HEAD with no rebase is not main"
+rm -rf "$rebasing"
+
 git -C "$repo" checkout -q -b feat/thing
+for form in 'git merge main' 'git rebase main' 'git pull' 'git cherry-pick main' \
+  'git revert HEAD' 'git am x.patch' 'git merge --no-ff -m "merge main" main'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "main-branch-commits: allowed on a feature branch, $(printf '%q' "$form")"
+done
+run_hook "git -C $repo merge feat/thing" "$wt"
+expect_exit 0 "$hook_status" "main-branch-commits: -C into a feature branch is allowed"
+run_hook "git -C $wt merge main" "$repo"
+expect_exit 0 "$hook_status" "main-branch-commits: a merge in a feature worktree is allowed"
+
 for form in '/usr/bin/git commit -m "fix: round refunds"' \
   'git commit -m "docs: say what alias.commit does"'; do
   run_hook "$form" "$repo"

@@ -21,6 +21,11 @@ runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
 chain, then by git's own `-C`. The prefix is empty when the text cannot say
 where git runs, and the caller must then judge every directory it could be.
 
+With `--hidden-words`, it prints nothing and exits 1 when bash may give a git
+call words its printed line cannot show: an unquoted backtick ends the call, or
+a word before git other than a keyword or `NAME=value` runs it, as `xargs`
+does with the words it reads.
+
 Exit 0 with or without output. Exit 3 when the command cannot be parsed, with
 the reason on stderr. bash still runs the lines before an unclosed quote, and an
 unclosed heredoc to the end of the text, so the caller must block it (D52).
@@ -883,6 +888,30 @@ def invocations(tokens, program="git"):
     return found
 
 
+def hidden_words(tokens, program="git"):
+    """True when bash may give a `program` call words its printed line cannot
+    show. A separator that holds an unquoted backtick ends the call: in
+    `git pull --ff-only `echo --no-ff``, bash passes --no-ff to git. A backtick
+    in quotes is inside a word, not here. Or a word before the call other than
+    a keyword or NAME=value runs it: in `echo --no-ff | xargs git merge
+    --ff-only`, xargs adds --no-ff."""
+    calling = False
+    leads = []
+    for token in tokens:
+        if is_separator(token):
+            if calling and "`" in token:
+                return True
+            calling, leads = False, []
+        elif program_word(token, program) is not None:
+            if not calling and not all(lead in EVAL_LEADS or ASSIGNMENT.match(lead)
+                                       for lead in leads):
+                return True
+            calling = True
+        elif not calling:
+            leads.append(token)
+    return False
+
+
 def main():
     command = sys.stdin.read()
     try:
@@ -896,6 +925,8 @@ def main():
     # One call per line, for the shell guards. A newline inside a quoted word
     # prints as a space, as the space between words does, so one call never
     # splits into two lines that each miss the check.
+    if len(sys.argv) == 2 and sys.argv[1] == "--hidden-words":
+        return 1 if hidden_words(tokens) else 0
     if len(sys.argv) == 3 and sys.argv[1] == "--dir":
         for where, args in invocations_with_dirs(tokens, sys.argv[2]):
             print(("%s\t%s" % (where or "", " ".join(args))).replace("\n", " "))
