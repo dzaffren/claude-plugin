@@ -1350,3 +1350,10 @@ Why: the v2.7.0 pentest proved S5: `git -c alias.p=push p --force origin main` p
 Rejected: replace the call by its expansion (`git -c alias.push=status push --force` would read as `status --force` and pass), let a hidden alias through (`git config alias.p push && git p --force` passes), read `~/.gitconfig` and `.git/config` aliases now (a hook runs `git config` on each call, and the slice fails Fits: later slice config-aliases).
 Source: specs/git-spellings.md
 Status: active
+
+## D141 · 2026-11-12 · zuko keeps its own rm guard and does not rely on Claude Code's removal check
+
+Why: the guard's message says it blocks a recursive delete of a top-level or home path, and on 2026-11-11 8 of 11 such forms passed it, `rm -rf /*` and `rm -rf $HOME` among them. Claude Code's own removal check depends on its version and permission mode.
+Rejected: rely on Claude Code's check (not checked across versions or modes), remove the rule (D16 raises a removed guard one tier, and the gap stays).
+Source: specs/guard-leads/shape.md
+Status: active
