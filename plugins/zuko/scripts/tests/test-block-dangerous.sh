@@ -968,4 +968,116 @@ expect_exit 2 "$hook_status" "spellings: an alias commit with -C into a repo on 
 expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the -C alias block is the commit-on-main one"
 rm -rf "$on_main"
 
+# branch-switch-commit: git moves HEAD before the next call runs, so a commit
+# after a checkout or switch to main lands on main (v2.6.0 N8). The session
+# sits on feat/thing. Each form passed the guard on 2026-11-12.
+for form in 'git checkout main && git commit -m x' 'git switch main; git commit -m x' \
+  'git checkout main && git commit --amend -m x' 'git checkout -q main 2>/dev/null && git commit -m x' \
+  'git switch --track origin/main && git commit -m x' 'git checkout -B main && git commit -m x' \
+  'git switch -C main origin/main && git commit -m x' 'git checkout -qbmain && git commit -m x' \
+  'git checkout --orphan=main && git commit -m x' 'git checkout - && git commit -m x' \
+  'git checkout @{-1} && git commit -m x' 'git switch "$BASE" && git commit -m x' \
+  "git -C $wt checkout main && git commit -m x" "git checkout main
+git commit -m x" '(git checkout main) && git commit -m x' \
+  'git checkout main && echo "$(git commit -m x)"' 'git checkout main && git -c alias.c=commit c -m x' \
+  'git checkout main -- && git commit -m x' 'git switch -- main && git commit -m x' \
+  'git switch main -- && git commit -m x' 'git switch -c feat/next -- main && git switch -- main && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: a commit after a switch to main is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: committing directly on main\. Create a branch first\.' "$hook_err" "branch-switch-commit: the block is the commit-on-main one, $(printf '%q' "$form")"
+done
+for form in 'git checkout main && git merge feat' 'git switch main && git rebase feat' \
+  'git checkout main; git pull' 'git switch main && git revert HEAD'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: a commit-making call after a switch to main is blocked, $(printf '%q' "$form")"
+  sub=${form##*&& git }; sub=${sub##*; git }
+  expect_match "^Blocked: git ${sub%% *} .* on main\." "$hook_err" "branch-switch-commit: the block names the subcommand and main, $(printf '%q' "$form")"
+done
+run_hook 'git checkout -q master && git cherry-pick feat' "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a cherry-pick after a switch to master is blocked"
+expect_match ' on master\.' "$hook_err" "branch-switch-commit: the master block names master"
+
+# A checkout that stays off main, or a call after it that makes no commit,
+# passes. So does a switch to main after the commit.
+for form in 'git checkout main && git pull --ff-only' 'git checkout main && git merge --abort' \
+  'git checkout -q main && git merge -q --ff-only origin/main && git checkout -q -b feat/next' \
+  'git switch main && git pull --ff-only && git switch -c feat/next' \
+  'git checkout -b fix/refund-cap main && git commit -m x' \
+  'git switch -c fix/refund-cap origin/main && git commit -m x' 'git checkout -qbfix/x && git commit -m x' \
+  'git checkout main -- a.txt && git commit -m x' 'git checkout HEAD~1 -- a.txt && git commit -m x' \
+  'git commit -m x && git checkout main' 'git switch --detach main && git commit -m x' \
+  'git checkout feat/other && git commit -m x' 'git checkout main-old && git commit -m x' \
+  'git status && git checkout main && git log -1' "echo 'git checkout main' && git commit -m x" \
+  'git log --oneline main && git commit -m x' 'git branch -f main HEAD && git commit -m x' \
+  'git checkout -q main && git merge -q --ff-only origin/main && git checkout -q -b docs/x && git commit -m x' \
+  'git switch main && git switch -c feat/next && git commit -m x' \
+  'git checkout -- && git commit -m x' 'git switch -c feat/next -- main && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: allowed on a feature branch, $(printf '%q' "$form")"
+done
+# Only a create option moves HEAD off main for sure: a plain name can be a path.
+for form in 'git checkout main && git checkout feat/x && git commit -m x' \
+  'git checkout -b docs/x && git checkout main && git commit -m x' \
+  'git switch -c feat/next && git switch - && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: the last switch that can reach main counts, $(printf '%q' "$form")"
+done
+# git 2.52.0 refuses a create option the subcommand does not have (rc=129,
+# HEAD stays put), so that call does not end the switch to main.
+for form in 'git checkout main; git checkout -c x; git commit -m x' 'git checkout main; git checkout -C x; git commit -m x' \
+  'git checkout main; git checkout -qc x; git commit -m x' 'git checkout main; git checkout --create x; git commit -m x' \
+  'git checkout main; git checkout --force-create=x; git commit -m x' 'git switch main; git switch -b x; git commit -m x' \
+  'git switch main; git switch -B x; git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: an unknown create option does not leave main, $(printf '%q' "$form")"
+done
+# The create options each subcommand does have still end the switch to main.
+for form in 'git checkout main; git checkout -B x; git commit -m x' 'git checkout main; git checkout --orphan x; git commit -m x' \
+  'git switch main; git switch -C x; git commit -m x' 'git switch main; git switch --create x; git commit -m x' \
+  'git switch main; git switch --force-create=x; git commit -m x' 'git switch main; git switch --orphan x; git commit -m x' \
+  'git checkout main && git checkout -b x -- && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: a real create option leaves main, $(printf '%q' "$form")"
+done
+
+# A commit whose directory the parser cannot know is checked in each directory
+# the command names, not only the start and project dirs (nested-git-commands
+# O5).
+parent=$(mktemp -d)
+git -C "$parent" init -q -b main onmain
+git -C "$parent/onmain" -c user.email=t@example.com -c user.name=Tester commit -q --allow-empty --no-verify -m "chore(repo): first commit"
+for form in "cd $parent/onmain && (git commit -m x)" "cd $parent/onmain; git commit -m x" \
+  "cd $parent/onmain || exit; git commit -m x" "cd $parent && cd onmain; git commit -m x" \
+  "cd $parent; git -C onmain commit -m x" "cd /; cd $parent/onmain; git commit -m x" \
+  "cd $parent/onmain && git log -1; git commit -m x" "cd $parent/onmain && bash -c 'git commit -m x'" \
+  "GIT_DIR=$parent/onmain/.git git commit -m x" "git --git-dir=$parent/onmain/.git commit -m x" \
+  "git --git-dir $parent/onmain/.git commit -m x"; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: an unknown dir is checked in each named dir, $(printf '%q' "$form")"
+  expect_match '^Blocked: committing directly on main' "$hook_err" "branch-switch-commit: the unknown-dir block is the commit-on-main one, $(printf '%q' "$form")"
+done
+run_hook "pushd $parent/onmain; git merge feat" "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a merge after pushd into a repo on main is blocked"
+expect_match '^Blocked: git merge can make a commit on main' "$hook_err" "branch-switch-commit: the pushd block names the merge"
+for form in "cd $wt; git commit -m x" "cd $wt && (git commit -m x)" "cd $parent; git status" \
+  "cd $parent/onmain; cd $repo && git commit -m x" "cd $parent/onmain && (git pull --ff-only)" \
+  'cd "$R"; git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: allowed when no named dir is on main, $(printf '%q' "$form")"
+done
+
+parsed=$(printf '%s' "cd $parent && cd onmain; git -C . commit; cd $parent/onmain" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo")
+expect_exit 0 "$?" "branch-switch-commit: --candidate-dirs exits 0"
+expect_match "^$repo
+$parent
+$parent/onmain\$" "$parsed" "branch-switch-commit: --candidate-dirs prints the base, then each named dir once"
+many=$(python3 -c 'import sys; print("; ".join("cd %s/d%d" % (sys.argv[1], i) for i in range(70)), end="")' "$parent")
+python3 -c 'import os,sys; [os.mkdir("%s/d%d" % (sys.argv[1], i)) for i in range(70)]' "$parent"
+printf '%s' "$many" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo" >/dev/null 2>&1
+expect_exit 3 "$?" "branch-switch-commit: --candidate-dirs refuses more than 64 dirs"
+run_hook "$many; git commit -m x" "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a commit after more than 64 dirs is refused"
+expect_match '^Blocked: this command could not be checked' "$hook_err" "branch-switch-commit: the 64-dir refusal says why"
+rm -rf "$parent"
+
 rm -rf "$work"

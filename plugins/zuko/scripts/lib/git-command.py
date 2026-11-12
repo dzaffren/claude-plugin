@@ -21,6 +21,11 @@ runs in and a tab: `<base>` moved by a `cd` or `pushd` earlier in a plain `&&`
 chain, then by git's own `-C`. The prefix is empty when the text cannot say
 where git runs, and the caller must then judge every directory it could be.
 
+With `--candidate-dirs <base>`, it prints those directories, one per line:
+`<base>`, then each existing directory that a `cd`, `pushd`, `-C`, `--git-dir`,
+`--work-tree`, `GIT_DIR=` or `GIT_WORK_TREE=` word in the command names. Over
+64 of them is exit 3.
+
 With `--hidden-words`, it prints nothing and exits 1 when bash may give a git
 call words its printed line cannot show: an unquoted backtick ends the call, or
 a word before git other than a keyword or `NAME=value` runs it, as `xargs`
@@ -76,6 +81,15 @@ CONTINUATION = re.compile(r"\\\n")
 # its own cannot-parse path (D51). Heredoc bodies are gone before it counts.
 # main() gives it its own exit code, so block-dangerous.sh can say what to change.
 MAX_COMMAND_CHARS = 65536
+
+
+# The most directories --candidate-dirs prints. Each named directory is
+# resolved from each one found before it, and a hook that times out lets the
+# call through.
+MAX_CANDIDATE_DIRS = 64
+
+# A word that names the directory git runs in, with the name after the `=`.
+DIR_WORD = re.compile(r"^(?:--git-dir=|--work-tree=|GIT_DIR=|GIT_WORK_TREE=)(.+)$")
 
 
 class TooLong(ValueError):
@@ -855,6 +869,47 @@ def invocations_with_dirs(tokens, base, program="git"):
     return found
 
 
+def candidate_dirs(tokens, base):
+    """Each directory a git call could run in where `invocations_with_dirs`
+    cannot say: `base`, then each existing directory that a `cd` or `pushd`,
+    a `-C`, `--git-dir` or `--work-tree`, or a `GIT_DIR=` or `GIT_WORK_TREE=`
+    word names. A relative one is resolved from each directory found before
+    it, and a bare `cd` names home. Over MAX_CANDIDATE_DIRS raises ValueError.
+    """
+    named = []
+    taking = None           # the word before: "cd", or an option that takes a dir
+    for token in tokens + ["\n"]:
+        if taking == "cd":
+            if is_separator(token):
+                named.append("~")
+            elif token.startswith("-") and token != "-":
+                continue                          # cd -P, cd --
+            elif token != "-":
+                named.append(token)
+            taking = None
+        elif taking:
+            if not is_separator(token):
+                named.append(token)
+            taking = None
+        if token in ("cd", "pushd"):
+            taking = "cd"
+        elif token in ("-C", "--git-dir", "--work-tree"):
+            taking = "dir"
+        elif match := DIR_WORD.match(token):
+            named.append(match.group(1))
+    found = [base]
+    for name in named:
+        absolute = name.startswith(("/", "~")) or re.match(r"[A-Za-z]:[/\\]", name)
+        for current in [None] if absolute else list(found):
+            moved = resolve(current, name)
+            if moved is not None and moved not in found:
+                found.append(moved)
+        if len(found) > MAX_CANDIDATE_DIRS:
+            raise ValueError("the command names more than %d directories; "
+                             "split it into shorter commands" % MAX_CANDIDATE_DIRS)
+    return found
+
+
 def invocations(tokens, program="git"):
     """The arguments of every `program` word, `git` unless told otherwise: the
     bare name, or a path to it, as `program_word` reads it. Each one runs to the
@@ -927,6 +982,13 @@ def main():
     # splits into two lines that each miss the check.
     if len(sys.argv) == 2 and sys.argv[1] == "--hidden-words":
         return 1 if hidden_words(tokens) else 0
+    if len(sys.argv) == 3 and sys.argv[1] == "--candidate-dirs":
+        try:
+            print("\n".join(candidate_dirs(tokens, sys.argv[2])))
+        except ValueError as err:
+            sys.stderr.write("git-command.py: cannot check the command: %s\n" % err)
+            return 3
+        return 0
     if len(sys.argv) == 3 and sys.argv[1] == "--dir":
         for where, args in invocations_with_dirs(tokens, sys.argv[2]):
             print(("%s\t%s" % (where or "", " ".join(args))).replace("\n", " "))

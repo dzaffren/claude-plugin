@@ -66,6 +66,16 @@ expect_match 'aws_key = "AKIA' "$scan_err" "the cd block names the staged line"
 
 scan "git -C $staged_repo commit -m x" "$repo"
 expect_exit 2 "$scan_status" "a secret staged in a mktemp -d repo -C points at is blocked"
+
+# branch-switch-commit: a commit whose directory the parser cannot know has the
+# staged diff of each directory the command names scanned.
+for form in "cd $staged_repo; git commit -m x" "cd $staged_repo && (git commit -m x)"; do
+  scan "$form" "$repo"
+  expect_exit 2 "$scan_status" "branch-switch-commit: a secret in a named dir is scanned, $(printf '%q' "$form")"
+  expect_match 'aws_key = "AKIA' "$scan_err" "branch-switch-commit: the block names the staged line, $(printf '%q' "$form")"
+done
+scan "cd $staged_repo; cd $repo && git commit -m x" "$repo"
+expect_exit 0 "$scan_status" "branch-switch-commit: a commit whose dir is known scans that dir only"
 rm -rf "$staged_repo"
 
 # Move the secret into the project repo. A commit that reaches it through a

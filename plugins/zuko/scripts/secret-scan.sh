@@ -28,7 +28,8 @@ grep -qE "$commit_re" <<<"$subject" || exit 0
 # would read as a path there: the words come from its module. Each commit
 # prints its dir, what it takes, the number of paths and the paths, each field
 # NUL-ended. The directory is the one it runs in, as block-dangerous.sh works it
-# out; unknown prints both the start and the project dir.
+# out; unknown prints the start dir, the project dir and each dir the command
+# names.
 read_commits() {
   ZUKO_COMMAND="$cmd" python3 -I - "$(dirname "${BASH_SOURCE[0]}")/lib" "$base" "$project" <<'PY' 2>/dev/null
 import importlib.util
@@ -92,13 +93,14 @@ def takes(args):
 
 try:
     tokens = git_command.tokenise(git_command.strip_heredocs(os.environ["ZUKO_COMMAND"]))
+    unknown = list(dict.fromkeys(sys.argv[2:4] + git_command.candidate_dirs(tokens, sys.argv[2])))
 except ValueError:
     sys.exit(3)
 for where, args in git_command.invocations_with_dirs(tokens, sys.argv[2]):
     if args[:1] != ["commit"]:
         continue
     scope, paths = takes(args[1:])
-    for directory in [where] if where else sys.argv[2:4]:
+    for directory in [where] if where else unknown:
         sys.stdout.write("".join(field + "\0" for field in [directory, scope, str(len(paths))] + paths))
 PY
 }

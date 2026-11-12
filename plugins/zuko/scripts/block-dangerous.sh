@@ -96,11 +96,64 @@ rebase_branch() {   # rebase_branch <dir>
   done
 }
 
+# A checkout or switch moves HEAD before the next call runs. Prints main or
+# master when HEAD can end on it: the new branch of a create option, or else a
+# word that is not an option. A target the text cannot show can be main too.
+# A checkout with a path after -- and no create option restores paths and
+# moves nothing; after a switch's --, each word is a name. Each subcommand has
+# its own create options, and git refuses the other's.
+# Exit 2 when a create option moves HEAD to a branch that is not main: only
+# then is HEAD off main for sure, because a plain name can be a path.
+may_reach_main() {   # may_reach_main <checkout or switch call>
+  local words word rest pre i sub=${1%% *} create= paths= letters=bB
+  local -a names=()
+  [ "$sub" = switch ] && letters=cC
+  read -r -a words <<<"$1"
+  for ((i = 1; i < ${#words[@]}; i++)); do
+    word=${words[i]}
+    case "$word" in
+      --)
+        if [ "$sub" = switch ]; then names+=("${words[@]:i+1}")
+        elif [ $((i + 1)) -lt ${#words[@]} ]; then paths=1
+        fi
+        break ;;
+      --detach) return 1 ;;
+      --orphan) i=$((i + 1)); create=${words[i]-} ;;
+      --orphan=*) create=${word#*=} ;;
+      --create|--force-create)
+        [ "$sub" = switch ] && { i=$((i + 1)); create=${words[i]-}; } ;;
+      --create=*|--force-create=*) [ "$sub" = switch ] && create=${word#*=} ;;
+      --*) ;;
+      -?*)
+        rest=${word#-}
+        pre=${rest%%[$letters]*}
+        [ "$sub" = switch ] && case "$pre" in *d*) return 1 ;; esac
+        if [ "$pre" != "$rest" ]; then
+          create=${rest:${#pre}+1}
+          [ -n "$create" ] || { i=$((i + 1)); create=${words[i]-}; }
+        fi ;;
+      *) names+=("$word") ;;
+    esac
+  done
+  if [ -n "$create" ]; then
+    case "${create##*/}" in main|master) echo "${create##*/}"; return 0 ;; esac
+    case "$create" in *[\$\`*?[{]*) echo main; return 0 ;; esac
+    return 2
+  elif [ -n "$paths" ] && [ "$sub" = checkout ]; then return 1
+  fi
+  for word in ${names[@]+"${names[@]}"}; do
+    case "${word##*/}" in main|master) echo "${word##*/}"; return 0 ;; esac
+    case "$word" in -|@\{-*|*[\$\`*?[{]*) echo main; return 0 ;; esac
+  done
+  return 1
+}
+
 # release-ok: the commit's own directory is known, so it may be the release
-# commit release.py cut prepared, the one commit allowed on main (D30).
-deny_commit_on_main() {   # deny_commit_on_main <dir> <git call> [release-ok]
+# commit release.py cut prepared, the one commit allowed on main (D30). A
+# branch, when given, is judged in place of the directory's own.
+deny_commit_on_main() {   # deny_commit_on_main <dir> <git call> [release-ok] [branch]
   local branch out
-  branch=$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null || rebase_branch "$1")
+  branch=${4:-$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null || rebase_branch "$1")}
   case "$branch" in
     main|master)
       if [ "${3:-}" = release-ok ] && [ "${2%% *}" = commit ]; then
@@ -119,24 +172,43 @@ release.py cut writes; run /release." ;;
 
 # A commit lands on the branch of the directory it runs in: the start moved by
 # a cd before it and by git's -C. A directory the parser cannot know comes back
-# empty, and then both the start and the project dir are checked, as they are
-# for every commit in a command that will not parse — never looser than
-# checking the project dir alone.
-deny_commit_anywhere() {   # deny_commit_anywhere <git call>
+# empty, and then the start, the project dir and each directory the command
+# names are checked, as the start and the project dir are for every commit in
+# a command that will not parse — never looser than the project dir alone.
+deny_commit_anywhere() {   # deny_commit_anywhere <git call> [candidates]
+  local dir
   deny_commit_on_main "$base" "$1"
   deny_commit_on_main "$project" "$1"
+  [ "${2:-}" = candidates ] || return 0
+  if [ -z "${candidates+set}" ]; then
+    candidates=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --candidate-dirs "$base" 2>&1) \
+      || deny "Blocked: this command could not be checked: ${candidates##*: }."
+  fi
+  while IFS= read -r dir; do
+    [ -n "$dir" ] && deny_commit_on_main "$dir" "$1"
+  done <<<"$candidates"
 }
 
 if grep -qE "$commit_re" <<<"$git_args"; then
   if dirs=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --dir "$base" 2>/dev/null); then
     # Split on the first tab by hand: read with IFS=tab strips a leading one,
-    # and an empty directory would shift the arguments into it.
+    # and an empty directory would shift the arguments into it. A checkout or
+    # switch to main makes each later call count as on main, until a switch
+    # that creates another branch.
+    switched=
+    unset candidates
     while IFS= read -r line; do
       dir=${line%%$'\t'*}
       call=${line#*$'\t'}
+      case "$call" in checkout|checkout\ *|switch|switch\ *)
+        if reached=$(may_reach_main "$call"); then switched=$reached
+        elif [ $? -eq 2 ]; then switched=
+        fi ;;
+      esac
       grep -qE "$commit_re" <<<"$call" || continue
       no_new_commit "$call" && continue
-      if [ -n "$dir" ]; then deny_commit_on_main "$dir" "$call" release-ok; else deny_commit_anywhere "$call"; fi
+      [ -n "$switched" ] && deny_commit_on_main "${dir:-$base}" "$call" "${dir:+release-ok}" "$switched"
+      if [ -n "$dir" ]; then deny_commit_on_main "$dir" "$call" release-ok; else deny_commit_anywhere "$call" candidates; fi
     done <<<"$dirs"
   else
     while IFS= read -r call; do
