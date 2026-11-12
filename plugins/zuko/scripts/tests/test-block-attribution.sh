@@ -275,6 +275,97 @@ expect_exit 2 "$hook_status" "a git tag -F - reads stdin and is blocked"
 expect_match '^Blocked: the tag message comes from stdin \(-F -\)\. The guard cannot read stdin, so it did not check the text\.$' "$hook_err" "the git tag stdin block names the tag message"
 expect_match '^Give the message with -m\. Or write it to a file in a separate Bash call, before this command\.$' "$hook_err" "the git tag stdin block offers -m"
 
+# --trailer adds a line to the commit or tag message (git 2.52.0, git commit
+# -h, git tag -h). git takes = or : as the separator and strips the spaces
+# around it, so each spelling below writes Co-authored-by: Claude.
+for form in 'git commit -m "fix: round refunds" --trailer "Co-authored-by: Claude <noreply@anthropic.com>"' \
+  'git commit -m "fix: round refunds" --trailer="Co-authored-by: Claude <noreply@anthropic.com>"' \
+  'git commit -m "fix: round refunds" --trai "Co-authored-by: Claude <noreply@anthropic.com>"' \
+  'git commit --trailer "Co-authored-by=Claude <noreply@anthropic.com>" -m "fix: round refunds"' \
+  'git commit -m "fix: round refunds" --trailer "co-authored-by : Claude"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks a Claude trailer: $form"
+  expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the trailer block names the commit message: $form"
+done
+run_hook 'git commit -m "fix: round refunds" --trailer "Co-authored-by=Claude <noreply@anthropic.com>"'
+expect_match '^  Co-authored-by: Claude <noreply@anthropic\.com>$' "$hook_err" "the trailer block quotes the line as git writes it"
+
+run_hook 'git tag -a v2.8.0 -m v2.8.0 --trailer "Co-authored-by: Claude <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "blocks a Claude trailer on git tag"
+expect_match '^Blocked: the tag message carries Claude attribution\.' "$hook_err" "the tag trailer block names the tag message"
+
+for form in 'git commit -m "fix: round refunds" --trailer "Signed-off-by: Jane Doe <jane@example.com>"' \
+  'git commit -m "fix: round refunds" --trailer "Co-authored-by: Jane Doe <jane@example.com>"' \
+  'git tag -a v2.8.0 -m v2.8.0 --trailer "Reviewed-by=Jane Doe <jane@example.com>"'; do
+  run_hook "$form"
+  expect_exit 0 "$hook_status" "allows a human trailer: $form"
+  expect_no_match '.' "$hook_out$hook_err" "a human trailer prints nothing: $form"
+done
+
+# git merge writes a merge commit message from -m and -F (git merge -h).
+printf 'Merge branch feat\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' >"$work/merge-signed.txt"
+for form in 'git merge feat -m "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git merge -m "Co-Authored-By: Claude <noreply@anthropic.com>" feat' \
+  'git merge --no-ff feat --message "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git merge feat --message="Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git merge feat --mess "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  "git merge feat -F $work/merge-signed.txt" \
+  "git merge feat --file=$work/merge-signed.txt"; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution in $form"
+  expect_match '^Blocked: the merge message carries Claude attribution\.' "$hook_err" "the merge block names the merge message: $form"
+done
+
+run_hook 'git merge feat -F -'
+expect_exit 2 "$hook_status" "a git merge -F - reads stdin and is blocked"
+expect_match '^Blocked: the merge message comes from stdin \(-F -\)\.' "$hook_err" "the git merge stdin block names the merge message"
+expect_match '^Give the message with -m\.' "$hook_err" "the git merge stdin block offers -m"
+
+# A merge message is a commit message that Claude writes, so the harness's
+# commit attribution reaches it too.
+run_hook 'git merge feat -m "Co-Authored-By: Claude <noreply@anthropic.com>"'
+expect_match 'attribution.*settings\.json' "$hook_err" "a blocked git merge names the settings fix"
+
+# Every option of git commit, git tag and git merge that takes a value takes
+# it (git 2.52.0 -h). Else -tm reads as -t and -m, -m takes --message as its
+# text, and the signed message after it is never read. -u and -S take a value
+# only in their own word, so the -m after them is still read.
+for form in 'git commit -tm --message "fix: round refunds
+
+Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git commit --author -m --message "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git commit -Um --message "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git commit -u -m "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git commit -Skeym --message "Co-Authored-By: Claude <noreply@anthropic.com>"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution after a value option: $form"
+  expect_match '^Blocked: the commit message carries Claude attribution\.' "$hook_err" "the block names the commit message: $form"
+done
+for form in 'git merge feat --into-name -m --message "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git merge feat -sm --message "Co-Authored-By: Claude <noreply@anthropic.com>"' \
+  'git merge feat -S -m "Co-Authored-By: Claude <noreply@anthropic.com>"'; do
+  run_hook "$form"
+  expect_exit 2 "$hook_status" "blocks attribution after a value option: $form"
+  expect_match '^Blocked: the merge message carries Claude attribution\.' "$hook_err" "the block names the merge message: $form"
+done
+run_hook 'git tag -a v2.8.0 -um --message "Co-Authored-By: Claude <noreply@anthropic.com>"'
+expect_exit 2 "$hook_status" "blocks attribution after git tag -um"
+expect_match '^Blocked: the tag message carries Claude attribution\.' "$hook_err" "the tag -um block names the tag message"
+
+for form in 'git merge feat' \
+  "git merge --no-ff feat -m \"Merge branch 'feat'\"" \
+  'git merge -s ours feat' \
+  'git merge -X theirs feat' \
+  'git merge --abort' \
+  'git commit -t .gitmessage' \
+  'git commit --author "Jane Doe <jane@example.com>" -m "fix: round refunds"' \
+  'git commit -m "fix: round refunds" -uno' \
+  'git tag -a v2.8.0 -u 0xA1B2 -m v2.8.0'; do
+  run_hook "$form"
+  expect_exit 0 "$hook_status" "allows $form"
+  expect_no_match '.' "$hook_out$hook_err" "prints nothing for $form"
+done
+
 # Release notes and titles: every option form gh release create reads them from.
 run_hook 'gh release create v2.2.0 --verify-tag -t v2.2.0 -n "- feat: cut a version
 
@@ -565,14 +656,16 @@ hooks = json.load(open(sys.argv[1]))["hooks"]["PreToolUse"]
 print(" ".join(sorted(h.get("if", "") for g in hooks for h in g["hooks"]
                       if "block-attribution.sh" in h["command"])))
 ' "$scripts/../hooks/hooks.json" 2>&1)
-expect_exit 'Bash(gh pr *) Bash(gh release *) Bash(git commit *) Bash(git tag *)' "$routed" \
-  "hooks.json routes git commit, git tag, gh release and gh pr to the attribution hook"
+expect_exit 'Bash(gh pr *) Bash(gh release *) Bash(git commit *) Bash(git merge *) Bash(git tag *)' "$routed" \
+  "hooks.json routes git commit, git merge, git tag, gh release and gh pr to the attribution hook"
 
 # The ban text names every command the hook blocks, so the rule and the route
 # cannot drift apart unseen.
 naming=$(tr '\n' ' ' <"$scripts/../references/git-naming.md")
 expect_match 'blocks the first +three at .*`gh pr create`, `gh pr edit` and `gh pr merge`' "$naming" \
   "git-naming.md names gh pr create, edit and merge among the commands the hook blocks"
+expect_match 'blocks the first +three at `git commit`, `git tag`, `git merge`,' "$naming" \
+  "git-naming.md names git merge among the commands the hook blocks"
 
 # A lone surrogate the payload parse cannot print used to end in `|| exit 0`,
 # so the message went unread (spec O6).

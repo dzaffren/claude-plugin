@@ -810,7 +810,128 @@ for form in 'grep -rn git-commit docs/' \
   expect_exit 0 "$hook_status" "spellings: a standard form passes on main, $(printf '%q' "$form")"
 done
 
+# main-branch-commits: six more subcommands make commits on the branch they run
+# on. Each passed the guard on main on 2026-11-12 (v2.6.0 N9).
+for form in 'git merge feat' 'git cherry-pick feat' 'git rebase feat' 'git pull' \
+  'git revert HEAD' 'git am x.patch'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "main-branch-commits: blocked on main, $form"
+  sub=${form#git }
+  expect_match "^Blocked: git ${sub%% *} " "$hook_err" "main-branch-commits: the block names the subcommand, $form"
+  expect_match 'Create a branch first[.,]' "$hook_err" "main-branch-commits: the block says to create a branch, $form"
+done
+run_hook 'git pull' "$repo"
+expect_match 'git pull --ff-only' "$hook_err" "main-branch-commits: the pull block names --ff-only"
+
+# A word that can undo --ff-only, or that the allow-list does not know, is
+# blocked: the printed line has lost its quotes, so `-m "a --ff-only"` reads as
+# --ff-only. git 2.52.0 takes the last of --ff, --no-ff and --ff-only.
+for form in 'git merge --no-ff feat' 'git pull --rebase' 'git merge --continue' \
+  'git cherry-pick --continue' 'git rebase -i HEAD~2' 'git merge' \
+  'git -c alias.m=merge m feat' 'git -C . merge feat' 'cd . && git rebase feat' \
+  'git status && git merge feat' 'echo "$(git cherry-pick feat)"' \
+  "bash -c 'git revert HEAD'" '/usr/bin/git am x.patch' \
+  'git merge --ff-only --no-ff feat' "git merge -m 'a --ff-only' feat" \
+  'git pull --ff-only $OPTS' 'git pull --ff-only `echo --no-ff`' \
+  'git merge --ff-only origin/main`echo " --no-ff"`' \
+  'git pull --ff-only $(echo --no-ff)' "git pull --ff-only \$'--no-ff'" \
+  'git merge --ff-only {--no-ff,feat}' 'git pull --ff-only origin "main --no-ff"' \
+  'git merge --ff-only > --no-ff' 'git pull --abort' 'git pull --quit' \
+  'git merge --ff-only -m x feat' 'git cherry-pick --ff-only feat' \
+  'git merge --abort && git merge feat' \
+  'echo --no-ff feat | xargs git merge --ff-only' 'echo --no-ff feat | xargs git pull --ff-only' \
+  'xargs git merge --ff-only < args.txt' 'echo --no-ff | xargs -I{} git merge --ff-only {} feat' \
+  'find . -name x -exec git merge --ff-only {} +' 'sudo git pull --ff-only'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "main-branch-commits: blocked on main, $(printf '%q' "$form")"
+done
+run_hook "git -C $repo merge feat" "$wt"
+expect_exit 2 "$hook_status" "main-branch-commits: -C into main is blocked from a feature worktree"
+
+# A fast-forward makes no commit, and an abort or quit ends one without a
+# commit. The forms below are the ones the logs hold.
+for form in 'git pull --ff-only' 'git pull -q --ff-only origin main' \
+  'git merge --ff-only origin/main 2>&1' 'git merge -q --ff-only origin/main' \
+  'git pull --ff-only origin main 2>&1 | tail -3' 'git merge --ff-only @{u}' \
+  'git fetch -q origin && git merge -q --ff-only origin/main' \
+  'git merge --abort' 'git cherry-pick --quit' 'git am --abort' \
+  'git rebase --abort' 'git revert --abort 2> err.txt' \
+  'git status' 'git log --oneline -5' 'git fetch origin' 'git merge-base main feat' \
+  'git rebase--helper' 'git amend' 'grep -rn "git merge feat" docs/' \
+  'gh issue close 10 --comment "shipped as `contradiction-check`" && git merge -q --ff-only origin/main' \
+  'echo `date`; git pull --ff-only' "echo 'a \`b\`'; git pull -q --ff-only" \
+  'GIT_TERMINAL_PROMPT=0 git pull --ff-only' 'if git pull --ff-only; then echo ok; fi' \
+  'command git merge --abort' 'x=$(git pull --ff-only)' '(git pull --ff-only)' \
+  'ls | xargs echo; git pull --ff-only' 'git status | xargs echo && git merge --ff-only origin/main'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "main-branch-commits: allowed on main, $(printf '%q' "$form")"
+done
+
+# bash gives a git call words its printed line cannot show when an unquoted
+# backtick ends the call, or when another program such as xargs runs git and
+# adds the words it reads. --hidden-words says when that happens.
+for form in 'git pull --ff-only `echo --no-ff`' 'git pull --ff-only x`echo y`' \
+  'echo "$(git pull --ff-only `echo --no-ff`)"' 'echo --no-ff | xargs git merge --ff-only' \
+  'xargs -I{} git merge --ff-only {} feat < a.txt' 'env git pull --ff-only'; do
+  printf '%s' "$form" | python3 "$scripts/lib/git-command.py" --hidden-words >/dev/null 2>&1
+  expect_exit 1 "$?" "main-branch-commits: --hidden-words sees words the line cannot show, $(printf '%q' "$form")"
+done
+for form in 'gh x --comment "a `b` c"; git merge --ff-only o/m' 'echo `date`; git pull --ff-only' \
+  'git pull --ff-only "`echo x`"' 'git pull --ff-only' 'A=1 git pull --ff-only' \
+  'while git pull --ff-only; do :; done' 'ls | xargs echo; git pull --ff-only'; do
+  printf '%s' "$form" | python3 "$scripts/lib/git-command.py" --hidden-words >/dev/null 2>&1
+  expect_exit 0 "$?" "main-branch-commits: --hidden-words passes a call that shows all its words, $(printf '%q' "$form")"
+done
+
+# A rebase leaves HEAD detached while it runs, and its --continue moves the
+# branch it started on. A rebase of main is still on main.
+rebasing=$(mktemp -d)
+git -C "$rebasing" init -q -b main
+git -C "$rebasing" config user.email t@example.com
+git -C "$rebasing" config user.name Tester
+echo one >"$rebasing/f"
+git -C "$rebasing" add f
+git -C "$rebasing" commit -q --no-verify -m "chore(repo): first commit"
+git -C "$rebasing" checkout -q -b feat
+echo two >"$rebasing/f"
+git -C "$rebasing" commit -q --no-verify -am "feat: two"
+git -C "$rebasing" checkout -q main
+echo three >"$rebasing/f"
+git -C "$rebasing" commit -q --no-verify -am "feat: three"
+for backend in --merge --apply; do
+  git -C "$rebasing" rebase "$backend" feat >/dev/null 2>&1
+  for form in 'git rebase --continue' 'git rebase --skip' 'git merge feat' 'git commit -m x'; do
+    run_hook "$form" "$rebasing"
+    expect_exit 2 "$hook_status" "main-branch-commits: blocked in a $backend rebase of main, $form"
+    expect_match ' on main\.' "$hook_err" "main-branch-commits: the block in a $backend rebase names main, $form"
+  done
+  for form in 'git rebase --abort' 'git status' 'git add f'; do
+    run_hook "$form" "$rebasing"
+    expect_exit 0 "$hook_status" "main-branch-commits: allowed in a $backend rebase of main, $form"
+  done
+  git -C "$rebasing" rebase --abort
+done
+git -C "$rebasing" checkout -q -b other
+git -C "$rebasing" rebase feat >/dev/null 2>&1
+run_hook 'git rebase --continue' "$rebasing"
+expect_exit 0 "$hook_status" "main-branch-commits: a rebase of a feature branch may continue"
+git -C "$rebasing" rebase --abort
+git -C "$rebasing" checkout -q --detach
+run_hook 'git merge feat' "$rebasing"
+expect_exit 0 "$hook_status" "main-branch-commits: a detached HEAD with no rebase is not main"
+rm -rf "$rebasing"
+
 git -C "$repo" checkout -q -b feat/thing
+for form in 'git merge main' 'git rebase main' 'git pull' 'git cherry-pick main' \
+  'git revert HEAD' 'git am x.patch' 'git merge --no-ff -m "merge main" main'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "main-branch-commits: allowed on a feature branch, $(printf '%q' "$form")"
+done
+run_hook "git -C $repo merge feat/thing" "$wt"
+expect_exit 0 "$hook_status" "main-branch-commits: -C into a feature branch is allowed"
+run_hook "git -C $wt merge main" "$repo"
+expect_exit 0 "$hook_status" "main-branch-commits: a merge in a feature worktree is allowed"
+
 for form in '/usr/bin/git commit -m "fix: round refunds"' \
   'git commit -m "docs: say what alias.commit does"'; do
   run_hook "$form" "$repo"
@@ -846,5 +967,268 @@ run_hook "git -C $on_main -c alias.c=commit c -m 'fix: round refunds'" "$repo"
 expect_exit 2 "$hook_status" "spellings: an alias commit with -C into a repo on main is blocked from a feature branch"
 expect_match '^Blocked: committing directly on main' "$hook_err" "spellings: the -C alias block is the commit-on-main one"
 rm -rf "$on_main"
+
+# branch-switch-commit: git moves HEAD before the next call runs, so a commit
+# after a checkout or switch to main lands on main (v2.6.0 N8). The session
+# sits on feat/thing. Each form passed the guard on 2026-11-12.
+for form in 'git checkout main && git commit -m x' 'git switch main; git commit -m x' \
+  'git checkout main && git commit --amend -m x' 'git checkout -q main 2>/dev/null && git commit -m x' \
+  'git switch --track origin/main && git commit -m x' 'git checkout -B main && git commit -m x' \
+  'git switch -C main origin/main && git commit -m x' 'git checkout -qbmain && git commit -m x' \
+  'git checkout --orphan=main && git commit -m x' 'git checkout - && git commit -m x' \
+  'git checkout @{-1} && git commit -m x' 'git switch "$BASE" && git commit -m x' \
+  "git -C $wt checkout main && git commit -m x" "git checkout main
+git commit -m x" '(git checkout main) && git commit -m x' \
+  'git checkout main && echo "$(git commit -m x)"' 'git checkout main && git -c alias.c=commit c -m x' \
+  'git checkout main -- && git commit -m x' 'git switch -- main && git commit -m x' \
+  'git switch main -- && git commit -m x' 'git switch -c feat/next -- main && git switch -- main && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: a commit after a switch to main is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: committing directly on main\. Create a branch first\.' "$hook_err" "branch-switch-commit: the block is the commit-on-main one, $(printf '%q' "$form")"
+done
+for form in 'git checkout main && git merge feat' 'git switch main && git rebase feat' \
+  'git checkout main; git pull' 'git switch main && git revert HEAD'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: a commit-making call after a switch to main is blocked, $(printf '%q' "$form")"
+  sub=${form##*&& git }; sub=${sub##*; git }
+  expect_match "^Blocked: git ${sub%% *} .* on main\." "$hook_err" "branch-switch-commit: the block names the subcommand and main, $(printf '%q' "$form")"
+done
+run_hook 'git checkout -q master && git cherry-pick feat' "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a cherry-pick after a switch to master is blocked"
+expect_match ' on master\.' "$hook_err" "branch-switch-commit: the master block names master"
+
+# A checkout that stays off main, or a call after it that makes no commit,
+# passes. So does a switch to main after the commit.
+for form in 'git checkout main && git pull --ff-only' 'git checkout main && git merge --abort' \
+  'git checkout -q main && git merge -q --ff-only origin/main && git checkout -q -b feat/next' \
+  'git switch main && git pull --ff-only && git switch -c feat/next' \
+  'git checkout -b fix/refund-cap main && git commit -m x' \
+  'git switch -c fix/refund-cap origin/main && git commit -m x' 'git checkout -qbfix/x && git commit -m x' \
+  'git checkout main -- a.txt && git commit -m x' 'git checkout HEAD~1 -- a.txt && git commit -m x' \
+  'git commit -m x && git checkout main' 'git switch --detach main && git commit -m x' \
+  'git checkout feat/other && git commit -m x' 'git checkout main-old && git commit -m x' \
+  'git status && git checkout main && git log -1' "echo 'git checkout main' && git commit -m x" \
+  'git log --oneline main && git commit -m x' 'git branch -f main HEAD && git commit -m x' \
+  'git checkout -q main && git merge -q --ff-only origin/main && git checkout -q -b docs/x && git commit -m x' \
+  'git switch main && git switch -c feat/next && git commit -m x' \
+  'git checkout -- && git commit -m x' 'git switch -c feat/next -- main && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: allowed on a feature branch, $(printf '%q' "$form")"
+done
+# Only a create option moves HEAD off main for sure: a plain name can be a path.
+for form in 'git checkout main && git checkout feat/x && git commit -m x' \
+  'git checkout -b docs/x && git checkout main && git commit -m x' \
+  'git switch -c feat/next && git switch - && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: the last switch that can reach main counts, $(printf '%q' "$form")"
+done
+# git 2.52.0 refuses a create option the subcommand does not have (rc=129,
+# HEAD stays put), so that call does not end the switch to main.
+for form in 'git checkout main; git checkout -c x; git commit -m x' 'git checkout main; git checkout -C x; git commit -m x' \
+  'git checkout main; git checkout -qc x; git commit -m x' 'git checkout main; git checkout --create x; git commit -m x' \
+  'git checkout main; git checkout --force-create=x; git commit -m x' 'git switch main; git switch -b x; git commit -m x' \
+  'git switch main; git switch -B x; git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: an unknown create option does not leave main, $(printf '%q' "$form")"
+done
+# The create options each subcommand does have still end the switch to main.
+for form in 'git checkout main; git checkout -B x; git commit -m x' 'git checkout main; git checkout --orphan x; git commit -m x' \
+  'git switch main; git switch -C x; git commit -m x' 'git switch main; git switch --create x; git commit -m x' \
+  'git switch main; git switch --force-create=x; git commit -m x' 'git switch main; git switch --orphan x; git commit -m x' \
+  'git checkout main && git checkout -b x -- && git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: a real create option leaves main, $(printf '%q' "$form")"
+done
+
+# A commit whose directory the parser cannot know is checked in each directory
+# the command names, not only the start and project dirs (nested-git-commands
+# O5).
+parent=$(mktemp -d)
+git -C "$parent" init -q -b main onmain
+git -C "$parent/onmain" -c user.email=t@example.com -c user.name=Tester commit -q --allow-empty --no-verify -m "chore(repo): first commit"
+for form in "cd $parent/onmain && (git commit -m x)" "cd $parent/onmain; git commit -m x" \
+  "cd $parent/onmain || exit; git commit -m x" "cd $parent && cd onmain; git commit -m x" \
+  "cd $parent; git -C onmain commit -m x" "cd /; cd $parent/onmain; git commit -m x" \
+  "cd $parent/onmain && git log -1; git commit -m x" "cd $parent/onmain && bash -c 'git commit -m x'" \
+  "GIT_DIR=$parent/onmain/.git git commit -m x" "git --git-dir=$parent/onmain/.git commit -m x" \
+  "git --git-dir $parent/onmain/.git commit -m x"; do
+  run_hook "$form" "$repo"
+  expect_exit 2 "$hook_status" "branch-switch-commit: an unknown dir is checked in each named dir, $(printf '%q' "$form")"
+  expect_match '^Blocked: committing directly on main' "$hook_err" "branch-switch-commit: the unknown-dir block is the commit-on-main one, $(printf '%q' "$form")"
+done
+run_hook "pushd $parent/onmain; git merge feat" "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a merge after pushd into a repo on main is blocked"
+expect_match '^Blocked: git merge can make a commit on main' "$hook_err" "branch-switch-commit: the pushd block names the merge"
+for form in "cd $wt; git commit -m x" "cd $wt && (git commit -m x)" "cd $parent; git status" \
+  "cd $parent/onmain; cd $repo && git commit -m x" "cd $parent/onmain && (git pull --ff-only)" \
+  'cd "$R"; git commit -m x'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "branch-switch-commit: allowed when no named dir is on main, $(printf '%q' "$form")"
+done
+
+parsed=$(printf '%s' "cd $parent && cd onmain; git -C . commit; cd $parent/onmain" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo")
+expect_exit 0 "$?" "branch-switch-commit: --candidate-dirs exits 0"
+# On Windows, Git Bash hands python3 the start dir as C:/..., and each dir it
+# finds must come back with / too, or the same dir prints twice.
+if is_windows; then want_repo=$(cygpath -m "$repo"); want_parent=$(cygpath -m "$parent"); else want_repo=$repo; want_parent=$parent; fi
+expect_match "^$want_repo
+$want_parent
+$want_parent/onmain\$" "$parsed" "branch-switch-commit: --candidate-dirs prints the base, then each named dir once"
+many=$(python3 -c 'import sys; print("; ".join("cd %s/d%d" % (sys.argv[1], i) for i in range(70)), end="")' "$parent")
+python3 -c 'import os,sys; [os.mkdir("%s/d%d" % (sys.argv[1], i)) for i in range(70)]' "$parent"
+printf '%s' "$many" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo" >/dev/null 2>&1
+expect_exit 3 "$?" "branch-switch-commit: --candidate-dirs refuses more than 64 dirs"
+run_hook "$many; git commit -m x" "$repo"
+expect_exit 2 "$hook_status" "branch-switch-commit: a commit after more than 64 dirs is refused"
+expect_match '^Blocked: this command could not be checked' "$hook_err" "branch-switch-commit: the 64-dir refusal says why"
+rm -rf "$parent"
+
+# config-aliases: git reads aliases and each remote's push refspecs from its
+# config files, so one that an earlier command saved changes what a later
+# command does (v2.6.0 N9). Each form passed the guard on main on 2026-11-12.
+cfg="$work/cfg"
+git init -q -b main "$cfg"
+git -C "$cfg" -c user.email=t@example.com -c user.name=Tester commit -q --allow-empty --no-verify -m "chore(repo): first commit"
+git -C "$cfg" config alias.pf 'push --force'
+git -C "$cfg" config alias.ci commit
+git -C "$cfg" config alias.pub '!git push --force'
+git -C "$cfg" config alias.fp '!f() { git push "$@"; }; f'
+git -C "$cfg" config alias.a b
+git -C "$cfg" config alias.b 'push --force'
+git -C "$cfg" config alias.st 'status -sb'
+git -C "$cfg" config alias.lg 'log --oneline'
+git -C "$cfg" config alias.log 'log --oneline'
+parsed=$(printf '%s' 'git pf origin main' | python3 "$scripts/lib/git-command.py" --base "$cfg" 2>&1)
+expect_match '^push --force origin main$' "$parsed" "config-aliases: the call with the config alias replaced is printed"
+for form in 'git pf origin main' 'git pub origin main' 'git fp --force origin main' 'git a origin main' \
+  'git -C . pf origin main' 'sudo git pf origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a config alias is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "config-aliases: the config alias block is the force-push one, $(printf '%q' "$form")"
+done
+run_hook "cd $cfg && git pf origin main" "$repo"
+expect_exit 2 "$hook_status" "config-aliases: the alias of the repo a cd moves to is read"
+run_hook "git -C $cfg pf origin main" "$repo"
+expect_exit 2 "$hook_status" "config-aliases: the alias of the repo -C names is read"
+run_hook 'git ci -m x' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config alias for commit on main is blocked"
+expect_match '^Blocked: committing directly on main\. Create a branch first\.' "$hook_err" "config-aliases: the config alias commit block is the commit-on-main one"
+printf '[alias]\n\tpp = push --force\n' >"$work/global.cfg"
+GIT_CONFIG_GLOBAL="$work/global.cfg" run_hook 'git pp origin main' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: an alias in the global config is read"
+
+# A + refspec in remote.*.push forces a push with no refspec, and one that
+# names only the source. A true remote.*.mirror makes it a mirror push.
+run_hook 'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: an inline + push refspec is read"
+expect_match '^Blocked: force push' "$hook_err" "config-aliases: the inline refspec block is the force-push one"
+git -C "$cfg" config remote.origin.push +main:main
+for form in 'git push origin' 'git push origin main' 'git push' 'git -c alias.p=push p origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a config + push refspec is read, $(printf '%q' "$form")"
+  expect_match '^Blocked: force push' "$hook_err" "config-aliases: the config refspec block is the force-push one, $(printf '%q' "$form")"
+done
+git -C "$cfg" config remote.origin.push refs/heads/main:refs/heads/main
+run_hook 'git push origin' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a config push refspec with no + passes"
+git -C "$cfg" config --unset remote.origin.push
+git -C "$cfg" config remote.origin.mirror true
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config mirror flag is read"
+git -C "$cfg" config remote.origin.mirror false
+run_hook 'git push origin' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a false mirror flag passes"
+git -C "$cfg" config --unset remote.origin.mirror
+
+# A command that sets the push config it then reads is refused.
+for form in 'git config remote.origin.push +main:main && git push origin' \
+  'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.push GIT_CONFIG_VALUE_0=+main:main git push origin' \
+  'git --config-env remote.origin.push=SPEC push origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a set push key is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.origin\.push' "$hook_err" "config-aliases: the refusal names the key, $(printf '%q' "$form")"
+done
+
+# The review found the refusal ran only on a call written as push, in the
+# same words as the set: a push that an alias or a bash -c runs passed, and so
+# did a set inside a bash -c. Each form force-pushed main in a scratch repo.
+git -C "$cfg" config alias.p push
+for form in 'git config remote.origin.push +main:main && bash -c "git push origin"' \
+  'bash -c "git config remote.origin.push +main:main" && git push origin' \
+  'git config remote.origin.push +main:main && git -c alias.q=push q origin' \
+  'git config remote.origin.push +main:main && git p origin' \
+  "git -c remote.origin.push=+main:main -c 'alias.q=!git push' q origin"; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a set push key is refused for a nested push, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.origin\.push' "$hook_err" "config-aliases: the nested refusal names the key, $(printf '%q' "$form")"
+done
+for form in 'bash -c "git push origin main"' 'git p origin main' 'git -c alias.q=push q origin main' \
+  'git -c remote.origin.push=refs/heads/main:refs/heads/main status && git push origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a nested push with no set key passes, $(printf '%q' "$form")"
+done
+git -C "$cfg" config --unset alias.p
+
+# The review found two writes that name no key: git remote add --mirror, and
+# a write to a config file. git does a mirror or a forced push after each.
+for form in 'git remote add --mirror=push backup git@github.com:acme/shop.git && git push backup' \
+  'git remote add --mirror backup git@github.com:acme/shop.git && git push backup' \
+  'git remote add --mi=push backup git@github.com:acme/shop.git && git push backup'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a push after a mirror remote add is refused, $(printf '%q' "$form")"
+  expect_match '^Blocked: this command could not be checked: the git push reads remote\.\*\.mirror' "$hook_err" "config-aliases: the mirror refusal says why, $(printf '%q' "$form")"
+done
+for form in "printf '[remote \"origin\"]\\n\\tpush = +main:main\\n' >> .git/config && git push origin" \
+  'cat push.cfg >> ~/.gitconfig && git push origin' \
+  "bash -c 'tee -a .git/config < push.cfg' && git push origin"; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a push after a config file write is refused, $(printf '%q' "$form")"
+  expect_match "^Blocked: this command could not be checked: the git push reads git's config file" "$hook_err" "config-aliases: the file refusal says why, $(printf '%q' "$form")"
+done
+for form in 'git remote add --mirror=fetch backup git@github.com:acme/shop.git && git push origin main' \
+  'git remote add backup git@github.com:acme/shop.git && git push -u backup feat/thing' \
+  'git add .gitconfig && git push origin feat/thing' 'cat .git/config' 'git remote -v && git push origin main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a push after a remote add or a config file read passes, $(printf '%q' "$form")"
+done
+
+# The review found a plain glob refspec in remote.*.push put a * on the push
+# line, so every push was blocked as a shell glob. git gives it no shell, and
+# a refspec with no + or : neither forces nor deletes.
+git -C "$cfg" config remote.origin.push 'refs/heads/*:refs/heads/*'
+parsed=$(printf '%s' 'git push origin' | python3 "$scripts/lib/git-command.py" --base "$cfg" 2>&1)
+expect_no_match '\*' "$parsed" "config-aliases: a plain config refspec adds no line"
+for form in 'git push -u origin feat/thing' 'git push origin'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a plain glob config refspec passes, $(printf '%q' "$form")"
+done
+git -C "$cfg" config remote.origin.push '+refs/heads/*:refs/heads/*'
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a + glob config refspec is still a force push"
+expect_match '^Blocked: force push' "$hook_err" "config-aliases: the + glob config refspec block is the force-push one"
+git -C "$cfg" config remote.origin.push :main
+run_hook 'git push origin' "$cfg"
+expect_exit 2 "$hook_status" "config-aliases: a config refspec that deletes main is blocked"
+expect_match '^Blocked: this push can delete main or master on the remote' "$hook_err" "config-aliases: the config delete block says why"
+git -C "$cfg" config --unset remote.origin.push
+
+# A push that can delete main or master on the remote is blocked. A delete of
+# a feature branch after its merge passes.
+for form in 'git push origin :main' 'git push --delete origin main' 'git push -d origin master' \
+  'git push --de origin refs/heads/main' 'git push origin --delete "$BRANCH"' 'git push -qd origin main' \
+  'git push --prune origin main' 'git push origin :refs/heads/master'; do
+  run_hook "$form" "$cfg"
+  expect_exit 2 "$hook_status" "config-aliases: a delete of main is blocked, $(printf '%q' "$form")"
+  expect_match '^Blocked: this push can delete main or master on the remote\. Ask the user first\.' "$hook_err" "config-aliases: the delete block says why, $(printf '%q' "$form")"
+done
+for form in 'git push origin --delete feat/basket' 'git push origin :feat/basket' 'git push -d origin fix/refund-cap' \
+  'git st' 'git lg -5' 'git log -1' 'git push origin main' 'git push -u origin feat/thing' 'git push origin :' \
+  'git fetch --prune origin' 'git push --dry-run origin main' 'git log --oneline main'; do
+  run_hook "$form" "$cfg"
+  expect_exit 0 "$hook_status" "config-aliases: a standard form passes on main, $(printf '%q' "$form")"
+done
+git -C "$cfg" checkout -q -b feat/thing
+run_hook 'git ci -m x' "$cfg"
+expect_exit 0 "$hook_status" "config-aliases: a config alias for commit passes on a feature branch"
 
 rm -rf "$work"

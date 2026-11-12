@@ -66,6 +66,16 @@ expect_match 'aws_key = "AKIA' "$scan_err" "the cd block names the staged line"
 
 scan "git -C $staged_repo commit -m x" "$repo"
 expect_exit 2 "$scan_status" "a secret staged in a mktemp -d repo -C points at is blocked"
+
+# branch-switch-commit: a commit whose directory the parser cannot know has the
+# staged diff of each directory the command names scanned.
+for form in "cd $staged_repo; git commit -m x" "cd $staged_repo && (git commit -m x)"; do
+  scan "$form" "$repo"
+  expect_exit 2 "$scan_status" "branch-switch-commit: a secret in a named dir is scanned, $(printf '%q' "$form")"
+  expect_match 'aws_key = "AKIA' "$scan_err" "branch-switch-commit: the block names the staged line, $(printf '%q' "$form")"
+done
+scan "cd $staged_repo; cd $repo && git commit -m x" "$repo"
+expect_exit 0 "$scan_status" "branch-switch-commit: a commit whose dir is known scans that dir only"
 rm -rf "$staged_repo"
 
 # Move the secret into the project repo. A commit that reaches it through a
@@ -82,6 +92,147 @@ expect_exit 2 "$scan_status" "a secret reached by an unresolvable cd is scanned"
 
 scan "pushd $wt && popd && git commit -m x" "$repo"
 expect_exit 2 "$scan_status" "a secret left behind by pushd and popd is scanned"
+
+# The scan reads what the commit takes: the work tree for -a, the text of each
+# path it names, and a file whose diff git hides, as text (secret-scan-scope).
+# Each block-case passed before, with exit 0.
+git -C "$repo" reset -q
+sc="$work/secret-scan/scope"
+mkdir -p "$sc"
+git -C "$sc" init -q -b feat/scope
+git -C "$sc" config user.email t@example.com
+git -C "$sc" config user.name Tester
+echo one >"$sc/a.txt"
+echo two >"$sc/b.txt"
+echo three >"$sc/my notes.txt"
+git -C "$sc" add .
+git -C "$sc" commit -q --no-verify -m "chore(repo): first commit"
+
+echo "aws=$key" >>"$sc/a.txt"
+scan 'git commit -am x' "$sc"
+expect_exit 2 "$scan_status" "-am reads a secret in a tracked file that is not staged"
+expect_match 'aws=AKIA' "$scan_err" "the -am block names the line"
+scan 'git commit -a -m x' "$sc"
+expect_exit 2 "$scan_status" "-a reads a secret in a tracked file that is not staged"
+scan 'git commit --all -m x' "$sc"
+expect_exit 2 "$scan_status" "--all reads a secret in a tracked file that is not staged"
+scan "cd $sc && git commit -qam x" "$repo"
+expect_exit 2 "$scan_status" "-qam in the repo a cd moves to reads its work tree"
+scan 'git commit a.txt -m x' "$sc"
+expect_exit 2 "$scan_status" "a named path is read from the work tree"
+scan 'git commit -m x -- a.txt' "$sc"
+expect_exit 2 "$scan_status" "a path after -- is read from the work tree"
+scan 'git commit -i a.txt -m x' "$sc"
+expect_exit 2 "$scan_status" "a path with -i is read from the work tree"
+scan 'git commit -m "fix it" a.txt' "$sc"
+expect_exit 2 "$scan_status" "a path after a quoted message is read from the work tree"
+scan 'git commit -m x -- "$F"' "$sc"
+expect_exit 2 "$scan_status" "a path the shell expands is judged on the whole work tree"
+scan 'git commit -m "x' "$sc"
+expect_exit 2 "$scan_status" "a commit the parser cannot read is judged on the whole work tree"
+# A redirect is the shell's, not a path: `/dev/null` as a path made git diff
+# fail, and the scan read nothing.
+scan 'git commit a.txt -m x 2>/dev/null' "$sc"
+expect_exit 2 "$scan_status" "a named path before a 2> redirect is read from the work tree"
+scan 'git commit a.txt -m x > log.txt' "$sc"
+expect_exit 2 "$scan_status" "a named path before a > redirect is read from the work tree"
+scan 'git commit -m x a.txt </dev/null' "$sc"
+expect_exit 2 "$scan_status" "a named path before a < redirect is read from the work tree"
+scan 'git commit -m x -- a.txt 2>/dev/null' "$sc"
+expect_exit 2 "$scan_status" "a path after -- and before a redirect is read from the work tree"
+scan 'git commit -m x -- a.txt ../outside' "$sc"
+expect_exit 2 "$scan_status" "a paths diff that git refuses is judged on the whole work tree"
+
+scan 'git commit -m x' "$sc"
+expect_exit 0 "$scan_status" "a plain commit does not take a secret that is not staged"
+scan 'git commit -m "add a.txt"' "$sc"
+expect_exit 0 "$scan_status" "a path in the message is not a path the commit takes"
+scan 'git commit -ma' "$sc"
+expect_exit 0 "$scan_status" "-ma is a message, not -a"
+echo fixed >>"$sc/b.txt"
+scan 'git commit b.txt -m "fix the typo"' "$sc"
+expect_exit 0 "$scan_status" "a named path does not take a secret in another file"
+scan 'git commit b.txt -m "fix the typo" >/dev/null 2>&1' "$sc"
+expect_exit 0 "$scan_status" "a redirect target is not a path the commit takes"
+scan 'git commit -m x 2>/dev/null' "$sc"
+expect_exit 0 "$scan_status" "a plain commit with a redirect does not take a secret that is not staged"
+git -C "$sc" checkout -q -- a.txt
+scan 'git commit -am "update notes"' "$sc"
+expect_exit 0 "$scan_status" "-am with a clean work tree passes"
+
+echo "aws=$key" >>"$sc/my notes.txt"
+scan "git commit -m x -- 'my notes.txt'" "$sc"
+expect_exit 2 "$scan_status" "a named path with a space is read whole"
+git -C "$sc" checkout -q -- .
+
+# An added line whose text starts with ++ prints as +++, as the file header
+# does.
+echo "++aws=$key" >>"$sc/a.txt"
+scan 'git commit -am x' "$sc"
+expect_exit 2 "$scan_status" "-am reads a secret on a line that starts with ++"
+scan 'git commit a.txt -m x' "$sc"
+expect_exit 2 "$scan_status" "a named path reads a secret on a line that starts with ++"
+git -C "$sc" add a.txt
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "a staged secret on a line that starts with ++ is read"
+git -C "$sc" reset -q
+git -C "$sc" checkout -q -- .
+
+# git diff skips a file with the assume-unchanged bit, and git commit <path>
+# still takes its work-tree text. git commit -a does not.
+git -C "$sc" update-index --assume-unchanged a.txt
+echo "aws=$key" >>"$sc/a.txt"
+scan 'git commit a.txt -m x' "$sc"
+expect_exit 2 "$scan_status" "a named path with the assume-unchanged bit is read from the work tree"
+scan 'git commit -m x -- .' "$sc"
+expect_exit 2 "$scan_status" "a pathspec that matches a file with the assume-unchanged bit reads it"
+scan 'git commit b.txt -m x' "$sc"
+expect_exit 0 "$scan_status" "a named path does not take another file with the assume-unchanged bit"
+scan 'git commit -am x' "$sc"
+expect_exit 0 "$scan_status" "-am does not take a file with the assume-unchanged bit"
+git -C "$sc" update-index --no-assume-unchanged a.txt
+git -C "$sc" checkout -q -- .
+
+# Attributes and config that change what git diff prints.
+printf '*.dat -diff\n' >"$sc/.gitattributes"
+echo "aws=$key" >"$sc/c.dat"
+git -C "$sc" add .gitattributes c.dat
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "a staged file with a -diff attribute is read as text"
+printf '*.dat binary\n' >"$sc/.gitattributes"
+git -C "$sc" add .gitattributes
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "a staged file with a binary attribute is read as text"
+printf '*.dat diff=hide\n' >"$sc/.gitattributes"
+git -C "$sc" add .gitattributes
+git -C "$sc" config diff.hide.textconv true
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "a textconv driver does not hide a staged secret"
+git -C "$sc" config --unset diff.hide.textconv
+git -C "$sc" config diff.external true
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "an external diff does not hide a staged secret"
+git -C "$sc" config --unset diff.external
+git -C "$sc" config color.ui always
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "color.ui always does not hide a staged secret"
+git -C "$sc" config --unset color.ui
+mkdir -p "$sc/sub"
+git -C "$sc" config diff.relative true
+scan "cd $sc/sub && git commit -m x" "$sc"
+expect_exit 2 "$scan_status" "diff.relative does not hide a staged secret outside the dir"
+git -C "$sc" config --unset diff.relative
+
+git -C "$sc" reset -q
+printf 'bin\000ary\n' >"$sc/e.bin"
+git -C "$sc" add e.bin
+scan 'git commit -m x' "$sc"
+expect_exit 0 "$scan_status" "a staged file with NUL bytes and no secret passes"
+echo "aws=$key" >"$sc/d.txt"
+git -C "$sc" add d.txt
+scan 'git commit -m x' "$sc"
+expect_exit 2 "$scan_status" "a staged file with NUL bytes does not hide a staged secret"
+git -C "$sc" reset -q
 
 # Every script with pipefail, not only this one: piped text lets grep -q exit
 # at a match before printf writes its next line, printf dies of SIGPIPE, and

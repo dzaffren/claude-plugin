@@ -11,6 +11,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - zuko's force-push and commit-on-main guards missed a `git push --force` or a commit on `main` written after a heredoc whose delimiter they could not read, such as `<<E-F` or `<<'E-F'`, after a newline inside a quoted argument, or after `--attr-source`, `--config-env` or `--shallow-file` and its value. They now block each of these.
 - zuko's git guards missed a git call that bash runs inside another command. This covers a `$( )` or backticks inside double quotes or a heredoc body, and the string given to `bash -c` or `eval`. The guards now read each of these and block a force push, a commit on `main`, a secret or an attribution line there, as they do at the top level.
 - zuko's git guards missed a git or gh call run by its path, such as `/usr/bin/git` or `git.exe`, and a git call run through an alias set on the command line with `-c alias.NAME=...`. They now read each of these, and refuse an alias whose value the command does not show.
+- zuko's pentester fence let a `tar` in the repo run a program through an option such as `--to-command`, `--checkpoint-action` or `-I`. The fence now blocks each tar option that runs a program, reads options from a file or reads a remote archive.
+- zuko's secret scan read only the staged diff, so `git commit -a`, `git commit <path>` and a file marked `-diff` could commit a key unchecked. It now scans what each commit takes, as plain text.
+- zuko's commit-on-main guard checked only `git commit`. On `main` it now also blocks `merge`, `cherry-pick`, `rebase`, `pull`, `revert` and `am`. Use `git pull --ff-only` or `git merge --ff-only` to update `main`.
+- zuko's commit-on-main guard missed a commit after `git checkout main` or `git switch main` in the same command, and a commit in a directory it could not work out. It now checks both.
+- zuko's force-push and commit-on-main guards missed an alias or a `remote.*.push` refspec saved in git's config, and a push that deletes `main` on the remote. They now read git's config and block each of these.
+- zuko's attribution guard missed a co-author line added with `git commit --trailer` or `git tag --trailer`, and the message of `git merge -m`. It now reads each of these.
 
 ## [2.7.0] - 2026-11-10
 

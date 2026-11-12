@@ -30,9 +30,10 @@ skill, or the two copies drift apart.
 
 The harness re-injects an attribution instruction every session, so this will
 keep being asked for. Say no. `scripts/block-attribution.sh` blocks the first
-three at `git commit`, `git tag`, `gh release create`, `gh pr create`,
-`gh pr edit` and `gh pr merge`, and `scripts/verify-ship-gates.sh` blocks them
-again for the whole branch before the PR. To stop it at the source, the user
+three at `git commit`, `git tag`, `git merge`, `gh release create`,
+`gh pr create`, `gh pr edit` and `gh pr merge`, and
+`scripts/verify-ship-gates.sh` blocks them again for the whole branch before
+the PR. To stop it at the source, the user
 sets `attribution` in `~/.claude/settings.json`:
 
 ```json

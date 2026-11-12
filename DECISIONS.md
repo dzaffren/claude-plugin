@@ -382,7 +382,7 @@ Rejected: blocking `$` and backticks in a push (it would stop
 a command hook's sight). Both stay known limits: a command hook stops mistakes,
 not a push written to get past it.
 Source: specs/force-push-expansion.md
-Status: active
+Status: superseded by D155
 
 ## D35 · 2026-10-09 · Stop hooks judge only the zuko docs this work changed
 
@@ -1349,4 +1349,124 @@ Status: active
 Why: the v2.7.0 pentest proved S5: `git -c alias.p=push p --force origin main` passed every git guard. The parser adds the call again with the alias replaced, and keeps the original line, because git ignores an alias with a builtin's name. An alias set by `--config-env`, `GIT_CONFIG_KEY_n`, `git config` or a `$` value has no value in the text, so the command is refused (D52).
 Rejected: replace the call by its expansion (`git -c alias.push=status push --force` would read as `status --force` and pass), let a hidden alias through (`git config alias.p push && git p --force` passes), read `~/.gitconfig` and `.git/config` aliases now (a hook runs `git config` on each call, and the slice fails Fits: later slice config-aliases).
 Source: specs/git-spellings.md
+Status: active
+
+## D141 · 2026-11-12 · zuko keeps its own rm guard and does not rely on Claude Code's removal check
+
+Why: the guard's message says it blocks a recursive delete of a top-level or home path, and on 2026-11-11 8 of 11 such forms passed it, `rm -rf /*` and `rm -rf $HOME` among them. Claude Code's own removal check depends on its version and permission mode.
+Rejected: rely on Claude Code's check (not checked across versions or modes), remove the rule (D16 raises a removed guard one tier, and the gap stays).
+Source: specs/guard-leads/shape.md
+Status: active
+
+## D142 · 2026-11-12 · The pentester fence refuses each tar option that runs a program, in the repo and in the scratch copy
+
+Why: --to-command, --checkpoint-action and -I run a program in the real repo (v2.6.0 N5, v2.7.0 N2). In the scratch copy the fence already blocks a shell and a pipe into one, and --to-command=sh is the same thing.
+Rejected: Refuse only --checkpoint-action=exec and allow the other actions: the pentester needs none of them, and one name is less code than parsing the action. Let the options run in the scratch copy under D14: D14 lets code under test run, not a shell that the fence never sees.
+Source: specs/fence-tar-exec.md
+Status: active
+
+## D143 · 2026-11-12 · The secret scan reads the words of each commit through the parser module, and scans what the commit takes
+
+Why: on 2026-11-12, `git commit -am x` and `git commit a.txt -m x` passed a key in a tracked file that was not staged. The parser's printed lines join words with spaces, so `-m "add a.txt"` reads as a path. The hook loads `git-command.py` by its path, as block-attribution.sh does. It adds `git diff` for `-a`, or `git diff -- <paths>` for named paths, to the staged diff.
+Rejected: a new output mode in git-command.py (every guard shares the file, and another slice owns it), the printed lines (a message word reads as a path), scanning the whole work tree for every commit (a clean `git commit -m x` blocks on an unstaged key in another file), scanning only the paths for `git commit <path>` (it drops the old block on a staged key).
+Source: specs/secret-scan-scope.md
+Status: active
+
+## D144 · 2026-11-12 · The secret scan reads every diff as plain text, whatever the repo's attributes and config say
+
+Why: on 2026-11-12, a staged key passed in a file with a `-diff` attribute, and also with `color.ui always`, a textconv driver or `diff.external` in the repo config. Each diff gets `-c diff.relative=false --text --no-color --no-ext-diff --no-textconv`, and each grep gets `-a`.
+Rejected: honouring the attributes (the probe passed a key), reading each blob with `git cat-file` (more code for the same text), skipping a file with NUL bytes (a NUL byte would hide a key).
+Source: specs/secret-scan-scope.md
+Status: active
+
+## D145 · 2026-11-12 · The secret scan drops a shell redirect and its target from the paths a commit names, and reads the whole work tree when git refuses the paths diff
+
+Why: Review F1. `git commit a.txt -m x 2>/dev/null` made the reader treat `/dev/null` as a path. git then refused the paths diff, the scan read nothing, and the key passed. The parser's tokens do not show whether `2>` was one word, so a digit before a redirect stays a path. That is harmless, because `git diff -- 2` adds nothing.
+Rejected: Dropping the digit too, which misses a file named 2. Using only the fallback to all, which falsely blocks `git commit b.txt -m x >log` when another file holds a key.
+Source: specs/secret-scan-scope.md
+Status: active
+
+## D146 · 2026-11-12 · For named paths, the secret scan diffs the index copy of an assume-unchanged file against its work-tree text
+
+Why: Review F2. git diff skips a file with the assume-unchanged bit, but `git commit <path>` and `git commit -- .` still take its work-tree text. Checked with real commits in a scratch repo. `-a` and skip-worktree are not widened, because git does not take them. A failed mktemp blocks the commit.
+Rejected: Grepping the whole work-tree file, which blocks on a key-shaped line already committed. The plain diff tool, a new dependency. Process substitution in place of the temp file, which may not reach a native git on Windows (not checked).
+Source: specs/secret-scan-scope.md
+Status: active
+
+## D147 · 2026-11-12 · The secret scan tells a diff header from an added line by where it sits, not by a leading +++
+
+Why: Review F3. `grep -av '^+++'` dropped an added line whose text starts with `++`. An awk filter now reads `+` lines only outside a header, which runs from `diff --git` to the first `@@`.
+Rejected: --output-indicator-new, which needs git 2.26: an older git would fail every diff, and the scan would read nothing. `grep -v '^+++ [ab/]'`, which still drops an added `++ b/...` line.
+Source: specs/secret-scan-scope.md
+Status: active
+
+## D148 · 2026-11-12 · On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am
+
+Why: each one makes commits on the branch it runs on, and all six passed the guard on 2026-11-12 (v2.6.0 N9). `git push origin main` passes for /release, so a merge commit on a local main can reach the remote. git 2.52.0 refuses to make a commit for `merge --ff-only` and `pull --ff-only`, also with `pull.rebase=true` or `--rebase`, so those pass, with `--abort` and `--quit`.
+Rejected: allow a plain `git pull` (with `pull.rebase=false` it made a merge commit on main), read `pull.ff` and `pull.rebase` from the config (an inline `-c` changes them, and config reads belong to slice config-aliases), block `--ff-only` too (it is the normal way to update main, 119 logged calls).
+Source: specs/main-branch-commits.md
+Status: active
+
+## D149 · 2026-11-12 · The allowed forms on main are an allow-list of words, not a list of the options that make a commit
+
+Why: the parser prints a call with its quotes gone, so `git merge -m "a --ff-only" feat` reads as the words `-m`, `a`, `--ff-only`. A check for `--ff-only` alone lets it through, and git then makes a merge commit. Each option must be on a short list, and each other word must hold no `$`, quote, glob or comma.
+Rejected: block on `--no-ff`, `--rebase` and the other options that make a commit (the list is open, and `-m "x --ff-only"` still passes), a new parser mode that keeps the quotes (a change to the parser that six callers share, for one hook).
+Source: specs/main-branch-commits.md
+Status: active
+
+## D150 · 2026-11-12 · An allowed form on main passes only when git starts its command
+
+Why: xargs adds the words it reads to the git call, and the printed line cannot show them. `echo --no-ff feat | xargs git merge --ff-only` printed as `merge --ff-only` and made a merge commit on main (review F1). Only a keyword such as `if` or `command`, or a `NAME=value`, may stand before git.
+Rejected: a list of the programs that add words, such as xargs, parallel and find -exec (a guard that lists wrappers misses one), a mark per call in the `--dir` output (a change to output that six callers share).
+Source: specs/main-branch-commits.md
+Status: active
+
+## D151 · 2026-11-12 · A checkout or switch that can reach main makes each later commit-making call in the command count as on main
+
+Why: git moves HEAD before the next call runs, so `git checkout main && git commit` committed on main past the guard (v2.6.0 N8). The switch adds main to the branches checked, and the branch of the directory is still checked, so no call that the guard blocked before now passes. A path checkout such as `git checkout a.txt` on main stays blocked. A later switch with a create option, such as `git checkout -b docs/x`, ends it, because only a create option moves HEAD off main for sure.
+Rejected: replace the branch with the switch target (a path checkout or a failed switch after `;` then reads as off main, a new allow), match the directory of the switch to the directory of the commit (`git -C sub` and the start dir share one HEAD, and the strings differ), count a switch printed after the commit (196 logged commands switch first and 50 commit first, such as `git commit && git switch main`).
+Source: specs/branch-switch-commit.md
+Status: active
+
+## D152 · 2026-11-12 · A commit whose directory the parser cannot know is checked in each directory that the command names
+
+Why: `cd <repo on main> && (git commit -m x)` ran on main, and the guard checked only the start and project dirs (nested-git-commands O5). The parser prints each existing directory that a `cd`, `pushd`, `-C`, `--git-dir`, `--work-tree`, `GIT_DIR=` or `GIT_WORK_TREE=` word names, resolved from the start and from each directory found before it. block-dangerous.sh and secret-scan.sh read the same list.
+Rejected: block each commit with an unknown directory (`cd sub; git commit` is a normal form), track subshells and `;` in the `--dir` walk (a change to output that six callers share).
+Source: specs/branch-switch-commit.md
+Status: active
+
+## D153 · 2026-11-12 · The git parser reads aliases and push settings through git config, in each directory the command can run in
+
+Why: an alias or a remote.*.push refspec saved by an earlier command changed what a later push or commit did, past every git guard (v2.6.0 N9). `git config --get-regexp` in each directory gives the files git reads, with its includes and its order. The parser adds each call again as git runs it, and keeps the call as written, as D140 does. A command that sets a push key it then reads is refused (D52).
+Rejected: read ~/.gitconfig and .git/config in Python (misses includes, XDG and the system file), read only the start dir (`cd <repo> && git pf` passes), add a configured refspec only to a push with no refspec (`git push origin main` takes a configured `+main:main` and forces).
+Source: specs/config-aliases.md
+Status: active
+
+## D154 · 2026-11-12 · A push that can delete main or master on the remote is blocked, and other remote deletes pass
+
+Why: `git push origin :main` and `git push --delete origin main` passed on 2026-11-12 (shape O6). The logs hold 22 commands that delete a remote branch, and the ones that ran were feature-branch cleanups after a merge. A name with `$` can be `main`, and `--prune` can delete any branch, so both are blocked.
+Rejected: block each remote delete (it stops the cleanup after each merged PR), leave deletes to remote branch protection (GitHub took a force push to this repo's main on 2026-11-12, so it is not set).
+Source: specs/config-aliases.md
+Status: active
+
+## D155 · 2026-11-12 · The force-push check reads git's spellings of force, from the text and from git's config, not shell variables
+
+Why: git 2.52.0 forced a bare remote with `-uf`, `--mi` and `origin +main`, and the check read only `--force` and `-f`. bash builds any of those from a brace or glob after the hook reads the text, so a push holding one blocks with its own reason. A `+` refspec or a true mirror flag saved in git's config forced `git push origin` past every guard (v2.6.0 N9), so the parser now adds each one to the push it reads (D153). Config that the same command writes is not there yet when the hook reads it, so a push in that command is refused.
+Rejected: blocking `$` and backticks in a push (it would stop `git push -u origin "$(git branch --show-current)"`), keeping config out of the check (`git push origin` force-pushed main with `remote.origin.push = +main:main`). A command hook stops mistakes, not a push written to get past it: config that the text points git to stays a known limit (config-aliases O5).
+Supersedes: D34
+Source: specs/config-aliases.md
+Status: active
+
+## D156 · 2026-11-12 · The attribution hook reads `--trailer` of git commit and git tag, and the message of git merge
+
+Why: leads v2.6.0 N12 and v2.7.0 N11. `git commit --trailer "Co-authored-by: Claude"` and `git merge feat -m "Co-Authored-By: Claude"` passed the hook on 2026-11-12. git writes `key=value` and `key : value` as `key: value`, so the hook prints each trailer that way before the banned pattern judges it.
+Rejected: a wider banned pattern with `[:=]` and spaces (it would also judge `co-authored-by=claude` in message prose), reading `--trailer` on `git commit` only (`git tag --trailer` exists in git 2.52.0), a trailer key from config (needs a `git config` read, O3).
+Source: specs/attribution-trailer.md
+Status: active
+
+## D157 · 2026-11-12 · The attribution hook gives each value option of git commit, git tag and git merge its value
+
+Why: the commit and tag tables knew only the message options, so `git commit -tm --message "..."` read `--message` as the text of `-m`. The signed message after it passed. `git merge --into-name -m --message` passed the same way. D56 fixed this class for gh.
+Rejected: the found cases only (`-u`, `-U`, `--author` and the others fail the same way), merge only (the lesson `an-option-table-lists-every-value-option.md` gives every sibling table the same pass).
+Source: specs/attribution-trailer.md
 Status: active
