@@ -28,6 +28,7 @@ here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 messages=$(ZUKO_COMMAND="$cmd" python3 -I - "$here" "$base" <<'PY' 2>/dev/null
 import importlib.util
 import os
+import re
 import sys
 
 for stream in (sys.stdin, sys.stdout, sys.stderr):
@@ -87,6 +88,12 @@ def emit(label, kind, value, option, where):
         value = read_file(label, value, option, where)
         if value is None:
             return
+    if kind == "trailer":
+        # git splits a --trailer at its first : or =, strips the spaces
+        # around both parts, and writes "token: value".
+        parts = re.split(r"[:=]", value, maxsplit=1)
+        if len(parts) == 2:
+            value = "%s: %s" % (parts[0].strip(), parts[1].strip())
     for line in value.split("\n"):
         print("%s\t%s" % (label, line))
 
@@ -94,12 +101,15 @@ def emit(label, kind, value, option, where):
 def short_options(token, rest, letters, drop_equals, where):
     """git's rule for -am"x", which gh's -n"x" follows too: the letters before
     the one that takes a value are flags, everything after it is the value,
-    and an empty tail takes the next argument. gh's flag parser also drops
-    one "=" after the letter (-F=path reads path); git keeps it."""
+    and an empty tail takes the next argument. A letter whose value is
+    optional, as in git's -S[<keyid>], takes only the tail. gh's flag parser
+    also drops one "=" after the letter (-F=path reads path); git keeps it."""
     for index, letter in enumerate(token[1:], start=1):
         if letter not in letters:
             continue
         label, kind = letters[letter]
+        if kind == "optional":
+            return
         tail = token[index + 1:]
         if drop_equals and tail.startswith("="):
             tail = tail[1:]
@@ -143,22 +153,52 @@ def read_options(rest, longs, letters, where, drop_equals=False, abbreviate=Fals
             short_options(token, rest, letters, drop_equals, where)
 
 
-# git commit and git tag take a message through the same four options.
-GIT_LABELS = {"commit": "commit message", "tag": "tag message"}
+# An option that takes a value which is not message text. It must still take
+# its value: else a value that ends in t, b, m or F, as in -Bnext or -tm, reads
+# as -t, -b, -m or -F and takes the next flag as its text (gh 2.101.0, the
+# --help of gh release create, gh pr create, gh pr edit and gh pr merge; git
+# 2.52.0, the -h of git commit, git tag and git merge). OPTIONAL is a short
+# option whose value is optional, so it takes the rest of its word only.
+VALUE = (None, None)
+OPTIONAL = (None, "optional")
+
+
+def git_table(label, longs, letters, trailer=False):
+    """The long and short options of a git subcommand that writes a message.
+    The message options come first, so an ambiguous prefix reads as one."""
+    message = {"--message": (label, "text"), "--file": (label, "file")}
+    if trailer:
+        message["--trailer"] = (label, "trailer")
+    return ({**message, **dict.fromkeys(longs, VALUE)},
+            {"m": (label, "text"), "F": (label, "file"), **letters})
+
+
+# git commit and git tag also write each --trailer into the message. git
+# merge writes the merge commit message from -m and -F, and has no --trailer.
+GIT_TABLES = {
+    "commit": git_table(
+        "commit message",
+        ("--author", "--date", "--reedit-message", "--reuse-message", "--fixup",
+         "--squash", "--template", "--cleanup", "--pathspec-from-file",
+         "--unified", "--inter-hunk-context"),
+        {"c": VALUE, "C": VALUE, "t": VALUE, "U": VALUE, "u": OPTIONAL,
+         "S": OPTIONAL}, trailer=True),
+    "tag": git_table(
+        "tag message",
+        ("--cleanup", "--local-user", "--contains", "--no-contains", "--merged",
+         "--no-merged", "--sort", "--points-at", "--format"),
+        {"u": VALUE, "n": OPTIONAL}, trailer=True),
+    "merge": git_table(
+        "merge message",
+        ("--cleanup", "--strategy", "--strategy-option", "--into-name"),
+        {"s": VALUE, "X": VALUE, "S": OPTIONAL}),
+}
 
 for where, args in git_command.invocations_with_dirs(tokens, base):
-    if args and args[0] in GIT_LABELS:
-        label = GIT_LABELS[args[0]]
-        read_options(
-            args[1:],
-            {"--message": (label, "text"), "--file": (label, "file")},
-            {"m": (label, "text"), "F": (label, "file")}, where, abbreviate=True)
+    if args and args[0] in GIT_TABLES:
+        longs, letters = GIT_TABLES[args[0]]
+        read_options(args[1:], longs, letters, where, abbreviate=True)
 
-# An option that takes a value which is not message text. It must still take
-# its value: else a value that ends in t, b or F, as in -Bnext, reads as -t, -b
-# or -F and takes the next flag as its text (gh 2.101.0, the --help of
-# gh release create, gh pr create, gh pr edit and gh pr merge).
-VALUE = (None, None)
 NOTES = ("release notes", "text")
 NOTES_FILE = ("release notes", "file")
 TITLE = ("release title", "text")
@@ -255,7 +295,7 @@ offending=$(printf '%s\n' "$found" | grep -iE "$banned" || true)
     [ -n "$problem" ] || continue
     typed=${typed%$'\r'}   # print() ends the line with \r\n on Windows
     case $label in
-      "commit message" | "tag message") inline=-m ;;
+      "commit message" | "tag message" | "merge message") inline=-m ;;
       "release notes") inline=--notes ;;
       *) inline=--body ;;
     esac
@@ -294,9 +334,10 @@ labels=$(printf '%s\n' "$offending" | cut -f1 | awk '!seen[$0]++')
   echo "references/git-naming.md bans model attribution in commit messages, PR"
   echo "bodies, tag messages and release notes. Remove those lines and run it again."
   # Only commits get the harness's injected attribution, so only they get the
-  # settings fix. An unparsed command might be a commit.
+  # settings fix. A merge message is a commit's message, and an unparsed
+  # command might be a commit.
   case $labels in
-    *"commit message"* | *command*)
+    *"commit message"* | *"merge message"* | *command*)
       echo ""
       echo "The harness re-injects the attribution instruction every session, so this will"
       echo "recur. To stop it at the source, set \`attribution\` in ~/.claude/settings.json:"
