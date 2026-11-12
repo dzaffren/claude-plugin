@@ -1068,9 +1068,12 @@ done
 
 parsed=$(printf '%s' "cd $parent && cd onmain; git -C . commit; cd $parent/onmain" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo")
 expect_exit 0 "$?" "branch-switch-commit: --candidate-dirs exits 0"
-expect_match "^$repo
-$parent
-$parent/onmain\$" "$parsed" "branch-switch-commit: --candidate-dirs prints the base, then each named dir once"
+# On Windows, Git Bash hands python3 the start dir as C:/..., and each dir it
+# finds must come back with / too, or the same dir prints twice.
+if is_windows; then want_repo=$(cygpath -m "$repo"); want_parent=$(cygpath -m "$parent"); else want_repo=$repo; want_parent=$parent; fi
+expect_match "^$want_repo
+$want_parent
+$want_parent/onmain\$" "$parsed" "branch-switch-commit: --candidate-dirs prints the base, then each named dir once"
 many=$(python3 -c 'import sys; print("; ".join("cd %s/d%d" % (sys.argv[1], i) for i in range(70)), end="")' "$parent")
 python3 -c 'import os,sys; [os.mkdir("%s/d%d" % (sys.argv[1], i)) for i in range(70)]' "$parent"
 printf '%s' "$many" | python3 "$scripts/lib/git-command.py" --candidate-dirs "$repo" >/dev/null 2>&1

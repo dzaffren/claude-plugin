@@ -1027,11 +1027,13 @@ def candidate_dirs(tokens, base):
             taking = "dir"
         elif match := DIR_WORD.match(token):
             named.append(match.group(1))
-    found = [base]
+    found = [base.replace(os.sep, "/")]
     for name in named:
         absolute = name.startswith(("/", "~")) or re.match(r"[A-Za-z]:[/\\]", name)
         for current in [None] if absolute else list(found):
             moved = resolve(current, name)
+            if moved is not None:
+                moved = moved.replace(os.sep, "/")
             if moved is not None and moved not in found:
                 found.append(moved)
         if len(found) > MAX_CANDIDATE_DIRS:
