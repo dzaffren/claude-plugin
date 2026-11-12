@@ -275,6 +275,12 @@ projects.
 - The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file
 - The git guards now see a git call that bash runs inside another command: a $( ) or backticks in double quotes or a heredoc body, and a bash -c or eval string
 - The git guards now read a path to git or gh, git's dashed form, and an inline -c alias, and refuse an alias whose value the command does not show
+- The pentester fence blocks a tar option that runs a program, reads options from a file or reads a remote archive, in the repo and in the scratch copy
+- The secret scan reads what each commit takes: the work tree for -a, the named paths for git commit <path>, and every diff as plain text whatever the repo's attributes say
+- On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am; a --ff-only merge or pull and --abort still pass
+- The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names
+- The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote
+- The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option
 
 ## Docs
 

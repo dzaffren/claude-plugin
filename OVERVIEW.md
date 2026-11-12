@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-11 by /ship git-spellings
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-12 by /ship guard-leads
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -100,12 +100,12 @@ projects.
 | guard-parser-gaps | Shipped | The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file | — |
 | nested-git-commands | Shipped | The git guards now see a git call that bash runs inside another command: a $( ) or backticks in double quotes or a heredoc body, and a bash -c or eval string | — |
 | git-spellings | Shipped | The git guards now read a path to git or gh, git's dashed form, and an inline -c alias, and refuse an alias whose value the command does not show | — |
-| fence-tar-exec | Built | The pentester fence blocks a tar option that runs a program, reads options from a file or reads a remote archive, in the repo and in the scratch copy | — |
-| secret-scan-scope | Built | The secret scan reads what each commit takes: the work tree for -a, the named paths for git commit <path>, and every diff as plain text whatever the repo's attributes say | — |
-| main-branch-commits | Built | On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am; a --ff-only merge or pull and --abort still pass | — |
-| branch-switch-commit | Built | The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names | — |
-| config-aliases | Built | The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote | — |
-| attribution-trailer | Built | The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option | — |
+| fence-tar-exec | Shipped | The pentester fence blocks a tar option that runs a program, reads options from a file or reads a remote archive, in the repo and in the scratch copy | — |
+| secret-scan-scope | Shipped | The secret scan reads what each commit takes: the work tree for -a, the named paths for git commit <path>, and every diff as plain text whatever the repo's attributes say | — |
+| main-branch-commits | Shipped | On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am; a --ff-only merge or pull and --abort still pass | — |
+| branch-switch-commit | Shipped | The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names | — |
+| config-aliases | Shipped | The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote | — |
+| attribution-trailer | Shipped | The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option | — |
 
 ## More
 

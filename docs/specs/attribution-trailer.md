@@ -1,6 +1,6 @@
 # Attribution trailer
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/guard-leads/shape.md
 **Depends on:** None
