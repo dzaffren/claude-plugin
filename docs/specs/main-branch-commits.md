@@ -142,7 +142,7 @@ leaves HEAD detached while it runs, so the branch check also reads the
 branch the rebase started on from git's `head-name` file. The release
 exception (D30) stays for `commit` only.
 
-Relies on: D30, D52, D138, D140, D-NEW-main-branch-commits-1, D-NEW-main-branch-commits-2, D-NEW-main-branch-commits-3.
+Relies on: D30, D52, D138, D140, D148, D149, D150.
 
 ```mermaid
 flowchart TB
@@ -238,21 +238,21 @@ Single chunk.
 ### Decisions to record
 
 ```
-## D-NEW-main-branch-commits-1 · 2026-11-12 · On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am
+## D148 · 2026-11-12 · On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am
 
 Why: each one makes commits on the branch it runs on, and all six passed the guard on 2026-11-12 (v2.6.0 N9). `git push origin main` passes for /release, so a merge commit on a local main can reach the remote. git 2.52.0 refuses to make a commit for `merge --ff-only` and `pull --ff-only`, also with `pull.rebase=true` or `--rebase`, so those pass, with `--abort` and `--quit`.
 Rejected: allow a plain `git pull` (with `pull.rebase=false` it made a merge commit on main), read `pull.ff` and `pull.rebase` from the config (an inline `-c` changes them, and config reads belong to slice config-aliases), block `--ff-only` too (it is the normal way to update main, 119 logged calls).
 Source: specs/main-branch-commits.md
 Status: active
 
-## D-NEW-main-branch-commits-2 · 2026-11-12 · The allowed forms on main are an allow-list of words, not a list of the options that make a commit
+## D149 · 2026-11-12 · The allowed forms on main are an allow-list of words, not a list of the options that make a commit
 
 Why: the parser prints a call with its quotes gone, so `git merge -m "a --ff-only" feat` reads as the words `-m`, `a`, `--ff-only`. A check for `--ff-only` alone lets it through, and git then makes a merge commit. Each option must be on a short list, and each other word must hold no `$`, quote, glob or comma.
 Rejected: block on `--no-ff`, `--rebase` and the other options that make a commit (the list is open, and `-m "x --ff-only"` still passes), a new parser mode that keeps the quotes (a change to the parser that six callers share, for one hook).
 Source: specs/main-branch-commits.md
 Status: active
 
-## D-NEW-main-branch-commits-3 · 2026-11-12 · An allowed form on main passes only when git starts its command
+## D150 · 2026-11-12 · An allowed form on main passes only when git starts its command
 
 Why: xargs adds the words it reads to the git call, and the printed line cannot show them. `echo --no-ff feat | xargs git merge --ff-only` printed as `merge --ff-only` and made a merge commit on main (review F1). Only a keyword such as `if` or `command`, or a `NAME=value`, may stand before git.
 Rejected: a list of the programs that add words, such as xargs, parallel and find -exec (a guard that lists wrappers misses one), a mark per call in the `--dir` output (a change to output that six callers share).
@@ -271,14 +271,14 @@ Status: active
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
 | --- | --- | --- | --- | --- | --- | --- |
-| O1 | Which of `merge`, `cherry-pick`, `rebase`, `pull`, `revert` and `am` does the guard block on `main`? `git pull` on `main` is the normal way to update it. (from shape O4) | question | shape | user | Resolved | Decided under the user's delegation: block all six on `main`. Let through `merge --ff-only`, `pull --ff-only`, and `--abort` or `--quit` for each one but `pull`. The release flow runs none of the six on `main`: `release.py` runs git through its own subprocess, and step 4 runs `add`, `commit`, `tag` and `push` (D-NEW-main-branch-commits-1). 2026-11-12 |
+| O1 | Which of `merge`, `cherry-pick`, `rebase`, `pull`, `revert` and `am` does the guard block on `main`? `git pull` on `main` is the normal way to update it. (from shape O4) | question | shape | user | Resolved | Decided under the user's delegation: block all six on `main`. Let through `merge --ff-only`, `pull --ff-only`, and `--abort` or `--quit` for each one but `pull`. The release flow runs none of the six on `main`: `release.py` runs git through its own subprocess, and step 4 runs `add`, `commit`, `tag` and `push` (D148). 2026-11-12 |
 | O2 | A plain `git pull` on `main` is now blocked, and Claude must run it again with `--ff-only`. Allow it when the config forbids a merge? | question | spec p1 | user | Resolved | Decided under the user's delegation: no. The block message names `git pull --ff-only`, so the cost is one more call. The hook judges Claude's commands only, not the user's own terminal. 2026-11-12 |
 | O3 | `git merge --ff-only feat` on `main` moves `main` to the commits of `feat` with no PR, and `git push origin main` then sends them. | flag | spec p1 | user | Accepted risk | Decided under the user's delegation: a fast-forward makes no new commit, and `git push origin feat:main` already does the same today. Remote branch protection is the line for that. 2026-11-12 |
 | O4 | `cherry-pick -n`, `revert -n`, `merge --no-commit` and `merge --squash` make no commit, but the guard blocks them on `main`. | flag | spec p1 | user | Accepted risk | Decided under the user's delegation: they stage the change for a `git commit` that the guard blocks anyway, and a shorter allow-list has fewer holes. 12 logged calls use `-n`, `--no-commit` or `--squash`. 2026-11-12 |
 | O5 | The allow-list reads the printed line, so a normal option that is not on it blocks a call on `main`. | flag | spec p3 | user | Accepted risk | Decided under the user's delegation: the list holds `--ff-only`, `--abort`, `--quit`, `-q`, `--quiet`, `-v` and `--verbose`, which cover each `--ff-only` and `--abort` call in the logs. The replay counts each new block (O6). 2026-11-12 |
 | O6 | The replay ran the 3576 unique logged Bash commands whose parsed calls hold one of the seven subcommands through the hook at `3c11930` and at the fix, in a scratch repo on `main`. | flag | build | user | Decided alone | Chose: ship. 267 verdicts changed, and none is a new allow. 258 are new blocks: 84 merge, 81 rebase, 77 cherry-pick, 12 plain `git pull` (O2) and 4 revert, each a form that can make a commit. No new block is a call made only of `--ff-only`, `--abort` or `--quit` forms. 9 were blocked before as a commit, and now name the cherry-pick in the same command first. The replay judges a command whose directory it cannot place as on `main`, so most of these ran on a branch for real. Other: widen the allow-list. Undo: none needed. 2026-11-12 |
 | O7 | Scenario 3 said only that `$OPTS` blocks. A backtick also hides words: the parser ends a call at an unquoted backtick, so ``git pull --ff-only `echo --no-ff` `` printed as `pull --ff-only`. | flag | build | user | Decided alone | Chose: a `--backtick` mode in `git-command.py` that says when an unquoted backtick ends a git call, and no allowance then. The plain and `--dir` output are the same as at `3c11930` for all 28225 logged commands, and no logged command has a backtick that ends a git call. Other: no allowance for any command with a backtick in its text, which blocked a normal `git merge -q --ff-only origin/main` after a quoted `gh` comment in the replay. Undo: revert `f37453c`, which puts back the whole-text check. 2026-11-12 |
-| O8 | Review F1: `echo --no-ff feat \| xargs git merge --ff-only` passed on main and made a merge commit. xargs adds the words it reads, and the printed line cannot show them. | flag | review | user | Decided alone | Chose: an allowed form passes only when git starts its command, after nothing but a keyword or `NAME=value` (D-NEW-main-branch-commits-3). `--backtick` became `--hidden-words`, which checks both, and runs for each allowed call, not only when the text has a backtick. Other: a list of the programs that add words. Undo: revert `8585434`. 2026-11-12 |
+| O8 | Review F1: `echo --no-ff feat \| xargs git merge --ff-only` passed on main and made a merge commit. xargs adds the words it reads, and the printed line cannot show them. | flag | review | user | Decided alone | Chose: an allowed form passes only when git starts its command, after nothing but a keyword or `NAME=value` (D150). `--backtick` became `--hidden-words`, which checks both, and runs for each allowed call, not only when the text has a backtick. Other: a list of the programs that add words. Undo: revert `8585434`. 2026-11-12 |
 | O9 | The F1 fix blocks on main a fast-forward run by a wrapper that adds no words, such as `sudo git pull --ff-only` or `timeout 60 git pull --ff-only`. It also blocks one in a command where a bare `git` word is another program's argument, such as `grep -rn git a.txt && git pull --ff-only`. | flag | review | user | Accepted risk | Decided under the user's delegation: these are extra blocks only, on main only, and the message names the plain `git pull --ff-only`, which passes. 2026-11-12 |
 | O10 | Review F2: a rebase of main that stops leaves HEAD detached, so `git rebase --continue`, `--skip`, `git merge` and `git commit` passed. | flag | review | user | Decided alone | Chose: when `git symbolic-ref` fails, read `rebase-merge/head-name` or `rebase-apply/head-name` through `git rev-parse --path-format=absolute --git-path`. `git rebase --abort` still passes. Other: block every call with a detached HEAD (it blocks normal work on a detached checkout). Undo: revert `8585434`. `--path-format` needs git 2.31 or later; an older git reads as no rebase, as before. 2026-11-12 |
 

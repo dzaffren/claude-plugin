@@ -245,14 +245,14 @@ Single chunk.
 
 ### Decisions to record
 
-**D-NEW-attribution-trailer-1 · 2026-11-12 · The attribution hook reads `--trailer` of git commit and git tag, and the message of git merge**
+**D156 · 2026-11-12 · The attribution hook reads `--trailer` of git commit and git tag, and the message of git merge**
 
 Why: leads v2.6.0 N12 and v2.7.0 N11. `git commit --trailer "Co-authored-by: Claude"` and `git merge feat -m "Co-Authored-By: Claude"` passed the hook on 2026-11-12. git writes `key=value` and `key : value` as `key: value`, so the hook prints each trailer that way before the banned pattern judges it.
 Rejected: a wider banned pattern with `[:=]` and spaces (it would also judge `co-authored-by=claude` in message prose), reading `--trailer` on `git commit` only (`git tag --trailer` exists in git 2.52.0), a trailer key from config (needs a `git config` read, O3).
 Source: specs/attribution-trailer.md
 Status: active
 
-**D-NEW-attribution-trailer-2 · 2026-11-12 · The attribution hook gives each value option of git commit, git tag and git merge its value**
+**D157 · 2026-11-12 · The attribution hook gives each value option of git commit, git tag and git merge its value**
 
 Why: the commit and tag tables knew only the message options, so `git commit -tm --message "..."` read `--message` as the text of `-m`. The signed message after it passed. `git merge --into-name -m --message` passed the same way. D56 fixed this class for gh.
 Rejected: the found cases only (`-u`, `-U`, `--author` and the others fail the same way), merge only (the lesson `an-option-table-lists-every-value-option.md` gives every sibling table the same pass).

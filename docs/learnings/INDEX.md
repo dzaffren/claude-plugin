@@ -283,3 +283,6 @@ One line per lesson. Loaded into every session in this repo.
 - A matcher widened to add blocks must keep every old output — check old
   lines are a subset of new, and probe the new trigger just before the old one.
   ([detail](widening-a-matcher-can-swallow-the-real-match.md))
+- A scratch git probe must name its repo with `-C` or stop when `cd` fails
+  — a newline-joined script fell back to the real repo and force-pushed main.
+  ([detail](scratch-commands-must-stop-when-cd-fails.md))

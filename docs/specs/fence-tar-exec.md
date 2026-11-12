@@ -208,7 +208,7 @@ Single chunk.
 
 ### Decisions to record
 
-**D-NEW-fence-tar-exec-1 · 2026-11-12 · The pentester fence refuses each tar option that runs a program, in the repo and in the scratch copy**
+**D142 · 2026-11-12 · The pentester fence refuses each tar option that runs a program, in the repo and in the scratch copy**
 
 Why: `--to-command`, `--checkpoint-action` and `-I` run a program in the real
 repo (v2.6.0 N5, v2.7.0 N2). In the scratch copy, the fence already blocks a

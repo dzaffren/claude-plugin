@@ -137,7 +137,7 @@ Each diff gets `-c diff.relative=false` and `--text --no-color --no-ext-diff
 project dir with `all`.
 
 Relies on: D52 (a command the parser cannot read is blocked), D138 (the parser
-reads nested commands), D-NEW-secret-scan-scope-1, D-NEW-secret-scan-scope-2.
+reads nested commands), D143, D144.
 
 ```mermaid
 flowchart TB
@@ -224,14 +224,14 @@ Single chunk.
 ### Decisions to record
 
 ```markdown
-## D-NEW-secret-scan-scope-1 · 2026-11-12 · The secret scan reads the words of each commit through the parser module, and scans what the commit takes
+## D143 · 2026-11-12 · The secret scan reads the words of each commit through the parser module, and scans what the commit takes
 
 Why: on 2026-11-12, `git commit -am x` and `git commit a.txt -m x` passed a key in a tracked file that was not staged. The parser's printed lines join words with spaces, so `-m "add a.txt"` reads as a path. The hook loads `git-command.py` by its path, as block-attribution.sh does. It adds `git diff` for `-a`, or `git diff -- <paths>` for named paths, to the staged diff.
 Rejected: a new output mode in git-command.py (every guard shares the file, and another slice owns it), the printed lines (a message word reads as a path), scanning the whole work tree for every commit (a clean `git commit -m x` blocks on an unstaged key in another file), scanning only the paths for `git commit <path>` (it drops the old block on a staged key).
 Source: specs/secret-scan-scope.md
 Status: active
 
-## D-NEW-secret-scan-scope-2 · 2026-11-12 · The secret scan reads every diff as plain text, whatever the repo's attributes and config say
+## D144 · 2026-11-12 · The secret scan reads every diff as plain text, whatever the repo's attributes and config say
 
 Why: on 2026-11-12, a staged key passed in a file with a `-diff` attribute, and also with `color.ui always`, a textconv driver or `diff.external` in the repo config. Each diff gets `-c diff.relative=false --text --no-color --no-ext-diff --no-textconv`, and each grep gets `-a`.
 Rejected: honouring the attributes (the probe passed a key), reading each blob with `git cat-file` (more code for the same text), skipping a file with NUL bytes (a NUL byte would hide a key).
@@ -247,7 +247,7 @@ Status: active
 | O2 | The probes found three more inputs of the same kind: `color.ui always`, a textconv driver and `diff.external` in the repo config. Fix them in this slice? | question | spec p1 | user | Resolved | Yes. They hide the same text from the same `git diff`, and four flags close all of them. `diff.relative` is closed too. Decided under the user's delegation. 2026-11-12 |
 | O3 | With `--text`, a binary file goes through grep as text. A binary that holds a key-shaped run of bytes now blocks, and a large one takes longer. | flag | spec p3 | user | Accepted risk | A key in a binary file is still a key. The block names the match, and the message tells Claude to let the user decide. Decided under the user's delegation. 2026-11-12 |
 | O4 | A commit that `--git-dir`, `--work-tree`, `GIT_DIR=` or `GIT_WORK_TREE=` points at another repo is scanned in the start dir and the project dir, which may be neither. | flag | spec p1 | user | Accepted risk | It is not a pentest lead and it was true before this slice. The parser gives no dir for it, and `git-command.py` is outside this slice. Decided under the user's delegation. 2026-11-12 |
-| O5 | The parser's printed lines lose the word breaks. Load `git-command.py` by its path in the hook, or add an output mode to it? | question | spec p3 | user | Resolved | Load it by its path, as `block-attribution.sh` does (D-NEW-secret-scan-scope-1). Another lane owns `git-command.py`. Decided under the user's delegation. 2026-11-12 |
+| O5 | The parser's printed lines lose the word breaks. Load `git-command.py` by its path in the hook, or add an output mode to it? | question | spec p3 | user | Resolved | Load it by its path, as `block-attribution.sh` does (D143). Another lane owns `git-command.py`. Decided under the user's delegation. 2026-11-12 |
 | O6 | The plan read each word that is not an option as a path. A replay of the logged commits found `$f` and `$s` as paths, which `git diff` reads as text and matches to no file. | flag | build | user | Decided alone | Chose: a path with `$`, a backtick, `{` or a leading `~` makes the commit `all`, with a test for `-- "$F"`. Other: read it as a path, which misses the file that the shell names. Undo: delete the `any(ch in path ...)` check in `takes` in `secret-scan.sh`, and the `$F` test. 2026-11-12 |
 | O7 | The plan said `--no-relative`. git added it in 2.28, and an older git would fail every diff, so the scan would read nothing and pass. | flag | build | user | Decided alone | Chose: `git -c diff.relative=false`, which an older git ignores. Other: `--no-relative`. Undo: put `--no-relative` in `diff_text` in place of the `-c` option. 2026-11-12 |
 | O8 | The replay ran the 3182 unique logged Bash commands that hold a `git commit` line, from `~/.claude/projects/*/*.jsonl`, through the new reader. It cannot rerun the old repo states, so it counts what each commit takes, not the exit codes. | flag | build | user | Decided alone | Chose: ship. Of 3438 commit calls, 2483 read the staged diff only, as before. 489 also read the work tree (`-qam` 271 times), and 466 read named paths, which only add text to the scan. 4 did not parse, and the hook judged them on all. No commit reads less than before. Other: none needed. Undo: none. 2026-11-12 |
