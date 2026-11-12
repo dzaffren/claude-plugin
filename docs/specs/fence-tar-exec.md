@@ -238,8 +238,8 @@ _Never delete this section or its rows. See references/ledger.md._
 
 2026-11-12 · 2 raw findings, 2 survived, 2 fixed.
 
-- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:333` · block a first tar word with no dash, which tar reads as old-style options (`tar xI id -x -C <scratch>` ran `id`) · `106ae5c`
-- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:387` · block `TAR_OPTIONS` and `TAPE` set through `+=`, `printf -v` or a bare `export NAME` · `106ae5c`
+- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:333` · block a first tar word with no dash, which tar reads as old-style options (`tar xI id -x -C <scratch>` ran `id`) · `4a2e06c`
+- A01 Broken Access Control · `plugins/zuko/scripts/scope-pentester-bash.sh:387` · block `TAR_OPTIONS` and `TAPE` set through `+=`, `printf -v` or a bare `export NAME` · `4a2e06c`
 
 ## Glossary
 

@@ -261,9 +261,9 @@ _Never delete this section or its rows. See references/ledger.md._
 
 2026-11-12 · 3 raw findings, 3 survived, 3 fixed.
 
-- A10 Mishandling of Exceptional Conditions · `plugins/zuko/scripts/secret-scan.sh:60` · drop a redirect and its target from the named paths, and read the whole work tree when git refuses the paths diff · `16cc8bf`
-- A06 Insecure Design · `plugins/zuko/scripts/secret-scan.sh:122` · diff the index's copy against the work tree for a named path with the assume-unchanged bit · `16cc8bf`
-- correctness · `plugins/zuko/scripts/secret-scan.sh:115` · tell the file header from an added line that starts with `++` by where it sits · `16cc8bf`
+- A10 Mishandling of Exceptional Conditions · `plugins/zuko/scripts/secret-scan.sh:60` · drop a redirect and its target from the named paths, and read the whole work tree when git refuses the paths diff · `f5d734b`
+- A06 Insecure Design · `plugins/zuko/scripts/secret-scan.sh:122` · diff the index's copy against the work tree for a named path with the assume-unchanged bit · `f5d734b`
+- correctness · `plugins/zuko/scripts/secret-scan.sh:115` · tell the file header from an added line that starts with `++` by where it sits · `f5d734b`
 
 ## Glossary
 
