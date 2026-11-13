@@ -1,6 +1,6 @@
 # rm forms
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/guard-leads/shape.md
 **Depends on:** None
@@ -230,6 +230,15 @@ word through the hook at the base and at the build. It lists each command
 whose exit code changes. The script and its output stay in the scratchpad,
 because the logs hold private data. A new block of a real command that
 deletes a path under a protected path is a bug in the build.
+
+**Result (2026-11-13):** `run.sh block-dangerous` 803 passed, 0 failed. The
+same test file against the scripts on `main` fails 52 checks: 26 blocked
+forms exit 0. The other 4 blocked forms (`/tmp`, `/root`, `~jane`, `~/*`)
+were blocked by the old regex. `run.sh` 4698 passed, 0 failed, 2 skipped.
+
+**Replay result (2026-11-13):** 826 distinct logged commands with an `rm`
+word. 0 change their exit code: 35 block at the base and the same 35 block at
+the build.
 
 ### Chunks
 
