@@ -251,6 +251,12 @@ Single chunk.
 
 Recorded as D158, D159.
 
+## Review
+
+2026-11-13 · 1 raw finding, 1 survived, 1 fixed.
+
+- correctness · `plugins/zuko/scripts/block-dangerous.sh:90` · run the parsed rm check on every command, so `r''m`, `"r"m`, `r\m` and a saved rm alias are judged · `c1cbf2a`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
