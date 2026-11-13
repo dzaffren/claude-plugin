@@ -286,3 +286,6 @@ One line per lesson. Loaded into every session in this repo.
 - A scratch git probe must name its repo with `-C` or stop when `cd` fails
   — a newline-joined script fell back to the real repo and force-pushed main.
   ([detail](scratch-commands-must-stop-when-cd-fails.md))
+- Probe a guard with its inputs in a scratchpad file — the installed guard
+  reads the raw Bash text and blocks the probe itself.
+  ([detail](probe-a-guard-from-a-file.md))

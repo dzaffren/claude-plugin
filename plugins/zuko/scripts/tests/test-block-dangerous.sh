@@ -1231,4 +1231,50 @@ git -C "$cfg" checkout -q -b feat/thing
 run_hook 'git ci -m x' "$cfg"
 expect_exit 0 "$hook_status" "config-aliases: a config alias for commit passes on a feature branch"
 
+# rm-forms: rm recurses with -r, -R or --recursive, bundled or split, with or
+# without -f, and GNU rm reads options after a path (v2.6.0 N10, v2.7.0 N9).
+# Each form passed the guard on 2026-11-13.
+rm_blocked() {   # rm_blocked <label> <form>...
+  local label=$1 form
+  shift
+  for form in "$@"; do
+    run_hook "$form" "$repo"
+    expect_exit 2 "$hook_status" "rm-forms: $label is blocked, $(printf '%q' "$form")"
+    expect_match '^Blocked: recursive delete of a top-level or home path\.' "$hook_err" "rm-forms: the block says why, $(printf '%q' "$form")"
+  done
+}
+rm_blocked 'a recursive flag' 'rm -r -f /' 'rm --recursive --force /' 'rm -r /' 'rm -R /usr' \
+  'rm --recu /usr' 'rm /usr -rf' 'rm -rf -- /'
+
+# Root, a path one level under it and a home dir, with quotes, $HOME, ~NAME,
+# a repeated or trailing /, a .. part, or a call that bash runs nested.
+rm_blocked 'a protected path' 'rm -rf "$HOME"' 'rm -rf $HOME' 'rm -rf ${HOME}/' 'rm -rf ~jane' \
+  'rm -rf "/"' 'rm -rf //' 'rm -rf /usr/' 'rm -rf /usr/..' 'rm -rf /tmp' 'rm -rf /home/jane' \
+  'rm -rf /Users/jane' 'rm -rf /root' 'rm -rf /c/Users/jane' 'sudo rm -rf /usr/' \
+  '/bin/rm -rf /usr/' 'bash -c "rm -rf /usr/"'
+
+# A last part that is all glob can match every name, so its parent is judged.
+rm_blocked 'a glob that empties a protected path' 'rm -rf /usr/*' 'rm -rf /*' 'rm -rf /u*' \
+  'rm -rf /home/*' 'rm -rf ~/*' 'rm -rf "$HOME"/*' 'rm -rf /tmp/*'
+
+# bash joins r''m, "r"m and r\m into rm, so the raw text holds no rm word. The
+# parsed check must still run (review of rm-forms).
+rm_blocked 'an rm word that quotes split' "r''m -rf /usr/" '"r"m -rf /usr/' 'r\m -rf /usr/' \
+  "bash -c \"r''m -rf /usr/\""
+
+# A saved alias runs rm with no rm word in the command (D153).
+nuke="$work/nuke"
+git init -q -b feat/x "$nuke"
+git -C "$nuke" config alias.nuke '!rm -rf /usr/'
+run_hook 'git nuke' "$nuke"
+expect_exit 2 "$hook_status" "rm-forms: a saved alias that runs a recursive rm of /usr/ is blocked"
+expect_match '^Blocked: recursive delete of a top-level or home path\.' "$hook_err" "rm-forms: the alias block says why"
+
+for form in 'rm -rf /tmp/zuko-x' 'rm -rf build' 'rm -rf "$work"' 'rm -rf "$HOME/projects/shop/dist"' \
+  'rm -rf /home/jane/projects/shop/node_modules' 'rm -f /usr' 'echo "rm -rf /"' 'rm -rf /tmp/zuko-*' \
+  'rm -rf build 2>/dev/null' 'find . -name dist -exec rm -rf {} +'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "rm-forms: a delete under a protected path passes, $(printf '%q' "$form")"
+done
+
 rm -rf "$work"

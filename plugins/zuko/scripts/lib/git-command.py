@@ -30,6 +30,10 @@ With `--candidate-dirs <base>`, it prints those directories, one per line:
 `--work-tree`, `GIT_DIR=` or `GIT_WORK_TREE=` word in the command names. Over
 64 of them is exit 3.
 
+With `--rm`, it prints the first path that a recursive rm call deletes and
+that is /, a path one level under /, or a home dir, and exits 1 (D158). It
+exits 0 when there is none.
+
 With `--hidden-words`, it prints nothing and exits 1 when bash may give a git
 call words its printed line cannot show: an unquoted backtick ends the call, or
 a word before git other than a keyword or `NAME=value` runs it, as `xargs`
@@ -1042,7 +1046,7 @@ def candidate_dirs(tokens, base):
     return found
 
 
-def invocations(tokens, program="git"):
+def invocations(tokens, program="git", walk=subcommand_args):
     """The arguments of every `program` word, `git` unless told otherwise: the
     bare name, or a path to it, as `program_word` reads it. Each one runs to the
     end of its command, so a later word starts a call of its own and is also an
@@ -1059,20 +1063,81 @@ def invocations(tokens, program="git"):
     prose is just as much text. Its arguments go through the same walk: gh
     takes no options before its subcommand, so in practice the walk only
     drops redirections for it.
+
+    `walk` is what each call's words go through. `walk=list` keeps them all,
+    for a program such as rm whose options can come after its paths.
     """
     found = []
     calls = []
     for token in tokens:
         if is_separator(token):
-            found.extend(subcommand_args(args) for args in calls)
+            found.extend(walk(args) for args in calls)
             calls = []
             continue
         for args in calls:
             args.append(token)
         if (start := program_word(token, program)) is not None:
             calls.append(start)
-    found.extend(subcommand_args(args) for args in calls)
+    found.extend(walk(args) for args in calls)
     return found
+
+
+def protected_path(word):
+    """True when a recursive rm of `word` deletes /, a path one level under /,
+    or a home dir (D158). `~`, `~NAME`, `$HOME` and `${HOME}` are a home dir.
+    `//`, `.` and `..` fold as the kernel reads them. A last part that is all
+    glob after its leading dots, as in `*` or `.*`, can match every name, so
+    its parent is judged. A relative path or another variable is not judged."""
+    home = re.match(r"(~[^/]*|\$HOME|\$\{HOME\})(/|$)", word)
+    if home:
+        rest = word[home.end(1):]
+    elif word.startswith("/"):
+        rest = word
+    else:
+        return False
+    parts = [part for part in rest.split("/") if part not in ("", ".")]
+    if parts and parts[-1].lstrip(".")[:1] in ("*", "?", "["):
+        parts.pop()
+    folded = []
+    for part in parts:
+        if part != "..":
+            folded.append(part)
+        elif folded:
+            folded.pop()
+        elif home:
+            return True                      # above the home dir
+    if home:
+        return not folded
+    lower = [part.lower() for part in folded]
+    return (len(folded) <= 1
+            or (len(folded) == 2 and lower[0] in ("home", "users"))
+            or (len(folded) == 3 and len(folded[0]) == 1 and lower[1] == "users"))
+
+
+def rm_target(tokens):
+    """The first protected path of an rm call with a recursive flag, or None.
+    A recursive flag is a short bundle with r or R, or `--recursive` or a
+    prefix of it from `--r`, anywhere before `--`: GNU rm reads options after
+    a path. A redirection and its target are not paths."""
+    for args in invocations(tokens, "rm", walk=list):
+        recursive, options, paths = False, True, []
+        words = iter(args)
+        for word in words:
+            if is_redirection(word):
+                next(words, None)
+            elif options and word == "--":
+                options = False
+            elif options and word.startswith("--"):
+                recursive = recursive or (len(word) > 2 and "--recursive".startswith(word))
+            elif options and word.startswith("-") and len(word) > 1:
+                recursive = recursive or "r" in word or "R" in word
+            else:
+                paths.append(word)
+        if recursive:
+            for path in paths:
+                if protected_path(path):
+                    return path
+    return None
 
 
 def hidden_words(tokens, program="git"):
@@ -1120,6 +1185,12 @@ def main():
     # splits into two lines that each miss the check.
     if args == ["--hidden-words"]:
         return 1 if hidden_words(tokens) else 0
+    if args == ["--rm"]:
+        target = rm_target(tokens)
+        if target is None:
+            return 0
+        print(target.replace("\n", " "))
+        return 1
     if len(args) == 2 and args[0] == "--candidate-dirs":
         try:
             print("\n".join(candidate_dirs(tokens, args[1])))

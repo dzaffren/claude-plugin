@@ -281,6 +281,7 @@ projects.
 - The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names
 - The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote
 - The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option
+- The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read
 
 ## Docs
 
