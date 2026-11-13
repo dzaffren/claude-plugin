@@ -1257,6 +1257,19 @@ rm_blocked 'a protected path' 'rm -rf "$HOME"' 'rm -rf $HOME' 'rm -rf ${HOME}/' 
 rm_blocked 'a glob that empties a protected path' 'rm -rf /usr/*' 'rm -rf /*' 'rm -rf /u*' \
   'rm -rf /home/*' 'rm -rf ~/*' 'rm -rf "$HOME"/*' 'rm -rf /tmp/*'
 
+# bash joins r''m, "r"m and r\m into rm, so the raw text holds no rm word. The
+# parsed check must still run (review of rm-forms).
+rm_blocked 'an rm word that quotes split' "r''m -rf /usr/" '"r"m -rf /usr/' 'r\m -rf /usr/' \
+  "bash -c \"r''m -rf /usr/\""
+
+# A saved alias runs rm with no rm word in the command (D153).
+nuke="$work/nuke"
+git init -q -b feat/x "$nuke"
+git -C "$nuke" config alias.nuke '!rm -rf /usr/'
+run_hook 'git nuke' "$nuke"
+expect_exit 2 "$hook_status" "rm-forms: a saved alias that runs a recursive rm of /usr/ is blocked"
+expect_match '^Blocked: recursive delete of a top-level or home path\.' "$hook_err" "rm-forms: the alias block says why"
+
 for form in 'rm -rf /tmp/zuko-x' 'rm -rf build' 'rm -rf "$work"' 'rm -rf "$HOME/projects/shop/dist"' \
   'rm -rf /home/jane/projects/shop/node_modules' 'rm -f /usr' 'echo "rm -rf /"' 'rm -rf /tmp/zuko-*' \
   'rm -rf build 2>/dev/null' 'find . -name dist -exec rm -rf {} +'; do

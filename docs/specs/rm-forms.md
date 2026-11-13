@@ -53,7 +53,7 @@ dependency. Pauses 1 and 3 merged, pause 2 skipped.
 flowchart LR
     C[Claude main thread] -- Bash command --> H[block-dangerous.sh]
     H -- "raw text" --> R["old regex, kept"]
-    H -- "command text, only when it holds an rm word" --> P["git-command.py --rm"]
+    H -- "command text, every command" --> P["git-command.py --rm"]
     P -- "each rm call: recursive flag, then each path" --> J["protected path?"]
     R -- "a match" --> B["exit 2, blocked"]
     J -- "yes" --> B
@@ -134,8 +134,7 @@ Scenario: a delete under a protected path still passes
 `git-command.py` gets an `--rm` mode. It tokenises the command as it does for
 git, finds each `rm` call with the raw words, and exits 1 with the first
 protected path on stdout. `block-dangerous.sh` runs that mode after the old
-regex, only when the text holds the word `rm`. The common Bash call then
-starts no second Python process.
+regex, on every command (O6).
 
 Relies on: D52 (a command the parser cannot read is blocked, and
 `block-dangerous.sh:36` already does that before this check), D138 (a nested
@@ -145,10 +144,10 @@ the drafted entries below.
 ```mermaid
 flowchart TB
     subgraph guard["scripts/block-dangerous.sh"]
-        RX["old rm regex :82"] --> NEW["rm check: grep -qiw rm, then --rm"]
+        RX["old rm regex :82"] --> NEW["rm check: --rm on every command"]
     end
     subgraph parser["scripts/lib/git-command.py"]
-        TOK[tokenise] --> INV["invocations: walk=None keeps every word"]
+        TOK[tokenise] --> INV["invocations: walk=list keeps every word"]
         INV --> RM["rm_target: flags, then protected_path per word"]
     end
     NEW -- "command text on stdin" --> TOK
@@ -162,7 +161,6 @@ sequenceDiagram
     participant P as git-command.py --rm
     C->>B: sudo rm -rf "$HOME"/*
     B->>B: old regex: no match
-    B->>B: the text holds the word rm
     B->>P: the command text
     P->>P: tokenise: sudo rm -rf $HOME/*
     P->>P: -rf is recursive, $HOME/* is judged as $HOME
@@ -174,11 +172,11 @@ sequenceDiagram
 
 | File | Change |
 | --- | --- |
-| `plugins/zuko/scripts/lib/git-command.py:1045` | `invocations` gets a `walk` argument, default `subcommand_args`. `walk=None` keeps each call's words as they are. |
-| `plugins/zuko/scripts/lib/git-command.py` | New `protected_path(word)`. It turns a leading `~` or `~NAME` into a home marker, and so does `$HOME` or `${HOME}`. It drops a glob last part, folds `//` and `.`, and resolves `..` with `posixpath.normpath`. It is true for `/`, one part under `/`, a home marker alone, and `/home/X`, `/Users/X` or `/<one letter>/Users/X`. |
+| `plugins/zuko/scripts/lib/git-command.py:1045` | `invocations` gets a `walk` argument, default `subcommand_args`. `walk=list` keeps each call's words as they are. |
+| `plugins/zuko/scripts/lib/git-command.py` | New `protected_path(word)`. It turns a leading `~` or `~NAME` into a home marker, and so does `$HOME` or `${HOME}`. It drops a glob last part (O5), folds `//` and `.`, and resolves `..` part by part. It is true for `/`, one part under `/`, a home marker alone, and `/home/X`, `/Users/X` or `/<one letter>/Users/X`. |
 | `plugins/zuko/scripts/lib/git-command.py` | New `rm_target(tokens)`: for each rm call, a word before `--` that is a short bundle with `r` or `R`, or a prefix of `--recursive` from `--r`, makes the call recursive. Each other word is a path, also after `--`. It returns the first protected path of a recursive call. |
 | `plugins/zuko/scripts/lib/git-command.py:1102` | `main` reads `--rm`: print the path and exit 1, or exit 0. A parse failure keeps exit 3, and over 64 KB keeps exit 4. The docstring names the mode. |
-| `plugins/zuko/scripts/block-dangerous.sh:82` | After the old regex: when `grep -qiwE 'rm(\.exe)?'` matches, run `git-command.py --rm`. Exit 1 denies with the message of today. Any other exit other than 0 denies with the "could not be checked" message of `:36`. |
+| `plugins/zuko/scripts/block-dangerous.sh:82` | After the old regex, run `git-command.py --rm` on every command (O6). Exit 1 denies with the message of today. Any other exit other than 0 denies with the "could not be checked" message of `:36`. |
 | `plugins/zuko/scripts/tests/test-block-dangerous.sh` | A loop over every form in the scenarios, through `run_hook`, with `expect_exit` and `expect_match` on the message. |
 
 Reusing: `tokenise`, `strip_heredocs`, `invocations`, `program_word` (it reads
@@ -192,21 +190,17 @@ Reusing: `tokenise`, `strip_heredocs`, `invocations`, `program_word` (it reads
   second parser would drift from it.
 - The `walk` argument: `rm_target` needs the options that `subcommand_args`
   drops, and a copy of the `invocations` loop would drift.
-- The `grep -qiw rm` gate: no criterion needs it. It is there for the risk
-  that a second Python start on each Bash call adds time, 23 ms on
-  2026-11-13. It can only
-  skip a command that has no `rm` word, and such a command runs no rm.
 
 ### Non-functionals
 
-- **Load:** one Bash call at a time. A command with an `rm` word starts one
-  more `python3`. On 2026-11-13 the hook took 97 ms on `ls -la build` and
-  120 ms on `rm -r build/cache`, as the mean of 10 runs each.
+- **Load:** one Bash call at a time. Each command starts one more `python3`.
+  On 2026-11-13 the hook took 97 ms on `ls -la build` with no second parse,
+  and 120 ms on `rm -r build/cache` with it, as the mean of 10 runs each.
 - **At 10×:** the 64 KB limit of `tokenise` holds, so a long command still
   exits 4 and is blocked.
 - **Security surface:** the main thread's Bash commands. It trusts nothing
-  in the command. It reads no secrets, stores nothing, and does not read the
-  file system.
+  in the command. It reads no secrets and stores nothing. It reads git's
+  config in the dirs the command names, as `tokenise` already does for git.
 - **Proof in prod:** `Blocked: recursive delete of a top-level or home path.`
   on stderr for each form in the scenarios, and the next release pentest
   lists no rm lead under Needs validation.
@@ -266,6 +260,7 @@ Recorded as D158, D159.
 | O3 | How does the guard read a glob such as `rm -rf /usr/*`? | question | spec p1 | user | Resolved | A glob in the last part is judged as its parent, so `rm -rf /tmp/*` is blocked too. 2026-11-13 |
 | O4 | Does the guard resolve `.` and `..` against the cwd, or read a path that starts with another variable? | question | spec p1 | user | Resolved | No. A path that starts with `..` stays blocked by the old regex. The rest is not in this idea. 2026-11-13 |
 | O5 | O3 said "a glob in the last part is judged as its parent". So `rm -rf /tmp/zuko-*` would be blocked, though `zuko-*` cannot match every name in `/tmp`. | flag | build | user | Decided alone | Chose: judge the parent only when the last part is all glob after its leading dots (`*`, `.*`, `?*`, `[a-z]*`). `/tmp/zuko-*` passes, and `/u*` stays blocked as a path one level under `/`. Other: judge the parent for each glob. Undo: in `protected_path`, test `any(c in "*?[" for c in parts[-1])` in place of the first-character test, and move `rm -rf /tmp/zuko-*` to the blocked list in `test-block-dangerous.sh`. 2026-11-13 |
+| O6 | The plan ran the parsed rm check only when the raw text held the word `rm`. The review showed that `r''m -rf /usr/`, `"r"m`, `r\m` and a saved alias `!rm -rf /usr/` hold no such word, and passed. | flag | review | user | Decided alone | Chose: run the check on every Bash command, about 23 ms more on each. Other: widen the text gate, which cannot see an alias that git reads from config. Undo: `git revert` the review fix commit, which brings back the gate and these gaps. 2026-11-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
