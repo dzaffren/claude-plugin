@@ -83,6 +83,19 @@ if grep -qE '(^|[;&|[:space:]])rm[[:space:]]+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[
   deny "Blocked: recursive delete of a top-level or home path."
 fi
 
+# The same rule on the parsed rm calls, so quotes, $HOME, a glob, a split or
+# long flag and a nested command count (D158). The regex above stays, so no
+# form that it blocks starts to pass (D159). A command with no rm word runs no
+# rm, and starts no second parse.
+if grep -qiwE 'rm(\.exe)?' <<<"$cmd"; then
+  rm_path=$(printf '%s' "$cmd" | python3 "$(dirname "${BASH_SOURCE[0]}")/lib/git-command.py" --base "$base" --rm 2>&1)
+  case $? in
+    0) ;;
+    1) deny "Blocked: recursive delete of a top-level or home path." ;;
+    *) deny "Blocked: this command could not be checked: ${rm_path##*: }. bash runs the lines before a broken quote or heredoc. Close it, or put the text in a file, then run it again." ;;
+  esac
+fi
+
 # A call that cannot make a commit: a merge or pull with --ff-only, which git
 # 2.52.0 refuses to turn into a merge or a rebase, or an --abort or --quit for
 # the others. The line has lost its quotes, so `-m "a --ff-only"` reads as

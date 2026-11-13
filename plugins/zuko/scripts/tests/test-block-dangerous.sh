@@ -1231,4 +1231,19 @@ git -C "$cfg" checkout -q -b feat/thing
 run_hook 'git ci -m x' "$cfg"
 expect_exit 0 "$hook_status" "config-aliases: a config alias for commit passes on a feature branch"
 
+# rm-forms: rm recurses with -r, -R or --recursive, bundled or split, with or
+# without -f, and GNU rm reads options after a path (v2.6.0 N10, v2.7.0 N9).
+# Each form passed the guard on 2026-11-13.
+rm_blocked() {   # rm_blocked <label> <form>...
+  local label=$1 form
+  shift
+  for form in "$@"; do
+    run_hook "$form" "$repo"
+    expect_exit 2 "$hook_status" "rm-forms: $label is blocked, $(printf '%q' "$form")"
+    expect_match '^Blocked: recursive delete of a top-level or home path\.' "$hook_err" "rm-forms: the block says why, $(printf '%q' "$form")"
+  done
+}
+rm_blocked 'a recursive flag' 'rm -r -f /' 'rm --recursive --force /' 'rm -r /' 'rm -R /usr' \
+  'rm --recu /usr' 'rm /usr -rf' 'rm -rf -- /'
+
 rm -rf "$work"
