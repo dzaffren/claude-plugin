@@ -111,7 +111,8 @@ Scenario: a delete under a protected path still passes
   A path counts with any quotes, a repeated or trailing `/`, a `.` part or a
   `..` part (O2).
 - A glob in the last part of a path is judged as the parent of that part
-  (O3).
+  (O3), when the part is all glob after its leading dots, as `*` or `.*` is.
+  A part with a fixed start, such as `zuko-*`, is judged as a name (O5).
 - A `rm` call that bash runs: after `sudo` or another word, as `/bin/rm`, and
   in a `bash -c` or `eval` string. The parser already finds them.
 
@@ -192,13 +193,15 @@ Reusing: `tokenise`, `strip_heredocs`, `invocations`, `program_word` (it reads
 - The `walk` argument: `rm_target` needs the options that `subcommand_args`
   drops, and a copy of the `invocations` loop would drift.
 - The `grep -qiw rm` gate: no criterion needs it. It is there for the risk
-  that a second Python start on each Bash call adds about 50 ms. It can only
+  that a second Python start on each Bash call adds time, 23 ms on
+  2026-11-13. It can only
   skip a command that has no `rm` word, and such a command runs no rm.
 
 ### Non-functionals
 
 - **Load:** one Bash call at a time. A command with an `rm` word starts one
-  more `python3 -I`, about 50 ms. I did not time it. The build times it.
+  more `python3`. On 2026-11-13 the hook took 97 ms on `ls -la build` and
+  120 ms on `rm -r build/cache`, as the mean of 10 runs each.
 - **At 10×:** the 64 KB limit of `tokenise` holds, so a long command still
   exits 4 and is blocked.
 - **Security surface:** the main thread's Bash commands. It trusts nothing
@@ -253,6 +256,7 @@ Recorded as D158, D159.
 | O2 | Which targets does the guard block? | question | spec p1 | user | Resolved | `/`, any path one level under `/`, a home dir (`/home/NAME`, `/Users/NAME`, `/root`, `/c/Users/NAME`), and `~`, `~NAME`, `$HOME` and `${HOME}`, in each spelling. 2026-11-13 |
 | O3 | How does the guard read a glob such as `rm -rf /usr/*`? | question | spec p1 | user | Resolved | A glob in the last part is judged as its parent, so `rm -rf /tmp/*` is blocked too. 2026-11-13 |
 | O4 | Does the guard resolve `.` and `..` against the cwd, or read a path that starts with another variable? | question | spec p1 | user | Resolved | No. A path that starts with `..` stays blocked by the old regex. The rest is not in this idea. 2026-11-13 |
+| O5 | O3 said "a glob in the last part is judged as its parent". So `rm -rf /tmp/zuko-*` would be blocked, though `zuko-*` cannot match every name in `/tmp`. | flag | build | user | Decided alone | Chose: judge the parent only when the last part is all glob after its leading dots (`*`, `.*`, `?*`, `[a-z]*`). `/tmp/zuko-*` passes, and `/u*` stays blocked as a path one level under `/`. Other: judge the parent for each glob. Undo: in `protected_path`, test `any(c in "*?[" for c in parts[-1])` in place of the first-character test, and move `rm -rf /tmp/zuko-*` to the blocked list in `test-block-dangerous.sh`. 2026-11-13 |
 
 _Never delete this section or its rows. See references/ledger.md._
 

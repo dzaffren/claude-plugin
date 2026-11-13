@@ -1246,4 +1246,22 @@ rm_blocked() {   # rm_blocked <label> <form>...
 rm_blocked 'a recursive flag' 'rm -r -f /' 'rm --recursive --force /' 'rm -r /' 'rm -R /usr' \
   'rm --recu /usr' 'rm /usr -rf' 'rm -rf -- /'
 
+# Root, a path one level under it and a home dir, with quotes, $HOME, ~NAME,
+# a repeated or trailing /, a .. part, or a call that bash runs nested.
+rm_blocked 'a protected path' 'rm -rf "$HOME"' 'rm -rf $HOME' 'rm -rf ${HOME}/' 'rm -rf ~jane' \
+  'rm -rf "/"' 'rm -rf //' 'rm -rf /usr/' 'rm -rf /usr/..' 'rm -rf /tmp' 'rm -rf /home/jane' \
+  'rm -rf /Users/jane' 'rm -rf /root' 'rm -rf /c/Users/jane' 'sudo rm -rf /usr/' \
+  '/bin/rm -rf /usr/' 'bash -c "rm -rf /usr/"'
+
+# A last part that is all glob can match every name, so its parent is judged.
+rm_blocked 'a glob that empties a protected path' 'rm -rf /usr/*' 'rm -rf /*' 'rm -rf /u*' \
+  'rm -rf /home/*' 'rm -rf ~/*' 'rm -rf "$HOME"/*' 'rm -rf /tmp/*'
+
+for form in 'rm -rf /tmp/zuko-x' 'rm -rf build' 'rm -rf "$work"' 'rm -rf "$HOME/projects/shop/dist"' \
+  'rm -rf /home/jane/projects/shop/node_modules' 'rm -f /usr' 'echo "rm -rf /"' 'rm -rf /tmp/zuko-*' \
+  'rm -rf build 2>/dev/null' 'find . -name dist -exec rm -rf {} +'; do
+  run_hook "$form" "$repo"
+  expect_exit 0 "$hook_status" "rm-forms: a delete under a protected path passes, $(printf '%q' "$form")"
+done
+
 rm -rf "$work"
