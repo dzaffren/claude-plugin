@@ -17,6 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - zuko's commit-on-main guard missed a commit after `git checkout main` or `git switch main` in the same command, and a commit in a directory it could not work out. It now checks both.
 - zuko's force-push and commit-on-main guards missed an alias or a `remote.*.push` refspec saved in git's config, and a push that deletes `main` on the remote. They now read git's config and block each of these.
 - zuko's attribution guard missed a co-author line added with `git commit --trailer` or `git tag --trailer`, and the message of `git merge -m`. It now reads each of these.
+- zuko's delete guard missed a recursive `rm` of `/`, a top-level folder or a home folder when the command split or spelled out the flags, quoted the path, used `$HOME`, a glob or a trailing slash, or ran rm by its path, inside `bash -c` or through a git alias. It now blocks each of these.
 
 ## [2.7.0] - 2026-11-10
 

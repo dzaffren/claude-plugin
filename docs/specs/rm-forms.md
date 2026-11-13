@@ -1,6 +1,6 @@
 # rm forms
 
-**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/guard-leads/shape.md
 **Depends on:** None
@@ -201,10 +201,10 @@ Reusing: `tokenise`, `strip_heredocs`, `invocations`, `program_word` (it reads
 - **Security surface:** the main thread's Bash commands. It trusts nothing
   in the command. It reads no secrets and stores nothing. It reads git's
   config in the dirs the command names, as `tokenise` already does for git.
-- **Proof in prod:** `Blocked: recursive delete of a top-level or home path.`
+- **Proof it works**: `Blocked: recursive delete of a top-level or home path.`
   on stderr for each form in the scenarios, and the next release pentest
   lists no rm lead under Needs validation.
-- **Rollout:** no flag. Rollback is `git revert` of the fix commit. The old
+- **Rollout**: no flag. Rollback is `git revert` of the fix commit. The old
   regex is still there, so a revert can only go back to the gaps of today.
 
 ### Test plan
@@ -255,7 +255,7 @@ Recorded as D158, D159.
 
 2026-11-13 · 1 raw finding, 1 survived, 1 fixed.
 
-- correctness · `plugins/zuko/scripts/block-dangerous.sh:90` · run the parsed rm check on every command, so `r''m`, `"r"m`, `r\m` and a saved rm alias are judged · `c1cbf2a`
+- correctness · `plugins/zuko/scripts/block-dangerous.sh:90` · run the parsed rm check on every command, so `r''m`, `"r"m`, `r\m` and a saved rm alias are judged · `b622f89`
 
 ## Open items
 

@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-12 by /ship guard-leads
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-13 by /ship rm-forms
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -106,6 +106,7 @@ projects.
 | branch-switch-commit | Shipped | The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names | — |
 | config-aliases | Shipped | The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote | — |
 | attribution-trailer | Shipped | The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option | — |
+| rm-forms | Shipped | The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read | — |
 
 ## More
 
