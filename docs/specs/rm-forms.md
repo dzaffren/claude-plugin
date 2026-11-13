@@ -243,19 +243,7 @@ Single chunk.
 
 ### Decisions to record
 
-**D158 · 2026-11-13 · The rm guard blocks a recursive rm of /, a path one level under /, or a home dir, and judges a glob last part as its parent**
-
-Why: leads v2.6.0 N10 and v2.7.0 N9. `rm -r /`, `rm -rf "$HOME"`, `rm -rf /usr/*` and `rm -rf /home/user` passed the guard on 2026-11-13. `rm -r` deletes as much as `rm -rf`, and `/usr/*` empties `/usr`.
-Rejected: recursive with force only (`rm -r /` still passes, and -f only skips the prompt for a write-protected file), a glob as a plain name (`/usr/*` and `/home/*` pass), only the forms in the shape's Today table (`/Users/NAME` and `/c/Users/NAME` pass).
-Source: specs/rm-forms.md
-Status: active
-
-**D159 · 2026-11-13 · The rm guard reads the parsed rm call in addition to its raw regex, not in place of it**
-
-Why: the parser removes quotes and reads nested commands, which the regex cannot. The regex blocks each `~` path and each `..` path today, and the parsed check does not.
-Rejected: replace the regex with the parsed check. Each form that only the regex blocks, such as `rm -rf ~/proj/build`, would pass, and the lesson `tightening-a-matcher-trades-blocks-for-allows.md` says so.
-Source: specs/rm-forms.md
-Status: active
+Recorded as D158, D159.
 
 ## Open items
 
