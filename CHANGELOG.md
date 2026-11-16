@@ -18,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - zuko's force-push and commit-on-main guards missed an alias or a `remote.*.push` refspec saved in git's config, and a push that deletes `main` on the remote. They now read git's config and block each of these.
 - zuko's attribution guard missed a co-author line added with `git commit --trailer` or `git tag --trailer`, and the message of `git merge -m`. It now reads each of these.
 - zuko's delete guard missed a recursive `rm` of `/`, a top-level folder or a home folder when the command split or spelled out the flags, quoted the path, used `$HOME`, a glob or a trailing slash, or ran rm by its path, inside `bash -c` or through a git alias. It now blocks each of these.
+- During a live pentest, zuko's target guard missed a curl behind a wrapper with options such as `timeout 5` or `sudo -u root`, after a shell keyword, or piped into a shell, and it let `ssh`, `git clone`, `socat` and other network tools reach any host. It now judges each curl, wget, httpie and nc by its host, and blocks the other network tools and each command whose program or script it cannot read.
 
 ## [2.7.0] - 2026-11-10
 
