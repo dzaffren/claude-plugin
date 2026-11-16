@@ -1,6 +1,6 @@
 # target wrappers
 
-**Version:** v1 · **Status:** Refined · **Type:** Bug · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Bug · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/guard-leads/shape.md
 **Depends on:** None
@@ -194,7 +194,8 @@ sequenceDiagram
 | `plugins/zuko/scripts/block-pentest-target.sh:116` | Take `invocations` and `EVAL_LEADS` from `git-command.py` with the other helpers. |
 | `plugins/zuko/scripts/block-pentest-target.sh:122` | New `BLOCKED` set (O2) and `GIT_NET = {"clone", "fetch", "pull", "push", "ls-remote"}`. `WRAPPERS` gains `exec`. New `WRAPPER_VALUES`: the options that take a value, such as `-u` for `sudo`, `-s` and `-k` for `timeout`, `-n` for `nice`, and `-u` and `-C` for `env`. |
 | `plugins/zuko/scripts/block-pentest-target.sh:165` | `program_of` skips `NAME=value`, each `EVAL_LEADS` word, and each wrapper with its options, their values and the duration of `timeout`. `env -S` and `--split-string` refuse the command (O3). |
-| `plugins/zuko/scripts/block-pentest-target.sh:219` | `scan` tokenises once. For each `NET` name, each call from `invocations(tokens, name, walk=list)` goes to `check_net`. A `BLOCKED` call, or a git call whose subcommand is in `GIT_NET`, refuses with "NAME is not curl, wget, httpie or nc". For each simple command, a program that starts with `$`, a shell with no `-c` string and no script file or with `-s`, and an interpreter with inline code refuse. `inline_value` and the depth argument go. |
+| `plugins/zuko/scripts/block-pentest-target.sh:219` | `scan` tokenises once. For each `NET` name, each call from `invocations(tokens, name, walk=without_redirections)` goes to `check_net`. A `BLOCKED` call, or a git call whose subcommand is in `GIT_NET`, refuses with "NAME is not curl, wget, httpie or nc". For each simple command, a program that starts with `$`, a shell with no `-c` string and no script file or with `-s`, and an interpreter with inline code refuse. `inline_value` and the depth argument go. |
+| `plugins/zuko/scripts/block-pentest-target.sh:143` | `simple_commands` goes on with the outer command after a `$( )`, `<( )`, `>( )` or backtick, and drops the words of a `$(( ))` or `(( ))` (O5). |
 | `plugins/zuko/scripts/tests/test-block-pentest-target.sh` | Each form in the scenarios through `blocks` and `allows`, with the 127.0.0.1:5000 target. |
 
 Reusing: `tokenise`, `strip_heredocs`, `invocations`, `program_word` (it
@@ -245,6 +246,20 @@ whose exit code changes. The script and its output stay in the scratchpad,
 because the logs hold private data. A new block of a command that the
 release step runs in the window is a bug in the build.
 
+**Result (2026-11-16):** `run.sh block-pentest-target` 166 passed, 0 failed.
+The same test file against the guard on `main` fails 88 checks: 44 blocked
+forms exit 0. `run.sh` 4814 passed, 0 failed, 2 skipped. An earlier run while
+the replay loaded the machine failed 7 timed checks in `block-dangerous` and
+`scope-pentester-bash`. Both files passed when they ran alone.
+
+**Replay result (2026-11-16):** 27219 distinct logged commands, with
+`127.0.0.1:5000` in the target file. 1366 are newly blocked and 0 newly pass.
+Of the new blocks, 1075 are git network calls, 77 reach another host, 62
+have a `$` program, 56 run inline code past a wrapper or keyword, 54 hold the word
+`host`, 31 are a curl word with no host, and 11 are other cases. No changed
+command touches `zuko-pentest-target`. The first two replays found the false
+blocks in O5.
+
 ### Chunks
 
 Single chunk.
@@ -270,6 +285,7 @@ Recorded as D160, D161, D162.
 | O2 | Which network tools beyond curl, wget, httpie and nc does the guard stop? | question | spec p1 | user | Resolved | A fixed list, blocked outright: `ssh`, `scp`, `sftp`, `rsync`, `socat`, `telnet`, `ftp`, `tftp`, `aria2c`, `xh`, `openssl`, `nmap`, `ping`, `dig`, `nslookup`, `host`, and `git clone`, `fetch`, `pull`, `push` and `ls-remote`. 2026-11-16 |
 | O3 | What does the guard do with a shell that reads stdin, and a `$` program word? | question | spec p1 | user | Resolved | Block both as a command that the guard cannot check. 2026-11-16 |
 | O4 | A shell or interpreter that runs a script file passes, and the file can hold a curl. | question | spec p1 | user | Accepted risk | The release step runs `bash check-attack-pin.sh` and `python3 release.py` in the window. D14 stops commands, not code, and no lead names a script file. 2026-11-16 |
+| O5 | The replay showed false blocks of the new `$` rule. `simple_commands` ended a command at the `)` of a `$( )`, so in `tail -n +$(grep ...) $G/body.md` the word `$G/body.md` read as a program. It also read the words of `$(( ... ))` and `(( ... ))` as a command. | flag | build | user | Decided alone | Chose: the splitter goes on with the outer command after a substitution, and drops arithmetic words. Other: accept the false blocks, which happen only while the target file exists. Undo: `git revert` the three `simple_commands` commits, `cb4d739`, `2947ad1` and `47cc195`. 2026-11-16 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
