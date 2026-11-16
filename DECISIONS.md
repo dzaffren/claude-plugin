@@ -1484,3 +1484,24 @@ Why: the parser removes quotes and reads nested commands, which the regex cannot
 Rejected: replace the regex with the parsed check. Each form that only the regex blocks, such as `rm -rf ~/proj/build`, would pass, and the lesson `tightening-a-matcher-trades-blocks-for-allows.md` says so.
 Source: specs/rm-forms.md
 Status: active
+
+## D160 · 2026-11-16 · The pentest target guard judges each curl, wget, httpie and nc word, not only the program word
+
+Why: leads v2.6.0 N2 and v2.7.0 N5. On 2026-11-16, `timeout -s KILL 5 curl`, `env -i curl`, `sudo -u root curl`, `then curl` and `echo curl ... | sh` reached `evil.example.com` past the guard. bash can run a program after any wrapper (D150). The cost is that `grep -rn curl docs/` is blocked while a live pentest runs.
+Rejected: the program word, past a longer list of wrappers and their options (a wrapper missing from the list hides curl again).
+Source: specs/target-wrappers.md
+Status: active
+
+## D161 · 2026-11-16 · During a live pentest, network tools other than curl, wget, httpie and nc are blocked outright
+
+Why: lead v2.6.0 N4. On 2026-11-16, `ssh`, `git clone`, `socat` and 12 more tools passed. The release step sends its requests with curl only, and it pushes after teardown.
+Rejected: judge each tool by its host (a host parser for each tool), an allow list of programs (each new release step needs a change to the list).
+Source: specs/target-wrappers.md
+Status: active
+
+## D162 · 2026-11-16 · During a live pentest, a shell that reads stdin and a `$` program word are blocked
+
+Why: lead v2.7.0 N5. The guard cannot read the commands of `printf ... | sh`, or the program of `C=curl; $C`. The release step needs neither.
+Rejected: block a stdin shell only after a pipe, and a `$` program only when its value names a net tool (`sh < cmds.txt` and `C=$(...)` still pass).
+Source: specs/target-wrappers.md
+Status: active

@@ -289,3 +289,6 @@ One line per lesson. Loaded into every session in this repo.
 - Probe a guard with its inputs in a scratchpad file — the installed guard
   reads the raw Bash text and blocks the probe itself.
   ([detail](probe-a-guard-from-a-file.md))
+- A check on a command's program word needs a splitter that goes on past
+  `$( )`, `<( )` and backticks and drops `(( ))` words — replay logs to see it.
+  ([detail](program-word-rules-need-substitutions.md))
