@@ -277,6 +277,17 @@ Single chunk.
 
 Recorded as D160, D161, D162.
 
+## Review
+
+2026-11-16 · 11 raw findings, 5 survived, 5 fixed, 1 lead needs validation.
+
+- A01 Broken Access Control · `plugins/zuko/scripts/block-pentest-target.sh:195` · drop the fd number of a leading redirection, so `2>/dev/null $C` reads `$C` as the program · `56e8dc0`
+- A01 Broken Access Control · `plugins/zuko/scripts/block-pentest-target.sh:265` · read past `function NAME` and `coproc` to the program · `be90fcb`
+- A01 Broken Access Control · `plugins/zuko/scripts/block-pentest-target.sh:275` · refuse each prefix of `env --split-string` from `--s` · `afc89c3`
+- A01 Broken Access Control · `plugins/zuko/scripts/block-pentest-target.sh:244` · a value option at the end of a short group, or a unique prefix of a long one, takes the next word · `fdc98bf`
+- A01 Broken Access Control · `plugins/zuko/scripts/block-pentest-target.sh:300` · block a shell whose script is `/dev/stdin`, and `source` or `.` with no file or a stdin path · `45051e4`
+- needs validation · `plugins/zuko/scripts/block-pentest-target.sh:365` · whether Git Bash on Windows has `sh.exe` on PATH for the hook's Bash calls, since the stdin-shell check compares `sh.exe` to SHELLS as typed · in Git Bash on Windows, run `type sh.exe bash.exe`
+
 ## Open items
 
 | ID | What | Type | Raised at | Owner | Status | Answer |
