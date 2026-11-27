@@ -289,3 +289,6 @@ One line per lesson. Loaded into every session in this repo.
 - Probe a guard with its inputs in a scratchpad file — the installed guard
   reads the raw Bash text and blocks the probe itself.
   ([detail](probe-a-guard-from-a-file.md))
+- When removing a feature, grep for its nouns ("published page", "the board")
+  as well as its step phrases — the steps go and the descriptions stay.
+  ([detail](search-a-removed-feature-by-its-nouns.md))

@@ -26,18 +26,6 @@ no_cr() {      # no_cr <file> <description>
   if [ "$n" = 0 ]; then record PASS "$2"; else record FAIL "$2" "$n CR bytes in $1"; fi
 }
 
-# --- Scenario 1: the board renders on Windows ---
-board_repo="$dir/board"
-cp -R "$scripts/tests/fixtures/board" "$board_repo"
-shape="$board_repo/docs/specs/stages/shape.md"
-sed -i 's/A\[not-started\] --> B\[pause-one\]/A[not-started] -- "→ next" --> B[pause-one]/' "$shape"
-expect_match '→ next' "$(cat "$shape")" "board: the fixture's slice map holds →"
-PYTHONIOENCODING=cp1252 python3 "$lib/board.py" render "$shape" --by "/spec utf8-stdio pause 1" \
-  >"$dir/board.html" 2>"$dir/board.err"
-expect_exit 0 $? "board: render exits 0 with cp1252 stdio"
-has_bytes " e2 86 92 " "$dir/board.html" "board: → is the bytes E2 86 92"
-no_cr "$dir/board.html" "board: the HTML has no CR byte"
-
 # --- Scenario 2: the session start shows the decisions correctly ---
 dec_repo="$dir/decisions"
 mkdir -p "$dec_repo"
@@ -91,16 +79,12 @@ expect_no_match 'which cut did not write' "$release_err" "release: no staged fil
 # Linux and macOS start with UTF-8 stdio. The loop must change nothing there.
 # session-main.txt and pr-body-main.txt are what main at cce247e wrote for these
 # fixtures with UTF-8 stdio, made on Windows with PYTHONUTF8=1 and CRLF turned
-# into LF: the bytes a Linux run of main writes. The board holds today's date,
-# so it is compared run against run instead.
+# into LF: the bytes a Linux run of main writes.
 golden="$scripts/tests/fixtures/utf8-stdio"
 cmp -s "$golden/session-main.txt" "$dir/session.txt"
 expect_exit 0 $? "same bytes as main: the session-start decisions"
 cmp -s "$golden/pr-body-main.txt" "$dir/pr.txt"
 expect_exit 0 $? "same bytes as main: the PR body"
-python3 "$lib/board.py" render "$shape" --by "/spec utf8-stdio pause 1" >"$dir/board-utf8.html" 2>/dev/null
-cmp -s "$dir/board.html" "$dir/board-utf8.html"
-expect_exit 0 $? "same bytes: the board with UTF-8 stdio"
 CLAUDE_PROJECT_DIR="$dec_repo" bash "$scripts/load-decisions.sh" </dev/null >"$dir/session-utf8.txt" 2>&1
 cmp -s "$dir/session.txt" "$dir/session-utf8.txt"
 expect_exit 0 $? "same bytes: the session-start decisions with UTF-8 stdio"

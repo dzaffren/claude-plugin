@@ -17,15 +17,15 @@ expect_match 'Diagrams printed to the terminal are ASCII' "$visuals" \
   "voice.md 'Visuals over prose': terminal diagrams are ASCII"
 expect_match 'The terminal shows Mermaid as source' "$visuals" \
   "voice.md 'Visuals over prose': says why — the terminal shows Mermaid as source"
-expect_match 'Mermaid stays the source of truth in specs, shapes and published pages' "$visuals" \
-  "voice.md 'Visuals over prose': Mermaid lives in files and pages"
+expect_match 'Mermaid stays the source of truth in specs and shapes' "$visuals" \
+  "voice.md 'Visuals over prose': Mermaid lives in files"
 expect_match 'the ASCII in the reply draws the same diagram' "$visuals" \
   "voice.md 'Visuals over prose': the ASCII draws the same diagram"
 
 # --- scenario 2: no reference claims Mermaid renders in the terminal ---
 whole() { [ -f "$1" ] && tr '\n' ' ' <"$1" | tr -s ' ' || echo "(missing: $1)"; }
 claim='renders in the terminal|renders there'
-for file in "$zuko/../../README.md" "$zuko/references/visual-page.md" "$zuko/references/diagram-set.md"; do
+for file in "$zuko/../../README.md" "$zuko/references/diagram-set.md"; do
   expect_no_match "$claim" "$(whole "$file")" "$(basename "$file"): no claim that Mermaid renders in the terminal"
 done
 

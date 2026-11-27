@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 4
 **Depends on:** `changelog` — `/release` cuts versions from its `[Unreleased]` section
-**Page:** https://claude.ai/artifact/GWzbvfunoJvLFAsWrBkimp
 
 `/release` turns everything shipped since the last release into a version: it works
 out the number from the commits, moves `[Unreleased]` under it, bumps the manifest

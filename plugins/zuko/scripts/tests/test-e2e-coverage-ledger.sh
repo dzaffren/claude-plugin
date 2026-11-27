@@ -62,7 +62,7 @@ old_line=$(grep -n '^              old files: ' "$skill" | head -n 1 | cut -d: -
 expect_exit 0 "$?" "release skill: the old files line follows the needs validation line"
 expect_match 'writes `docs/security/vX\.Y\.Z/report\.md` and `docs/security/coverage\.md`' "$skill_flat" "release skill: cut writes the coverage ledger"
 expect_match 'Step 4 commits exactly the files it changed' "$skill_flat" "release skill: step 4 commits what cut wrote"
-expect_match '^  coverage  13 of 148 files checked by a pentest · 135 not checked$' "$skill_text" "release skill: the step 7 report repeats the Coverage line"
+expect_match '^  coverage  13 of 148 files checked by a pentest · 135 not checked$' "$skill_text" "release skill: the step 6 report repeats the Coverage line"
 
 # 2. Two releases of a scratch invoice-cli repo in a row. v1.5.0 starts the
 # ledger with 3 range files and 10 old files, and a lead on cli.py. v1.6.0

@@ -7,7 +7,6 @@
 
 zuko=$(dirname "$scripts")
 ship="$zuko/skills/ship/SKILL.md"
-visual="$zuko/references/visual-page.md"
 
 # One line per section, whitespace squeezed, so a sentence wrapped across
 # lines still matches. A "## " line inside a fence ends a section here, so a
@@ -19,7 +18,6 @@ refresh=$(section "$ship" "Refresh the overview")
 gates=$(section "$ship" "The gates")
 confirm=$(section "$ship" "Confirm it works")
 close=$(section "$ship" "Close out")
-hub=$(section "$visual" "Hub page")
 
 # --- the refresh writes everything, on the branch (scenario 1) ---
 expect_match 'Every file /ship writes, it writes here, on the branch, before the push\. The merge carries them to the base branch, and after the merge /ship writes nothing\.' \
@@ -27,23 +25,15 @@ expect_match 'Every file /ship writes, it writes here, on the branch, before the
 expect_match "set this slice's row to \`Shipped\`" "$refresh" "ship refresh: the row is set to Shipped"
 expect_no_match 'row to `Built`' "$refresh" "ship refresh: the row is no longer set to Built"
 expect_match '- Spec Status → `Shipped`\.' "$refresh" "ship refresh: the spec is set to Shipped"
-expect_match 'Republish the hub page from `OVERVIEW\.md` and `docs/ARCHITECTURE\.md`, per `\$\{CLAUDE_PLUGIN_ROOT\}/references/visual-page\.md`\. First publish → add the `hub page: \{url\}` it returns to the overview.s `## More` line\.' \
-  "$refresh" "ship refresh: the hub is republished, and a first link goes on the More line"
 expect_match 'Capture lessons to `docs/learnings/` silently\. A lesson found after the merge goes in the next branch.s refresh commit\.' \
   "$refresh" "ship refresh: lessons are captured here"
 expect_match 'Commit these files, the spec, `README\.md`, `CHANGELOG\.md`, the lessons and any new `DECISIONS\.md` included, on the branch — `docs\(overview\): mark \{slice\} shipped`\.' \
   "$refresh" "ship refresh: one commit, mark shipped"
-expect_match 'Spec Status → `Shipped`.*Republish the hub page.*render-readme-block\.sh --write.*Capture lessons.*mark \{slice\} shipped' \
+expect_match 'Spec Status → `Shipped`.*render-readme-block\.sh --write.*Capture lessons.*mark \{slice\} shipped' \
   "$refresh" "ship refresh: every write comes before the commit"
-expect_match '- Take the base branch into this one first, as "Tidy the branch" says\. The hub page below is published from this branch.s files, so a branch behind its base would publish a hub without the slices and the release merged since\.' \
-  "$refresh" "ship refresh: the base branch comes in before the hub is published"
-expect_match 'Take the base branch into this one first.*Republish the hub page' "$refresh" "ship refresh: the base is taken before the hub"
+expect_match '- Take the base branch into this one first, as "Tidy the branch" says\.' \
+  "$refresh" "ship refresh: the base branch comes in first"
 expect_no_match 'mark \{slice\} built' "$(squeezed "$ship")" "ship: the mark built commit is gone"
-
-# --- the hub is built before the push (scenario 1, O1) ---
-expect_match 'Built by `/ship` before the push, in the slice.s own PR, and republished by `/release`' \
-  "$hub" "visual-page hub: /ship builds it before the push"
-expect_no_match 'close-out' "$hub" "visual-page hub: not at close-out"
 
 # --- the close-out writes nothing (scenario 2) ---
 expect_match 'Write no file, and make no commit and no branch\.' "$close" "ship close: no file, no commit, no branch"
@@ -58,7 +48,7 @@ expect_match 'Run `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/verify-ship-gates\.sh docs/s
   "$gates" "ship gates: the gate is given the spec path"
 expect_match 'with no path the gate looks only for a `Built` spec\.' "$gates" "ship gates: says why the path is needed"
 expect_match 'A second `/ship` run that changes nothing makes no commit\.' "$refresh" "ship refresh: a second run with no change makes no commit"
-expect_match 'Before you route to `/spec` or `/build`, set the spec and its row back to `Built`, republish the idea board, run `render-readme-block\.sh --write` again, and commit\. The slice is not shipped until its PR merges, and `/spec` starts a new version of a `Shipped` spec\.' \
+expect_match 'Before you route to `/spec` or `/build`, set the spec and its row back to `Built`, run `render-readme-block\.sh --write` again, and commit\. The slice is not shipped until its PR merges, and `/spec` starts a new version of a `Shipped` spec\.' \
   "$gates" "ship gates: a failed gate puts the spec back to Built before /spec"
 
 # --- a missing signal (scenario 4) ---
@@ -90,12 +80,12 @@ Turns a folder of supplier invoices into one ledger CSV.
 
 ## Slices
 
-| Slice      | Status  | What it does                    | Page                  |
-| ---------- | ------- | ------------------------------- | --------------------- |
-| import-csv | Shipped | Read supplier invoices from CSV | https://claude.ai/... |
+| Slice      | Status  | What it does                    |
+| ---------- | ------- | ------------------------------- |
+| import-csv | Shipped | Read supplier invoices from CSV |
 OVERVIEW
-    [ -n "$1" ] && printf '| export-csv | %s | Export the ledger as one CSV | https://claude.ai/... |\n' "$1"
-    printf '\n## More\n\nREADME.md%s\n' "${2:-}"
+    [ -n "$1" ] && printf '| export-csv | %s | Export the ledger as one CSV |\n' "$1"
+    printf '\n## More\n\nREADME.md\n'
   } >"$repo/OVERVIEW.md"
 }
 
@@ -158,9 +148,8 @@ SPEC
 git -C "$repo" add -A
 git -C "$repo" commit -q --no-verify -m "fix(export): keep the leading zeros in the CSV"
 
-# 1. The refresh: the row, the spec, the CHANGELOG, the hub link, the README
-# and a lesson, in one commit on the branch.
-write_overview Shipped " · hub page: https://claude.ai/artifact/hub"
+# 1. The refresh: the row, the spec, the CHANGELOG, the README and a lesson, in one commit on the branch.
+write_overview Shipped
 sed -i.bak 's/\*\*Status:\*\* Built/**Status:** Shipped/' "$repo/docs/specs/export-csv.md" && rm "$repo/docs/specs/export-csv.md.bak"
 printf '\n### Fixed\n\n- The CSV export keeps the leading zeros of invoice numbers.\n' >>"$repo/CHANGELOG.md"
 mkdir -p "$repo/docs/learnings"
@@ -171,12 +160,12 @@ expect_exit 0 "$render_status" "e2e: the refresh renders the README block"
 hook block-dangerous.sh 'git add -A'
 expect_exit 0 "$hook_status" "e2e: the refresh's staging call passes block-dangerous.sh"
 git -C "$repo" add -A
-status_commit='git commit -m "docs(overview): mark export-csv shipped" -m "The row, the spec, the README and the hub link, in the PR."'
+status_commit='git commit -m "docs(overview): mark export-csv shipped" -m "The row, the spec and the README, in the PR."'
 for script in block-dangerous.sh secret-scan.sh block-attribution.sh; do
   hook "$script" "$status_commit"
   expect_exit 0 "$hook_status" "e2e: the status commit on fix/export-csv passes $script"
 done
-git -C "$repo" commit -q --no-verify -m "docs(overview): mark export-csv shipped" -m "The row, the spec, the README and the hub link, in the PR."
+git -C "$repo" commit -q --no-verify -m "docs(overview): mark export-csv shipped" -m "The row, the spec and the README, in the PR."
 
 expect_match '^docs\(overview\): mark export-csv shipped$' "$(git -C "$repo" log -1 --format=%s)" "e2e: the status commit's subject"
 changed=$(git -C "$repo" show --name-only --format= HEAD)

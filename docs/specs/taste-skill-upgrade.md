@@ -2,7 +2,6 @@
 
 **Version:** v1 · **Status:** Shipped · **Type:** Enhancement · **Project type:** CLI/Library
 **Depends on:** None
-**Page:** https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf
 
 The repo moves its vendored `design-taste-frontend` skill from the stale v1 copy to
 upstream v2.1.5, and the zuko design stages say which parts of v2 they use. The lock

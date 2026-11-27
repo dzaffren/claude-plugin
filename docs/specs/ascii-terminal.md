@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 6 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/TNetgs99avn7udEDAXJxhA
 
 Diagrams zuko prints to the terminal are ASCII; Mermaid stays in files and on the
 published pages. Now, because the terminal shows Mermaid as raw source, and three

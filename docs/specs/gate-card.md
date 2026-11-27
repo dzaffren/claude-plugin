@@ -95,7 +95,7 @@ Scenario: no copy of the last stop exists
 
 ## Interface
 
-**Preview:** https://claude.ai/artifact/33X27Ls4EvaLo7UDVU5fi1. It is built from the real `living-board` board, and its five buttons show one state per scenario. The buttons exist only in the preview.
+**Preview:** (page deleted). It is built from the real `living-board` board, and its five buttons show one state per scenario. The buttons exist only in the preview.
 
 ```mermaid
 flowchart TB
@@ -145,7 +145,7 @@ After the board is published, the stage copies the file as it is to `docs/specs/
 At a stop with a board, the terminal prints three things and nothing else before the prompt:
 
 ```
-Board: https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs  ·  gate: pause 1 of gate-card
+Board: (page deleted)  ·  gate: pause 1 of gate-card
 
 <one ASCII picture>
 

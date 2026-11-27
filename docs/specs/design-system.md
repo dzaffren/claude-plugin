@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 7 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/M3tjreL4wLrQ1qxyWzEPCA
 
 `/design-system` becomes its own command, holding what is today Mode 1 of `/design`.
 `/design SCREEN` stays for screens, and `/design system` prints "renamed to

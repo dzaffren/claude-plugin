@@ -186,7 +186,7 @@ The columns are number, date and total. Only a signed-in user can export.
 
 Flag `export_csv`, off by default. Rollback: turn the flag off.
 
-Spec: `docs/specs/export-csv.md` · Page: https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM
+Spec: `docs/specs/export-csv.md` · Page: (page deleted)
 ````
 
 - Your call copies each row's ID, What, Chose, Other and Undo word for word.
@@ -267,7 +267,7 @@ Body, to paste:
 ````markdown
 ## Your call
 ...
-Spec: `docs/specs/export-csv.md` · Page: https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM
+Spec: `docs/specs/export-csv.md` · Page: (page deleted)
 ````
 `````
 

@@ -157,31 +157,16 @@ as `ledger.md` › "Asking at a pause" says: answer it (`Resolved`), accept it w
 write Status `Draft` instead and name the rows that block it. The Stop hook
 fails a `Shaped` shape with an Open row.
 
-Publish the idea board, as
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-`--by "/shape {idea}"` and `--gate docs/specs/{idea}/shape.md`. The copy is
-`docs/specs/.pages/{idea}-shape-last.md`.
+Then, in the terminal, print the problem in two sentences, the slice list
+with the diagram, and any open items. Draw the slice map in ASCII. Then:
 
-Then publish the hub page, as
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Hub page" says. When
-there is no `hub page:` link on the overview's `## More` line, the publish
-makes a new hub. Then add the `hub page: {url}` that it returns to that line.
-
-Then, in the terminal:
-
-- The `Board:` line, or the `Board not published:` line.
-- The slice map, in ASCII.
 - **If the project type is web UI and no design system exists** — say so:
   `/design-system` should run once, before the first UI slice, and takes
   roughly half an hour. Do not start it.
 - Ask which slice to spec first, as the last question in the prompt. Put the
   recommended slice first, and say why in its description.
 
-Print nothing else before the prompt. The board shows the problem, the slices
-and the open items. When "Idea board" printed neither a `Board:` line nor a
-`Board not published:` line, print the problem in two sentences, the slice
-list with the diagram, and any open items.
-Print them before the design-system note.
+Print nothing else before the prompt.
 
 STOP. Do not write a spec. Do not write code.
 

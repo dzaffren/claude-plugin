@@ -5,8 +5,7 @@ description: >
   criteria, the interface, then the technical and ship plan — pausing three
   times for approval. Use after /shape picks a slice, or directly when the
   user says "spec this", "write the requirements", "how do we build this",
-  or describes one concrete piece of work. Produces docs/specs/{slice}.md
-  plus a published visual page.
+  or describes one concrete piece of work. Produces docs/specs/{slice}.md.
 disable-model-invocation: false
 ---
 
@@ -73,24 +72,9 @@ to make it pass.
 - Scope in and out, and which later slice picks up each out-of-scope item.
 - The ledger, updated.
 
-For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
-spec has a `**Shape doc:**` line, republish the idea board, as
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-`--by "/spec {slice} pause 1"`.
-
 **Then stop.** Show the diagram, the scenarios, the slice test result, and any
 open items. Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Do not continue until the user approves.
-
-That print is for a spec with no board. When "Idea board" printed a `Board:`
-line or a `Board not published:` line, the terminal shows only these, in this
-order:
-
-1. That line, as "Idea board" prints it.
-2. The Flow diagram, in ASCII.
-3. The question prompt.
-
-The board shows the scenarios, the slice test and the open items.
 
 ## Pause 2 — the interface
 
@@ -181,21 +165,8 @@ the project type — see the table in `slicing.md`:
 Write the Interface section: what was designed, the components used (names
 from the system only), the motion tier, and the preview path.
 
-For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
-spec has a `**Shape doc:**` line, republish the idea board, as
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-`--by "/spec {slice} pause 2"`.
-
-**Then stop.** When "Idea board" printed a `Board:` line or a
-`Board not published:` line, the terminal shows only these, in this order:
-
-1. That line, as "Idea board" prints it.
-2. The Interface map, in ASCII.
-3. The preview link, when the slice has a preview.
-4. The question prompt.
-
-With no board, give the preview link and name which design system the tokens
-came from.
+**Then stop.** Show the Interface map, in ASCII. Give the preview link, when
+the slice has a preview, and name which design system the tokens came from.
 
 Ask the open items, then the approval, as `ledger.md` › "Asking at a pause" says.
 Design review is a loop — when the user wants changes, edit and
@@ -255,33 +226,15 @@ gets none.
   `decisions.md` shows it. The spec carries them until `/build` appends them,
   so they survive a new session.
 
-**Publish the visual page** per
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`.
-
 **`Refined` needs zero `Open` rows.** Ask each one first, as `ledger.md` › "Asking at a pause" says:
 `Resolved` with the answer in the row, or `Accepted risk` with a reason and a
 date. A row that stays Open → Status stays `Draft`; say which rows block it
 and stop there. The Stop hook fails a `Refined` spec with an Open row.
 
-For the board at this stop, pass `--gate docs/specs/{slice}.md`. When the
-spec has a `**Shape doc:**` line, republish the idea board, as
-`${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-`--by "/spec {slice} pause 3"`.
-
-**Then stop.** Set Status to `Refined`. When "Idea board" printed a `Board:`
-line or a `Board not published:` line, the terminal shows only these, in this
-order:
-
-1. That line, as "Idea board" prints it.
-2. The Approach architecture diagram, in ASCII.
-3. The spec path, the page link, and the plan's riskiest choice, in one line.
-4. `/build` is next.
-
-The board lists the drafted entries. Their full text stays in the spec.
-
-With no board, give the spec path, the page link, and the plan's riskiest
-choice in one line. Print the ledger, then the drafted entries as "Decisions
-to record (approve with this pause)". Say `/build` is next.
+**Then stop.** Set Status to `Refined`. Show the Approach architecture
+diagram, in ASCII. Give the spec path and the plan's riskiest choice in one
+line. Print the ledger, then the drafted entries as "Decisions to record
+(approve with this pause)". Say `/build` is next.
 
 Do not write code.
 

@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 9 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/RvxWtxemNhGHe3catVwNKC
 
 `/shape NOV-125` starts from that Jira ticket when the Atlassian MCP is connected:
 its summary and description become the first answers, and step 1 asks only what the

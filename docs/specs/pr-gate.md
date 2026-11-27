@@ -51,9 +51,9 @@ Scenario: /ship puts the PR card on the board
   And under the rows, the card lists the 8 Decided alone rows, each with its Chose and Undo
 
 Scenario: the PR body links the board
-  Given docs/specs/living-board/shape.md has the line "**Board:** https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs"
+  Given docs/specs/living-board/shape.md has the line "**Board:** (page deleted)"
   When /ship opens the PR for gate-card
-  Then the PR body's last line reads "Spec: docs/specs/gate-card.md · Board: https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs"
+  Then the PR body's last line reads "Spec: docs/specs/gate-card.md · Board: (page deleted)"
 
 Scenario: a scenario that no test names
   Given scenario 3 of a spec has no row in its Test plan
@@ -85,7 +85,7 @@ Scenario: a spec with no board
 
 ## Interface
 
-**Preview:** https://claude.ai/artifact/94oQVZH4y75WTmfKPmgaFP. It is built from the real `living-board` board and the real gate-card spec. Its two buttons show gate-card as built, and gate-card with one test and one file taken out, so the amber notes show. The buttons exist only in the preview.
+**Preview:** (page deleted). It is built from the real `living-board` board and the real gate-card spec. Its two buttons show gate-card as built, and gate-card with one test and one file taken out, so the amber notes show. The buttons exist only in the preview.
 
 ```mermaid
 flowchart TB
@@ -117,7 +117,7 @@ A file shows once per row, without its line number: `board.py:244` and `board.py
 The last line gains the board link when the spec's shape has a `**Board:**` line:
 
 ```
-Spec: docs/specs/gate-card.md · Board: https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs
+Spec: docs/specs/gate-card.md · Board: (page deleted)
 ```
 
 With a `**Page:**` line too, the order is `Spec · Page · Board`. With no board, the line is as today.

@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 3
 **Depends on:** `auto-onboard` — onboarding creates the file
-**Page:** https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt
 
 Every shipped slice adds plain-language lines under `## [Unreleased]` in a root
 `CHANGELOG.md` (Keep a Changelog 1.1.0), and the ship gate refuses a `feat` or `fix`

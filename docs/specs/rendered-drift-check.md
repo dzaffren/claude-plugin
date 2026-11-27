@@ -2,7 +2,6 @@
 
 **Version:** v1 · **Status:** Shipped · **Type:** Feature · **Project type:** CLI/Library
 **Depends on:** taste-skill-upgrade
-**Page:** https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo
 
 A new zuko gate opens the preview in a real browser and checks each element's
 computed style against the design system's token values. The static

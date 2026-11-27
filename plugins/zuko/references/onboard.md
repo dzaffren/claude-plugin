@@ -30,7 +30,7 @@ version headings, as though `init` had just printed them.
 
 Once `OVERVIEW.md` is Active, never onboard again. Only `/ship` and hand edits
 change it after that. One exception: `/ship` runs step 4 and the README part
-of step 9 alone for a repo onboarded before the README block existed.
+of step 8 alone for a repo onboarded before the README block existed.
 
 **`DECISIONS.md`.** Every writing stage, onboarded repo or not, checks for
 `DECISIONS.md` at the repo root and creates it when missing, holding only:
@@ -67,7 +67,7 @@ file existed — `/ship`'s refresh step creates it with `init`, or adds
 5. `git tag --sort=creatordate` for releases.
 6. The top-level folder layout, one level down for source folders.
 7. `docs/specs/*.md`, if zuko has written specs here before — each one's
-   `**Status:**` and `**Page:**` line.
+   `**Status:**` line.
 
 Never read `.env`, `.env.*`, or anything secret-shaped: `*.pem`, `*.key`,
 `id_rsa*`, `credentials*`, `secrets*`. Never copy a value that looks like a
@@ -102,9 +102,9 @@ by heading, so the headings never change.
 
 ## Slices
 
-| Slice   | Status   | What it does | Page  |
-| ------- | -------- | ------------ | ----- |
-| {slice} | {status} | {one line}   | {url} |
+| Slice   | Status   | What it does |
+| ------- | -------- | ------------ |
+| {slice} | {status} | {one line}   |
 
 ## More
 
@@ -119,14 +119,13 @@ README.md · docs/ARCHITECTURE.md · DECISIONS.md
 - **Slices:** the first cell of each row is the spec's file name without
   `.md` — `docs/specs/export-csv.md` → `export-csv`. The ship gate matches
   that name exactly.
-- **Slices:** one row per existing `docs/specs/*.md`, with its status and page
-  link. None → one row, `none yet`, in every cell but the first, under the
-  line "Nothing shipped yet" on a greenfield repo, or "No slices yet — earlier
+- **Slices:** one row per existing `docs/specs/*.md`, with its status. None
+  → one row, `none yet`, in every cell but the first, under the line
+  "Nothing shipped yet" on a greenfield repo, or "No slices yet — earlier
   work is in git history ({N} commits, tags {first}..{last})" on a brownfield
   one.
 - **More:** list `README.md`, `docs/ARCHITECTURE.md`, `DECISIONS.md`,
-  `CHANGELOG.md` — each only if the file exists — separated by `·`. Add
-  `hub page: {url}` once the hub page is published (see `visual-page.md`).
+  `CHANGELOG.md` — each only if the file exists — separated by `·`.
 - **At most 150 lines.** The loader cuts anything past line 150.
 
 ## 3. Write `docs/ARCHITECTURE.md`
@@ -175,15 +174,14 @@ No manifest, a commit or two, nothing to read from:
 
 `README.md` carries one block between two markers, rendered from `OVERVIEW.md`
 by `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh`: what it does,
-install and run, features, docs. The block links only to files in the repo —
-never the hub page, which most readers cannot open.
+install and run, features, docs. The block links only to files in the repo.
 
 This step reads `OVERVIEW.md`, so it runs after step 2. Plan the change here;
-write nothing to `README.md` until the user approves in step 9.
+write nothing to `README.md` until the user approves in step 8.
 
 **Block already there.** `README.md` already has a `<!-- zuko:start` line →
 plan nothing: no overlap check, no new markers. The existing start marker and
-its skip list stay as they are, and step 9 only runs `--write`.
+its skip list stay as they are, and step 8 only runs `--write`.
 
 **Overlap.** A README section overlaps the block when its heading is one of
 these, case-insensitive, at any `#` level. The list is closed: every other
@@ -211,7 +209,7 @@ would carry and where each lands in `OVERVIEW.md` — an install command goes in
 the "Run it" table. A fact with no place in the overview, such as a
 hand-written feature list on a repo with no Shipped slices, is named as
 dropped, so the user sees it before approving. Print this with the draft in
-step 8:
+step 7:
 
 ```
 README.md overlaps the zuko block:
@@ -274,7 +272,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/lib/decisions.py" check <repo-root>
 
 Non-zero → fix the lines you wrote, never the numbers, and check again.
 
-Build the summary for step 8 from the scan: one line per seeded ADR in D
+Build the summary for step 7 from the scan: one line per seeded ADR in D
 order, then every `seed: false` ADR with its `skip_reason`:
 
 ```
@@ -315,7 +313,7 @@ makes the file ready; `/ship` writes the lines, per `changelog.md`.
   then fail until [Unreleased] exists.
   ```
 
-  Approved in step 9 → run it again with `--write`. Rejected → leave the file
+  Approved in step 8 → run it again with `--write`. Rejected → leave the file
   as it is.
 
 - **`CHANGELOG.md` with `[Unreleased]`** → nothing to do, and nothing in the
@@ -325,12 +323,7 @@ makes the file ready; `/ship` writes the lines, per `changelog.md`.
 Old entries are never reformatted. Past versions get only the one line `init`
 writes under each tag; nothing is invented from commit messages.
 
-## 7. Ignore the pages folder
-
-If `.gitignore` has no `docs/specs/.pages/` line, add it. The visual pages and
-the hub page are written there and are never committed.
-
-## 8. Show the draft and wait
+## 7. Show the draft and wait
 
 Print this, filled from what you actually read:
 
@@ -368,7 +361,7 @@ with /spec export-csv.
 Then stop. Do not start the stage until the user answers. A wrong overview
 loads into every later session, so this one check is worth the wait.
 
-## 9. Approve
+## 8. Approve
 
 - Corrections → apply them, show what changed, wait again.
 - "approve" → set `**Status:** Active` in both files, write the README block

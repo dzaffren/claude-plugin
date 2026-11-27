@@ -44,7 +44,7 @@ expect_match 'with `stopped before it finished · ` in front of the counts' "$sk
 expect_match '`- STRIX — skipped: not installed`' "$skill_flat" "release skill: a skipped Strix goes under Not assessed"
 expect_match 'The report never carries a Strix PoC\.' "$skill_flat" "release skill: no PoC in the report"
 expect_match '^              strix: 1\.7\.0 standard · \$3\.80 of \$10 · 3 found · 1 confirmed · 1 needs validation · 1 info dropped · 9 outside$' "$skill_text" "release skill: the summary has the strix line"
-expect_match '^  strix     1\.7\.0 standard · \$3\.80 of \$10 · 1 confirmed · 1 needs validation$' "$skill_text" "release skill: the step 7 report has the strix line"
+expect_match '^  strix     1\.7\.0 standard · \$3\.80 of \$10 · 1 confirmed · 1 needs validation$' "$skill_text" "release skill: the step 6 report has the strix line"
 
 # 2. A scratch invoice-cli release, a stub strix, docker and gh, and a Strix config.
 mkdir -p "$work/bin" "$work/gh" "$work/fake/run" "$work/home/.strix"

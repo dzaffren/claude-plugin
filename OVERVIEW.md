@@ -1,6 +1,6 @@
 # dzafran-claude-plugins
 
-**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-13 by /ship rm-forms
+**Status:** Active · **Release:** v2.7.0 · **Updated:** 2026-11-27 by /ship drop-board
 
 A personal Claude Code plugin marketplace with one plugin, zuko: a delivery workflow
 that takes a rough idea to a shipped vertical slice. Used by its author across personal
@@ -28,86 +28,87 @@ projects.
 
 ## Slices
 
-| Slice              | Status  | What it does                                                               | Page                                              |
-| ------------------ | ------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
-| hook-command-match | Shipped | Guards match the git command that actually runs, not text inside arguments | —                                                 |
-| ship-naming        | Shipped | One naming format for branches, commits and PRs, and no Claude attribution | —                                                 |
-| auto-onboard       | Shipped | Writes and loads a living project overview; /ship keeps it current         | https://claude.ai/artifact/6jGkvydEiefbEkuRQiiULA |
-| readme-block       | Shipped | A README block rendered from the overview and checked at ship time         | https://claude.ai/artifact/UjgNXmdzaq2Uaq1VkAMmmg |
-| decision-log       | Shipped | An append-only DECISIONS.md, loaded every session and enforced by /review  | https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM |
-| adr-seeding        | Shipped | Seeds DECISIONS.md from a repo's existing ADRs                             | https://claude.ai/artifact/Xh4g34k8RftqLVG11HfZX6 |
-| changelog          | Shipped | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  | https://claude.ai/artifact/MhNNgxXonCgnAvfYyHQBdt |
-| release            | Shipped | /release cuts a version from the commits: changelog, tag, GitHub release | https://claude.ai/artifact/GWzbvfunoJvLFAsWrBkimp |
-| owasp-lens         | Shipped | /review judges security against OWASP Top 10:2025, with a category and severity on every finding | https://claude.ai/artifact/WGiEEvRnTmpzLGLUxtBTh2 |
-| run-helpers-long-text | Shipped | Test checks on text over 64 KB pass or fail for the right reason | — |
-| pentest            | Shipped | /release pentests the code since the last release; a proven critical or high blocks it | https://claude.ai/artifact/8ed6sqgcVTL6GzYmT3xkAS |
-| regression-review  | Shipped | /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage | https://claude.ai/artifact/2TQDxfubLjL9nQftBH3uDQ |
-| release-host-message | Shipped | /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped | https://claude.ai/artifact/MvZ3Vm4192KiSyEyU5o4Hh |
-| ledger-handoff     | Shipped | A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward | https://claude.ai/artifact/QzLUTiLTrGLMbzcLefV8P8 |
-| pr-attribution | Shipped | The attribution hook blocks a gh pr create whose body or title signs Claude's name | https://claude.ai/artifact/5e7QMLTaHEKMdAijQ1W6JC |
-| mermaid-placeholder | Shipped | The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder | https://claude.ai/artifact/AnCszTToZDaHLDVcsyevpu |
-| guard-worktree-dir | Shipped | A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned | — |
-| design-system | Shipped | /design-system builds the product's design system as its own command; /design is for screens and points its old system form at the new name | https://claude.ai/artifact/M3tjreL4wLrQ1qxyWzEPCA |
-| ascii-terminal | Shipped | Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages | https://claude.ai/artifact/TNetgs99avn7udEDAXJxhA |
-| jira-shape | Shipped | /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira | https://claude.ai/artifact/RvxWtxemNhGHe3catVwNKC |
-| glossary-gate | Shipped | Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it | https://claude.ai/artifact/LN5TASnzHBzZak1Ge8CvwK |
-| figma-brief | Shipped | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles | https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9 |
-| pentest-live | Shipped | /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named | https://claude.ai/artifact/9ncMJwsS8wJtRzdfWxrv4j |
-| release-commit-guard | Shipped | /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read | https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w |
-| design-drift-filename | Shipped | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file | — |
-| pentester-fence-awk | Shipped | The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw | — |
-| release-commit-brace | Shipped | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit | — |
-| force-push-expansion | Shipped | The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands | — |
-| stop-hook-scope | Shipped | The Stop hooks judge only the zuko docs this work changed, so runbooks, other tools' specs and old breaches no longer fail a turn | — |
-| ste-voice | Shipped | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them | — |
-| pause-questions | Shipped | At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row | — |
-| unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block | — |
-| decision-pr | Shipped | /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review | — |
-| tokenise-linear | Shipped | The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out | — |
-| fail-closed-parse | Shipped | The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main | — |
-| pr-edit-attribution | Shipped | The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create, so a replaced PR body or a merge commit message cannot sign Claude's name | — |
-| arith-heredoc | Shipped | The guards' parser refuses a `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift, so it no longer hides the lines after it | — |
-| gh-create-value-options | Shipped | The attribution hook gives each value option of gh pr create and gh release create its value, so a value option before the body or the notes no longer hides a signed text | — |
-| pipefail-grep-race | Shipped | The hook and gate scripts give grep -q its text with a here-string, not a pipe, so a slow printf can no longer turn a match into a miss and let a force push, a commit on main or a staged secret pass | — |
-| quoted-subst-heredoc | Shipped | The guards' parser refuses a heredoc inside a double-quoted $( ) or backticks when a line of its body changes the parser's quotes, so it no longer hides the lines after it | — |
-| shipped-in-pr | Shipped | /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge | — |
-| idea-board | Shipped | Each idea gets one claude.ai board with its slices in order, each slice's stage, diagrams and decisions; every stage republishes it | — |
-| gate-card | Shipped | At each /spec pause and the end of /shape, the board shows what waits for you, what is settled and what changed since the last stop; the terminal prints only the board link, one picture and the questions | — |
-| pr-gate | Shipped | The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board | — |
-| library | Shipped | The hub page lists every idea with its board link, how many of its slices shipped and a mark per slice; /shape now publishes the hub too | — |
-| replay | Shipped | The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step | — |
-| unclosed-fence | Shipped | The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body | — |
-| slice-name-path | Shipped | The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board | — |
-| rendered-drift-check | Shipped | /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token | https://claude.ai/artifact/4LMxFsJzU4csMXsqKgn3xo |
-| taste-skill-upgrade | Shipped | The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out | https://claude.ai/artifact/Q3Ag4zh5UGg8JV5W2aQBuf |
-| lf-checkout | Shipped | A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only | https://claude.ai/artifact/JUtcu8GLjCzgejTUDXxWFg |
-| guard-paths | Shipped | On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it | https://claude.ai/artifact/2juH24KKAcWnDXTBv4prwR |
-| utf8-stdio | Shipped | Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the board renders, and the PR body, the session-start decisions and the release guard show and compare the same text as on Linux | https://claude.ai/artifact/DDqkuv3ooiEwunibe38iEy |
-| attack-classes | Shipped | The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped | https://claude.ai/artifact/F9bL5Vm7mFYo6BT9PC9SmP |
-| needs-validation | Shipped | The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads | — |
-| coverage-ledger | Shipped | Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases | — |
-| portable-suite | Shipped | The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does | — |
-| windows-paths | Shipped | Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates, the board and /release give the same paths as on Linux | — |
-| strix-code | Shipped | With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer | — |
-| exe-lookup | Shipped | On Windows, zuko's hooks and gates start git and cygpath from PATH only, so a git.exe or cygpath.exe at the root of a project never runs, and a program that is not on PATH fails as not found | — |
-| strix-live | Shipped | When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location | — |
-| hook-import-path | Shipped | Each inline Python call in a zuko hook runs in isolated mode, so a json.py at the root of a project or on PYTHONPATH never runs from a hook and never turns a block into a pass | — |
-| windows-ci | Shipped | Each PR to main runs the test suite on windows-latest and ubuntu-latest, and main requires both checks, so a test that passes on one OS only can no longer merge; the repo admin still pushes the release commit straight to main | — |
-| node-lookup | Shipped | On Windows, the rendered drift check stops Chrome with the taskkill.exe in System32, so a taskkill.exe at the root of a project never runs | — |
-| fence-backslash | Shipped | The pentester fence judges each command with \\ as /, as Git Bash reads it, and again as typed, so on Linux and macOS a write to a \\ sibling of the scratch dir no longer passes | — |
-| chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS | — |
-| review-leads | Shipped | /review keeps each lead it traced but could not settle under Needs validation, with the one unknown fact and a check, and the PR body shows it | — |
-| guard-parser-gaps | Shipped | The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file | — |
-| nested-git-commands | Shipped | The git guards now see a git call that bash runs inside another command: a $( ) or backticks in double quotes or a heredoc body, and a bash -c or eval string | — |
-| git-spellings | Shipped | The git guards now read a path to git or gh, git's dashed form, and an inline -c alias, and refuse an alias whose value the command does not show | — |
-| fence-tar-exec | Shipped | The pentester fence blocks a tar option that runs a program, reads options from a file or reads a remote archive, in the repo and in the scratch copy | — |
-| secret-scan-scope | Shipped | The secret scan reads what each commit takes: the work tree for -a, the named paths for git commit <path>, and every diff as plain text whatever the repo's attributes say | — |
-| main-branch-commits | Shipped | On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am; a --ff-only merge or pull and --abort still pass | — |
-| branch-switch-commit | Shipped | The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names | — |
-| config-aliases | Shipped | The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote | — |
-| attribution-trailer | Shipped | The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option | — |
-| rm-forms | Shipped | The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read | — |
+| Slice              | Status  | What it does                                                               |
+| ------------------ | ------- | -------------------------------------------------------------------------- |
+| hook-command-match | Shipped | Guards match the git command that actually runs, not text inside arguments |
+| ship-naming        | Shipped | One naming format for branches, commits and PRs, and no Claude attribution |
+| auto-onboard       | Shipped | Writes and loads a living project overview; /ship keeps it current         |
+| readme-block       | Shipped | A README block rendered from the overview and checked at ship time         |
+| decision-log       | Shipped | An append-only DECISIONS.md, loaded every session and enforced by /review  |
+| adr-seeding        | Shipped | Seeds DECISIONS.md from a repo's existing ADRs                             |
+| changelog          | Shipped | /ship writes plain-language CHANGELOG.md lines, enforced by the ship gate  |
+| release            | Shipped | /release cuts a version from the commits: changelog, tag, GitHub release |
+| owasp-lens         | Shipped | /review judges security against OWASP Top 10:2025, with a category and severity on every finding |
+| run-helpers-long-text | Shipped | Test checks on text over 64 KB pass or fail for the right reason |
+| pentest            | Shipped | /release pentests the code since the last release; a proven critical or high blocks it |
+| regression-review  | Shipped | /review judges what a diff introduced: a deleted guard or changed caller is a finding, silent failures are A10, untested auth is coverage |
+| release-host-message | Shipped | /release on a GitLab origin says it supports GitHub only, instead of promising a GitLab slice that was dropped |
+| ledger-handoff     | Shipped | A shape cannot be Shaped, or a spec Refined, with an Open ledger row; a shape hands a later slice's question forward |
+| pr-attribution | Shipped | The attribution hook blocks a gh pr create whose body or title signs Claude's name |
+| mermaid-placeholder | Shipped | The ship gate reads a Mermaid decision node as diagram syntax, not an unfilled placeholder |
+| guard-worktree-dir | Shipped | A commit is judged on the branch and staged diff of the directory it runs in, so worktree commits pass the guards and secrets staged there are scanned |
+| design-system | Shipped | /design-system builds the product's design system as its own command; /design is for screens and points its old system form at the new name |
+| ascii-terminal | Shipped | Diagrams in terminal replies are drawn in ASCII; Mermaid stays the source in specs and pages |
+| jira-shape | Shipped | /shape KEY starts the shape from that Jira ticket when Jira is connected, and never writes to Jira |
+| glossary-gate | Shipped | Spec and shape templates end with a Glossary, and the spec gate fails a live doc that uses a listed jargon term without defining it |
+| figma-brief | Shipped | /design-system takes a Figma frame link when Figma is connected and builds the brief from that frame's variables and styles |
+| pentest-live | Shipped | /release also attacks a running web app with real requests, checking broken access control and authentication; a guard holds every request to the one host you named |
+| release-commit-guard | Shipped | /release makes its own commit on main again: the guard lets through exactly the commit cut prepared, and the commit guards block a hook payload they cannot read |
+| design-drift-filename | Shipped | The design drift gate runs under macOS's default bash, and a scanned file's name can no longer make it write a file |
+| pentester-fence-awk | Shipped | The pentester fence no longer allows awk, sed, sort, uniq or file, which ran a shell or wrote files the fence never saw |
+| release-commit-brace | Shipped | The release commit's exception on main refuses an unquoted brace or glob, which bash expanded into extra files in the commit |
+| force-push-expansion | Shipped | The force-push guard blocks every spelling git forces with: a + refspec, a bundled -f, --mirror, and a brace or glob the shell expands |
+| stop-hook-scope | Shipped | The Stop hooks judge only the zuko docs this work changed, so runbooks, other tools' specs and old breaches no longer fail a turn |
+| ste-voice | Shipped | zuko writes to the ASD-STE100 writing rules, a published standard you can check it against, and every skill and agent reads them |
+| pause-questions | Shipped | At each pause, /spec and /shape ask every open question and assumption in the question prompt, recommended answer first; a pause is approved only with no Open row |
+| unattended-build | Shipped | /build and /review run to the end without asking; each choice they make alone is a Decided alone row in the spec, which does not block |
+| decision-pr | Shipped | /ship opens the PR with each choice made without you, then the review result, then what ships; the ship gate fails a choice with no undo, or a spec with no review |
+| tokenise-linear | Shipped | The guards' shared command parser refuses a command over 64 KB, and block-dangerous blocks it, so no guard takes 20 s and no long command times a guard out |
+| fail-closed-parse | Shipped | The guards' parser reads # comments as bash does, and block-dangerous blocks a command the parser cannot read, so a comment or a broken line no longer hides a force push or a commit on main |
+| pr-edit-attribution | Shipped | The attribution hook reads gh pr edit and gh pr merge as it reads gh pr create, so a replaced PR body or a merge commit message cannot sign Claude's name |
+| arith-heredoc | Shipped | The guards' parser refuses a `<<` inside `(( ))`, `$(( ))`, `$[ ]` or `${ }`, where bash reads a shift, so it no longer hides the lines after it |
+| gh-create-value-options | Shipped | The attribution hook gives each value option of gh pr create and gh release create its value, so a value option before the body or the notes no longer hides a signed text |
+| pipefail-grep-race | Shipped | The hook and gate scripts give grep -q its text with a here-string, not a pipe, so a slow printf can no longer turn a match into a miss and let a force push, a commit on main or a staged secret pass |
+| quoted-subst-heredoc | Shipped | The guards' parser refuses a heredoc inside a double-quoted $( ) or backticks when a line of its body changes the parser's quotes, so it no longer hides the lines after it |
+| shipped-in-pr | Shipped | /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge |
+| idea-board | Removed | Each idea gets one claude.ai board with its slices in order, each slice's stage, diagrams and decisions; every stage republishes it |
+| gate-card | Removed | At each /spec pause and the end of /shape, the board shows what waits for you, what is settled and what changed since the last stop; the terminal prints only the board link, one picture and the questions |
+| pr-gate | Removed | The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board |
+| library | Removed | The hub page lists every idea with its board link, how many of its slices shipped and a mark per slice; /shape now publishes the hub too |
+| replay | Removed | The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step |
+| unclosed-fence | Shipped | The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the PR body |
+| slice-name-path | Removed | The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board |
+| rendered-drift-check | Shipped | /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token |
+| taste-skill-upgrade | Shipped | The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out |
+| lf-checkout | Shipped | A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only |
+| guard-paths | Shipped | On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it |
+| utf8-stdio | Shipped | Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the PR body, the session-start decisions and the release guard show and compare the same text as on Linux |
+| attack-classes | Shipped | The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped |
+| needs-validation | Shipped | The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads |
+| coverage-ledger | Shipped | Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases |
+| portable-suite | Shipped | The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does |
+| windows-paths | Shipped | Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates and /release give the same paths as on Linux |
+| strix-code | Shipped | With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer |
+| exe-lookup | Shipped | On Windows, zuko's hooks and gates start git and cygpath from PATH only, so a git.exe or cygpath.exe at the root of a project never runs, and a program that is not on PATH fails as not found |
+| strix-live | Shipped | When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location |
+| hook-import-path | Shipped | Each inline Python call in a zuko hook runs in isolated mode, so a json.py at the root of a project or on PYTHONPATH never runs from a hook and never turns a block into a pass |
+| windows-ci | Shipped | Each PR to main runs the test suite on windows-latest and ubuntu-latest, and main requires both checks, so a test that passes on one OS only can no longer merge; the repo admin still pushes the release commit straight to main |
+| node-lookup | Shipped | On Windows, the rendered drift check stops Chrome with the taskkill.exe in System32, so a taskkill.exe at the root of a project never runs |
+| fence-backslash | Shipped | The pentester fence judges each command with \\ as /, as Git Bash reads it, and again as typed, so on Linux and macOS a write to a \\ sibling of the scratch dir no longer passes |
+| chrome-lookup | Shipped | The rendered drift check starts only a browser at an absolute path, so a chrome.exe planted in a repo never runs from /spec pause 2 or /design on Linux and macOS |
+| review-leads | Shipped | /review keeps each lead it traced but could not settle under Needs validation, with the one unknown fact and a check, and the PR body shows it |
+| guard-parser-gaps | Shipped | The git guards now block a force push or a commit on main hidden behind an unreadable heredoc delimiter, a newline in a quoted argument, or --attr-source, --config-env or --shallow-file |
+| nested-git-commands | Shipped | The git guards now see a git call that bash runs inside another command: a $( ) or backticks in double quotes or a heredoc body, and a bash -c or eval string |
+| git-spellings | Shipped | The git guards now read a path to git or gh, git's dashed form, and an inline -c alias, and refuse an alias whose value the command does not show |
+| fence-tar-exec | Shipped | The pentester fence blocks a tar option that runs a program, reads options from a file or reads a remote archive, in the repo and in the scratch copy |
+| secret-scan-scope | Shipped | The secret scan reads what each commit takes: the work tree for -a, the named paths for git commit <path>, and every diff as plain text whatever the repo's attributes say |
+| main-branch-commits | Shipped | On main, the commit guard also blocks merge, cherry-pick, rebase, pull, revert and am; a --ff-only merge or pull and --abort still pass |
+| branch-switch-commit | Shipped | The commit guard follows a git checkout or git switch to main earlier in the same command, and checks a commit in an unknown dir in each dir the command names |
+| config-aliases | Shipped | The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote |
+| attribution-trailer | Shipped | The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option |
+| rm-forms | Shipped | The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read |
+| drop-board | Shipped | No zuko stage publishes a claude.ai page any more: not the idea board, not the hub, not the spec page. Each stage shows its full stop in the terminal instead |
 
 ## More
 
-README.md · docs/ARCHITECTURE.md · DECISIONS.md · CHANGELOG.md · hub page: https://claude.ai/artifact/YcLoFAaz4iRM6LArt5uPQT
+README.md · docs/ARCHITECTURE.md · DECISIONS.md · CHANGELOG.md

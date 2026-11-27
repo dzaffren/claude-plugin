@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 7b
 **Depends on:** `owasp-lens` — this plan edits the files as 7a leaves them: its finding format (`CATEGORY`, `SEVERITY`, `SNIPPET`, `SYMBOL`), its `references/owasp.md` with an A10 section, and the verifier's `SEVERITY` output
-**Page:** https://claude.ai/artifact/2TQDxfubLjL9nQftBH3uDQ
 
 `/review` judges what a diff introduces, not only the lines it touches. A deleted
 guard or a changed caller becomes a finding, silent failures become A10 checks, and

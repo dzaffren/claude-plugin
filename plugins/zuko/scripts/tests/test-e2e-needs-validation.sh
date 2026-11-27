@@ -75,7 +75,7 @@ for label in trace unknown check; do
   expect_match "^       $label +[^ ]" "$skill_text" "release skill: each lead prints its $label"
 done
 expect_match '^              needs validation: 1 lead \(2 dropped by the verifier\)$' "$skill_text" "release skill: the summary counts the leads"
-expect_match '^  pentest   passed: [0-9]+ critical, [0-9]+ high, [0-9]+ medium, [0-9]+ low · 1 lead needs validation · docs/security/' "$skill_text" "release skill: the step 7 report counts the leads"
+expect_match '^  pentest   passed: [0-9]+ critical, [0-9]+ high, [0-9]+ medium, [0-9]+ low · 1 lead needs validation · docs/security/' "$skill_text" "release skill: the step 6 report counts the leads"
 
 # 2. A scratch invoice-cli release takes a report with a medium finding and
 # 3 leads. The stand-in for gh has no CI checks and no release yet.

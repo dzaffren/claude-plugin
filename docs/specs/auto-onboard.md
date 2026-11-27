@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 1
 **Depends on:** None
-**Page:** https://claude.ai/artifact/6jGkvydEiefbEkuRQiiULA
 
 The first zuko stage run in any repo writes a short living overview and an
 architecture doc, has the user correct them once, and from then on every session

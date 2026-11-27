@@ -6,7 +6,7 @@ Usage: fence.py check <path>...
   check  one "<path>\t<problem>" line for the first problem in each doc, in
          the order given. Nothing for a doc that passes. A fence is up to 3
          spaces, then 3 or more backticks or tildes (pr_body.FENCE), and it
-         closes as board.closes() says: the same character, at least as
+         closes as closes() says: the same character, at least as
          long, nothing after it. Two problems:
 
            - a fence with a language name opens inside an open block, with
@@ -24,10 +24,16 @@ Exit 0 printed. Exit 2 bad usage or a doc that cannot be read.
 """
 import sys
 
-import board
 import pr_body
 
 USAGE = "usage: fence.py check <path>..."
+
+
+def closes(line, fence):
+    """A fence closes on its own character, at least as long, nothing after."""
+    marker = pr_body.FENCE.match(line)
+    return bool(marker) and marker.group(1)[0] == fence[0] \
+        and len(marker.group(1)) >= len(fence) and not line[marker.end():].strip()
 
 
 def first_problem(text):
@@ -40,7 +46,7 @@ def first_problem(text):
         n += raw.count("\n")
         marker = pr_body.FENCE.match(line)
         if fence:
-            if board.closes(line, fence):
+            if closes(line, fence):
                 fence = ""
             elif marker and line[marker.end():].strip() and marker.group(1)[0] == fence[0] \
                     and len(marker.group(1)) >= len(fence):
