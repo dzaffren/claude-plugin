@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/pentest-depth/shape.md
 **Depends on:** None
-**Page:** https://claude.ai/artifact/F9bL5Vm7mFYo6BT9PC9SmP
 
 The plugin gets a pinned copy of Cloudflare's attack-class files, and the release pentester reads the files that match the repo. zuko's next release then checks its own agent and plugin code with the AI-AND-LLM and SUPPLY-CHAIN classes, which the OWASP list does not cover.
 

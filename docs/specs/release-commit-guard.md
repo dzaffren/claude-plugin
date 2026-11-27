@@ -3,7 +3,6 @@
 **Version:** v1 · **Status:** Shipped · **Type:** Bug · **Project type:** CLI/Library
 
 **Depends on:** `release` — the commit this slice lets through is its step 4
-**Page:** https://claude.ai/artifact/R9mozzVbH3JQ65xTvLJU3w
 
 `/release` cannot make its own commit. D1 sends the release commit straight to
 `main`, and `block-dangerous.sh` blocks every commit on `main`. This slice lets

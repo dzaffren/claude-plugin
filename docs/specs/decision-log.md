@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2
 **Depends on:** `auto-onboard` — onboarding creates the file, the session loader gains its titles
-**Page:** https://claude.ai/artifact/9hPyHKvyYczFPhbdBpJciM
 
 Every real choice zuko makes with the user — one option picked, others rejected —
 lands in one `DECISIONS.md` at the repo root. Later sessions see the active titles at

@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 3 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/5e7QMLTaHEKMdAijQ1W6JC
 
 The attribution hook blocks a `gh pr create` whose body or title signs Claude's name,
 as it already does for commits, tags and releases. Now, because the harness injects

@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 1 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/AnCszTToZDaHLDVcsyevpu
 
 The ship gate stops reading a Mermaid decision node with a lowercase label as an
 unfilled placeholder. First of slice 8's parts, because every spec written until it

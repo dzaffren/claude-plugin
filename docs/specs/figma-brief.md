@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 8 of 9
 **Depends on:** `design-system` — this extends that skill's Pause A
-**Page:** https://claude.ai/artifact/J8iPo9thpwVB4Xyzng2JX9
 
 `/design-system` accepts a Figma link when the Figma tools are connected, and
 extracts the brief from the variables and styles used in the frame the link

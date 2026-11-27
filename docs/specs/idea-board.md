@@ -116,7 +116,7 @@ Scenario: the publish fails
 
 ## Interface
 
-**Preview:** https://claude.ai/artifact/9o36TJM3VXNn2VKRPLYPBi (version 5, built from the real `living-board` and `ask-up-front` files). The look follows OpenMontage's Backlot board, as the user asked.
+**Preview:** (page deleted) (version 5, built from the real `living-board` and `ask-up-front` files). The look follows OpenMontage's Backlot board, as the user asked.
 
 ```mermaid
 flowchart TB

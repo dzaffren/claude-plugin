@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 2 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/MvZ3Vm4192KiSyEyU5o4Hh
 
 `/release` on a GitLab origin says "/release supports GitHub only" instead of
 promising "GitLab releases come in slice 6". Slice 6 was dropped on 2026-09-25

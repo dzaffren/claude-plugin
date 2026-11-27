@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 2b
 **Depends on:** `decision-log` — the file format and the gate this slice writes into
-**Page:** https://claude.ai/artifact/Xh4g34k8RftqLVG11HfZX6
 
 When onboarding creates `DECISIONS.md` in a repo that already keeps Architecture
 Decision Records, each ADR still in force becomes a D-entry citing its file, so the

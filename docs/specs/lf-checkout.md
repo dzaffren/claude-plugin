@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
-**Page:** https://claude.ai/artifact/JUtcu8GLjCzgejTUDXxWFg
 
 A `.gitattributes` rule makes git check out every text file of zuko with LF on every OS. A Windows install then holds the same bytes as a Linux one, and later slices measure their own causes without CRLF noise.
 

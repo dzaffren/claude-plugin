@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
-**Page:** https://claude.ai/artifact/DDqkuv3ooiEwunibe38iEy
 
 Each Python script that zuko starts reads and writes UTF-8 with LF line ends, whatever the platform default is. On Windows, the board, the PR body, the session-start decisions list and the release guard then show and compare the same text as on Linux.
 

@@ -98,7 +98,7 @@ Scenario: an idea with no commits yet
 
 ## Interface
 
-**Preview:** https://claude.ai/artifact/2mvUGzveMZJ1rr2T4SiUL9. It is built from the real `living-board` board, with steps read from `main`, PRs #104 to #106 and this branch. Its buttons show the three states: GitHub read, GitHub not reached, and no commits yet. A fourth button jumps to 16c53ad. The buttons exist only in the preview.
+**Preview:** (page deleted). It is built from the real `living-board` board, with steps read from `main`, PRs #104 to #106 and this branch. Its buttons show the three states: GitHub read, GitHub not reached, and no commits yet. A fourth button jumps to 16c53ad. The buttons exist only in the preview.
 
 ```mermaid
 flowchart TB

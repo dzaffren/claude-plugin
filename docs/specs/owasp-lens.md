@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 7a
 **Depends on:** None
-**Page:** https://claude.ai/artifact/WGiEEvRnTmpzLGLUxtBTh2
 
 `/review`'s security lens checks the diff against OWASP Top 10:2025, from one shared
 `references/owasp.md` that says what to check and what is not a finding in each

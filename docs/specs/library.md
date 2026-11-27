@@ -45,11 +45,11 @@ flowchart LR
 
 ```gherkin
 Scenario: The hub lists each idea with its board and progress
-  Given docs/specs/living-board/shape.md has the line "**Board:** https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs"
+  Given docs/specs/living-board/shape.md has the line "**Board:** (page deleted)"
   And its Slices table names idea-board, gate-card, pr-gate, library and replay
   And idea-board, gate-card and pr-gate are at Status Shipped, and library and replay have no spec
   When /ship republishes the hub page
-  Then the Ideas section has a row "Living board" that links to https://claude.ai/artifact/6ZvDtf657jw6ohs94cyYvs
+  Then the Ideas section has a row "Living board" that links to (page deleted)
   And the row says "3 of 5 shipped"
   And the row shows five rail marks: three Shipped, two Not started
   And docs/specs/tokenise-linear.md, which has no Shape doc line, is not in the Ideas section but stays in the Slices table
@@ -134,7 +134,7 @@ The section is a heading, a note, a legend and one table. Each shape gives one r
 
 **No shapes.** With no `docs/specs/*/shape.md`, the hub has no Ideas section. It shows no empty heading.
 
-**Preview:** https://claude.ai/artifact/AcXaSBvFM98p8tbTeee6bt, from `docs/specs/.pages/library-preview.html`
+**Preview:** (page deleted), from `docs/specs/.pages/library-preview.html`
 
 ## Technical plan
 

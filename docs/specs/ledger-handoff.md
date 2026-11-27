@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 4 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/QzLUTiLTrGLMbzcLefV8P8
 
 The ledger gains a `Handed to SLICE` status, and the Stop hook refuses a shape
 marked `Shaped` or a spec marked `Refined` while a row is still `Open`. Now, because

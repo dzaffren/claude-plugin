@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-release-and-hosts/shape.md — slice 8, part 5 of 9
 **Depends on:** None
-**Page:** https://claude.ai/artifact/LN5TASnzHBzZak1Ge8CvwK
 
 Shape and spec templates end with `## Glossary`, and the spec gate fails a live doc
 that uses a term from a short, named jargon list without a glossary entry for it.

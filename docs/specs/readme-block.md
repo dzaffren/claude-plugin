@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/v3-project-memory/shape.md — slice 1b
 **Depends on:** `auto-onboard` — the overview this block is rendered from
-**Page:** https://claude.ai/artifact/UjgNXmdzaq2Uaq1VkAMmmg
 
 The README's what-it-does, install-and-run, features and docs sections become one block
 that a script renders from `OVERVIEW.md`. `/ship` re-renders it and the ship gate

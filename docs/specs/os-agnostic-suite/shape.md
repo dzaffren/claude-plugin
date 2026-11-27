@@ -2,8 +2,6 @@
 
 **Project type:** CLI/Library · **Status:** Shaped
 
-**Board:** https://claude.ai/artifact/3kuMaMXKin94sSpdrbs5ci
-
 ## Problem
 
 On Windows, zuko writes wrong text, and two of its guards let through what they block on Linux. Its test suite fails 596 checks in 38 files, so `/release` stops at its tests gate and no version can be cut from a Windows machine.

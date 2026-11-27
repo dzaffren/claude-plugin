@@ -4,7 +4,6 @@
 
 **Shape doc:** docs/specs/os-agnostic-suite/shape.md
 **Depends on:** None
-**Page:** https://claude.ai/artifact/2juH24KKAcWnDXTBv4prwR
 
 On Windows, zuko's commit guards read a Git Bash path such as `/tmp/tmp.Kx81Qz/msg` with Windows path rules, find nothing, and let the command through. This slice makes the attribution, main-branch and secret-scan guards read those paths as Git Bash does, and block when they still cannot read a file.
 
