@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+
+- zuko no longer publishes a claude.ai idea board, hub page or spec page. Each stage prints its whole stop in the terminal instead, and the PR body ends with the spec path alone.
+
 ### Security
 
 - zuko's force-push and commit-on-main guards missed a `git push --force` or a commit on `main` written after a heredoc whose delimiter they could not read, such as `<<E-F` or `<<'E-F'`, after a newline inside a quoted argument, or after `--attr-source`, `--config-env` or `--shallow-file` and its value. They now block each of these.

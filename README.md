@@ -276,6 +276,7 @@ projects.
 - The git guards read the aliases and push refspecs in git's config, and block a push that deletes main or master on the remote
 - The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option
 - The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read
+- No zuko stage publishes a claude.ai page any more: not the idea board, not the hub, not the spec page. Each stage shows its full stop in the terminal instead
 
 ## Docs
 
