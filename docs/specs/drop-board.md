@@ -1,6 +1,6 @@
 # drop-board
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/goal-thread/shape.md
 **Depends on:** None
@@ -326,6 +326,9 @@ Recorded as D163 to D177.
 | O7  | `DECISIONS.md` lets one new entry supersede only one old entry, and `decisions.py` checks the pair. The board has 15 entries: D62 to D74, D77 and D108. How are they retired? | question | spec p3 | user | Resolved | 15 entries. D163 replaces D67, and D164 to D177 each retire one other entry. `decisions.py` checks each pair. 2026-11-26 |
 | O8  | The 6 board slices in OVERVIEW.md are Shipped, so the README's Features list still says "each idea gets one claude.ai board". What happens to those rows? | question | spec p3 | user | Resolved | Their Status becomes `Removed`. OVERVIEW keeps them as history, and the README lists only Shipped rows (`readme_block.py:176-180`). `/build` checks that no other reader of OVERVIEW refuses the new status. 2026-11-26 |
 | O9  | Scenarios 1 and 2 are prompt text. The contract test proves the text, not what a stage prints. How is the behaviour proven? | unproven | spec p3 | user | Accepted risk | The contract test proves the text. The behaviour is checked by hand at `/spec plain-words` pause 1, after the plugin update: no Board line, and no new artifact. A deleted step cannot be followed, so the risk is low. 2026-11-26 |
+| O10 | Four files the plan did not name still said zuko renders or publishes a board: `references/voice.md` ("published pages"), `docs/ARCHITECTURE.md` (the `board.py` part of the scripts row), and the "What it does" text of the Shipped rows unclosed-fence, utf8-stdio and windows-paths in `OVERVIEW.md`, which `README.md` copies. | flag | build | user | Decided alone | Chose: drop the board words from each, re-render the README block, and add "published page" to the words `test-drop-board.sh` searches for. Other: leave them as written when those slices shipped. Undo: `git revert 3e057ad` brings them back with the rest of the slice; to keep only these lines, put back the old text in the four files. 2026-11-27 |
+| O11 | Renumbering `/release` step 7 to 6 broke `test-e2e-pentest.sh`, which matched "One yes covers steps 2 to 7". Three other tests (coverage-ledger, needs-validation, strix-code) named "the step 7 report" in their labels. | flag | build | user | Decided alone | Chose: change each to step 6. Other: keep the old numbers and leave a gap at step 6 in the skill. Undo: put back "7" in the four test files and "### 7. Report" in `release/SKILL.md`. 2026-11-27 |
+| O12 | The plan named no commit type. `refactor` and `docs` commits add no CHANGELOG line and propose no release (D3), so the installed plugin would keep publishing. | flag | build | user | Decided alone | Chose: `feat:` for 3e057ad, so `/release` proposes a minor version. Other: `feat!:` for a major version, because the board is a feature that goes away. Undo: reword the squash subject to `feat!:` when `/ship` opens the PR. 2026-11-27 |
 
 _Never delete this section or its rows. See references/ledger.md._
 
