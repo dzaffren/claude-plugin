@@ -33,13 +33,9 @@ Every file /ship writes, it writes here, on the branch, before the push. The
 merge carries them to the base branch, and after the merge /ship writes
 nothing. The gate below reads what this step writes, so it runs first.
 
-- Take the base branch into this one first, as "Tidy the branch" says. The
-  hub page below is published from this branch's files, so a branch behind
-  its base would publish a hub without the slices and the release merged
-  since.
-- `OVERVIEW.md` slices table: set this slice's row to `Shipped`, with the
-  spec's page link and a "What it does" line taken from the spec's two-line
-  summary. The row's first cell is the spec's file name without `.md` —
+- Take the base branch into this one first, as "Tidy the branch" says.
+- `OVERVIEW.md` slices table: set this slice's row to `Shipped`, with a
+  "What it does" line taken from the spec's two-line summary. The row's first cell is the spec's file name without `.md` —
   `docs/specs/export-csv.md` → `export-csv` — because that is what the gate
   matches. No row yet → add one, and drop a `none yet` row if there is one.
 - Spec Status → `Shipped`.
@@ -51,7 +47,7 @@ nothing. The gate below reads what this step writes, so it runs first.
 - `README.md` has no zuko block (the repo was onboarded before the block
   existed) → add one: plan it with step 4 of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md`, show the user the change, and
-  on approval write it as step 9's "Writing the README block" says.
+  on approval write it as step 8's "Writing the README block" says.
 - No `DECISIONS.md` at the repo root (the repo was onboarded before the file
   existed) → create it as the `DECISIONS.md` paragraph of
   `${CLAUDE_PLUGIN_ROOT}/references/onboard.md` says. The gate fails without
@@ -72,13 +68,6 @@ nothing. The gate below reads what this step writes, so it runs first.
   `git diff {base}..HEAD -- CHANGELOG.md` first and write only for changes
   those lines do not cover, so a second `/ship` run adds nothing twice. Show
   the user the lines you wrote.
-- Republish the hub page from `OVERVIEW.md` and `docs/ARCHITECTURE.md`, per
-  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`. First publish → add the
-  `hub page: {url}` it returns to the overview's `## More` line.
-- When the spec has a `**Shape doc:**` line, republish the idea board, as
-  `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md` › "Idea board" says. Pass
-  `--by "/ship {slice}"`. A new `**Board:**` line in the shape goes in the
-  commit below.
 - Run `${CLAUDE_PLUGIN_ROOT}/scripts/render-readme-block.sh --write` to
   re-render the `README.md` block from the updated overview. It rewrites only
   the text between the zuko markers.
@@ -114,7 +103,7 @@ onboarding's README step, as in the refresh above.
 
 Any gate fails → say which, fix it or route to the stage that fixes it. Do not
 proceed on a "probably fine". Before you route to `/spec` or `/build`, set the
-spec and its row back to `Built`, republish the idea board, run
+spec and its row back to `Built`, run
 `render-readme-block.sh --write` again, and commit. The slice is not shipped until its PR merges, and `/spec` starts a
 new version of a `Shipped` spec.
 
@@ -148,10 +137,7 @@ The body has three parts, in this order:
    for word.
 2. **What ships**, in two to four sentences. Then **Verify by hand**: each
    command, and what it gives. Then **Flag and rollback**.
-3. One last line: `Spec: docs/specs/{slice}.md`. Add ` · Page: ` and the link
-   only when the spec has a `**Page:**` line. Then add ` · Board: ` and the
-   link only when the spec's shape has a `**Board:**` line. The order is
-   Spec, Page, Board.
+3. One last line: `Spec: docs/specs/{slice}.md`.
 
 Do not list the scenarios. The spec line links to them.
 
@@ -245,7 +231,7 @@ saying out loud.
 ## Close out
 
 Write no file, and make no commit and no branch. The refresh put the row,
-the spec, the README, the hub link and the lessons in the slice's own PR, and
+the spec, the README and the lessons in the slice's own PR, and
 the base branch is closed to a commit.
 
 - **Graduation:** a component from this slice that is now used in two or more

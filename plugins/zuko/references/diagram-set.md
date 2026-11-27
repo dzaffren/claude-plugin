@@ -50,15 +50,13 @@ Missing a required diagram is a defect, same as a missing acceptance criterion.
 ## Where they live
 
 - **Mermaid in the Markdown** is the source of truth. It diffs in git,
-  renders on the published page, and survives without any service.
-- **The published page** (see `visual-page.md`) renders the same diagrams
-  properly for when the user wants to look rather than read.
+  renders in a Markdown viewer and on GitHub, and survives without any
+  service.
 - **ASCII in terminal replies.** The terminal shows Mermaid as source, so a
   diagram printed there is drawn in plain characters — the same diagram as
   the Mermaid it copies.
 
-Never let them disagree. The page is generated from the Markdown, not
-maintained beside it.
+Never let them disagree.
 
 ## Style
 

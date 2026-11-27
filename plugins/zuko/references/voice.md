@@ -117,8 +117,8 @@ dimensions.
 
 Diagrams printed to the terminal are ASCII: boxes, arrows and labels in plain
 characters, in a code block. The terminal shows Mermaid as source. Mermaid stays
-the source of truth in specs, shapes and published pages, and the ASCII in the
-reply draws the same diagram.
+the source of truth in specs and shapes, and the ASCII in the reply draws the
+same diagram.
 
 ## Before you send
 

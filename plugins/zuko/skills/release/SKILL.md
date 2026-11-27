@@ -49,7 +49,7 @@ your own on `ask-first`. When the user gives a version instead of yes, run
 `plan` again with `--version <it>` and branch on the new `NEXT:` line. No,
 or stop → end; nothing is written.
 
-One yes covers steps 2 to 7. Do not ask again. A resumed release skips step 2:
+One yes covers steps 2 to 6. Do not ask again. A resumed release skips step 2:
 its report is already in the release commit.
 
 ### 2. Pentest
@@ -404,7 +404,7 @@ On success it rewrites `CHANGELOG.md`, the manifests and the overview's
 version's Security section. A skip also appends a D-entry to `DECISIONS.md`.
 Step 4 commits exactly the files it changed; `git status --short` lists them.
 After the files it wrote, `cut` prints a `Coverage` line. Keep that line for
-step 7.
+step 6.
 
 ### 4. Commit, tag, push
 
@@ -441,17 +441,9 @@ The notes are the `[X.Y.Z]` section exactly. Do not edit them or add to
 them; the ban list covers release notes too. `--verify-tag` aborts when the
 tag is not on origin. A failure → report it and end; a rerun resumes here.
 
-`gh release create` prints the release URL. Steps 6 and 7 use it.
+`gh release create` prints the release URL. Step 6 uses it.
 
-### 6. Hub page
-
-Republish the hub page per `${CLAUDE_PLUGIN_ROOT}/references/visual-page.md`,
-so its status strip shows `vX.Y.Z · {date}` linked to the release URL. The
-date is the one on the `## [X.Y.Z] - {date}` heading in `CHANGELOG.md`, which
-also covers a resumed release. No `hub page:` link on the overview's
-`## More` line → there is no hub yet; skip this and say so.
-
-### 7. Report
+### 6. Report
 
 ```
 Released v2.2.0
@@ -461,7 +453,7 @@ Released v2.2.0
   commit    a1b2c3d chore(release): v2.2.0
   tag       v2.2.0, annotated, pushed
   release   https://github.com/dzaffren/claude-plugin/releases/tag/v2.2.0
-  overview  Release: v2.2.0 · hub page republished
+  overview  Release: v2.2.0
 ```
 
 The lead count reads `1 lead needs validation` or `3 leads need validation`.

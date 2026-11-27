@@ -246,23 +246,17 @@ projects.
 - The hook and gate scripts give grep -q its text with a here-string, not a pipe, so a slow printf can no longer turn a match into a miss and let a force push, a commit on main or a staged secret pass
 - The guards' parser refuses a heredoc inside a double-quoted $( ) or backticks when a line of its body changes the parser's quotes, so it no longer hides the lines after it
 - /ship marks a slice Shipped in the slice's own PR, with the README and the lessons, so no slice needs a second, status-only PR after the merge
-- Each idea gets one claude.ai board with its slices in order, each slice's stage, diagrams and decisions; every stage republishes it
-- At each /spec pause and the end of /shape, the board shows what waits for you, what is settled and what changed since the last stop; the terminal prints only the board link, one picture and the questions
-- The board shows each built slice's scenarios next to the tests and files its spec names, with the choices made without you; the PR body links the board
-- The hub page lists every idea with its board link, how many of its slices shipped and a mark per slice; /shape now publishes the hub too
-- The board steps through each commit that changed an idea's shape or specs, with the commits of squash-merged PRs read from GitHub, and shows what moved and what changed at each step
-- The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the board, the gate card and the PR body
-- The board refuses a shape whose Slices table names a slice with a / or \\, so a slice name can no longer read a file outside docs/specs into a published board
+- The spec gate fails a zuko doc in which a code block swallows the text after it, so a broken spec can no longer reach a commit and mislead the PR body
 - /spec pause 2 and /design open each preview in headless Chrome, light and dark, and stop it when a colour, font size, font family or corner radius is not a design system token
 - The vendored taste skill moves to v2.1.5, pinned by tag; /design-system deals directions with it, /spec and /design inspect previews with it, and each design stage says when a newer release is out
 - A Windows clone of zuko gets every script and skill with LF line ends, as on Linux and macOS, so a test that reads a skill file across a line end no longer fails on Windows only
 - On Windows, the attribution, main-branch and secret-scan guards read Git Bash paths such as /tmp/... and block a message they cannot read, and the pentester fence lets proofs into its scratch copy but not out of it
-- Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the board renders, and the PR body, the session-start decisions and the release guard show and compare the same text as on Linux
+- Each Python script that zuko starts reads and writes UTF-8 with LF on every OS, so on Windows the PR body, the session-start decisions and the release guard show and compare the same text as on Linux
 - The release pentest also hunts with the Cloudflare attack-class files that match the code in the range, such as prompt injection in agents and plugin trust, and the report names each class file it assessed or skipped
 - The release pentest keeps each lead it traced but could not prove under Needs validation, with the one fact that settles it; a lead has no severity and never blocks, and the release notes count the leads
 - Each release pentest records the files it checked in a committed coverage ledger, and also checks up to 10 files that no run has checked yet, so code older than the last tag gets covered over a few releases
 - The test suite runs on Windows Git Bash with a 600 s limit for each file and a named SKIP for a setup that Windows refuses, and a windows-latest job runs it on each push of the branch; zuko finds gh and bash on PATH as Git Bash does
-- Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates, the board and /release give the same paths as on Linux
+- Each path that zuko prints, writes or compares uses / on every OS, so on Windows DECISIONS.md, the spec gates and /release give the same paths as on Linux
 - With strix 1.7.0 or newer, an LLM key and Docker, /release also runs Strix on its own copy of the release; zuko's blind verifier checks each Strix finding, a confirmed critical or high blocks the release, and a missing Strix gets a pinned install offer
 - On Windows, zuko's hooks and gates start git and cygpath from PATH only, so a git.exe or cygpath.exe at the root of a project never runs, and a program that is not on PATH fails as not found
 - When the release pentest targets a staging URL, the Strix run also attacks that app with real requests, after a yes each run that names the host, the missing guard and the data loss; a live finding blocks only through its code location

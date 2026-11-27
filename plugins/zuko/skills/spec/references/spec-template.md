@@ -5,7 +5,6 @@
 **Supersedes:** archive/{name}-v{N}.md _(delete on a first version)_
 **Shape doc:** docs/specs/{idea}/shape.md _(delete if none)_
 **Depends on:** {slice name, or None}
-**Page:** {artifact URL, added at the end of pause 3}
 
 {Two sentences: what ships and why now.}
 
