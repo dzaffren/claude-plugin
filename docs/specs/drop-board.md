@@ -313,6 +313,10 @@ Single chunk. Most of the work is deleting and editing text, and the test edits 
 
 Recorded as D163 to D177.
 
+## Review
+
+2026-11-27 · 3 raw findings, 0 survived. Clean.
+
 ## Open items
 
 | ID  | What | Type     | Raised at | Owner | Status | Answer |
