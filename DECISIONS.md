@@ -716,7 +716,7 @@ way.
 Rejected: Claude writes the HTML at each stage (the page changes from run to run,
 and no test can check it), Claude edits the last page (it drifts from the files).
 Source: specs/idea-board.md
-Status: active
+Status: superseded by D164
 
 ## D63 · 2026-10-25 · The board is a claude.ai page; localhost serves it only when the publish fails
 
@@ -729,7 +729,7 @@ process, shape "Not doing"), a local file with no server (the user chose a serve
 O4), plain `python3 -m http.server` (no Host check, O10), stopping the stage until
 the publish works (a network blip blocks work).
 Source: specs/idea-board.md
-Status: active
+Status: superseded by D165
 
 ## D64 · 2026-10-26 · The board draws its diagrams with Mermaid 11.16.1, loaded by the page
 
@@ -745,7 +745,7 @@ Graphviz (each spec's diagrams written twice, against D23), a light panel behind
 built-in Mermaid (plain, and no diagrams on localhost), Mermaid 11.12.0 from cdnjs
 (nine advisories, review O21).
 Source: specs/idea-board.md
-Status: active
+Status: superseded by D166
 
 ## D65 · 2026-10-26 · The gate card compares the spec with a git-ignored copy from the last stop
 
@@ -756,7 +756,7 @@ card, and never guesses.
 Rejected: a commit at each stop (a commit per stop, and a stop is not a logical
 chunk), no Changed part (the pain the slice exists for).
 Source: specs/gate-card.md
-Status: active
+Status: superseded by D167
 
 ## D66 · 2026-10-26 · The gate card's Changed part is a summary by section, scenario and row
 
@@ -765,7 +765,7 @@ Why: the user reads the card to decide whether to approve, and a line diff of a
 names each changed `##` section, each scenario by name, and each new or answered row.
 Rejected: a full line diff (long, and it hides the one change that matters).
 Source: specs/gate-card.md
-Status: active
+Status: superseded by D168
 
 ## D67 · 2026-10-26 · With a board, a pause prints only the Board line, one ASCII picture and the questions
 
@@ -774,7 +774,7 @@ again buries the questions (gate-card O4, shape O4). The question prompt still a
 every Open row, as D39 needs. A spec with no board prints as before.
 Rejected: keep the scenario list in the terminal too (the same facts in two places).
 Source: specs/gate-card.md
-Status: active
+Status: superseded by D163
 
 ## D68 · 2026-10-26 · The PR card reads the spec's Test plan and Changes tables, not the branch diff
 
@@ -784,7 +784,7 @@ row names its scenarios, so the spec alone ties each scenario to its tests and f
 Rejected: the spec checked against the branch diff (works only while the branch
 exists), the diff alone (it cannot tell which scenario a file serves).
 Source: specs/pr-gate.md
-Status: active
+Status: superseded by D169
 
 ## D69 · 2026-10-26 · The PR card shows on every render for a slice at Built or later
 
@@ -794,42 +794,42 @@ stage can draw it.
 Rejected: the card only on the render that /ship makes (the next stage's render would
 drop the record).
 Source: specs/pr-gate.md
-Status: active
+Status: superseded by D170
 
 ## D70 · 2026-10-26 · A script renders the hub's Ideas section; the rest of the hub stays hand-written
 
 Why: the Ideas rows read every shape and every spec they name, about 31 files today. They must read them as the board does (D62), and a test must prove each row.
 Rejected: Claude writes the rows at each stage (the same misreads that D62 stops, and no test), a script renders the whole hub (about twice the work, better as its own slice).
 Source: specs/library.md
-Status: active
+Status: superseded by D171
 
 ## D71 · 2026-10-26 · Replay finds a squash commit's PR with gh api, and reads its commits from refs/pull/N/head
 
 Why: in this repo, gate-card, pr-gate and library each reached main as one squash commit, and only their PRs hold the pause commits. The squash subjects carry no PR number, and gh api names the PR exactly (caf25a7 → 104 in 0.6 s).
 Rejected: main only (each squash-merged slice is one step), a stop log in each spec (every spec gains a section), matching PR heads by file content through git ls-remote (a guess when two PRs hold the same file).
 Source: specs/replay.md
-Status: active
+Status: superseded by D172
 
 ## D72 · 2026-10-26 · A replay step holds the stages and the changes, not the whole board
 
 Why: the user steps through how the idea moved. The stages and the gate card's change tags show that in about 0.4 KB a step, 15 KB for living-board's 38 steps.
 Rejected: the whole board at each commit, with diagrams and panels (about 40 KB a step, 1.5 MB for 38).
 Source: specs/replay.md
-Status: active
+Status: superseded by D173
 
 ## D73 · 2026-10-26 · A replay step changes only the Replay strip
 
 Why: the board above shows the idea as it is now. A step card with its own stage chips never mixes past and present on one page.
 Rejected: restaging the filmstrip and the rail at each step (the reader cannot tell at a glance which parts show the past).
 Source: specs/replay.md
-Status: active
+Status: superseded by D174
 
 ## D74 · 2026-10-26 · Replay keeps its PR lookups in a git-ignored file, not in git refs
 
 Why: a cached run touches no network. A file in docs/specs/.pages/ adds nothing to the user's repo, and a head that git gc drops is fetched again.
 Rejected: refs under refs/zuko/pr/ (they show in git log --all and stay until removed by hand), no cache (one gh call per squash commit at every render).
 Source: specs/replay.md
-Status: active
+Status: superseded by D175
 
 ## D75 · 2026-10-26 · The fence check flags a fence that opens inside an open block, not only a block left open
 
@@ -850,7 +850,7 @@ Status: active
 Why: a Slice cell with `../` made board.py read a .md file outside docs/specs into a published board (pentest P1, v2.5.0). A refusal names the slice, so the shape is fixed in one edit.
 Rejected: skipping the row and rendering the rest (the slice would vanish from the board with no sign), resolving the path and checking it stays under docs/specs (no real slice name needs a /).
 Source: specs/slice-name-path.md
-Status: active
+Status: superseded by D176
 
 ## D78 · 2026-11-01 · The vendored taste skill is pinned to a tag, and design stages announce newer releases
 
@@ -1118,7 +1118,7 @@ Status: active
 Why: Git Bash rewrites `/spec x pause 1` to `C:/Program Files/Git/spec x pause 1`, and the board shows it. The live board said `C:/Program Files/Git/ship utf8-stdio` on 2026-11-08. One repair in `board.py` covers each stage's call.
 Rejected: `MSYS_NO_PATHCONV=1` in six skill commands (one missed command shows the bug again), `--by` without its leading `/` (every caller and the board's text change).
 Source: specs/portable-suite.md
-Status: active
+Status: superseded by D177
 
 ## D109 · 2026-11-09 · A coverage unit is a tracked file outside tests, docs and root Markdown
 
@@ -1483,4 +1483,124 @@ Status: active
 Why: the parser removes quotes and reads nested commands, which the regex cannot. The regex blocks each `~` path and each `..` path today, and the parsed check does not.
 Rejected: replace the regex with the parsed check. Each form that only the regex blocks, such as `rm -rf ~/proj/build`, would pass, and the lesson `tightening-a-matcher-trades-blocks-for-allows.md` says so.
 Source: specs/rm-forms.md
+Status: active
+
+## D163 · 2026-11-26 · zuko publishes no claude.ai page; each stage prints its whole stop in the terminal
+
+Why: the user never opened the idea board, the hub or the spec pages, and called them a waste of time and tokens (goal-thread shape O1). Since D67, the pause print pointed at a page that the user did not read, so the scenarios and the open items were nowhere in sight.
+Rejected: the board off by default (code kept for a page that nobody opens), the hub only (the user opens neither page), D67's short print with no board (the content would show nowhere).
+Supersedes: D67
+Source: specs/drop-board.md
+Status: active
+
+## D164 · 2026-11-26 · No script renders an idea board, because zuko publishes none
+
+Why: drop-board removes the board, the hub and replay (D163), so D62 describes code that no longer exists.
+Rejected: keeping D62 active (each session would load a rule about deleted code).
+Supersedes: D62
+Source: specs/drop-board.md
+Status: active
+
+## D165 · 2026-11-26 · No board page is served, on claude.ai or on localhost
+
+Why: drop-board removes the board, the hub and replay (D163), so D63 describes code that no longer exists.
+Rejected: keeping D63 active (each session would load a rule about deleted code).
+Supersedes: D63
+Source: specs/drop-board.md
+Status: active
+
+## D166 · 2026-11-26 · No page loads Mermaid; diagrams render where the Markdown is read
+
+Why: drop-board removes the board, the hub and replay (D163), so D64 describes code that no longer exists.
+Rejected: keeping D64 active (each session would load a rule about deleted code).
+Supersedes: D64
+Source: specs/drop-board.md
+Status: active
+
+## D167 · 2026-11-26 · No gate card, so no last-stop copy of a spec is kept
+
+Why: drop-board removes the board, the hub and replay (D163), so D65 describes code that no longer exists.
+Rejected: keeping D65 active (each session would load a rule about deleted code).
+Supersedes: D65
+Source: specs/drop-board.md
+Status: active
+
+## D168 · 2026-11-26 · No gate card, so it has no Changed part
+
+Why: drop-board removes the board, the hub and replay (D163), so D66 describes code that no longer exists.
+Rejected: keeping D66 active (each session would load a rule about deleted code).
+Supersedes: D66
+Source: specs/drop-board.md
+Status: active
+
+## D169 · 2026-11-26 · No PR card on a board; goal-check decides the PR body's test table
+
+Why: drop-board removes the board, the hub and replay (D163), so D68 describes code that no longer exists.
+Rejected: keeping D68 active (each session would load a rule about deleted code).
+Supersedes: D68
+Source: specs/drop-board.md
+Status: active
+
+## D170 · 2026-11-26 · No PR card renders at Built or later
+
+Why: drop-board removes the board, the hub and replay (D163), so D69 describes code that no longer exists.
+Rejected: keeping D69 active (each session would load a rule about deleted code).
+Supersedes: D69
+Source: specs/drop-board.md
+Status: active
+
+## D171 · 2026-11-26 · No hub page, so no script renders its Ideas section
+
+Why: drop-board removes the board, the hub and replay (D163), so D70 describes code that no longer exists.
+Rejected: keeping D70 active (each session would load a rule about deleted code).
+Supersedes: D70
+Source: specs/drop-board.md
+Status: active
+
+## D172 · 2026-11-26 · No replay, so zuko makes no gh api lookups for it
+
+Why: drop-board removes the board, the hub and replay (D163), so D71 describes code that no longer exists.
+Rejected: keeping D71 active (each session would load a rule about deleted code).
+Supersedes: D71
+Source: specs/drop-board.md
+Status: active
+
+## D173 · 2026-11-26 · No replay, so it has no steps
+
+Why: drop-board removes the board, the hub and replay (D163), so D72 describes code that no longer exists.
+Rejected: keeping D72 active (each session would load a rule about deleted code).
+Supersedes: D72
+Source: specs/drop-board.md
+Status: active
+
+## D174 · 2026-11-26 · No replay, so it has no Replay strip
+
+Why: drop-board removes the board, the hub and replay (D163), so D73 describes code that no longer exists.
+Rejected: keeping D73 active (each session would load a rule about deleted code).
+Supersedes: D73
+Source: specs/drop-board.md
+Status: active
+
+## D175 · 2026-11-26 · No replay, so it keeps no lookup file
+
+Why: drop-board removes the board, the hub and replay (D163), so D74 describes code that no longer exists.
+Rejected: keeping D74 active (each session would load a rule about deleted code).
+Supersedes: D74
+Source: specs/drop-board.md
+Status: active
+
+## D176 · 2026-11-26 · No board.py, so it refuses no slice name
+
+Why: drop-board removes the board, the hub and replay (D163), so D77 describes code that no longer exists.
+Rejected: keeping D77 active (each session would load a rule about deleted code).
+Supersedes: D77
+Source: specs/drop-board.md
+Status: active
+
+## D177 · 2026-11-26 · No board.py, so it restores no --by text
+
+Why: drop-board removes the board, the hub and replay (D163), so D108 describes code that no longer exists.
+Rejected: keeping D108 active (each session would load a rule about deleted code).
+Supersedes: D108
+Source: specs/drop-board.md
 Status: active
