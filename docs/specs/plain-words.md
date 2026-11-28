@@ -1,6 +1,6 @@
 # plain-words
 
-**Version:** v1 · **Status:** Refined · **Type:** Enhancement · **Project type:** CLI/Library
+**Version:** v1 · **Status:** Built · **Type:** Enhancement · **Project type:** CLI/Library
 
 **Shape doc:** docs/specs/goal-thread/shape.md
 **Depends on:** None
@@ -53,7 +53,7 @@ Scenario: A zuko label used alone is caught after the save
   And a save with "The open-items table (ledger) has no Open rows." gets no message
 
 Scenario: A hard word or a metaphor gets its plain swap
-  Given the word list swaps "surface" for "show" and "prior to" for "before"
+  Given the word list swaps "surface the" for "show" and "prior to" for "before"
   When Claude saves docs/specs/goal-thread/shape.md with "Each stage will surface the goal prior to the questions."
   Then the check tells Claude: use "show" for "surface", and "before" for "prior to"
 
@@ -84,7 +84,7 @@ Scenario: Old text stays as it is
 - The Stop hook runs the same check on the docs this work touched, so a save through Bash is not missed (O7).
 - "slice" and "gate" stay off the label list. Each doc defines them in its Glossary (O6).
 - A check that runs right after each Write or Edit of a shape or spec, and tells Claude each line to fix.
-- A new entry that supersedes the part of D38 that says nothing checks the writing. The sentence-length part stays. D37 stays until `ste-dictionary` adds the STE copy (O10).
+- A new entry replaces the rule that nothing checks the writing (D38). The sentence-length part stays. The rule against the STE dictionary (D37) stays until `ste-dictionary` adds the STE copy (O10).
 
 The starting word list. The user grows it by editing `voice.md`.
 
@@ -96,7 +96,7 @@ The starting word list. The user grows it by editing `voice.md`.
 | label    | "chunk" | "one part of the build (chunk)" |
 | label    | "walking skeleton" | "the thinnest working version" |
 | label    | "Decided alone" | "a choice made without you" |
-| metaphor | "surface" | "show" |
+| metaphor | "surface the / surface it / surfaced" | "show" |
 | metaphor | "land (a change)" | "merge" |
 | metaphor | "front door" | "first step" |
 | hard     | "utilise / utilize" | "use" |
@@ -224,9 +224,9 @@ Claude saves a doc, and the hook passes the path to `words.py`. The script asks 
 | `plugins/zuko/scripts/lib/words.py` | New. `check <project> <path>...` prints one `path TAB line TAB message` line for each finding. It reads the `## Word list` table in `references/voice.md`, the added lines from `git diff -U0 --relative <base> -- <path>`, or every line of an untracked file. It walks the doc line by line and skips fences, headings, inline code, quoted text, the Glossary and Decisions to record sections, and the script columns of a table. Exit 2 with a reason when the word list is missing or empty, or git fails. | Scenarios 1 to 5 |
 | `plugins/zuko/scripts/check-words.sh` | New PostToolUse hook. Reads `tool_input.file_path` as `auto-format.sh:6` does, and gives it to `words.py check`. Prints the message in the Interface section and exits 2 when there are findings. A path outside `docs/specs/`, or not a zuko doc, exits 0 with no output. | Scenarios 1 to 3, 5 |
 | `plugins/zuko/hooks/hooks.json:61` | A second hook under the `Write\|Edit\|MultiEdit` matcher, after `auto-format.sh`, with the status message "Checking the words in the doc...". | Scenario 1 |
-| `plugins/zuko/scripts/verify-gates.sh:66` | After the fence check, run `words.py check` on `${docs[@]}` (every touched doc, at any Status) and add each finding to `problems`. | O7 |
+| `plugins/zuko/scripts/verify-gates.sh:66` | After the fence check, run `words.py check` on `${docs[@]}` (every touched doc, at any Status) and add each finding to `problems`. | A save through Bash (O7) |
 | `plugins/zuko/references/voice.md:43` | The STE section gains the rule: write the plain words first, then a label or a D or O number in brackets. A new `## Word list` section after "Simplified Technical English" holds the 13-row table from Scope. "It does not use the STE dictionary" stays. | Scenarios 1 to 3 |
-| `plugins/zuko/skills/spec/references/spec-template.md:92` | The `Relies on:` example becomes "Relies on: {what each entry says, then its number in brackets, as in: the Stop hooks judge only the docs this work touched (D35)}". | O8 |
+| `plugins/zuko/skills/spec/references/spec-template.md:92` | The `Relies on:` example becomes "Relies on: {what each entry says, then its number in brackets, as in: the Stop hooks judge only the docs this work touched (D35)}". | The new number rule (O8) |
 | `plugins/zuko/scripts/tests/test-words.sh` | New unit tests for `words.py`. | Scenarios 1 to 5 |
 | `plugins/zuko/scripts/tests/test-e2e-plain-words.sh` | New e2e test. | All |
 | `plugins/zuko/scripts/tests/test-ste-voice.sh` | One check that the word list table sits in `voice.md` with the three columns. | Scenario 1 |
@@ -239,7 +239,7 @@ Reusing: `stop_scope.in_scope`, `stop_scope.is_zuko_doc`, `stop_scope.base_commi
 | ----- | ------------ |
 | `lib/words.py` | Scenarios 1 to 5 need a word check. `glossary.py` checks whole files for undefined terms and cannot give line numbers or read added lines only. |
 | `check-words.sh` | Scenario 1: the check runs right after a save (shape O21). The Stop hook alone runs only at the end of the turn. |
-| The word check in `verify-gates.sh` | O7: a doc saved through Bash fires no Write or Edit hook. |
+| The word check in `verify-gates.sh` | A doc saved through Bash fires no Write or Edit hook (O7). |
 
 No config option, no new dependency.
 
@@ -262,7 +262,7 @@ Each test runs in a scratch git repo with a `main` branch and a work branch, bec
 | 1. A label used alone | `test-words.sh` scenario 1: "ledger" alone gives the message, "(ledger)" after plain words gives none | `bash plugins/zuko/scripts/tests/run.sh test-words` |
 | 2. Metaphor and hard word swaps | `test-words.sh` scenario 2: "surface" and "prior to" each get their swap; "surfaces" counts, `surface.md` does not | same |
 | 3. A number after plain words | `test-words.sh` scenario 3: "D38 says" fails, "(D38)" and "(D62 to D74)" pass | same |
-| 4. Table columns | `test-words.sh` scenario 4: a ledger row flags the Answer cell only | same |
+| 4. Table columns | `test-words.sh` scenario 4: a row of the open-items table flags the Answer cell only | same |
 | 5. Old text | `test-words.sh` scenario 5: a committed line with "ledger" and a one-line Status edit give no message; `README.md` gives none | same |
 | The check cannot run | `test-words.sh`: a `voice.md` with no word list exits 2 with the reason, never 0 | same |
 | A doc saved through Bash | `test-words.sh`: `verify-gates.sh` lists the word finding at Stop | same |
@@ -274,7 +274,7 @@ The whole suite: `bash plugins/zuko/scripts/tests/run.sh`.
 
 ### Chunks
 
-Single chunk. The hook, the Stop hook line and the tests all read the output of `words.py`. A split would share that format across two worktrees.
+`Single chunk`. The hook, the Stop hook line and the tests all read the output of `words.py`. A split would share that format across two worktrees.
 
 ### Risks
 
@@ -295,7 +295,7 @@ Recorded as D178, D179 and D180.
 | ID  | What                                                                                                                                            | Type     | Raised at | Owner | Status | Answer |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------- | ----- | ------ | ------ |
 | O1  | Where does the user's STE copy live, so that the gate can find it? (from shape O18)                                                             | question | shape     | user  | Resolved | Moved to a new slice, `ste-dictionary` (slice 7 in the shape). No copy exists on disk today. 2026-11-28 |
-| O2  | STE probably lacks software words such as commit and merge. How does the gate treat them? (from shape O19)                                      | question | shape     | user  | Resolved | Moved to `ste-dictionary` with O1. 2026-11-28 |
+| O2  | STE probably lacks software words such as commit and merge. How does the gate treat them? (from shape O19)                                      | question | shape     | user  | Resolved | Moved to `ste-dictionary`, with the question about the STE copy (O1). 2026-11-28 |
 | O3  | Can a script that runs right after a save send a message back to Claude? The check needs this. (from shape O24)                                 | unproven | shape     | poc   | Resolved | Yes. /poc on 2026-11-28: a PostToolUse hook on Write and Edit exited 2, and Claude quoted its message and edited the file in the same turn (headless `claude -p`, Claude Code 2.1.332). |
 | O4  | How does the check know that a label is explained? By plain words with the label in brackets after them, or by an entry in the doc's Glossary? | question | spec p1   | user  | Resolved | Plain words first, then the label in brackets, as in "the open-items table (ledger)". The check reads each line. 2026-11-28 |
 | O5  | When Claude edits an old doc, does the check read only the text that the save added, or the whole file?                                       | question | spec p1   | user  | Resolved | Only the added text: an Edit's new text, or the changed lines of a Write to a file that exists. 2026-11-28 |
@@ -303,8 +303,10 @@ Recorded as D178, D179 and D180.
 | O7  | The /poc found that Claude sometimes writes a file with Bash, and a Write and Edit hook never fires for that. A spec saved through Bash then skips the check. | flag     | spec p1   | user  | Resolved | The Stop hook also runs the word check on the docs this work touched, next to the glossary check. 2026-11-28 |
 | O8  | The template's "Relies on:" line puts each D-number first. Does it follow the new rule, or does the check skip it? | question | spec p2   | user  | Resolved | It follows the new rule. The template example becomes "Relies on: the Stop hooks judge only the docs this work touched (D35)". 2026-11-28 |
 | O9  | Does the word check skip text in double quotes? | question | spec p3   | user  | Resolved | Yes, as voice.md says for quoted text. A quote used to get past the check breaks the voice rule, and `/review` reads the diff. 2026-11-28 |
-| O10 | The shape says this slice supersedes D37, but a house word list does not contradict it. When is D37 superseded? | question | spec p3   | user  | Resolved | With `ste-dictionary`, when the STE copy comes in. This slice supersedes D38 only. 2026-11-28 |
-| O11 | After a Write, the old file is gone, so the hook cannot see one save's change. What counts as added text? | question | spec p3   | user  | Resolved | The lines changed since the base branch, and every line of a new file: the D35 rule. 2026-11-28 |
+| O10 | The shape says this slice replaces the rule against the STE dictionary (D37), but a house word list does not contradict it. When is that rule replaced? | question | spec p3   | user  | Resolved | With `ste-dictionary`, when the STE copy comes in. This slice replaces only the rule that nothing checks the writing (D38). 2026-11-28 |
+| O11 | After a Write, the old file is gone, so the hook cannot see one save's change. What counts as added text? | question | spec p3   | user  | Resolved | The lines changed since the base branch, and every line of a new file, as the Stop hooks already pick docs (D35). 2026-11-28 |
+| O12 | Scenario 2 said: Given the word list swaps "surface" for "show". A bare "surface" also flagged the nouns "command surface" and "security surface" in the spec template. | flag | build | user | Decided alone | Chose: the row matches the verb forms "surface the", "surface it" and "surfaced". Other: keep "surface" and reword the template's nouns. Undo: set the Word cell in voice.md back to "surface". 2026-11-28 |
+| O13 | The fence test counted every gate line that names the doc. The word check adds its own lines for that fixture, so the count went from 1 to 28. | flag | build | user | Decided alone | Chose: `test-fence.sh:29` counts only the lines for the fence problem, the ones with "opens". Other: give the fixture a git base, so that no line counts as added. Undo: put back `grep -c 'idea-board.md line '`. 2026-11-28 |
 
 ## Glossary
 
