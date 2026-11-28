@@ -53,6 +53,7 @@ KINDS = ("label", "metaphor", "hard")
 SCRIPT_COLUMNS = {"id", "type", "raised at", "owner", "status"}
 NUMBER = re.compile(r"(?<![\w./-])[DO][0-9]+(?![\w/-])")
 INLINE_CODE = re.compile(r"(`+).*?\1", re.S)
+BLANK = re.compile(r"(\n[ \t]*\n)")
 QUOTE = re.compile(r'"[^"\n]*"|“[^”\n]*”')
 HUNK = re.compile(r"^@@ -[0-9,]+ \+([0-9]+)(?:,([0-9]+))? @@", re.M)
 MESSAGE = {
@@ -162,7 +163,10 @@ def readable(lines):
             continue
         skip_columns = None
         out.append(line)
-    text = INLINE_CODE.sub(blank, "\n".join(out))
+    # A code span ends at a blank line, as CommonMark reads it, so a lone
+    # backtick never hides the paragraphs after it.
+    parts = BLANK.split("\n".join(out))
+    text = "".join(part if i % 2 else INLINE_CODE.sub(blank, part) for i, part in enumerate(parts))
     return QUOTE.sub(blank, text).split("\n")
 
 

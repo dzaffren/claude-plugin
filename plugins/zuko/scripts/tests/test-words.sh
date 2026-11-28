@@ -166,6 +166,16 @@ words refund-export.md
 expect_exit 0 "$words_status" "skips: words.py runs"
 expect_match '^$' "$words_out" "skips: quotes, code, a wrapped span, a fence, headings, drafted entries and the Glossary"
 
+# A lone backtick opens no span past its paragraph, as CommonMark reads it.
+spec refund-export.md 'Split each field on the ` character.
+
+The ledger has no Open rows.
+
+Run `make test` after.'
+words refund-export.md
+expect_match "	$(line_of refund-export.md "The ledger has")	\"ledger\" is a zuko label used alone" "$words_out" \
+  "skips: a lone backtick does not hide the next paragraph"
+
 # --- A doc saved through Bash: the Stop hook checks it too ---
 
 spec refund-export.md "The ledger has no Open rows."
