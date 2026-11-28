@@ -290,6 +290,14 @@ The whole suite: `bash plugins/zuko/scripts/tests/run.sh`.
 
 Recorded as D178, D179 and D180.
 
+## Review
+
+2026-11-28 · 3 raw findings, 1 survived, 1 fixed, 2 leads need validation.
+
+- correctness · `plugins/zuko/scripts/lib/words.py:165` · strip inline code one paragraph at a time, so a lone backtick hides no later line · `b6e091d`
+- needs validation · `plugins/zuko/scripts/lib/words.py:111` · whether any machine that runs zuko sets diff.interHunkContext in its git config · in the project, run `git config --show-origin --get diff.interHunkContext`
+- needs validation · `plugins/zuko/scripts/lib/words.py:212` · whether Git Bash on Windows passes `[ -f ]` on a backslash path from the hook JSON for a file on a second drive · in Git Bash on Windows, run `[ -f 'D:\some\existing.md' ] && echo yes` with a real file on a second drive
+
 ## Open items
 
 | ID  | What                                                                                                                                            | Type     | Raised at | Owner | Status | Answer |
