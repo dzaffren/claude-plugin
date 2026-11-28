@@ -277,6 +277,7 @@ projects.
 - The attribution guard reads --trailer on git commit and git tag, the message of git merge, and the value of each value option
 - The rm guard blocks a recursive delete of /, a path one level under /, or a home dir, in every spelling that bash and rm read
 - No zuko stage publishes a claude.ai page any more: not the idea board, not the hub, not the spec page. Each stage shows its full stop in the terminal instead
+- `voice.md` gets a zuko word list, and a check reads each shape and spec right after Claude saves it. Claude then fixes a hard word before the user reads it
 
 ## Docs
 
