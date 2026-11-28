@@ -112,6 +112,64 @@ The starting word list. The user grows it by editing `voice.md`.
 - The four-part reply: cto-brief, slice 4.
 - Stories and analogies: story-flow, slice 5.
 
+## Interface
+
+The slice has two readers: Claude reads the check's message, and the user edits the word list.
+
+```mermaid
+flowchart LR
+    V["voice.md ## Word list table"] -- "Kind, Word, Write instead" --> W["words.py check"]
+    H["after-save hook"] -- "file path and the added text" --> W
+    S["Stop hook verify-gates.sh"] -- "touched docs, added lines" --> W
+    W -- "one line per finding" --> M["message on stderr, exit 2"]
+    M -- "fix these lines" --> C[Claude]
+```
+
+The word list and either hook feed the check. The check prints one line for each finding, and Claude reads them as one message.
+
+### The word list
+
+A table under `## Word list` in `references/voice.md`, with three columns. The script reads this table, so the user adds a word with one new row.
+
+```markdown
+## Word list
+
+| Kind     | Word     | Write instead                 |
+| -------- | -------- | ----------------------------- |
+| label    | ledger   | the open-items table (ledger) |
+| metaphor | surface  | show                          |
+| hard     | prior to | before                        |
+```
+
+- **label:** the word is a zuko label. It passes only inside brackets after plain words.
+- **metaphor** and **hard:** the word never passes in prose. The message gives the plain swap.
+- Each Word matches as a whole word, in any case, plural allowed.
+
+### The message Claude sees
+
+After a save with findings, the hook exits 2 and prints this on stderr:
+
+```text
+Word check: docs/specs/plain-words.md
+- line 40: "ledger" is a zuko label used alone. Write "the open-items table (ledger)".
+- line 52: "surface" is a metaphor. Write "show".
+- line 61: "D38" comes before its plain words. Write the plain words, then "(D38)".
+Fix these lines now. The check reads only the text that this save added.
+```
+
+The Stop hook adds the same lines to its "Spec gate check failed:" list, as `- docs/specs/plain-words.md line 40: "ledger" is a zuko label used alone. ...`.
+
+A save with no findings, and a save of a file that is not a shape or spec, print nothing and exit 0.
+
+When the check cannot run, it fails closed. It exits 2 with `Word check could not run: voice.md has no ## Word list table.`. It never passes when it read nothing.
+
+### What the check skips
+
+- Code: fenced blocks, inline code, and paths.
+- Headings, diagram labels, and the `## Glossary` section.
+- In a table, the ID, Type, Raised at, Owner and Status columns.
+- Text that the save did not add.
+
 ## Open items
 
 | ID  | What                                                                                                                                            | Type     | Raised at | Owner | Status | Answer |
@@ -123,6 +181,7 @@ The starting word list. The user grows it by editing `voice.md`.
 | O5  | When Claude edits an old doc, does the check read only the text that the save added, or the whole file?                                       | question | spec p1   | user  | Resolved | Only the added text: an Edit's new text, or the changed lines of a Write to a file that exists. 2026-11-28 |
 | O6  | "slice" has 46 uses and "gate" has 23 in three recent docs. Are they on the label list?                                                         | question | spec p1   | user  | Resolved | No. They name the stages that the user runs, and each doc defines them in its Glossary. 2026-11-28 |
 | O7  | The /poc found that Claude sometimes writes a file with Bash, and a Write and Edit hook never fires for that. A spec saved through Bash then skips the check. | flag     | spec p1   | user  | Resolved | The Stop hook also runs the word check on the docs this work touched, next to the glossary check. 2026-11-28 |
+| O8  | The template's "Relies on:" line puts each D-number first. Does it follow the new rule, or does the check skip it? | question | spec p2   | user  | Resolved | It follows the new rule. The template example becomes "Relies on: the Stop hooks judge only the docs this work touched (D35)". 2026-11-28 |
 
 ## Glossary
 
