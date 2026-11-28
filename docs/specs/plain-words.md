@@ -81,6 +81,7 @@ Scenario: Old text stays as it is
 - A word list in `references/voice.md` with three parts: zuko labels and their plain words, metaphors and their literal words, hard words and their plain swaps.
 - A rule in `voice.md`: write the plain words first, and put a label or a D or O number in brackets after them (O4). Claude follows this in terminal replies as a prompt rule.
 - The check reads only the text that a save adds (O5). Old text stays as it is.
+- The Stop hook runs the same check on the docs this work touched, so a save through Bash is not missed (O7).
 - "slice" and "gate" stay off the label list. Each doc defines them in its Glossary (O6).
 - A check that runs right after each Write or Edit of a shape or spec, and tells Claude each line to fix.
 - New entries that supersede D37 (no word list) and the part of D38 that says nothing checks the writing. The sentence-length part of D38 stays.
@@ -117,10 +118,11 @@ The starting word list. The user grows it by editing `voice.md`.
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------- | ----- | ------ | ------ |
 | O1  | Where does the user's STE copy live, so that the gate can find it? (from shape O18)                                                             | question | shape     | user  | Resolved | Moved to a new slice, `ste-dictionary` (slice 7 in the shape). No copy exists on disk today. 2026-11-28 |
 | O2  | STE probably lacks software words such as commit and merge. How does the gate treat them? (from shape O19)                                      | question | shape     | user  | Resolved | Moved to `ste-dictionary` with O1. 2026-11-28 |
-| O3  | Can a script that runs right after a save send a message back to Claude? The check needs this. (from shape O24)                                 | unproven | shape     | poc   | Open   | —      |
+| O3  | Can a script that runs right after a save send a message back to Claude? The check needs this. (from shape O24)                                 | unproven | shape     | poc   | Resolved | Yes. /poc on 2026-11-28: a PostToolUse hook on Write and Edit exited 2, and Claude quoted its message and edited the file in the same turn (headless `claude -p`, Claude Code 2.1.332). |
 | O4  | How does the check know that a label is explained? By plain words with the label in brackets after them, or by an entry in the doc's Glossary? | question | spec p1   | user  | Resolved | Plain words first, then the label in brackets, as in "the open-items table (ledger)". The check reads each line. 2026-11-28 |
 | O5  | When Claude edits an old doc, does the check read only the text that the save added, or the whole file?                                       | question | spec p1   | user  | Resolved | Only the added text: an Edit's new text, or the changed lines of a Write to a file that exists. 2026-11-28 |
 | O6  | "slice" has 46 uses and "gate" has 23 in three recent docs. Are they on the label list?                                                         | question | spec p1   | user  | Resolved | No. They name the stages that the user runs, and each doc defines them in its Glossary. 2026-11-28 |
+| O7  | The /poc found that Claude sometimes writes a file with Bash, and a Write and Edit hook never fires for that. A spec saved through Bash then skips the check. | flag     | spec p1   | user  | Resolved | The Stop hook also runs the word check on the docs this work touched, next to the glossary check. 2026-11-28 |
 
 ## Glossary
 
