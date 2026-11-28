@@ -89,7 +89,7 @@ _(added at pause 3)_
 
 {Two or three sentences.}
 
-Relies on: {D-entries from DECISIONS.md this plan depends on, or none}
+Relies on: {what each DECISIONS.md entry says, then its number in brackets, as in: the Stop hooks judge only the docs this work touched (D35); or none}
 
 ```mermaid
 flowchart TB
@@ -165,7 +165,7 @@ _(how /build splits it — files must be disjoint; write `Single chunk` when it 
 | ----- | --------- | ------------------------------ |
 | A     | 1, 2      | `db/`, `models/share_token.ts` |
 
-Shared files (`types/`, barrel exports, lockfiles) are owned by chunk A only.
+Shared files (`types/`, barrel exports, lockfiles) belong to the first part of the build (chunk A) only.
 
 ### Risks
 
