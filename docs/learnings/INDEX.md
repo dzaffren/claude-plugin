@@ -292,3 +292,6 @@ One line per lesson. Loaded into every session in this repo.
 - When removing a feature, grep for its nouns ("published page", "the board")
   as well as its step phrases — the steps go and the descriptions stay.
   ([detail](search-a-removed-feature-by-its-nouns.md))
+- A Write or Edit hook never sees a file that Claude writes with Bash — back
+  such a check with the Stop hook, and log hook starts in a spike.
+  ([detail](a-file-hook-misses-bash-writes.md))
