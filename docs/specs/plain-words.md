@@ -288,27 +288,7 @@ Single chunk. The hook, the Stop hook line and the tests all read the output of 
 
 ### Decisions to record
 
-#### D178 · 2026-11-28 · A word check reads the added lines of each shape and spec after each save and at Stop; sentence length stays unmeasured
-
-Why: ste-voice shipped on 2026-10-12 with prompt rules only. Six weeks later the replies were still hard to read, and nothing had flagged one word (goal-thread shape O28). A /poc on 2026-11-28 showed that Claude acts on an after-save hook's message in the same turn. Claude can also write a doc through Bash, which fires no Write or Edit hook, so the Stop hook checks too. The STE sentence rules stay prompt text, as D38 said.
-Rejected: prompt rules only (ste-voice showed that they drift), the Stop hook only (the check runs after Claude has moved on), the whole file (every edit of an old spec flags its old text, O5), lines since the last commit (a bad line committed earlier on the branch is never checked again, O11), a gate on sentence length (still pulls Claude off its task, as D38 said).
-Supersedes: D38
-Source: specs/plain-words.md
-Status: active
-
-#### D179 · 2026-11-28 · A zuko label or a D or O number passes only in brackets after the plain words
-
-Why: the user named zuko labels used alone as the clearest pain (goal-thread shape O12). One rule for labels and numbers is checkable line by line, and it matches how numbers are already written (goal-thread shape O23).
-Rejected: a Glossary entry is enough (the bare word still stands mid-sentence, O4), a skip for the `Relies on:` line (a second format for the same thing, O8), "slice" and "gate" on the list (each doc defines them in its Glossary, and every spec would get much longer, O6).
-Source: specs/plain-words.md
-Status: active
-
-#### D180 · 2026-11-28 · The word list is a table in voice.md that the check reads
-
-Why: Claude follows the list as a prompt rule in replies, and the check reads it in docs. One table keeps the two the same, and the user adds a word with one row.
-Rejected: a closed tuple in the script, as `glossary.py` keeps its terms (a second copy that can disagree with voice.md, and a code change for each word), a separate words file (a third file for each stage to read).
-Source: specs/plain-words.md
-Status: active
+Recorded as D178, D179 and D180.
 
 ## Open items
 
