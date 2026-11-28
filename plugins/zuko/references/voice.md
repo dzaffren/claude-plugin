@@ -102,6 +102,33 @@ rules, follow those rules. The STE rules fill the gaps.
 10. **Explain jargon, don't avoid it.** Use the real term, then define it in
     one clause or in a note at the bottom. The user is learning the words.
 
+## Word list
+
+Write the plain words first. Put a zuko label, or a decision or row number
+such as D38 or O7, in brackets after them: "the open-items table (ledger)",
+"nothing measures sentence length (D38)". Never use a metaphor or a hard word
+from the table. Write the word in its last column instead.
+
+This holds in every reply. In a shape or spec, `scripts/check-words.sh` checks
+each line that the work added, right after the save. The Stop hook checks it
+again. The user adds a word with one new row.
+
+| Kind     | Word                                | Write instead                      |
+| -------- | ----------------------------------- | ---------------------------------- |
+| label    | ledger                              | the open-items table (ledger)      |
+| label    | light path                          | the short route (light path)       |
+| label    | earn-it                             | the "is it needed" check (earn-it) |
+| label    | chunk                               | one part of the build (chunk)      |
+| label    | walking skeleton                    | the thinnest working version       |
+| label    | Decided alone                       | a choice made without you          |
+| metaphor | surface the / surface it / surfaced | show                               |
+| metaphor | land                                | merge                              |
+| metaphor | front door                          | first step                         |
+| hard     | utilize / utilise                   | use                                |
+| hard     | prior to                            | before                             |
+| hard     | in order to                         | to                                 |
+| hard     | via                                 | through                            |
+
 ## Tone
 
 Direct, warm, unhurried. A colleague who respects your time and doesn't

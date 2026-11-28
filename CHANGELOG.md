@@ -6,6 +6,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- zuko checks the words in each shape and spec right after Claude saves it, and again at the end of the turn. A zuko label such as "ledger" used alone, a metaphor, a hard word, or a decision number before its plain words is sent back to Claude to fix. The words live in a table in `voice.md` that you can extend.
+
 ### Removed
 
 - zuko no longer publishes a claude.ai idea board, hub page or spec page. Each stage prints its whole stop in the terminal instead, and the PR body ends with the spec path alone.

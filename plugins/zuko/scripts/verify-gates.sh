@@ -73,6 +73,18 @@ if [ "${#docs[@]}" -gt 0 ]; then
     problems="$problems
 - the fence check could not run: $swallowed"
   fi
+
+  # The lines this work added, at any Status: a doc saved through Bash fires no
+  # after-save hook (D178).
+  if found=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/words.py" check "$dir" "${docs[@]}" 2>&1); then
+    while IFS=$'\t' read -r md line message; do
+      [ -n "$md" ] && problems="$problems
+- $md line $line: $message"
+    done <<<"$found"
+  else
+    problems="$problems
+- the word check could not run: $found"
+  fi
 fi
 
 if [ -n "$problems" ]; then

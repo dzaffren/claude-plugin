@@ -1,6 +1,6 @@
 # dzafran-claude-plugins · architecture
 
-**Status:** Active · **Updated:** 2026-11-27 by /ship drop-board
+**Status:** Active · **Updated:** 2026-11-28 by /ship plain-words
 
 ## Context
 
@@ -24,5 +24,5 @@ flowchart LR
 | skills     | `plugins/zuko/skills/`     | the stages a user runs: shape, spec, build, review, ship, release, helpers |
 | references | `plugins/zuko/references/` | shared rules the stages read: voice, slicing, ledger, onboarding, OWASP, and a pinned copy of Cloudflare's attack-class files (`attack-classes/`) that the release pentester reads |
 | agents     | `plugins/zuko/agents/`     | subagents for build chunks, blind review verification, and the release pentest |
-| hooks      | `plugins/zuko/hooks/`      | binds scripts to Claude Code events (SessionStart, PreToolUse, Stop)  |
-| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the rendered drift gate that drives headless Chrome from Node (`lib/rendered-drift.mjs`, `lib/cdp.mjs`), the attack-class pin check (`check-attack-pin.sh`), the coverage ledger that `release.py pick` and `cut` read and write (`lib/coverage.py`), the Strix run that `release.py strix`, `strix-ready` and `strix-install` start, on its own copy of the release and, on a yes, a staging URL (`lib/strix.py`), the Windows PATH lookup that each program zuko's Python starts goes through, never the current folder (`lib/program.py`), and a bash test harness with a time limit for each file, which `.github/workflows/suite.yml` runs on each PR, on `windows-latest` and `ubuntu-latest` |
+| hooks      | `plugins/zuko/hooks/`      | binds scripts to Claude Code events (SessionStart, PreToolUse, PostToolUse, Stop)  |
+| scripts    | `plugins/zuko/scripts/`    | guards and gates in bash and Python, the rendered drift gate that drives headless Chrome from Node (`lib/rendered-drift.mjs`, `lib/cdp.mjs`), the attack-class pin check (`check-attack-pin.sh`), the coverage ledger that `release.py pick` and `cut` read and write (`lib/coverage.py`), the Strix run that `release.py strix`, `strix-ready` and `strix-install` start, on its own copy of the release and, on a yes, a staging URL (`lib/strix.py`), the word check that runs after each save of a shape or spec and at Stop (`check-words.sh`, `lib/words.py`), the Windows PATH lookup that each program zuko's Python starts goes through, never the current folder (`lib/program.py`), and a bash test harness with a time limit for each file, which `.github/workflows/suite.yml` runs on each PR, on `windows-latest` and `ubuntu-latest` |

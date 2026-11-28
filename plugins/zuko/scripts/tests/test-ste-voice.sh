@@ -88,3 +88,9 @@ expect_match 'A full sentence follows the rules, also in a table cell or a Gherk
 # --- scenario 4: the project's own writing rules win ---
 expect_match "\*\*The project's rules win\.\*\* When the project's CLAUDE\.md sets its own writing rules, follow those rules\. The STE rules fill the gaps\." "$ste" \
   "voice.md STE: the project's CLAUDE.md wins a clash"
+
+# --- plain-words: voice.md holds the word list that words.py reads ---
+words_section=$(section "$voice" "Word list")
+expect_match '\| Kind +\| Word +\| Write instead +\|' "$words_section" "voice.md Word list: the table has its three columns"
+expect_match 'Write the plain words first\. Put a zuko label, or a decision or row number such as D38 or O7, in brackets after them' \
+  "$words_section" "voice.md Word list: the brackets rule"

@@ -26,7 +26,7 @@ expect_exit 2 "$gate_status" "inside a block: the gate fails"
 expect_match '^Spec gate check failed:$' "$gate_out" "inside a block: inside the spec gate block"
 expect_match "$(line_of "- $(native "$one")/docs/specs/idea-board.md line 55 opens a \`\`\`mermaid block inside the block that line 47 opened. Close the block from line 47 first, or open it with a longer fence.")" \
   "$gate_out" "inside a block: names the doc, the open block and the fence inside it"
-same_count=$(grep -c 'idea-board.md line ' <<<"$gate_out")
+same_count=$(grep -cE 'idea-board.md line [0-9]+ opens ' <<<"$gate_out")
 expect_match '^1$' "$same_count" "inside a block: one line for the doc, for its first problem"
 
 # --- Scenario 2: a block still open at the end of the file ---
